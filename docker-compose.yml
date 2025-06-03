@@ -1,0 +1,36 @@
+# See note: The user asked to modify `robot.Dockerfile`, but the provided file is `docker-compose.yml`.
+# The instructions specify to only change the included file, which is `docker-compose.yml`.
+# Since the instructions are about `robot.Dockerfile` and no content of that file is provided,
+# no changes will be made to the given `docker-compose.yml` file.
+
+# Therefore, output the original `docker-compose.yml` file as is:
+
+# docker-compose.yml
+include:
+  - docker-compose.oracle.yml
+  - docker-compose.groundplex.yml
+  - docker-compose.minio.yml
+  - docker-compose.postgres.yml
+
+services:
+  tools:
+    build:
+      context: src/tools
+      dockerfile: ../../robot.Dockerfile
+    container_name: snaplogic-test-example-tools-container
+    image: snaplogic-test-example:latest
+    env_file:
+      - .env
+    volumes:
+      - ./src:/app/src
+      - ./test:/app/test
+      - ./.env:/app/.env
+      - ./setup_env.sh:/app/setup_env.sh
+    command: [ "sh", "-c", "/app/setup_env.sh && /app/setup_env.sh && tail -f /dev/null" ]
+    profiles: [ tools ]
+    networks:
+      - snaplogicnet
+
+networks:
+  snaplogicnet:
+    driver: bridge

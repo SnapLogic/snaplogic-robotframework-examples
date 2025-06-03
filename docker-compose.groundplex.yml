@@ -1,0 +1,18 @@
+services:
+  snaplogic-groundplex:
+    image: registry.hub.docker.com/snaplogic/snaplex:${RELEASE_BUILD_VERSION}
+    container_name: snaplogic-groundplex
+    platform: linux/amd64
+    ports:
+      - "8090:8090"
+      - "8081:8081"
+    volumes:
+      - ./test/.config/${GROUNDPLEX_NAME}.slpropz:/opt/snaplogic/etc/${GROUNDPLEX_NAME}.slpropz
+      - /var/run.docker.sock:/var/run/docker.sock
+    profiles: [ gp ]
+    networks:
+      - snaplogicnet
+
+networks:
+  snaplogicnet:
+    driver: bridge

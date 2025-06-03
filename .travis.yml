@@ -1,0 +1,57 @@
+import:
+  - SnapLogic/slim-tx-engine:travis/post_test_results_notify.yml
+
+env:
+  global:
+    - HMD_HOME=$TRAVIS_BUILD_DIR
+
+    # Oracle Account-specific environment variables
+    - ORACLE_ACCOUNT_NAME="Oracle_Slim_Account"
+    - ORACLE_HOST="oracle-db"
+    - ORACLE_DBNAME="FREEPDB1"
+    - ORACLE_DBPORT="1521"
+    - ORACLE_DBUSER="SYSTEM"
+    - ORACLE_DBPASS="Oracle123"
+
+    # Postgres Account-specific environment variables
+    - POSTGRES_ACCOUNT_NAME="Postgres_Slim_Account"
+    - POSTGRES_HOST="postgres-db"
+    - POSTGRES_DBNAME="snaplogic"
+    - POSTGRES_DBPORT="5432"
+    - POSTGRES_DBUSER="snaplogic"
+    - POSTGRES_DBPASS="snaplogic"
+
+    # S3 Account-specific environment variables
+    - S3_ACCOUNT_NAME="S3_Slim_Account"
+    - S3_ENDPOINT="http://minio:9000"
+    - S3_ACCESS_KEY="demouser"
+    - S3_SECRET_KEY="demopassword"
+
+    - RELEASE_BUILD_VERSION="main-33084"
+
+dist: jammy
+group: stable
+language: python
+python:
+  - 3.12
+services:
+  - docker
+
+branches:
+  only:
+    - main
+
+before_script:
+  - echo "🔍Environment Variables set up and creating .env file:"
+  - chmod +x ./setup_env.sh # Make the script executable
+  - ./setup_env.sh
+
+install: skip
+
+jobs:
+  include:
+    - stage: BuildImage
+      script:
+        - make snaplogic-start-tools
+        - make robot-run-all-tests TAGS="oracle"
+      name: Build Docs

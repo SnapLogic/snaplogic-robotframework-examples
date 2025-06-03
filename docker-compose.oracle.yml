@@ -1,0 +1,25 @@
+services:
+  oracle-db:
+    image: container-registry.oracle.com/database/free:23.7.0.0-lite
+    container_name: oracle-db
+    ports:
+      - "1521:1521"
+    environment:
+      ORACLE_PWD: Oracle123
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "echo 'select 1 from dual;' | sqlplus -s system/Oracle123@localhost/FREEPDB1" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    profiles: [ dev, oracle-dev ]
+    networks:
+      - snaplogicnet
+
+volumes:
+  oracle_data:
+
+networks:
+  snaplogicnet:
+    driver: bridge

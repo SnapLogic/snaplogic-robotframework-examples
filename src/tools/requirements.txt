@@ -1,0 +1,8 @@
+#integration test requirements
+snaplogic-common-robot
+oracledb  # Oracle database driver
+psycopg2-binary # PostgreSQL database driver
+requests # HTTP requests for MinIO API integration
+boto3 # AWS S3 SDK (compatible with MinIO)
+minio # MinIO Python SDK for advanced operations
+robotframework-csvlibrary # CSV file operations for Robot Framework
