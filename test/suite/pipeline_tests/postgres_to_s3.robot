@@ -29,6 +29,7 @@ Documentation       Test Suite for PostgreSQL to S3 Pipeline Integration
 
 # Standard Libraries
 Library             OperatingSystem    # File system operations
+Library             Process    # Process execution for Docker commands
 Library             DatabaseLibrary    # Generic database operations
 Library             psycopg2    # PostgreSQL drive
 Library             CSVLibrary
@@ -36,33 +37,41 @@ Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_key
 Resource            ../test_data/queries/postgres_queries.resource
 Resource            ../../resources/files.resource    # CSV/JSON file operations
 
-Suite Setup         Initialize Variables
+Suite Setup         Initialize Test Environment
+Suite Teardown      Drop Tables in Postgres DB
 
 
 *** Variables ***
 # Project Configuration
-${project_path}                 ${org_name}/${project_space}/${project_name}
-${pipeline_file_path}           ${CURDIR}/../../../src/pipelines
+${project_path}                     ${org_name}/${project_space}/${project_name}
+${pipeline_file_path}               ${CURDIR}/../../../src/pipelines
 
 # Postgres Pipeline and Task Configuration
 # All Other related variables are set in the Initialize Pipeline1 Variables keyword
-${pipeline_name_csv}            postgres_s3_csv
-${pipeline_name_csv_slp}        postgres_to_s3_csv.slp
-${task_csv}                     pg_s3_csv_Task
+${pipeline_name_csv}                postgres_s3_csv
+${pipeline_name_csv_slp}            postgres_to_s3_csv.slp
+${task_csv}                         pg_s3_csv_Task
 
-${pipeline_name_json}           postgres_s3_json
-${pipeline_name_json_slp}       postgres_to_s3_json.slp
-${task_json}                    pg_s3_csv_Task
+${pipeline_name_json}               postgres_s3_json
+${pipeline_name_json_slp}           postgres_to_s3_json.slp
+${task_json}                        pg_s3_csv_Task
 
 # CSV and test data configuration
-${DEMO_BUCKET}                  demo-bucket
-${CSV_DATA_TO_DB}               ${CURDIR}/../test_data/actual_expected_data/input_data/employees.csv    # Source CSV from input_data folder
-${JSON_DATA_TO_DB}              ${CURDIR}/../test_data/actual_expected_data/input_data/employees.json    # Source JSON from input_data folder
-${ACTUAL_DATA_DIR}              ${CURDIR}/../test_data/actual_expected_data/actual_output    # Base directory for downloaded files from S3
-${EXPECTED_OUTPUT_DIR}          ${CURDIR}/../test_data/actual_expected_data/expected_output    # Expected output files for comparison
+${DEMO_BUCKET}                      demo-bucket
+${CSV_DATA_TO_DB}                   ${CURDIR}/../test_data/actual_expected_data/input_data/employees.csv    # Source CSV from input_data folder
+${JSON_DATA_TO_DB}                  ${CURDIR}/../test_data/actual_expected_data/input_data/employees.json    # Source JSON from input_data folder
+${ACTUAL_DATA_DIR}                  ${CURDIR}/../test_data/actual_expected_data/actual_output    # Base directory for downloaded files from S3
+${EXPECTED_OUTPUT_DIR}              ${CURDIR}/../test_data/actual_expected_data/expected_output    # Expected output files for comparison
 
 # Test configuration
-${SKIP_MINIO_TESTS}             ${False}    # Set to True to skip MinIO tests when server unavailable
+${SKIP_MINIO_TESTS}                 ${False}    # Set to True to skip MinIO tests when server unavailable
+
+# Docker service configuration
+${POSTGRES_CONTAINER_NAME}          postgres-db
+${MINIO_CONTAINER_NAME}             snaplogic-minio
+${MINIO_SETUP_CONTAINER_NAME}       snaplogic-minio-setup
+${DOCKER_COMPOSE_TIMEOUT}           120s
+${SERVICE_HEALTH_TIMEOUT}           90s
 
 
 *** Test Cases ***
@@ -82,7 +91,7 @@ Create Account
     ...    • PostgreSQL account configuration is valid and accepted
     ...    • S3/MinIO account configuration is valid and accepted
     ...    • Account payloads are properly formatted and processed
-    [Tags]    postgres2    create_account    minio
+    [Tags]    postgres_s3    create_account    minio
     [Template]    Create Account From Template
     ${account_payload_path}/acc_postgres.json
     ${account_payload_path}/acc_s3.json
@@ -94,7 +103,7 @@ Create table for DB Operations
     ...    • Table structure matches expected schema (name, role, salary columns)
     ...    • Database connection is established and functional
     ...    • No SQL syntax or permission errors occur
-    [Tags]    postgres2    create_tables
+    [Tags]    postgres_s3    create_tables
     [Template]    Execute SQL String
     ${CREATE_TABLE_EMPLOYEES_PG}
     ${CREATE_TABLE_EMPLOYEES2_PG}
@@ -109,7 +118,7 @@ Load CSV Data To PostgreSQL
     ...    • Inserted row count = Auto-detected expected count from file
     ...    • Table truncated before insertion (clean state)
     ...    • CSV column mapping to database columns successful
-    [Tags]    postgres2    csv5    load_data
+    [Tags]    postgres_s3    csv5    load_data
     [Template]    Load CSV Data Template
     # CSV File    table_name    Truncate Table
     ${CSV_DATA_TO_DB}    employees    ${TRUE}
@@ -125,7 +134,7 @@ Load JSON Data To PostgreSQL
     ...    • Table NOT truncated (appends to existing CSV data)
     ...    • JSON field mapping to database columns successful
     ...    • Total database rows = CSV rows + JSON rows
-    [Tags]    postgres2    json5    load_data
+    [Tags]    postgres_s3    json5    load_data
     [Template]    Load JSON Data Template
     # JSON File    table_name    Truncate Table
     ${JSON_DATA_TO_DB}    employees2    ${TRUE}
@@ -140,7 +149,7 @@ Import Pipelines
     ...    • Unique pipeline ID is generated and returned
     ...    • Pipeline nodes and configuration are valid
     ...    • Pipeline is successfully deployed to the project space
-    [Tags]    postgres2    minio    pgdb
+    [Tags]    postgres_s3    minio    pgdb
     [Template]    Import Pipelines From Template
     ${unique_id}    ${pipeline_file_path}    ${pipeline_name_csv}    ${pipeline_name_csv_slp}
     ${unique_id}    ${pipeline_file_path}    ${pipeline_name_json}    ${pipeline_name_json_slp}
@@ -153,7 +162,7 @@ Create Triggered_task
     ...    • Task is linked to the correct pipeline
     ...    • Task snode ID is generated and returned
     ...    • Task payload structure is valid
-    [Tags]    create_triggered_task    minio    postgres2
+    [Tags]    create_triggered_task    minio    postgres_s3
     [Template]    Create Triggered Task From Template
     ${unique_id}    ${project_path}    ${pipeline_name_csv}    ${task_csv}
     ${unique_id}    ${project_path}    ${pipeline_name_json}    ${task_json}
@@ -167,7 +176,7 @@ Execute Triggered Task
     ...    • Files created in S3 bucket (demo-bucket)
     ...    • Task completes within expected timeframe
     ...    • No pipeline execution errors or timeouts
-    [Tags]    create_triggered_task    postgres2
+    [Tags]    create_triggered_task    postgres_s3
     [Template]    Run Triggered Task With Parameters From Template
     ${unique_id}    ${project_path}    ${pipeline_name_csv}    ${task_csv}    bucket=demo-bucket    actual_output_file=employees.csv
     ${unique_id}    ${project_path}    ${pipeline_name_json}    ${task_json}    bucket=demo-bucket    actual_output_file=employees.json
@@ -183,7 +192,7 @@ Download actual Output data from S3
     ...    • Downloaded files have content (size > 0 bytes)
     ...    • Local download directory is created successfully
     ...    • File download completes within timeout
-    [Tags]    postgres2
+    [Tags]    postgres_s3
     [Template]    Download And Validate File
 
     # Test Data: download_location    bucket_name    file_name
@@ -202,7 +211,7 @@ Compare Actual vs Expected CSV Output
     ...    • All field values match exactly (no data corruption)
     ...    • No extra or missing rows (complete data transfer)
     ...    • CSV formatting is preserved through pipeline
-    [Tags]    csv    comparison    postgres2    validation
+    [Tags]    csv    comparison    postgres_s3    validation
     [Template]    Compare CSV Files Template
 
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status
@@ -218,7 +227,7 @@ Compare Actual vs Expected JSON Output
     ...    • All object properties match exactly (no data corruption)
     ...    • No extra or missing records (complete data transfer)
     ...    • JSON formatting is valid and preserved through pipeline
-    [Tags]    json    comparison    postgres2    validation
+    [Tags]    json    comparison    postgres_s3    validation
     [Template]    Compare JSON Files Template
 
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status
@@ -228,7 +237,7 @@ Compare Actual vs Expected JSON Output
 *** Keywords ***
 # This section    test initialization keywords
 
-Initialize Variables
+Initialize Test Environment
     ${unique_id}=    Get Unique Id
     Set Suite Variable    ${unique_id}    ${unique_id}
     Wait Until Plex Status Is Up    /${ORG_NAME}/${GROUNDPLEX_LOCATION_PATH}/${GROUNDPLEX_NAME}
@@ -237,4 +246,22 @@ Initialize Variables
     # Execute setup script
     Log    Setting up PostgreSQL tables from script
 
-# Database-related keywords have been moved to ../../resources/database.resource
+Drop Tables in Postgres DB
+    [Documentation]    Cleans up test data and database tables after test suite completion
+    ...    This keyword performs cleanup without stopping containers,
+    ...    allowing the services to remain running for subsequent test runs.
+    ...
+    ...    Cleanup Actions:
+    ...    • Drops test tables from PostgreSQL database
+
+    Log    🧹 Starting Test Environment Cleanup    INFO
+
+    # Clean up database tables
+    Log    📋 Dropping test tables from PostgreSQL...    INFO
+    Execute SQL String    ${DROP_TABLE_EMPLOYEES_PG}
+    Log    ✅ Dropped 'employees' table    INFO
+
+    # Drop employees2 table
+    Execute SQL String    ${DROP_TABLE_EMPLOYEES2_PG}
+    Log    ✅ Dropped 'employees2' table    INFO
+    Log    ✅ Test DB Tables cleanup completed successfully    INFO
