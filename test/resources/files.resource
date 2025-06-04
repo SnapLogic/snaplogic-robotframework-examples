@@ -15,6 +15,9 @@ Library             JSONLibrary    # JSON file operations - NOW PROPERLY UTILIZE
 Library             DatabaseLibrary    # Database operations for file loading
 Library             String
 Library             Collections
+Resource            general.resource
+Resource            database.resource    # Database operations for file loading
+Resource            minio.resource    # MinIO file operations (if needed)
 
 
 *** Keywords ***

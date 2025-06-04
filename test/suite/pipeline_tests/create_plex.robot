@@ -3,7 +3,6 @@ Documentation       Test Suite for Snaplex Creation and Configuration
 ...                 This suite validates Snaplex deployment functionality by:
 
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource    # SnapLogic API keywords
-# Resource    ../../slim_common_robot2/snaplogic_apis_keywords/snaplogic_keywords.resource
 
 
 *** Test Cases ***

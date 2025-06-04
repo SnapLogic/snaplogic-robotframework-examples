@@ -13,6 +13,7 @@ Library             oracledb    # Oracle specific operations
 Library             DependencyLibrary
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource    # SnapLogic API keywords from installed package
 Resource            ../test_data/queries/oracle_queries.resource    # Oracle SQL queries
+Resource            ../../resources/files.resource 
 
 Suite Setup         Check connections    # Check if the connection to the Oracle database is successful and snaplex is up
 

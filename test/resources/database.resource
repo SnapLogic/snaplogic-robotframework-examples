@@ -64,7 +64,6 @@ Connect to Oracle Database
     ...    ${ORACLE_DBPASS}
     ...    ${ORACLE_HOST}
     ...    ${ORACLE_DBPORT}
-    ...
 
     Log    ✅ Successfully connected to Oracle database
 
