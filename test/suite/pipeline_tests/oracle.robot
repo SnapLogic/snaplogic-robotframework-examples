@@ -13,7 +13,7 @@ Library             oracledb    # Oracle specific operations
 Library             DependencyLibrary
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource    # SnapLogic API keywords from installed package
 Resource            ../test_data/queries/oracle_queries.resource    # Oracle SQL queries
-Resource            ../../resources/files.resource 
+Resource            ../../resources/files.resource    # CSV/JSON file operations
 
 Suite Setup         Check connections    # Check if the connection to the Oracle database is successful and snaplex is up
 
@@ -111,6 +111,11 @@ End to End Pipeline Workflow
 Check connections
     Wait Until Plex Status Is Up    /${ORG_NAME}/${GROUNDPLEX_LOCATION_PATH}/${GROUNDPLEX_NAME}
     Connect to Oracle Database
+    ...    ${ORACLE_DBNAME}
+    ...    ${ORACLE_DBUSER}
+    ...    ${ORACLE_DBPASS}
+    ...    ${ORACLE_HOST}
+    ...    ${ORACLE_DBPORT}
     Initialize Variables
 
 Initialize Variables

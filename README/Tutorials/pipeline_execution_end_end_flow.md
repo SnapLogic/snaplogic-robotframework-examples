@@ -1,132 +1,36 @@
-# Pipeline Setup Guide
+# 🚀 Pipeline Execution: 5-Step Quick Start
 
-This guide will help new team members set up and execute the SnapLogic pipeline project for the first time.
+## ⚡ Step 1: Install Docker Desktop
+Download and install Docker Desktop for your OS, start it, and verify installation with `docker --version`
 
-## Table of Contents
-
-- [Pipeline Setup Guide](#pipeline-setup-guide)
-  - [Table of Contents](#table-of-contents)
-  - [Prerequisites](#prerequisites)
-  - [Setup Steps](#setup-steps)
-    - [1. Install Docker Desktop](#1-install-docker-desktop)
-    - [2. Clone the Repository](#2-clone-the-repository)
-    - [3. Install any IDE and Open Project](#3-install-any-ide-and-open-project)
-    - [4. Environment Configuration](#4-environment-configuration)
-    - [5. Navigate to Project Folder](#5-navigate-to-project-folder)
-    - [6. Build Your Test Environment](#6-build-your-test-environment)
-  - [What Happens After Execution](#what-happens-after-execution)
-    - [🚀 Services Started](#-services-started)
-    - [🚀 Tests Are Executed](#-tests-are-executed)
-  - [What Gets Created For Minio (http://localhost:9000)](#what-gets-created-for-minio-httplocalhost9000)
-    - [👤 MinIO User](#-minio-user)
-    - [🪣 Buckets Created in MinIO](#-buckets-created-in-minio)
-    - [📄 Files Created in Buckets](#-files-created-in-buckets)
-  - [Troubleshooting](#troubleshooting)
-  - [Need Help?](#need-help)
-
----
-
-## Prerequisites
-
-Before starting, ensure the following:
-
-- You have access to the GitHub repository.
-- You have the required permissions to clone and run the project.
-- You have internet access to download tools and dependencies.
-
----
-
-## Setup Steps
-
-### 1. Install Docker Desktop
-
-- Download and install Docker Desktop for your OS: [docker.com](https://www.docker.com/products/docker-desktop/)
-- Start Docker Desktop and ensure it’s running.
-- Verify the installation by running:
-
+## 📥 Step 2: Clone the Repository
+Create a working directory and clone the GitHub repository:
 ```bash
-docker --version
+git clone https://github.com/SnapLogic/snaplogic-robotframework-examples
 ```
 
-### 2. Clone the Repository
+## 💻 Step 3: Open Project (Either in IDE or Terminal)
+Download VS Code (or any preferred IDE) and open the project folder, or work directly from terminal
 
-- Create a new directory for your work.
-- Clone the GitHub repository:
-
-```bash
-git clone https://github.com/SnapLogic/snaplogic-test-example
-```
-
-### 3. Install any IDE and Open Project
-
-- Download and install [Visual Studio Code](https://code.visualstudio.com/).
-- Open the project folder in VS Code:
-  - Go to `File > Open Folder`, then select the cloned `snaplogic-test-example` folder.
-  
-
-### 4. Environment Configuration
-
-- Navigate to the project root directory.
-- Create a `.env` file:
-  - Copy the contents of `.env.example` to a new file named `.env`.
-  - Modify values as needed for your local environment.
-  - Keep this file secure and do **not** check it into version control.
-
+## ⚙️ Step 4: Configure Environment
+Copy the contents of `.env.example` to a new file named `.env` and update env values as per project requirements:
 ```bash
 cp .env.example .env
 ```
-Open the `.env` file and add your SnapLogic credentials:
+Then edit the `.env` file with your actual SnapLogic credentials, organization details, and project settings
 
+## 🏗️ Step 5: Build and Execute
+Build your test environment using make commands:
 ```bash
-URL=https://your.elastic.snaplogic.com/
-ORG_ADMIN_USER=your_username@snaplogic.com
-ORG_ADMIN_PASSWORD=your_password
-ORG_NAME=your_organization
-PROJECT_SPACE=TestSpace
-PROJECT_NAME=FirstTest
-GROUNDPLEX_NAME=my-test-groundplex
-GROUNDPLEX_ENV=testenv
-RELEASE_BUILD_VERSION=main-30027
-```
-**Important**: Replace the placeholder values with your actual SnapLogic credentials. Never commit this file to version control.
-
-### 5. Navigate to Project Folder
-
-In a terminal, navigate to the  project directory:
-
-```bash
-cd snaplogic-test-example
+make snaplogic-start-tools # Build the Docker containers that will run your tests:
+make robot-run-all-tests TAGS="oracle" # Runs Robot tests with the "oracle" tag and Starts Your Test Services
 ```
 
-### 6. Build Your Test Environment
-
-Start the required services and run the tests:
-
-```bash
-make snaplogic-start-tools         # Build the Docker containers that will run your tests:
-make robot-run-all-tests TAGS="oracle"   # Runs Robot tests with the "oracle" tag and Starts Your Test Services
-```
-
-This creates a containerized environment with Robot Framework and all testing dependencies. The build process takes about 2-3 minutes.
-
-To run additional test suites:
-
-```bash
-make robot-run-all-tests TAGS="oracle minio"
-```
-
-You can pass multiple tags separated by spaces to include additional test scenarios.
-
-**Available Tags:**  
-Refer to the `TAGS` section inside test files located at:
-
-```
-test/suite/pipeline_tests/
-```
-
-Explore the test files to find appropriate tags for your needs.
+> **⏱️ Note:** This creates a containerized environment with Robot Framework and all testing dependencies. The build process takes about 2-3 minutes.
 
 ---
+
+✅ **You're all set!** Your SnapLogic Robot Framework testing environment is ready to go.
 
 ## What Happens After Execution
 
