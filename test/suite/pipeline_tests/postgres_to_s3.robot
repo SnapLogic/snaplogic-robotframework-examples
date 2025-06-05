@@ -38,7 +38,7 @@ Resource            ../test_data/queries/postgres_queries.resource
 Resource            ../../resources/files.resource    # CSV/JSON file operations
 
 Suite Setup         Initialize Test Environment
-Suite Teardown      Drop Tables in Postgres DB
+# Suite Teardown    Drop Tables in Postgres DB
 
 
 *** Variables ***
