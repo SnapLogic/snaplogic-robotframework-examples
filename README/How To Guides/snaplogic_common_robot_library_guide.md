@@ -7,10 +7,9 @@
 3. [Installation Process](#installation-process)
 4. [Library Structure and Documentation](#library-structure-and-documentation)
 5. [Local Exploration Setup](#local-exploration-setup)
-6. [Creating Virtual Environment](#creating-virtual-environment)
-7. [Exploring Keywords and Documentation](#exploring-keywords-and-documentation)
-8. [Usage in Test Framework](#usage-in-test-framework)
-9. [Best Practices](#best-practices)
+6. [Exploring Keywords and Documentation](#exploring-keywords-and-documentation)
+7. [Usage in Test Framework](#usage-in-test-framework)
+8. [Best Practices](#best-practices)
 
 ## Overview
 
@@ -137,28 +136,51 @@ pip show snaplogic-common-robot
 ### Package Structure
 
 ```
-snaplogic_common_robot/
-├── __init__.py
-├── snaplogic_apis_keywords/
-│   ├── __init__.py
-│   ├── snaplogic_keywords.resource     # Main keyword resource file
-│   ├── api_client.py                   # SnapLogic API client
-│   ├── pipeline_keywords.py            # Pipeline-related keywords
-│   ├── account_keywords.py             # Account management keywords
-│   ├── project_keywords.py             # Project operations keywords
-│   └── groundplex_keywords.py          # Groundplex management keywords
-├── utilities/
-│   ├── __init__.py
-│   ├── json_utils.py                   # JSON manipulation utilities
-│   ├── file_utils.py                   # File operation utilities
-│   └── validation_utils.py             # Data validation utilities
-├── docs/
-│   ├── keywords.html                   # Generated keyword documentation
-│   ├── examples/                       # Usage examples
-│   └── api_reference.md               # API reference guide
-└── tests/
-    ├── unit_tests/                     # Unit tests for library
-    └── integration_tests/              # Integration tests
+snaplogic-common-robot/
+├── .gitignore
+├── .pre-commit-config.yaml
+├── .travis.yml
+├── Makefile
+├── pyproject.toml
+├── snaplogic_common_robot.Dockerfile
+├── entrypoint.sh
+├── scripts/
+│   ├── delete_old_package_versions.sh
+│   ├── generate_calver.py
+│   ├── generate_libdoc.sh
+│   └── upload_lib_docs_to_s3.py
+├── meta-data/
+├── dist/
+└── src/
+    ├── requirements.txt
+    ├── snaplogic_common_robot/
+    │   ├── __init__.py
+    │   ├── libdocs/
+    │   │   ├── __init__.py
+    │   │   ├── robot-doc-styles.css
+    │   │   └── test.txt
+    │   ├── libraries/
+    │   │   ├── __init__.py
+    │   │   └── utils.py
+    │   ├── snaplogic_apis_keywords/
+    │   │   ├── __init__.py
+    │   │   ├── snaplogic_apis.resource      # SnapLogic API resource file
+    │   │   └── snaplogic_keywords.resource  # Main keyword resource file
+    │   └── test_data/
+    │       ├── __init__.py
+    │       ├── slim_groundplex.json
+    │       └── triggered_task.json
+    ├── slim_common_robot/
+    │   └── libdocs/
+    │       └── __init__.py
+    └── testresults/
+        └── libdoc/
+            ├── index.html
+            ├── raw_snaplogic_apis.html
+            ├── raw_snaplogic_keywords.html
+            ├── robot-doc-styles.css
+            ├── snaplogic_apis.html
+            └── snaplogic_keywords.html
 ```
 
 ### Embedded Documentation
@@ -168,32 +190,28 @@ The library includes comprehensive documentation that is packaged with the insta
 #### 1. Keyword Documentation (LibDoc)
 ```bash
 # Generated Robot Framework keyword documentation
-snaplogic-common-robot/src/snaplogic_common_robot/libdocs/index.html
+snaplogic-common-robot/src/testresults/libdoc/index.html
+snaplogic-common-robot/src/testresults/libdoc/snaplogic_keywords.html
+snaplogic-common-robot/src/testresults/libdoc/snaplogic_apis.html
 ```
 
 
-#### 2. Inline Documentation
-```python
-# All keywords include detailed docstrings
-def create_snaplogic_account(self, account_name, account_type, settings):
-    """Creates a SnapLogic account with specified settings.
-    
-    Arguments:
-    - account_name: Name for the new account
-    - account_type: Type of account (e.g., 'oracle', 's3')
-    - settings: Dictionary of account configuration settings
-    
-    Returns:
-    - account_id: Unique identifier of created account
-    
-    Example:
-    | Create SnapLogic Account | MyOracleDB | oracle | ${oracle_settings} |
-    """
+#### 2. Resource Files Documentation
+```robot
+# All keywords include detailed documentation in resource files
+# snaplogic_keywords.resource - Main keyword resource file
+# snaplogic_apis.resource - SnapLogic API resource file
+
+# Example keyword documentation structure:
+# Create Account From Template
+#     [Documentation]    Creates a SnapLogic account from a JSON template file.
+#     [Arguments]    ${template_path}
+#     ...
 ```
 
 ## Local Exploration Setup
 
-To explore the **snaplogic_common_robot** library locally, you can set up a virtual environment and install the package for inspection and testing.
+To explore the **snaplogic_common_robot** library locally, you can install the package for inspection and testing.
 
 ### Why Local Exploration?
 
@@ -203,51 +221,15 @@ To explore the **snaplogic_common_robot** library locally, you can set up a virt
 - **Development** - Develop new tests using the library
 - **Debugging** - Understand keyword implementation for troubleshooting
 
-## Creating Virtual Environment
-
-### Step-by-Step Virtual Environment Setup
-
-#### Method 1: Using venv (Recommended)
+### Quick Installation
 
 ```bash
-# 1. Navigate to your project directory
-cd /path/to/your/project
-
-# 2. Create virtual environment
-python -m venv snaplogic_robot_env
-
-# 3. Activate virtual environment
-# On macOS/Linux:
-source snaplogic_robot_env/bin/activate
-
-# On Windows:
-snaplogic_robot_env\Scripts\activate
-
-# 4. Verify activation (should show virtual env path)
-which python
-# Expected: /path/to/your/project/snaplogic_robot_env/bin/python
-```
-
-
-
-### Install Required Packages
-
-```bash
-# With virtual environment activated
-
-# 1. Upgrade pip
-pip install --upgrade pip
-
-# 2. Install snaplogic-common-robot (automatically installs all dependencies)
+# Install snaplogic-common-robot (automatically installs all dependencies)
 pip install snaplogic-common-robot
 
-# 3. Verify installation
-pip list
-```
+# Verify installation
+pip show snaplogic-common-robot
 
-### Verify Setup
-
-```bash
 # Check Robot Framework installation
 robot --version
 
@@ -292,15 +274,15 @@ make robot-run-tests TAGS=oracle # Mutiple tags can be added
 ```
 
 
-### 3. Explore Keyword Examples
+### 3. Explore Test Data and Examples
 
 ```bash
-# If examples are included in the package
-cd snaplogic_common_robot/docs/examples/
+# View test data templates included in the package
+cd src/snaplogic_common_robot/test_data/
 
-# View example Robot files
-cat pipeline_examples.robot
-cat account_examples.robot
+# View example JSON templates
+cat slim_groundplex.json
+cat triggered_task.json
 ```
 
 ## Usage in Test Framework
@@ -311,6 +293,7 @@ cat account_examples.robot
 *** Settings ***
 
 Resource    snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource
+Resource    snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_apis.resource
 
 ```
 
@@ -372,15 +355,24 @@ Create And Configure Account
    - Get Task Status
    - Update Task Parameters
 
+7. **Utility Functions**
+   - File and JSON handling utilities
+   - Template processing functions
+   - Data validation helpers
 
-###  Troubleshooting
+
+### Troubleshooting
 
 ```bash
 # Check library installation
 pip show snaplogic-common-robot
 
 # Verify keyword availability
-python -m robot.libdoc snaplogic_common_robot list
+python -m robot.libdoc snaplogic_common_robot.snaplogic_apis_keywords.snaplogic_keywords list
+python -m robot.libdoc snaplogic_common_robot.snaplogic_apis_keywords.snaplogic_apis list
+
+# View generated documentation
+open src/testresults/libdoc/index.html
 
 
 
@@ -406,7 +398,9 @@ The **snaplogic_common_robot** library provides a comprehensive set of Robot Fra
 
 **Development Tools**: robotframework-robocop, robotframework-tidy, cookiecutter
 
-By setting up a local virtual environment, you can explore all available keywords and bundled libraries for comprehensive SnapLogic automation testing.
+**Build and Package Management**: pyproject.toml configuration, automated version generation, Docker containerization
+
+By installing the library locally, you can explore all available keywords and bundled libraries for comprehensive SnapLogic automation testing.
 
 ---
 
