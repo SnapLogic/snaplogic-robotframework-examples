@@ -186,6 +186,13 @@ jspm_packages/
 # Pipeline builds
 src/python/build
 
+# Notification configuration (keep template)
+.notification_config
+
+# Test result summaries
+test_results_summary.md
+github_summary.md
+
 # ==========================================
 # Test Files and Outputs
 # ==========================================

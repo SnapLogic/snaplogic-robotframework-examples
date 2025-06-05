@@ -1,5 +1,5 @@
 import:
-  - SnapLogic/slim-tx-engine:travis/post_test_results_notify.yml
+  - post_test_results_notify.yml
 
 env:
   global:
@@ -52,6 +52,6 @@ jobs:
   include:
     - stage: BuildImage
       script:
-        - make snaplogic-start-tools
-        - make robot-run-all-tests TAGS="oracle"
+        - make snaplogic-start-services
+        - make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True
       name: Build Docs

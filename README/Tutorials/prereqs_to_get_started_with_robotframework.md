@@ -107,7 +107,7 @@ If your project needs additional tools or database drivers, add them here.
 Run the following command to start the essential services:
 
 ```bash
-make snaplogic-start-tools
+make snaplogic-start-services
 ```
 
 This step will also generate a new `.env` file with runtime-specific variables that can be reused in later stages.
@@ -117,7 +117,7 @@ This step will also generate a new `.env` file with runtime-specific variables t
 Once your environment is set up and the `.env` file is configured, run the following command to execute all automation steps:
 
 ```bash
-make robot-run-all-tests TAGS="oracle"
+make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True # If you already have project space set up ready ignore the argument PROJECT_SPACE_SETUP=True
 ```
 
 This command performs the full end-to-end automation flow, including:

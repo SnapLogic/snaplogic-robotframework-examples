@@ -14,7 +14,7 @@
 # -----------------------------------------------------------------------------
 # Declare phony targets (not associated with real files)
 # -----------------------------------------------------------------------------
-.PHONY: robot-run-tests snaplogic-start-tools snaplogic-stop snaplogic-build-tools check-env \
+.PHONY: robot-run-tests snaplogic-start-services snaplogic-stop snaplogic-build-tools check-env \
         clean-start launch-groundplex oracle-start end-to-end-workflow-execution \
         robotidy robocop lint list-profiles groundplex-status \
         start-s3-emulator stop-s3-emulator run-s3-demo
@@ -27,7 +27,7 @@ SHELL = /bin/bash
 
 # Docker Compose profiles to be used (can be overridden by CLI)
 # COMPOSE_PROFILES ?= gp,oracle-dev,postgres-dev,minio-dev
-COMPOSE_PROFILES ?= gp,oracle-dev,minio,postgres-dev
+COMPOSE_PROFILES ?= tools,oracle-dev,minio,postgres-dev
 
 # =============================================================================
 #  🛠️ snaplogic tools lifecycle
@@ -58,22 +58,54 @@ start-services:
 	@echo ":[Phase 2] Starting containers using compose profiles: $(COMPOSE_PROFILES)..."
 	COMPOSE_PROFILES=$(COMPOSE_PROFILES) docker compose up -d
 	@echo "⏳ Waiting for services to stabilize..."
-	@sleep 60
-	$(MAKE) groundplex-status
+	@sleep 30
+
+# =============================================================================
+#  Create project space, Create Plex in Project Space, and launch Groundplex
+# =============================================================================
+createplex-launch-groundplex:
+	@echo ":========= Running createplex tests to create plex in Proejctspace ========================================="
+	$(MAKE) robot-run-tests TAGS="createplex" PROJECT_SPACE_SETUP=True
+
+	@echo ":========== [Phase 2] Computing and starting containers using COMPOSE_PROFILES... =========="
+	$(MAKE) launch-groundplex
+
+	${MAKE} groundplex-status
 
 # =============================================================================
 # 🧪 End-to-End Robot Test Workflow (including environment setup)
 # =============================================================================
 robot-run-all-tests: check-env
-	@echo ":========= [Phase 1] Running createplex tests ========================================="
-	$(MAKE) robot-run-tests TAGS="createplex" PROJECT_SPACE_SETUP=True
-
-	@echo ":========== [Phase 2] Computing and starting containers using COMPOSE_PROFILES... =========="
-	$(MAKE) start-services
-	
-	@echo ":========== [Phase 3] Running user-defined robot tests with PROJECT_SPACE_SETUP=False... =========="
+	@PROJECT_SPACE_SETUP_ACTUAL=$${PROJECT_SPACE_SETUP:-False}; \
+	echo ":========== [Phase 1] Create project space and create plex inside project space =========="; \
+	if [ "$$PROJECT_SPACE_SETUP_ACTUAL" = "True" ]; then \
+		echo ":========= [Phase 1] Running createplex tests ========================================="; \
+		$(MAKE) robot-run-tests TAGS="createplex" PROJECT_SPACE_SETUP=True || { \
+			echo "❌ createplex test failed, checking if error is due to active Snaplex nodes..."; \
+			if ls robot_output/log-*.html 2>/dev/null | head -1 | xargs grep -q "cannot be deleted while it contains active nodes" 2>/dev/null; then \
+				echo "🛑 Active Groundplex nodes detected — killing Groundplex and retrying to create project space and plex..."; \
+				$(MAKE) stop-groundplex; \
+				echo "⏳ Waiting 60 seconds for nodes to deregister from SnapLogic Cloud..."; \
+				sleep 60; \
+				$(MAKE) robot-run-tests TAGS="createplex" PROJECT_SPACE_SETUP=True || exit 1; \
+			else \
+				echo "❌ createplex test failed for a different reason."; \
+				exit 1; \
+			fi; \
+		}; \
+	else \
+		echo "⏩ Skipping createplex setup (PROJECT_SPACE_SETUP is not True)"; \
+		echo ":========== [Phase 1.1] Verifying if project space exists =========="; \
+		$(MAKE) robot-run-tests TAGS="verify_project_space_exists" PROJECT_SPACE_SETUP=False; \
+	fi; \
+	\
+	echo ":========== [Phase 2] Computing and starting containers using COMPOSE_PROFILES... =========="; \
+	$(MAKE) launch-groundplex; \
+	\
+	echo ":========== [Phase 3] Running user-defined robot tests... =========="; \
 	$(MAKE) robot-run-tests TAGS="$(TAGS)" PROJECT_SPACE_SETUP=False
-
+	
+	
 # =============================================================================
 # 🧪 Run Robot Framework tests with optional tags
 #   → usage: make robot-run-tests TAGS="oracle,minio" PROJECT_SPACE_SETUP=True
@@ -93,9 +125,10 @@ robot-run-tests: check-env
 # =============================================================================
 # 🔄 Build & Start snaplogic tools container
 # =============================================================================
-snaplogic-start-tools: snaplogic-stop snaplogic-build-tools
-	@echo "Starting snaplogic App..."
-	docker compose --profile tools up -d
+snaplogic-start-services: snaplogic-stop snaplogic-build-tools
+	@echo ":==========starting services/containers using COMPOSE_PROFILES... =========="
+	$(MAKE) start-services
+	
 
 # =============================================================================
 # 🧹 Stop all snaplogic containers and clean up
@@ -154,6 +187,43 @@ groundplex-status:
 	done; \
 	echo "❌ JCC failed to start after 20 attempts."; \
 	exit 1
+
+
+# =============================================================================
+# 🛑 Kill Snaplex JCC and shutdown groundplex container (with retries)
+# =============================================================================
+stop-groundplex:
+	@echo "🛑 Attempting to stop JCC inside snaplogic-groundplex container..."
+	docker exec snaplogic-groundplex /bin/bash -c "cd /opt/snaplogic/bin && sh jcc.sh stop" || true
+
+	@echo "🔁 Waiting for JCC to fully shut down (up to 20 attempts, 10s interval)..."
+	@attempt=1; \
+	while [ $$attempt -le 20 ]; do \
+		echo "⏱️ Attempt $$attempt..."; \
+		container_status=$$(docker inspect -f '{{.State.Status}}' snaplogic-groundplex 2>/dev/null); \
+		if [ "$$container_status" != "running" ]; then \
+			echo "✅ Container is already stopped."; \
+			break; \
+		else \
+			status=$$(docker exec snaplogic-groundplex /bin/bash -c "cd /opt/snaplogic/bin && sh jcc.sh status" 2>&1); \
+			echo "🔍 JCC Status: $$status"; \
+			echo "$$status" | grep -q "PID file not found" && break; \
+			echo "⌛ JCC still shutting down. Retrying in 10s..."; \
+		fi; \
+		sleep 10; \
+		attempt=$$((attempt + 1)); \
+	done; \
+	if [ $$attempt -gt 20 ]; then \
+		echo "❌ JCC failed to stop cleanly after 20 attempts."; \
+		exit 1; \
+	else \
+		echo "✅ JCC shutdown confirmed."; \
+	fi
+
+	@echo "🧹 Bringing down container using Docker Compose profile 'gp'..."
+	docker compose --profile gp down --remove-orphans
+
+	@echo "✅ Groundplex successfully stopped and cleaned up."
 
 # =============================================================================
 # 🛢️ Start Oracle DB container
