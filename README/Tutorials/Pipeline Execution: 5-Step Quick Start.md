@@ -24,7 +24,7 @@ Build your test environment using make commands:
 ```bash
 make snaplogic-start-services # Build the Docker containers that will run your tests:
 make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True # Create projectspace,launch ground plex and Runs Robot tests with the "oracle" tag 
-# - If you already have project space set up ready ignore the argument PROJECT_SPACE_SETUP=True
+# - For Later executions If you already have project space set up ready ignore the argument PROJECT_SPACE_SETUP=True
 ```
 
 > **⏱️ Note:** This creates a containerized environment with Robot Framework and all testing dependencies. The build process takes about 2-3 minutes.
@@ -35,6 +35,7 @@ For a deeper understanding of the Robot Framework testing process and available 
 
 - **📋 [Robot Framework Test Execution Flow](../How%20To%20Guides/robot_framework_guides/robot_framework_test_execution_flow.md)** - Learn how Robot Framework tests are structured and executed in our testing pipeline
 - **⚙️ [Robot Framework Make Commands Guide](../How%20To%20Guides/robot_framework_guides/robot_tests_make_commands.md)** - Comprehensive reference for all available make commands, parameters, and usage examples
+- **📚 [SnapLogic Common Robot Library Guide](../How%20To%20Guides/robot_framework_guides/snaplogic_common_robot_library_guide.md)** - Explore the SnapLogic-specific Robot Framework library with reusable keywords and comprehensive documentation
 
 These guides will help you understand what happens behind the scenes when you run the commands above and how to customize your test execution for different scenarios.
 
