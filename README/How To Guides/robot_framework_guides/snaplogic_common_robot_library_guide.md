@@ -3,13 +3,14 @@
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Library Distribution](#library-distribution)
-3. [Installation Process](#installation-process)
-4. [Library Structure and Documentation](#library-structure-and-documentation)
-5. [Local Exploration Setup](#local-exploration-setup)
-6. [Exploring Keywords and Documentation](#exploring-keywords-and-documentation)
-7. [Usage in Test Framework](#usage-in-test-framework)
-8. [Best Practices](#best-practices)
+2. [Embedded Documentation](#embedded-documentation)
+3. [Library Distribution](#library-distribution)
+4. [Installation Process](#installation-process)
+5. [Library Structure](#library-structure)
+6. [Local Exploration Setup](#local-exploration-setup)
+7. [Exploring Keywords and Documentation](#exploring-keywords-and-documentation)
+8. [Usage in Test Framework](#usage-in-test-framework)
+9. [Best Practices](#best-practices)
 
 ## Overview
 
@@ -33,6 +34,35 @@
 - **Documentation** - Built-in keyword documentation and examples
 - **Version Control** - Semantic versioning for stable releases
 - **Rich Dependencies** - Includes comprehensive set of testing libraries automatically
+
+## Embedded Documentation
+
+The library includes comprehensive documentation that is packaged with the installation:
+
+### 1. Keyword Documentation (LibDoc)
+```bash
+# Generated Robot Framework keyword documentation
+snaplogic-common-robot/src/snaplogic_common_robot/libdocs/index.html
+snaplogic-common-robot/src/snaplogic_common_robot/libdocs/snaplogic_keywords.html
+snaplogic-common-robot/src/snaplogic_common_robot/libdocs/snaplogic_apis.html
+snaplogic-common-robot/src/snaplogic_common_robot/libdocs/common_utilities.html
+```
+
+**📖 Quick Access**: To browse the complete keyword documentation with an interactive interface, simply open the `index.html` file in your web browser. This provides a comprehensive overview with navigation links to all available keyword libraries and their detailed documentation.
+
+### 2. Resource Files Documentation
+```robot
+# All keywords include detailed documentation in resource files
+# snaplogic_keywords.resource - Main keyword resource file
+# snaplogic_apis.resource - SnapLogic API resource file
+# common_utilities.resource - Common utility keywords
+
+# Example keyword documentation structure:
+# Create Account From Template
+#     [Documentation]    Creates a SnapLogic account from a JSON template file.
+#     [Arguments]    ${template_path}
+#     ...
+```
 
 ## Library Distribution
 
@@ -131,15 +161,19 @@ pip list | grep snaplogic-common-robot
 pip show snaplogic-common-robot
 ```
 
-## Library Structure and Documentation
+## Library Structure
 
 ### Package Structure
 
 ```
 snaplogic-common-robot/
+├── .env
+├── .env.example
 ├── .gitignore
 ├── .pre-commit-config.yaml
 ├── .travis.yml
+├── ENV_SETUP.md
+├── README.md
 ├── Makefile
 ├── pyproject.toml
 ├── snaplogic_common_robot.Dockerfile
@@ -156,57 +190,32 @@ snaplogic-common-robot/
     ├── snaplogic_common_robot/
     │   ├── __init__.py
     │   ├── libdocs/
-    │   │   ├── __init__.py
+    │   │   ├── index.html
+    │   │   ├── common_utilities.html
+    │   │   ├── raw_common_utilities.html
+    │   │   ├── raw_snaplogic_apis.html
+    │   │   ├── raw_snaplogic_keywords.html
     │   │   ├── robot-doc-styles.css
-    │   │   └── test.txt
+    │   │   ├── snaplogic_apis.html
+    │   │   └── snaplogic_keywords.html
     │   ├── libraries/
     │   │   ├── __init__.py
     │   │   └── utils.py
     │   ├── snaplogic_apis_keywords/
     │   │   ├── __init__.py
-    │   │   ├── snaplogic_apis.resource      # SnapLogic API resource file
-    │   │   └── snaplogic_keywords.resource  # Main keyword resource file
+    │   │   ├── common_utilities.resource      # Common utility keywords
+    │   │   ├── snaplogic_apis.resource       # SnapLogic API resource file
+    │   │   └── snaplogic_keywords.resource   # Main keyword resource file
     │   └── test_data/
     │       ├── __init__.py
     │       ├── slim_groundplex.json
     │       └── triggered_task.json
-    ├── slim_common_robot/
-    │   └── libdocs/
-    │       └── __init__.py
-    └── testresults/
-        └── libdoc/
-            ├── index.html
-            ├── raw_snaplogic_apis.html
-            ├── raw_snaplogic_keywords.html
-            ├── robot-doc-styles.css
-            ├── snaplogic_apis.html
-            └── snaplogic_keywords.html
-```
-
-### Embedded Documentation
-
-The library includes comprehensive documentation that is packaged with the installation:
-
-#### 1. Keyword Documentation (LibDoc)
-```bash
-# Generated Robot Framework keyword documentation
-snaplogic-common-robot/src/testresults/libdoc/index.html
-snaplogic-common-robot/src/testresults/libdoc/snaplogic_keywords.html
-snaplogic-common-robot/src/testresults/libdoc/snaplogic_apis.html
-```
-
-
-#### 2. Resource Files Documentation
-```robot
-# All keywords include detailed documentation in resource files
-# snaplogic_keywords.resource - Main keyword resource file
-# snaplogic_apis.resource - SnapLogic API resource file
-
-# Example keyword documentation structure:
-# Create Account From Template
-#     [Documentation]    Creates a SnapLogic account from a JSON template file.
-#     [Arguments]    ${template_path}
-#     ...
+    └── snaplogic_common_robot.egg-info/
+        ├── PKG-INFO
+        ├── SOURCES.txt
+        ├── dependency_links.txt
+        ├── requires.txt
+        └── top_level.txt
 ```
 
 ## Local Exploration Setup
@@ -294,6 +303,7 @@ cat triggered_task.json
 
 Resource    snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource
 Resource    snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_apis.resource
+Resource    snaplogic_common_robot/snaplogic_apis_keywords/common_utilities.resource
 
 ```
 
@@ -372,7 +382,7 @@ python -m robot.libdoc snaplogic_common_robot.snaplogic_apis_keywords.snaplogic_
 python -m robot.libdoc snaplogic_common_robot.snaplogic_apis_keywords.snaplogic_apis list
 
 # View generated documentation
-open src/testresults/libdoc/index.html
+open src/snaplogic_common_robot/libdocs/index.html
 
 
 
@@ -401,6 +411,12 @@ The **snaplogic_common_robot** library provides a comprehensive set of Robot Fra
 **Build and Package Management**: pyproject.toml configuration, automated version generation, Docker containerization
 
 By installing the library locally, you can explore all available keywords and bundled libraries for comprehensive SnapLogic automation testing.
+
+---
+
+## 📚 Explore More Documentation
+
+💡 **Need help finding other guides?** Check out our **[📖 Complete Documentation Reference](../../reference.md)** for a comprehensive overview of all available tutorials, how-to guides, and quick start paths. It's your one-stop navigation hub for the entire SnapLogic Test Framework documentation!
 
 ---
 

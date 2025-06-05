@@ -2,3 +2,4 @@
 snaplogic-common-robot
 oracledb  # Oracle database driver
 psycopg2-binary # PostgreSQL database driver
+minio # MinIO client

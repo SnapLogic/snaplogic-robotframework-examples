@@ -23,10 +23,20 @@ Then edit the `.env` file with your actual SnapLogic credentials, organization d
 Build your test environment using make commands:
 ```bash
 make snaplogic-start-services # Build the Docker containers that will run your tests:
-make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True # Create projectspace,launch ground plex and Runs Robot tests with the "oracle" tag - If you already have project space set up ready ignore the argument PROJECT_SPACE_SETUP=True
+make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True # Create projectspace,launch ground plex and Runs Robot tests with the "oracle" tag 
+# - If you already have project space set up ready ignore the argument PROJECT_SPACE_SETUP=True
 ```
 
 > **⏱️ Note:** This creates a containerized environment with Robot Framework and all testing dependencies. The build process takes about 2-3 minutes.
+
+### 📖 Understanding Robot Framework Commands
+
+For a deeper understanding of the Robot Framework testing process and available commands:
+
+- **📋 [Robot Framework Test Execution Flow](../How%20To%20Guides/robot_framework_guides/robot_framework_test_execution_flow.md)** - Learn how Robot Framework tests are structured and executed in our testing pipeline
+- **⚙️ [Robot Framework Make Commands Guide](../How%20To%20Guides/robot_framework_guides/robot_tests_make_commands.md)** - Comprehensive reference for all available make commands, parameters, and usage examples
+
+These guides will help you understand what happens behind the scenes when you run the commands above and how to customize your test execution for different scenarios.
 
 ---
 
@@ -82,7 +92,7 @@ These files are useful for verifying storage access during automated tests.
 
 - ✅ **Ensure Docker Desktop is running** before executing `make` commands.
 - ✅ **Verify `.env` values**: Double-check that required environment variables are correctly set.
-- ✅ **Permissions**: Ensure you have access to the repo and aren’t blocked by firewalls or policies.
+- ✅ **Permissions**: Ensure you have access to the repo and aren't blocked by firewalls or policies.
 - ✅ **Check logs**: If something fails, check terminal output or container logs using `docker compose logs`.
 
 ---
@@ -95,4 +105,10 @@ If you encounter issues, please:
 - Open a GitHub issue if you suspect a bug.
 - Reach out via email if onboarding support is needed.
 
-We’re here to help you get started smoothly 🚀
+We're here to help you get started smoothly 🚀
+
+---
+
+## 📚 Explore More Documentation
+
+💡 **Need help finding other guides?** Check out our **[📖 Complete Documentation Reference](../reference.md)** for a comprehensive overview of all available tutorials, how-to guides, and quick start paths. It's your one-stop navigation hub for the entire SnapLogic Test Framework documentation!

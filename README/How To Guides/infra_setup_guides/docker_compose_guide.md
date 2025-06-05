@@ -494,19 +494,134 @@ logging:
 
 ## Makefile and Docker Compose Integration Flow
 
+The updated integration flow reflects the current multi-phase testing approach with improved error handling and conditional project setup:
+
 ```
-User Command                 Makefile                    Docker Compose
-────────────────────────────────────────────────────────────────────────
-make robot-run-all-tests ──► check-env ────────────────► (validates .env)
-                             │
-                             ├► robot-run-tests ────────► docker compose exec
-                             │  TAGS="createplex"          (Phase 1 tests)
-                             │
-                             ├► start-services ──────────► COMPOSE_PROFILES=...
-                             │                             docker compose up -d
-                             │
-                             └► robot-run-tests ────────► docker compose exec
-                                TAGS="user-defined"        (Phase 3 tests)
+User Command                           Makefile Workflow                    Docker Compose Actions
+──────────────────────────────────────────────────────────────────────────────────────────────────────
+make robot-run-all-tests             ─┬─► check-env ──────────────────────► (validates .env file)
+  TAGS="oracle"                       │
+  PROJECT_SPACE_SETUP=True            │
+                                      │
+                                      ├─► [Phase 1] Conditional Setup ──────► 
+                                      │   ├─ IF PROJECT_SPACE_SETUP=True:
+                                      │   │   ├─► robot-run-tests ──────────► docker compose exec tools robot
+                                      │   │   │   TAGS="createplex"               --include createplex
+                                      │   │   │   PROJECT_SPACE_SETUP=True
+                                      │   │   │
+                                      │   │   └─► Error Recovery Logic ─────► 
+                                      │   │       ├─ Check for "active nodes" error
+                                      │   │       ├─► stop-groundplex ──────► docker compose --profile gp down
+                                      │   │       ├─ Wait 60s for deregistration
+                                      │   │       └─► Retry createplex tests
+                                      │   │
+                                      │   └─ ELSE (PROJECT_SPACE_SETUP≠True):
+                                      │       └─► robot-run-tests ──────────► docker compose exec tools robot
+                                      │           TAGS="verify_project_space_exists"  --include verify_project_space_exists
+                                      │
+                                      ├─► [Phase 2] Groundplex Launch ──────► 
+                                      │   └─► launch-groundplex ─────────────► docker compose --profile gp up -d
+                                      │       └─► groundplex-status ─────────► docker exec snaplogic-groundplex jcc.sh status
+                                      │           (20 attempts, 10s intervals)
+                                      │
+                                      └─► [Phase 3] User Tests ─────────────► 
+                                          └─► robot-run-tests ─────────────► docker compose exec tools robot
+                                              TAGS="oracle" (user-defined)       --include oracle
+                                              PROJECT_SPACE_SETUP=False
+```
+
+### Key Workflow Improvements
+
+#### 1. **Intelligent Error Recovery**
+```makefile
+# Enhanced error handling with active node detection
+robot-run-all-tests:
+    $(MAKE) robot-run-tests TAGS="createplex" || { \
+        if grep -q "cannot be deleted while it contains active nodes" robot_output/log-*.html; then \
+            $(MAKE) stop-groundplex; \
+            sleep 60; \
+            $(MAKE) robot-run-tests TAGS="createplex" || exit 1; \
+        fi; \
+    }
+```
+
+#### 2. **Conditional Project Setup**
+```makefile
+# Dynamic workflow based on PROJECT_SPACE_SETUP parameter
+PROJECT_SPACE_SETUP_ACTUAL=${PROJECT_SPACE_SETUP:-False}; \
+if [ "$PROJECT_SPACE_SETUP_ACTUAL" = "True" ]; then \
+    # Full setup path
+else \
+    # Verification-only path
+fi
+```
+
+#### 3. **Robust Service Health Checking**
+```makefile
+# Enhanced Groundplex status checking with detailed logging
+groundplex-status:
+    attempt=1; \
+    while [ $attempt -le 20 ]; do \
+        if docker exec snaplogic-groundplex jcc.sh status; then \
+            echo "✅ JCC is running."; exit 0; \
+        fi; \
+        sleep 10; attempt=$((attempt + 1)); \
+    done
+```
+
+### Updated Command Reference
+
+| Command                             | Current Implementation                   | Docker Compose Usage                                   |
+| ----------------------------------- | ---------------------------------------- | ------------------------------------------------------ |
+| `make robot-run-all-tests`          | Multi-phase workflow with error recovery | Multiple profile orchestration                         |
+| `make createplex-launch-groundplex` | Combined Plex creation and launch        | `docker compose exec` + `--profile gp up`              |
+| `make launch-groundplex`            | Groundplex launch with health checks     | `docker compose --profile gp up -d`                    |
+| `make groundplex-status`            | 20-attempt health checking with logging  | `docker exec snaplogic-groundplex jcc.sh status`       |
+| `make stop-groundplex`              | Graceful JCC shutdown with retries       | JCC stop + `docker compose --profile gp down`          |
+| `make start-services`               | Profile-based service orchestration      | `COMPOSE_PROFILES=tools,oracle-dev,minio,postgres-dev` |
+| `make snaplogic-start-services`     | Full rebuild and start workflow          | `build --no-cache` + profile startup                   |
+
+### Environment and Profile Management
+
+#### Default Profile Configuration
+```makefile
+# Current default profiles
+COMPOSE_PROFILES ?= tools,oracle-dev,minio,postgres-dev
+
+# Usage in service startup
+start-services:
+    COMPOSE_PROFILES=$(COMPOSE_PROFILES) docker compose up -d
+    sleep 30  # Service stabilization wait
+```
+
+#### Profile Override Examples
+```bash
+# Override default profiles
+make robot-run-all-tests COMPOSE_PROFILES="tools,oracle-dev"
+
+# Use different database
+make robot-run-all-tests COMPOSE_PROFILES="tools,postgres-dev,minio"
+```
+
+### Error Handling and Recovery
+
+The current implementation includes sophisticated error handling:
+
+1. **Active Node Detection**: Automatically detects when project space deletion fails due to active Groundplex nodes
+2. **Graceful Recovery**: Stops Groundplex, waits for deregistration, and retries
+3. **Health Check Loops**: Robust polling for service readiness with detailed logging
+4. **Container State Validation**: Checks both container status and internal service status
+
+### Service Lifecycle Management
+
+```
+Service Startup Flow:
+────────────────────
+snaplogic-stop ──► snaplogic-build-tools ──► start-services ──► health-checks
+     │                      │                      │                │
+     ├─ Clean containers    ├─ Rebuild tools       ├─ Launch        ├─ Validate
+     ├─ Remove networks     ├─ No-cache build      ├─ profiles      ├─ readiness
+     └─ Prune volumes       └─ Fresh image         └─ Wait 30s      └─ Log status
 ```
 
 ## Quick Start Guide
@@ -514,15 +629,27 @@ make robot-run-all-tests ──► check-env ───────────�
 ### 1. Basic Test Run
 
 ```bash
-# Run all tests with default profiles
-make robot-run-all-tests
+
+# Run with project space setup (first time setup)
+make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True
+
+# Run Oracle tests with out the need of Project Space SetUp (Default value for PROJECT_SPACE_SETUP is False)
+make robot-run-all-tests TAGS="oracle" 
+
+
 ```
 
 ### 2. Custom Profile Test Run
 
 ```bash
-# Run with specific services
-make robot-run-all-tests COMPOSE_PROFILES="oracle-dev,minio-dev"
+# Run Oracle tests with specific services
+make robot-run-all-tests TAGS="oracle" COMPOSE_PROFILES="tools,oracle-dev,minio-dev"
+
+# Run PostgreSQL tests with specific profiles
+make robot-run-all-tests TAGS="postgres" COMPOSE_PROFILES="tools,postgres-dev"
+
+# Run MinIO tests with custom setup
+make robot-run-all-tests TAGS="minio" COMPOSE_PROFILES="tools,minio-dev" PROJECT_SPACE_SETUP=True
 ```
 
 ### 3. Individual Service Management
@@ -569,6 +696,12 @@ The combination of Docker Compose and Makefile creates a powerful, maintainable 
 - [Compose File Reference](https://docs.docker.com/compose/compose-file/)
 - [Docker Compose Networking](https://docs.docker.com/compose/networking/)
 - [Environment Variables in Compose](https://docs.docker.com/compose/environment-variables/)
+
+---
+
+## 📚 Explore More Documentation
+
+💡 **Need help finding other guides?** Check out our **[📖 Complete Documentation Reference](../../reference.md)** for a comprehensive overview of all available tutorials, how-to guides, and quick start paths. It's your one-stop navigation hub for the entire SnapLogic Test Framework documentation!
 
 ---
 *Last Updated: January 2025*

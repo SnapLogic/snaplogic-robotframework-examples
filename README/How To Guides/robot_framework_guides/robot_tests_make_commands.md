@@ -70,13 +70,21 @@ PROJECT_SPACE_SETUP=True
 
 ---
 
-## Verify Mode: PROJECT_SPACE_SETUP=False 
+## USAGE
 
-**Usage:**
+
+### 1. Basic Test Run
+
 ```bash
+
+# Run with project space setup (first time setup or when ever user needs to set up project space and create plex)
+make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True
+make robot-run-all-tests TAGS="oracle minio" PROJECT_SPACE_SETUP=True #mutiple tags
+
+# Run Oracle tests with out the need of Project Space SetUp (Default value for PROJECT_SPACE_SETUP is False)
 make robot-run-all-tests TAGS="oracle" 
-# or simply (PROJECT_SPACE_SETUP defaults to False) or you can explicitly mention it
-make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=False
+
+
 ```
 
 **Execution Flow:**
@@ -154,6 +162,12 @@ PROJECT_SPACE_SETUP=False
 
 1. **Active Nodes Error**: Automatically handled in Setup Mode
 2. **Missing Project Space**: Clear error message in Verify Mode
+
+---
+
+## 📚 Explore More Documentation
+
+💡 **Need help finding other guides?** Check out our **[📖 Complete Documentation Reference](../../reference.md)** for a comprehensive overview of all available tutorials, how-to guides, and quick start paths. It's your one-stop navigation hub for the entire SnapLogic Test Framework documentation!
 
 
 
