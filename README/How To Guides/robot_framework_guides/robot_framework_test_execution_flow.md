@@ -183,10 +183,83 @@ Set Up Data
     ${ENV_FILE_PATH}
 ```
 
-When `PROJECT_SPACE_SETUP=True`, the following occurs:
-- Deletes existing project space
-- Creates project space and project
-- Creates required accounts
+### Verification Mode (PROJECT_SPACE_SETUP=True)
+
+#### Complete Infrastructure Setup (PROJECT_SPACE_SETUP=True)
+```bash
+# Full infrastructure setup with project space creation
+make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True
+
+# Setup with multiple service tags
+make robot-run-all-tests TAGS="oracle minio" PROJECT_SPACE_SETUP=True
+
+# SetUP without project space set up
+make robot-run-all-tests TAGS="postgres" 
+```
+
+**What happens with PROJECT_SPACE_SETUP=True:**
+1. **Phase 3A: Createplex Execution**
+   - Runs createplex tests to set up project infrastructure
+   - Delete project space and kill snaplex if active nodes are presesnt
+   - Creates/recreates project space
+   - Sets up Groundplex configuration
+   - Downloads .slpropz configuration files
+
+2. **Phase 3b: User Test Execution**
+   - Executes tests matching the specified TAGS
+   - Uses the newly created infrastructure
+
+#### Verification Mode (PROJECT_SPACE_SETUP=False or not specified)
+```bash
+# Use existing infrastructure (default behavior)
+make robot-run-all-tests TAGS="oracle"
+
+# Multiple tags with existing infrastructure
+make robot-run-all-tests TAGS="postgres minio"
+
+# Explicit verification mode
+make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=False
+```
+
+**What happens with PROJECT_SPACE_SETUP=False (default):**
+1. **Phase 3A: Infrastructure Verification**
+   - Skips createplex setup
+   - Runs `verify_project_space_exists` tests
+   - Validates existing project space accessibility
+
+
+2. **Phase 3B: User Test Execution**
+   - Executes tests with existing infrastructure
+
+
+
+
+### Phase 1 Error Handling
+
+The framework includes intelligent error recovery in Phase 3:
+
+```bash
+# If active nodes prevent project space deletion:
+# 1. Automatically detects "active nodes" error
+# 2. Stops existing Groundplex: make stop-groundplex
+# 3. Waits 60 seconds for node deregistration
+# 4. Retries createplex setup
+# 5. Continues with normal flow
+```
+
+### Monitoring Execution
+
+```bash
+# Monitor service startup during Phase 3
+docker compose logs -f
+
+# Check individual service health
+make groundplex-status
+docker compose ps
+
+# Verify Robot Framework initialization
+docker compose logs tools
+```
 
 ---
 
@@ -275,3 +348,9 @@ Tracks each setup and run phase
 ---
 
 This initialization process ensures that every test execution starts with a properly configured environment, validated settings, and the necessary infrastructure components, providing a reliable foundation for comprehensive SnapLogic automation testing.
+
+---
+
+## 📚 Explore More Documentation
+
+💡 **Need help finding other guides?** Check out our **[📖 Complete Documentation Reference](../../reference.md)** for a comprehensive overview of all available tutorials, how-to guides, and quick start paths. It's your one-stop navigation hub for the entire SnapLogic Test Framework documentation!
