@@ -23,7 +23,9 @@ Then edit the `.env` file with your actual SnapLogic credentials, organization d
 Build your test environment using make commands:
 ```bash
 make snaplogic-start-services # Build the Docker containers that will run your tests:
+
 make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True # Create projectspace,launch ground plex and Runs Robot tests with the "oracle" tag 
+
 # - For Later executions If you already have project space set up ready ignore the argument PROJECT_SPACE_SETUP=True
 ```
 
