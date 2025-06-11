@@ -1,4 +1,4 @@
-# WSL Setup and VS Code Integration Guide
+# Windows: WSL Setup and VS Code Integration Guide
 
 A complete guide to check for WSL, install Ubuntu on Windows, verify make commands, and integrate with VS Code terminal.
 
@@ -212,11 +212,11 @@ sudo apt update && sudo apt install -y build-essential git python3-pip
 
 ### What Gets Installed
 
-| Package | Description | Includes/Purpose |
-|---------|-------------|------------------|
-| **build-essential** | Core compilation tools meta-package | gcc, g++, make, dpkg-dev, libc6-dev |
-| **git** | Version control system | Clone repos, manage code, collaborate |
-| **python3-pip** | Python package installer | Install Python packages like numpy, django |
+| Package             | Description                         | Includes/Purpose                           |
+| ------------------- | ----------------------------------- | ------------------------------------------ |
+| **build-essential** | Core compilation tools meta-package | gcc, g++, make, dpkg-dev, libc6-dev        |
+| **git**             | Version control system              | Clone repos, manage code, collaborate      |
+| **python3-pip**     | Python package installer            | Install Python packages like numpy, django |
 
 ### Why This Combination?
 
@@ -452,41 +452,41 @@ Add to VS Code settings.json (`Ctrl+,` then click {} icon):
 
 ### Essential Commands
 
-| Action | Command |
-|--------|---------|
-| Check if WSL installed | `wsl --status` |
-| Install WSL + Ubuntu | `wsl --install` |
-| Open Ubuntu | `wsl` or `ubuntu` |
-| Check make version | `make --version` |
-| Install make | `sudo apt install build-essential` |
-| Open WSL in VS Code | Terminal dropdown → Ubuntu (WSL) |
+| Action                 | Command                            |
+| ---------------------- | ---------------------------------- |
+| Check if WSL installed | `wsl --status`                     |
+| Install WSL + Ubuntu   | `wsl --install`                    |
+| Open Ubuntu            | `wsl` or `ubuntu`                  |
+| Check make version     | `make --version`                   |
+| Install make           | `sudo apt install build-essential` |
+| Open WSL in VS Code    | Terminal dropdown → Ubuntu (WSL)   |
 
 ### Terminal Indicators
 
-| Terminal Type | Prompt Example | Can Run Make? |
-|--------------|----------------|---------------|
-| PowerShell | `PS C:\>` | No (use `wsl make`) |
-| Command Prompt | `C:\>` | No (use `wsl make`) |
-| Git Bash | `user@PC MINGW64` | Maybe (limited) |
-| WSL/Ubuntu | `user@pc:~$` | Yes ✅ |
+| Terminal Type  | Prompt Example    | Can Run Make?       |
+| -------------- | ----------------- | ------------------- |
+| PowerShell     | `PS C:\>`         | No (use `wsl make`) |
+| Command Prompt | `C:\>`            | No (use `wsl make`) |
+| Git Bash       | `user@PC MINGW64` | Maybe (limited)     |
+| WSL/Ubuntu     | `user@pc:~$`      | Yes ✅               |
 
 ### Common Issues and Fixes
 
-| Issue | Solution |
-|-------|----------|
-| WSL not recognized | Run PowerShell as Admin |
-| Ubuntu won't start | `wsl --shutdown` then retry |
-| Make not found | `sudo apt install build-essential` |
+| Issue                     | Solution                            |
+| ------------------------- | ----------------------------------- |
+| WSL not recognized        | Run PowerShell as Admin             |
+| Ubuntu won't start        | `wsl --shutdown` then retry         |
+| Make not found            | `sudo apt install build-essential`  |
 | Wrong terminal in VS Code | Select "Ubuntu (WSL)" from dropdown |
-| Permission denied | Use `sudo` before commands |
+| Permission denied         | Use `sudo` before commands          |
 
 ### File Path Conversions
 
-| Windows Path | WSL Path |
-|--------------|----------|
+| Windows Path            | WSL Path                    |
+| ----------------------- | --------------------------- |
 | `C:\Users\Name\project` | `/mnt/c/Users/Name/project` |
-| `D:\data` | `/mnt/d/data` |
-| `\\wsl$\Ubuntu\home` | `/home` or `~` |
+| `D:\data`               | `/mnt/d/data`               |
+| `\\wsl$\Ubuntu\home`    | `/home` or `~`              |
 
 ## Troubleshooting
 

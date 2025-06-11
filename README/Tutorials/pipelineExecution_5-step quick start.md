@@ -3,6 +3,9 @@
 ## ⚡ Step 1: Install Docker Desktop
 Download and install Docker Desktop for your OS, start it, and verify installation with `docker --version`
 
+**For Windows users:** Follow these additional instructions for running Docker commands:
+- **[Windows WSL VS Code Setup Guide](../How%20To%20Guides/infra_setup_guides/windows_wsl_vscode_setup.md)** - Essential setup for WSL, Ubuntu, make commands, and VS Code integration on Windows
+
 ## 📥 Step 2: Clone the Repository
 Create a working directory and clone the GitHub repository:
 ```bash
