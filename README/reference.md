@@ -4,11 +4,37 @@ This document provides a comprehensive reference to all documentation available 
 
 ## Table of Contents
 
-1. [Tutorials](#tutorials)
-2. [How-To Guides](#how-to-guides)
-3. [Testing Strategy Guides](#testing-strategy-guides)
-4. [Quick Start Path](#quick-start-path)
-5. [Advanced Topics](#advanced-topics)
+1. [Windows Users Guide](#windows-users-guide)
+2. [Tutorials](#tutorials)
+3. [How-To Guides](#how-to-guides)
+4. [Testing Strategy Guides](#testing-strategy-guides)
+5. [Quick Start Path](#quick-start-path)
+6. [Advanced Topics](#advanced-topics)
+
+---
+
+## Windows Users Guide
+
+For developers using Windows, we have a comprehensive guide for setting up your development environment:
+
+### **[Windows WSL VS Code Setup Guide](How%20To%20Guides/infra_setup_guides/windows_wsl_vscode_setup.md)**
+
+This guide covers:
+- ✅ Checking if WSL (Windows Subsystem for Linux) is installed
+- ✅ Installing WSL and Ubuntu on Windows
+- ✅ Setting up a complete development environment with make, gcc, git, and python
+- ✅ Integrating WSL with VS Code terminal
+- ✅ Troubleshooting common Windows-specific issues
+
+**Why Windows users need this:**
+- Robot Framework make commands require a Unix-like environment
+- WSL provides full Linux compatibility on Windows
+- VS Code integration allows seamless development
+
+**Quick Start for Windows:**
+1. Follow the [Windows WSL VS Code Setup Guide](How%20To%20Guides/infra_setup_guides/windows_wsl_vscode_setup.md)
+2. Then continue with [Prerequisites Guide](Tutorials/prereqs_to_get_started_with_robotframework.md)
+3. Proceed to [Infrastructure Setup](How%20To%20Guides/infra_setup_guides/Infrastructure_setup.md)
 
 ---
 
@@ -29,6 +55,7 @@ This document provides a comprehensive reference to all documentation available 
 - **[Docker Compose Guide](How%20To%20Guides/infra_setup_guides/docker_compose_guide.md)** - Comprehensive guide to Docker Compose usage in the framework
 - **[Groundplex Launch Guide](How%20To%20Guides/infra_setup_guides/groundplex_launch_guide.md)** - Complete setup, configuration, and troubleshooting for SnapLogic Groundplex
 - **[MinIO Setup Guide](How%20To%20Guides/infra_setup_guides/minio_setup_guide.md)** - MinIO configuration as S3 mock server for SnapLogic S3 snap testing
+- **[Windows WSL VS Code Setup](How%20To%20Guides/infra_setup_guides/windows_wsl_vscode_setup.md)** - Complete guide for setting up WSL, Ubuntu, make, and VS Code integration on Windows
 
 ### Robot Framework Guides
 - **[Robot Framework Test Execution Flow](How%20To%20Guides/robot_framework_guides/robot_framework_test_execution_flow.md)** - Detailed explanation of test execution process and initialization
@@ -52,6 +79,7 @@ For new users, follow this recommended reading order:
 ### 1. Prerequisites and Setup
 1. [Prerequisites to Get Started with Robot Framework](Tutorials/prereqs_to_get_started_with_robotframework.md)
 2. [Infrastructure Setup](How%20To%20Guides/infra_setup_guides/Infrastructure_setup.md)
+3. [Windows WSL VS Code Setup](How%20To%20Guides/infra_setup_guides/windows_wsl_vscode_setup.md) *(for Windows users)*
 
 ### 2. Understanding the Framework
 3. [Docker Compose Guide](How%20To%20Guides/infra_setup_guides/docker_compose_guide.md)
@@ -94,6 +122,7 @@ For new users, follow this recommended reading order:
 - [Infrastructure Setup](How%20To%20Guides/infra_setup_guides/Infrastructure_setup.md)
 - [Prerequisites Guide](Tutorials/prereqs_to_get_started_with_robotframework.md)
 - [Docker Compose Guide](How%20To%20Guides/infra_setup_guides/docker_compose_guide.md)
+- [Windows WSL VS Code Setup](How%20To%20Guides/infra_setup_guides/windows_wsl_vscode_setup.md)
 
 ### Service Configuration
 - [Groundplex Launch Guide](How%20To%20Guides/infra_setup_guides/groundplex_launch_guide.md)
@@ -146,7 +175,8 @@ README/
 │   │   ├── Infrastructure_setup.md
 │   │   ├── docker_compose_guide.md
 │   │   ├── groundplex_launch_guide.md
-│   │   └── minio_setup_guide.md
+│   │   ├── minio_setup_guide.md
+│   │   └── windows_wsl_vscode_setup.md
 │   ├── robot_framework_guides/
 │   │   ├── robot_framework_test_execution_flow.md
 │   │   ├── robot_tests_make_commands.md
