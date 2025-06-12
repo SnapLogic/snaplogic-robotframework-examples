@@ -16,7 +16,8 @@ git clone https://github.com/SnapLogic/snaplogic-robotframework-examples
 Download VS Code (or any preferred IDE) and open the project folder, or work directly from terminal
 
 ## ⚙️ Step 4: Configure Environment
-Copy the contents of `.env.example` to a new file named `.env` and update env values as per project requirements:
+Create New file `.env` at project root level
+Copy the contents of `.env.example` to  newly created file `.env` and update env values as per project requirements:
 ```bash
 cp .env.example .env
 ```
