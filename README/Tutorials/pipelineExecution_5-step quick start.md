@@ -28,9 +28,11 @@ Build your test environment using make commands:
 ```bash
 make start-services # Build the Docker containers that will run your tests:
 
+# oracle tests
 make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True # Create projectspace,launch ground plex and Runs Robot tests with the "oracle" tag 
 
 # - For Later executions If you already have project space set up ready ignore the argument PROJECT_SPACE_SETUP=True
+make robot-run-all-tests TAGS="postgres_s3" # run postgres to s3 tests (No need to have project_space_setup=false)
 ```
 
 > **⏱️ Note:** This creates a containerized environment with Robot Framework and all testing dependencies. The build process takes about 2-3 minutes.

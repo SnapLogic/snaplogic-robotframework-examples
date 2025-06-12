@@ -103,7 +103,7 @@ Create table for DB Operations
     ...    • Table structure matches expected schema (name, role, salary columns)
     ...    • Database connection is established and functional
     ...    • No SQL syntax or permission errors occur
-    [Tags]    postgres_s3    create_tables
+    [Tags]    postgres_s3    create_tables    minio
     [Template]    Execute SQL String
     ${CREATE_TABLE_EMPLOYEES_PG}
     ${CREATE_TABLE_EMPLOYEES2_PG}
@@ -118,7 +118,7 @@ Load CSV Data To PostgreSQL
     ...    • Inserted row count = Auto-detected expected count from file
     ...    • Table truncated before insertion (clean state)
     ...    • CSV column mapping to database columns successful
-    [Tags]    postgres_s3    csv5    load_data
+    [Tags]    postgres_s3    csv5    load_data    minio
     [Template]    Load CSV Data Template
     # CSV File    table_name    Truncate Table
     ${CSV_DATA_TO_DB}    employees    ${TRUE}
@@ -134,7 +134,7 @@ Load JSON Data To PostgreSQL
     ...    • Table NOT truncated (appends to existing CSV data)
     ...    • JSON field mapping to database columns successful
     ...    • Total database rows = CSV rows + JSON rows
-    [Tags]    postgres_s3    json5    load_data
+    [Tags]    postgres_s3    json5    load_data    minio
     [Template]    Load JSON Data Template
     # JSON File    table_name    Truncate Table
     ${JSON_DATA_TO_DB}    employees2    ${TRUE}
@@ -176,7 +176,7 @@ Execute Triggered Task
     ...    • Files created in S3 bucket (demo-bucket)
     ...    • Task completes within expected timeframe
     ...    • No pipeline execution errors or timeouts
-    [Tags]    create_triggered_task    postgres_s3
+    [Tags]    create_triggered_task    postgres_s3    minio
     [Template]    Run Triggered Task With Parameters From Template
     ${unique_id}    ${project_path}    ${pipeline_name_csv}    ${task_csv}    bucket=demo-bucket    actual_output_file=employees.csv
     ${unique_id}    ${project_path}    ${pipeline_name_json}    ${task_json}    bucket=demo-bucket    actual_output_file=employees.json
@@ -211,7 +211,7 @@ Compare Actual vs Expected CSV Output
     ...    • All field values match exactly (no data corruption)
     ...    • No extra or missing rows (complete data transfer)
     ...    • CSV formatting is preserved through pipeline
-    [Tags]    csv    comparison    postgres_s3    validation
+    [Tags]    csv    comparison    postgres_s3    validation    minio
     [Template]    Compare CSV Files Template
 
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status
@@ -227,7 +227,7 @@ Compare Actual vs Expected JSON Output
     ...    • All object properties match exactly (no data corruption)
     ...    • No extra or missing records (complete data transfer)
     ...    • JSON formatting is valid and preserved through pipeline
-    [Tags]    json    comparison    postgres_s3    validation
+    [Tags]    json    comparison    postgres_s3    validation    minio
     [Template]    Compare JSON Files Template
 
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status
