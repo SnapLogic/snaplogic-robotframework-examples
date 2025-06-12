@@ -7,8 +7,9 @@ A complete guide to check for WSL, install Ubuntu on Windows, verify make comman
 1. [Checking if WSL is Installed](#checking-if-wsl-is-installed)
 2. [Installing WSL and Ubuntu](#installing-wsl-and-ubuntu)
 3. [Setting Up Development Environment](#setting-up-development-environment)
-4. [Using WSL in VS Code Terminal](#using-wsl-in-vs-code-terminal)
-5. [Quick Reference](#quick-reference)
+4. [Docker Desktop WSL Integration](#docker-desktop-wsl-integration)
+5. [Using WSL in VS Code Terminal](#using-wsl-in-vs-code-terminal)
+6. [Quick Reference](#quick-reference)
 
 ## Checking if WSL is Installed
 
@@ -344,6 +345,96 @@ sudo apt update
 sudo apt install package-name
 ```
 
+## Docker Desktop WSL Integration
+
+After installing WSL and Ubuntu, you need to configure Docker Desktop to work with WSL for running Docker commands.
+
+### Prerequisites
+
+- Docker Desktop installed on Windows
+- WSL 2 with Ubuntu installed (from previous steps)
+
+### Enable WSL Integration in Docker Desktop
+
+1. **Open Docker Desktop**
+2. **Navigate to Settings:**
+   - Click the gear icon (⚙️) in the top right
+   - Or go to **Docker Desktop** → **Settings**
+
+3. **Configure WSL Integration:**
+   - Go to **Resources** → **WSL Integration**
+   - Ensure **"Enable integration with my default WSL distro"** is checked ✅
+   - Under **"Enable integration with additional distros"**, toggle on **Ubuntu**
+   - Click **"Refetch distros"** if Ubuntu doesn't appear in the list
+   - Click **"Apply & Restart"**
+
+### Why This Integration Is Important
+
+- Allows you to run Docker commands from within WSL/Ubuntu
+- Enables seamless container management from Linux environment
+- Required for make commands that use Docker in your projects
+- Provides better performance than running Docker through Windows
+
+### Verify Docker Integration
+
+Test that Docker is accessible from WSL:
+
+```bash
+# In your WSL/Ubuntu terminal
+docker --version
+docker ps
+```
+
+Expected output:
+- `docker --version` should show Docker version
+- `docker ps` should list running containers (or show empty list)
+
+### ⚠️ Important: After Enabling WSL Integration
+
+**You must complete these steps:**
+
+1. **Restart your WSL terminal:**
+   ```bash
+   # Exit current WSL session
+   exit
+   # Open a new WSL session
+   wsl
+   ```
+
+2. **If using VS Code, restart the terminal:**
+   - Close all terminal tabs in VS Code
+   - Open a new terminal with `` Ctrl+` ``
+   - Select Ubuntu (WSL) from the dropdown
+
+3. **Verify Docker is working:**
+   ```bash
+   docker version
+   ```
+   You should see both Client and Server information
+
+4. **Now you can run your make commands:**
+   ```bash
+   make snaplogic-start-services
+   make robot-run-all-tests
+   ```
+
+### Troubleshooting Docker WSL Integration
+
+**"Cannot connect to Docker daemon" error:**
+- Ensure Docker Desktop is running
+- Check WSL integration is enabled in Docker settings
+- Restart both Docker Desktop and WSL
+
+**"docker: command not found" in WSL:**
+- Verify WSL integration is enabled for Ubuntu
+- Restart your terminal after enabling integration
+- Try running `wsl --shutdown` in PowerShell, then reopen WSL
+
+**Docker commands work in PowerShell but not WSL:**
+- This indicates WSL integration is not properly configured
+- Follow the integration steps above again
+- Ensure you clicked "Apply & Restart" after making changes
+
 ## Using WSL in VS Code Terminal
 
 ### Prerequisites
@@ -452,14 +543,17 @@ Add to VS Code settings.json (`Ctrl+,` then click {} icon):
 
 ### Essential Commands
 
-| Action                 | Command                            |
-| ---------------------- | ---------------------------------- |
-| Check if WSL installed | `wsl --status`                     |
-| Install WSL + Ubuntu   | `wsl --install`                    |
-| Open Ubuntu            | `wsl` or `ubuntu`                  |
-| Check make version     | `make --version`                   |
-| Install make           | `sudo apt install build-essential` |
-| Open WSL in VS Code    | Terminal dropdown → Ubuntu (WSL)   |
+| Action                     | Command                            |
+| -------------------------- | ---------------------------------- |
+| Check if WSL installed     | `wsl --status`                     |
+| Install WSL + Ubuntu       | `wsl --install`                    |
+| Open Ubuntu                | `wsl` or `ubuntu`                  |
+| Check make version         | `make --version`                   |
+| Install make               | `sudo apt install build-essential` |
+| Check Docker in WSL        | `docker --version`                 |
+| Test Docker connection     | `docker ps`                        |
+| Restart WSL                | `wsl --shutdown` (from PowerShell) |
+| Open WSL in VS Code        | Terminal dropdown → Ubuntu (WSL)   |
 
 ### Terminal Indicators
 
@@ -472,13 +566,15 @@ Add to VS Code settings.json (`Ctrl+,` then click {} icon):
 
 ### Common Issues and Fixes
 
-| Issue                     | Solution                            |
-| ------------------------- | ----------------------------------- |
-| WSL not recognized        | Run PowerShell as Admin             |
-| Ubuntu won't start        | `wsl --shutdown` then retry         |
-| Make not found            | `sudo apt install build-essential`  |
-| Wrong terminal in VS Code | Select "Ubuntu (WSL)" from dropdown |
-| Permission denied         | Use `sudo` before commands          |
+| Issue                            | Solution                                               |
+| -------------------------------- | ------------------------------------------------------ |
+| WSL not recognized               | Run PowerShell as Admin                                |
+| Ubuntu won't start               | `wsl --shutdown` then retry                            |
+| Make not found                   | `sudo apt install build-essential`                     |
+| Docker not found in WSL          | Enable WSL integration in Docker Desktop settings      |
+| Docker daemon connection error   | Restart terminal after enabling WSL integration        |
+| Wrong terminal in VS Code        | Select "Ubuntu (WSL)" from dropdown                    |
+| Permission denied                | Use `sudo` before commands                             |
 
 ### File Path Conversions
 
