@@ -24,7 +24,7 @@ ${project_path}                     ${org_name}/${project_space}/${project_name}
 ${pipeline_file_path}               ${CURDIR}/../../../src/pipelines
 
 ${upload_source_file_path}          ${CURDIR}/../test_data/actual_expected_data/expression_libraries
-${upload_destination_file_path}     ${project_path}/uploads
+${upload_destination_file_path}     ${project_path}
 
 # Oracle_Pipeline and Task Configuration
 ${ACCOUNT_PAYLOAD_FILE}             acc_oracle.json
