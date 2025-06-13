@@ -149,7 +149,7 @@ snaplogic-stop:
 # =============================================================================
 # 🧹 Clean restart of all relevant services and DB
 # =============================================================================
-clean-start: snaplogic-build-tools snaplogic-start-tools oracle-start
+clean-start: snaplogic-stop start-services launch-groundplex
 	@echo "You should be good to go"
 
 # =============================================================================
