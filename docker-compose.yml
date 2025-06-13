@@ -11,6 +11,7 @@ include:
   - docker-compose.groundplex.yml
   - docker-compose.minio.yml
   - docker-compose.postgres.yml
+  - docker-compose.activemq.yml
 
 services:
   tools:

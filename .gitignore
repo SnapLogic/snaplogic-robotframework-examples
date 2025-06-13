@@ -202,6 +202,7 @@ test/robot_output/
 
 # Downloaded test files from S3 (actual output during testing)
 test/suite/test_data/actual_expected_data/actual_output/
+test/suite/test_data/actual_expected_data/actual_jms_content
 
 # Test coverage reports
 coverage/
