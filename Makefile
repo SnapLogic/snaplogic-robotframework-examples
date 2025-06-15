@@ -14,11 +14,12 @@
 # -----------------------------------------------------------------------------
 # Declare phony targets (not associated with real files)
 # -----------------------------------------------------------------------------
-.PHONY: robot-run-tests snaplogic-start-services snaplogic-stop snaplogic-build-tools check-env \
-        clean-start launch-groundplex oracle-start end-to-end-workflow-execution \
-        robotidy robocop lint list-profiles groundplex-status \
-        start-s3-emulator stop-s3-emulator run-s3-demo \
-        activemq-start activemq-stop activemq-status activemq-setup run-jms-demo
+.PHONY: robot-run-tests robot-run-all-tests snaplogic-start-services snaplogic-stop snaplogic-build-tools \
+        snaplogic-stop-tools check-env clean-start launch-groundplex oracle-start oracle-stop \
+        postgres-start postgres-stop robotidy robocop lint groundplex-status stop-groundplex \
+        start-s3-emulator stop-s3-emulator run-s3-demo ensure-config-dir \
+        activemq-start activemq-stop activemq-status activemq-setup run-jms-demo \
+        start-services createplex-launch-groundplex
 
 # -----------------------------------------------------------------------------
 # Global Variables
@@ -34,9 +35,14 @@ COMPOSE_PROFILES ?= tools,oracle-dev,minio,postgres-dev,activemq
 #  🛠️ snaplogic tools lifecycle
 # 📦 Build tools container image 
 # =============================================================================
-snaplogic-build-tools: snaplogic-stop
+snaplogic-build-tools: snaplogic-stop-tools
 	@echo "Building image..."
 	docker compose build --no-cache tools
+
+snaplogic-stop-tools:
+	@echo "Stopping tools container..."
+	docker compose stop tools || true
+	docker compose rm -f tools || true
 
 # =============================================================================
 # ✅ Validate presence of the required .env file
@@ -124,11 +130,13 @@ robot-run-tests: check-env
 		--outputdir robot_output suite/
 
 # =============================================================================
-# 🔄 Build & Start snaplogic tools container
+# 🔄 Build & Start snaplogic services in compose profile 
 # =============================================================================
-snaplogic-start-services: snaplogic-stop snaplogic-build-tools
+snaplogic-start-services: 
 	@echo ":==========starting services/containers using COMPOSE_PROFILES... =========="
-	$(MAKE) start-services
+	COMPOSE_PROFILES=$(COMPOSE_PROFILES) docker compose up -d
+	@echo "⏳ Waiting for services to stabilize..."
+	@sleep 30
 	
 
 # =============================================================================
@@ -149,7 +157,7 @@ snaplogic-stop:
 # =============================================================================
 # 🧹 Clean restart of all relevant services and DB
 # =============================================================================
-clean-start: snaplogic-stop start-services launch-groundplex
+clean-start: snaplogic-stop snaplogic-start-services launch-groundplex
 	@echo "You should be good to go"
 
 # =============================================================================
@@ -234,11 +242,35 @@ oracle-start:
 	docker compose --profile oracle-dev up -d oracle-db
 
 # =============================================================================
+# ⛔ Stop Oracle DB container and clean up volumes
+# =============================================================================
+oracle-stop:
+	@echo "Stopping Oracle DB container..."
+	docker compose stop oracle-db || true
+	@echo "Removing Oracle container and volumes..."
+	docker compose rm -f -v oracle-db || true
+	@echo "Cleaning up Oracle volumes..."
+	docker volume rm $(docker volume ls -q | grep oracle) 2>/dev/null || true
+	@echo "✅ Oracle stopped and cleaned up."
+
+# =============================================================================
 # 🛢️ Start Postgres DB container
 # =============================================================================
 postgres-start:
 	@echo "Starting Postgres..."
 	docker compose --profile postgres-dev up -d postgres-db
+
+# =============================================================================
+# ⛔ Stop Postgres DB container and clean up volumes
+# =============================================================================
+postgres-stop:
+	@echo "Stopping Postgres DB container..."
+	docker compose stop postgres-db || true
+	@echo "Removing Postgres container and volumes..."
+	docker compose rm -f -v postgres-db || true
+	@echo "Cleaning up Postgres volumes..."
+	docker volume rm $(docker volume ls -q | grep postgres) 2>/dev/null || true
+	@echo "✅ Postgres stopped and cleaned up."
 
 
 # =============================================================================
