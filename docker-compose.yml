@@ -9,7 +9,7 @@
 include:
   - docker-compose.oracle.yml
   - docker-compose.groundplex.yml
-  - docker-compose.minio.yml
+  - docker-compose.s3emulator.yml
   - docker-compose.postgres.yml
   - docker-compose.activemq.yml
 

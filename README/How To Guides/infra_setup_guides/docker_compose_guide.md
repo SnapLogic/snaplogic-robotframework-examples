@@ -41,7 +41,7 @@ Our SnapLogic test automation framework uses a modular Docker Compose architectu
 ├── docker-compose.yml          # Main orchestration file
 ├── docker-compose.oracle.yml   # Oracle database service
 ├── docker-compose.postgres.yml # PostgreSQL database service
-├── docker-compose.minio.yml    # MinIO S3-compatible storage
+├── docker-compose.s3emulator.yml    # MinIO S3-compatible storage
 ├── docker-compose.groundplex.yml # SnapLogic Groundplex
 └── Makefile                    # Automation commands
 ```
@@ -79,7 +79,7 @@ Our SnapLogic test automation framework uses a modular Docker Compose architectu
 include:
   - docker-compose.oracle.yml      # Include Oracle service definition
   - docker-compose.groundplex.yml  # Include Groundplex service
-  - docker-compose.minio.yml       # Include MinIO service
+  - docker-compose.s3emulator.yml       # Include MinIO service
   - docker-compose.postgres.yml    # Include PostgreSQL service
 
 services:
@@ -196,7 +196,7 @@ COMPOSE_PROFILES=gp,oracle-dev docker compose up
 | docker-compose.yml            | tools                | tools             | Test execution container |
 | docker-compose.oracle.yml     | oracle-db            | dev, oracle-dev   | Oracle database          |
 | docker-compose.postgres.yml   | postgres-db          | dev, postgres-dev | PostgreSQL database      |
-| docker-compose.minio.yml      | minio                | dev, minio-dev    | S3-compatible storage    |
+| docker-compose.s3emulator.yml | minio                | dev, minio-dev    | S3-compatible storage    |
 | docker-compose.groundplex.yml | snaplogic-groundplex | gp                | SnapLogic runtime        |
 
 ## Integration with Makefile
