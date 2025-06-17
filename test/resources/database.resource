@@ -55,7 +55,7 @@ Connect to Oracle Database
     ...    - None (uses environment variables for connection)
     ...    *Example:*
     ...    | Connect to Oracle Database |
-    [Arguments]    ${ORACLE_DBNAME}    ${ORACLE_DBUSER}    ${ORACLE_DBPASS}    ${ORACLE_HOST}    ${ORACLE_DBPORT}
+    [Arguments]    ${ORACLE_DBNAME}    ${ORACLE_DBUSER}    ${ORACLE_DBPASS}    ${ORACLE_HOST}    ${ORACLE_DBPORT}=1521
 
     Connect To Database
     ...    oracledb
@@ -676,3 +676,34 @@ Clean Database Tables
     END
 
     Log    ✅ Database cleanup completed
+
+Execute SQL On Database
+    [Documentation]    Execute SQL on a specific database connection
+    ...    database_type should be 'postgres' or 'oracle'
+    [Arguments]    ${sql}    ${database_type}
+
+    # Close any existing connection to avoid warnings
+    Run Keyword And Ignore Error    Disconnect From Database
+
+    # Execute based on database type
+    IF    '${database_type}' == 'postgres'
+        # Connect to PostgreSQL
+        Connect to Postgres Database
+        ...    ${POSTGRES_DBNAME}
+        ...    ${POSTGRES_DBUSER}
+        ...    ${POSTGRES_DBPASS}
+        ...    ${POSTGRES_HOST}
+        ...    ${POSTGRES_DBPORT}
+        Execute SQL String    ${sql}
+    ELSE IF    '${database_type}' == 'oracle'
+        # Connect to Oracle
+        Connect to Oracle Database
+        ...    ${ORACLE_DBNAME}
+        ...    ${ORACLE_DBUSER}
+        ...    ${ORACLE_DBPASS}
+        ...    ${ORACLE_HOST}
+        ...    ${ORACLE_DBPORT}
+        Execute SQL String    ${sql}
+    ELSE
+        Fail    Unknown database type: ${database_type}. Use 'postgres' or 'oracle'
+    END

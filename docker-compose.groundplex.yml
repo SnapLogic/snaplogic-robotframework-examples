@@ -9,6 +9,8 @@ services:
     volumes:
       - ./test/.config/${GROUNDPLEX_NAME}.slpropz:/opt/snaplogic/etc/${GROUNDPLEX_NAME}.slpropz
       - /var/run.docker.sock:/var/run/docker.sock
+      # Mount expression libraries test data-setup mimics CAT's mounted file system approach
+      - ./test/suite/test_data/actual_expected_data/expression_libraries:/opt/snaplogic/expression-libraries # Like their NAS mount
     profiles: [ gp ]
     networks:
       - snaplogicnet

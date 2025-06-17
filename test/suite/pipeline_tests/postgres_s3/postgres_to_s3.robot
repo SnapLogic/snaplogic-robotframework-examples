@@ -44,7 +44,7 @@ Suite Setup         Initialize Test Environment
 *** Variables ***
 # Project Configuration
 ${project_path}                     ${org_name}/${project_space}/${project_name}
-${pipeline_file_path}               ${CURDIR}/../../../src/pipelines
+${pipeline_file_path}               ${CURDIR}/../../../../src/pipelines
 
 # Postgres Pipeline and Task Configuration
 # All Other related variables are set in the Initialize Pipeline1 Variables keyword
@@ -58,10 +58,10 @@ ${task_json}                        pg_s3_csv_Task
 
 # CSV and test data configuration
 ${DEMO_BUCKET}                      demo-bucket
-${CSV_DATA_TO_DB}                   ${CURDIR}/../test_data/actual_expected_data/input_data/employees.csv    # Source CSV from input_data folder
-${JSON_DATA_TO_DB}                  ${CURDIR}/../test_data/actual_expected_data/input_data/employees.json    # Source JSON from input_data folder
-${ACTUAL_DATA_DIR}                  ${CURDIR}/../test_data/actual_expected_data/actual_output    # Base directory for downloaded files from S3
-${EXPECTED_OUTPUT_DIR}              ${CURDIR}/../test_data/actual_expected_data/expected_output    # Expected output files for comparison
+${CSV_DATA_TO_DB}                   ${CURDIR}/../../test_data/actual_expected_data/input_data/employees.csv    # Source CSV from input_data folder
+${JSON_DATA_TO_DB}                  ${CURDIR}/../../test_data/actual_expected_data/input_data/employees.json    # Source JSON from input_data folder
+${ACTUAL_DATA_DIR}                  ${CURDIR}/../../test_data/actual_expected_data/actual_output    # Base directory for downloaded files from S3
+${EXPECTED_OUTPUT_DIR}              ${CURDIR}/../../test_data/actual_expected_data/expected_output    # Expected output files for comparison
 
 # Test configuration
 ${SKIP_MINIO_TESTS}                 ${False}    # Set to True to skip MinIO tests when server unavailable
@@ -91,7 +91,7 @@ Create Account
     ...    • PostgreSQL account configuration is valid and accepted
     ...    • S3/MinIO account configuration is valid and accepted
     ...    • Account payloads are properly formatted and processed
-    [Tags]    postgres_s3    create_account    minio
+    [Tags]    postgres_s3    minio
     [Template]    Create Account From Template
     ${account_payload_path}/acc_postgres.json
     ${account_payload_path}/acc_s3.json
@@ -103,7 +103,7 @@ Create table for DB Operations
     ...    • Table structure matches expected schema (name, role, salary columns)
     ...    • Database connection is established and functional
     ...    • No SQL syntax or permission errors occur
-    [Tags]    postgres_s3    create_tables    minio
+    [Tags]    postgres_s3    minio
     [Template]    Execute SQL String
     ${CREATE_TABLE_EMPLOYEES_PG}
     ${CREATE_TABLE_EMPLOYEES2_PG}
@@ -118,7 +118,7 @@ Load CSV Data To PostgreSQL
     ...    • Inserted row count = Auto-detected expected count from file
     ...    • Table truncated before insertion (clean state)
     ...    • CSV column mapping to database columns successful
-    [Tags]    postgres_s3    csv5    load_data    minio
+    [Tags]    postgres_s3    minio
     [Template]    Load CSV Data Template
     # CSV File    table_name    Truncate Table
     ${CSV_DATA_TO_DB}    employees    ${TRUE}
@@ -134,7 +134,7 @@ Load JSON Data To PostgreSQL
     ...    • Table NOT truncated (appends to existing CSV data)
     ...    • JSON field mapping to database columns successful
     ...    • Total database rows = CSV rows + JSON rows
-    [Tags]    postgres_s3    json5    load_data    minio
+    [Tags]    postgres_s3    minio
     [Template]    Load JSON Data Template
     # JSON File    table_name    Truncate Table
     ${JSON_DATA_TO_DB}    employees2    ${TRUE}
@@ -149,7 +149,7 @@ Import Pipelines
     ...    • Unique pipeline ID is generated and returned
     ...    • Pipeline nodes and configuration are valid
     ...    • Pipeline is successfully deployed to the project space
-    [Tags]    postgres_s3    minio    pgdb
+    [Tags]    postgres_s3    minio
     [Template]    Import Pipelines From Template
     ${unique_id}    ${pipeline_file_path}    ${pipeline_name_csv}    ${pipeline_name_csv_slp}
     ${unique_id}    ${pipeline_file_path}    ${pipeline_name_json}    ${pipeline_name_json_slp}
@@ -162,7 +162,7 @@ Create Triggered_task
     ...    • Task is linked to the correct pipeline
     ...    • Task snode ID is generated and returned
     ...    • Task payload structure is valid
-    [Tags]    create_triggered_task    minio    postgres_s3
+    [Tags]    minio    postgres_s3
     [Template]    Create Triggered Task From Template
     ${unique_id}    ${project_path}    ${pipeline_name_csv}    ${task_csv}
     ${unique_id}    ${project_path}    ${pipeline_name_json}    ${task_json}
@@ -176,7 +176,7 @@ Execute Triggered Task
     ...    • Files created in S3 bucket (demo-bucket)
     ...    • Task completes within expected timeframe
     ...    • No pipeline execution errors or timeouts
-    [Tags]    create_triggered_task    postgres_s3    minio
+    [Tags]    postgres_s3    minio
     [Template]    Run Triggered Task With Parameters From Template
     ${unique_id}    ${project_path}    ${pipeline_name_csv}    ${task_csv}    bucket=demo-bucket    actual_output_file=employees.csv
     ${unique_id}    ${project_path}    ${pipeline_name_json}    ${task_json}    bucket=demo-bucket    actual_output_file=employees.json
@@ -193,7 +193,7 @@ Download actual Output data from S3
     ...    • Local download directory is created successfully
     ...    • File download completes within timeout
     [Tags]    postgres_s3
-    [Template]    Download And Validate File
+    [Template]    Download And Validate File From Bucket
 
     # Test Data: download_location    bucket_name    file_name
     ${ACTUAL_DATA_DIR}    ${DEMO_BUCKET}    employees.csv
@@ -242,6 +242,10 @@ Initialize Test Environment
     Set Suite Variable    ${unique_id}    ${unique_id}
     Wait Until Plex Status Is Up    /${ORG_NAME}/${GROUNDPLEX_LOCATION_PATH}/${GROUNDPLEX_NAME}
     Connect to Postgres Database    ${POSTGRES_DBNAME}    ${POSTGRES_DBUSER}    ${POSTGRES_DBPASS}    ${POSTGRES_HOST}
+
+    # Create actual_output directory if it doesn't exist
+    Create Directory    ${ACTUAL_DATA_DIR}
+    Log    Created directory for actual output: ${ACTUAL_DATA_DIR}
 
     # Execute setup script
     Log    Setting up PostgreSQL tables from script

@@ -1,33 +1,37 @@
 *** Variables ***
+${DROP_TABLE_EMPLOYEES}         DROP TABLE employees CASCADE CONSTRAINTS
+
 ${CREATE_TABLE_EMPLOYEES}
 ...                             CREATE TABLE employees (
 ...                             id NUMBER PRIMARY KEY,
-...                             name VARCHAR2(100),
-...                             department VARCHAR2(50)
+...                             name VARCHAR2(100) NOT NULL,
+...                             role VARCHAR2(100) NOT NULL,
+...                             salary NUMBER
 ...                             )
 
 ${CREATE_PROC_ADD_EMPLOYEE}
 ...                             CREATE OR REPLACE PROCEDURE add_employee(
 ...                             p_id IN NUMBER,
 ...                             p_name IN VARCHAR2,
-...                             p_dept IN VARCHAR2
+...                             p_role IN VARCHAR2,
+...                             p_salary IN NUMBER
 ...                             )
 ...                             AS
 ...                             BEGIN
-...                             INSERT INTO employees VALUES (p_id, p_name, p_dept);
+...                             INSERT INTO employees VALUES (p_id, p_name, p_role, p_salary);
 ...                             COMMIT;
 ...                             END;
 
 ${CREATE_PROC_GET_STATS}
 ...                             CREATE OR REPLACE PROCEDURE get_employee_stats(
-...                             p_dept IN VARCHAR2,
+...                             p_role IN VARCHAR2,
 ...                             p_count OUT NUMBER
 ...                             )
 ...                             AS
 ...                             BEGIN
 ...                             SELECT COUNT(*) INTO p_count
 ...                             FROM employees
-...                             WHERE department = p_dept;
+...                             WHERE role = p_role;
 ...                             END;
 
 # REF_VALUES_TABLE

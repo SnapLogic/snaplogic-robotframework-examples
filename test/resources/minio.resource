@@ -80,7 +80,7 @@ Download Single File From MinIO
         Fail    Failed to download ${object_key} from ${bucket_name}: ${error}
     END
 
-Download And Validate File
+Download And Validate File From Bucket
     [Documentation]    Template keyword to download and validate a specific file from MinIO
     ...    📋 ASSERTIONS:
     ...    • File downloads successfully from MinIO bucket

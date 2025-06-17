@@ -18,6 +18,7 @@ Library             Collections
 Resource            general.resource
 Resource            database.resource    # Database operations for file loading
 Resource            minio.resource    # MinIO file operations (if needed)
+Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource    # SnapLogic API keywords from installed package
 
 
 *** Keywords ***
@@ -1197,3 +1198,63 @@ Validate JSON File Structure
     END
 
     Log    ✅ JSON structure validation passed: ${item_count} items of type ${expected_type}
+
+################## FILE UPLOAD AND LISTING TEMPLATES ##################
+
+Upload File Using File Protocol Template
+    [Documentation]    Template keyword to upload files using file:/// protocol URLs
+    ...    Converts file:/// URLs to paths and uploads to SnapLogic
+    [Arguments]    ${file_url}    ${destination_path}
+
+    # Convert file:/// URL to actual path
+    ${source_path}=    Replace String    ${file_url}    file://    ${EMPTY}
+
+    # Extract filename from URL
+    ${parts}=    Split String    ${source_path}    /
+    ${filename}=    Get From List    ${parts}    -1
+
+    # Extract directory path
+    ${dir_parts}=    Get Slice From List    ${parts}    0    -1
+    ${source_dir}=    Catenate    SEPARATOR=/    @{dir_parts}
+
+    Log    Uploading from file URL: ${file_url}
+    Log    Source directory: ${source_dir}
+    Log    File name: ${filename}
+    Log    Destination: ${destination_path}
+
+    # Call the actual upload keyword
+    Upload Files To SnapLogic From Template    ${source_dir}    ${filename}    ${destination_path}
+
+List Files Using File Protocol Template
+    [Documentation]    Template keyword to list files in directory using file:/// protocol URL
+    [Arguments]    ${dir_url}    ${pattern}=*
+
+    # Convert URL to path
+    ${dir_path}=    Replace String    ${dir_url}    file://    ${EMPTY}
+
+    # List files
+    @{files}=    List Files In Directory    ${dir_path}    pattern=${pattern}
+
+    # Create file URLs for each file
+    @{file_urls}=    Create List
+    FOR    ${file}    IN    @{files}
+        ${file_url}=    Set Variable    ${dir_url}/${file}
+        Append To List    ${file_urls}    ${file_url}
+        Log    Found: ${file_url}
+    END
+
+    RETURN    ${file_urls}
+
+Copy File Using File Protocol Template
+    [Documentation]    Template keyword to copy files between file:/// protocol URLs
+    [Arguments]    ${source_file_url}    ${dest_file_url}
+
+    # Convert URLs to paths
+    ${source_path}=    Replace String    ${source_file_url}    file://    ${EMPTY}
+    ${dest_path}=    Replace String    ${dest_file_url}    file://    ${EMPTY}
+
+    Log    Copying from: ${source_file_url}
+    Log    Copying to: ${dest_file_url}
+
+    Copy File    ${source_path}    ${dest_path}
+    Log    File copied successfully
