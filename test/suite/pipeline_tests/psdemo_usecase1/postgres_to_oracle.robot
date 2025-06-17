@@ -111,11 +111,11 @@ Upload Files With File Protocol
     [Template]    Upload File Using File Protocol Template
 
     # files exist via Docker mounts:
-    # - ./test/suite/test_data/.../expression_libraries -> /opt/snaplogic/expression-libraries
+    # - ./test/suite/test_data/actual_expected_data -> /opt/snaplogic/test_data
 
     # file_url    destination_path
-    # === From Container Mount Points (files exist via mounts) ===
-    file:///opt/snaplogic/expression-libraries/test.expr    ${upload_destination_file_path}
+    # === From new comprehensive mount point ===
+    file:///opt/snaplogic/test_data/expression_libraries/test.expr    ${upload_destination_file_path}
 
     # === From App Mount (always available - entire test directory is mounted) ===
     file:///app/test/suite/test_data/actual_expected_data/expression_libraries/test.expr    ${upload_destination_file_path}/app_mount
@@ -210,7 +210,7 @@ Copy Files With File Protocol
     [Template]    Copy File Using File Protocol Template
 
     # source_url    destination_url
-    file:///opt/snaplogic/expression-libraries/test.expr    file:///opt/snaplogic/shared/test_copy.expr
+    file:///opt/snaplogic/test_data/expression_libraries/test.expr    file:///opt/snaplogic/shared/test_copy.expr
 
 List Files With File Protocol
     [Documentation]    List files in mounted directories using file:/// protocol URLs
@@ -218,7 +218,7 @@ List Files With File Protocol
     [Tags]    postgres_oracle    file_protocol    list
 
     # List expression files
-    @{expr_files}=    List Files Using File Protocol Template    file:///opt/snaplogic/expression-libraries    *.expr
+    @{expr_files}=    List Files Using File Protocol Template    file:///opt/snaplogic/test_data/expression_libraries    *.expr
     Log    Expression files: ${expr_files}
 
     # List CSV files in shared mount
