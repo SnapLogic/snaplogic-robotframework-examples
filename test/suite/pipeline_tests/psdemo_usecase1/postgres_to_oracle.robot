@@ -1,6 +1,11 @@
 *** Settings ***
-Documentation       Test Suite for PostgreSQL to S3 Pipeline Integration
+Documentation       Test Suite for PostgreSQL to Oracle Pipeline Integration
 ...                 This comprehensive test suite validates the complete data pipeline flow:
+...                 • PostgreSQL source database setup and data loading
+...                 • Oracle target database setup and configuration
+...                 • SnapLogic pipeline execution for data transfer
+...                 • Data integrity validation between source and target
+...                 • CSV export and comparison for quality assurance
 
 # Standard Libraries
 Library             OperatingSystem    # File system operations
@@ -24,33 +29,32 @@ ${project_path}                     ${org_name}/${project_space}/${project_name}
 ${pipeline_file_path}               /app/src/pipelines
 ${upload_destination_file_path}     ${project_path}
 
-# Postgres Pipeline and Task Configuration
+# Postgres to Oracle Pipeline Configuration
 ${pipeline_name_csv}                postgres_oracle
 ${pipeline_name_csv_slp}            postgres_oracle.slp
 ${task_csv}                         pg_oracle_csv_Task
 
 # CSV and test data configuration
 ${CSV_DATA_TO_DB}                   ${CURDIR}/../../test_data/actual_expected_data/input_data/employees.csv    # Source CSV from input_data folder
-${ACTUAL_DATA_DIR}                  ${CURDIR}/../../test_data/actual_expected_data/actual_output    # Base directory for downloaded files from S3
+${ACTUAL_DATA_DIR}                  ${CURDIR}/../../test_data/actual_expected_data/actual_output    # Base directory for Oracle export files
 ${EXPECTED_OUTPUT_DIR}              ${CURDIR}/../../test_data/actual_expected_data/expected_output    # Expected output files for comparison
 
 
 *** Test Cases ***
 ################## DATA SETUP    ##################
 # Test execution order:
-# 1. Create accounts (PostgreSQL + S3)
-# 2. Create database tables
-# 3. Load CSV data (2 rows)
-# 4. Load JSON data (2 more rows, total = 4 rows)
-# 5. Run pipeline (exports 4 rows from DB to S3)
-# 6. Download S3 files to src/actual_output/demo-bucket/
-# 7. Compare original vs downloaded files
+# 1. Create accounts (PostgreSQL + Oracle)
+# 2. Create database tables in both databases
+# 3. Load CSV data into PostgreSQL source
+# 4. Execute pipeline to transfer data to Oracle
+# 5. Export Oracle data to CSV files
+# 6. Compare exported data with expected output
 Create Account
-    [Documentation]    Creates PostgreSQL and S3 accounts in the SnapLogic project space
+    [Documentation]    Creates PostgreSQL and Oracle accounts in the SnapLogic project space
     ...    📋 ASSERTIONS:
     ...    • Account creation API calls return HTTP 200/201 success responses
     ...    • PostgreSQL account configuration is valid and accepted
-    ...    • S3/ account configuration is valid and accepted
+    ...    • Oracle account configuration is valid and accepted
     ...    • Account payloads are properly formatted and processed
     [Tags]    postgres_oracle    create_account
     [Template]    Create Account From Template
@@ -58,18 +62,19 @@ Create Account
     ${account_payload_path}/acc_oracle.json
 
 Create postgres table for DB Operations
-    [Documentation]    Creates the employees table structure in PostgreSQL database
+    [Documentation]    Creates the employees table structure in PostgreSQL source database
     ...    📋 ASSERTIONS:
     ...    • SQL table creation statement executes successfully
     ...    • Table structure matches expected schema (name, role, salary columns)
-    ...    • Database connection is established and functional
+    ...    • PostgreSQL database connection is established and functional
     ...    • No SQL syntax or permission errors occur
-    [Tags]    postgres_oracle
+    [Tags]    postgres_oracle    create_tables    source_setup
     Execute SQL On Database    ${CREATE_TABLE_EMPLOYEES_PG}    postgres
     Execute SQL On Database    ${CREATE_TABLE_EMPLOYEES2_PG}    postgres
 
 Load CSV Data To PostgreSQL
-    [Documentation]    Loads CSV employee data into PostgreSQL with automatic row count validation
+    [Documentation]    Loads CSV employee data into PostgreSQL source database
+    ...    This data will be transferred to Oracle via the pipeline
     ...    📋 ASSERTIONS:
     ...    • CSV file exists and is readable
     ...    • Auto-detected row count from CSV file (excludes header)
@@ -78,19 +83,20 @@ Load CSV Data To PostgreSQL
     ...    • Inserted row count = Auto-detected expected count from file
     ...    • Table truncated before insertion (clean state)
     ...    • CSV column mapping to database columns successful
-    [Tags]    postgres_oracle
+    [Tags]    postgres_oracle    load_data    source_setup
     [Template]    Load CSV Data Template
     # CSV File    table_name    Truncate Table
     ${CSV_DATA_TO_DB}    employees    ${TRUE}
 
 Create oracle table for DB Operations
-    [Documentation]    Creates the employees table structure in Oracle database
+    [Documentation]    Creates the employees table structure in Oracle target database
+    ...    This table will receive data from PostgreSQL via the pipeline
     ...    📋 ASSERTIONS:
     ...    • SQL table creation statement executes successfully
     ...    • Table structure matches expected schema (name, role, salary columns)
-    ...    • Database connection is established and functional
+    ...    • Oracle database connection is established and functional
     ...    • No SQL syntax or permission errors occur
-    [Tags]    postgres_oracle
+    [Tags]    postgres_oracle    create_tables    target_setup    oracle
     # Drop table if exists (ignore error if table doesn't exist)
     Run Keyword And Ignore Error    Execute SQL On Database    ${DROP_TABLE_EMPLOYEES}    oracle
     # Create table
@@ -99,8 +105,9 @@ Create oracle table for DB Operations
 ################## IMPORT PIPELINE-DATA IMPORTED FROM POSTGRES TO ORACLE--EXECUTION USING TRIGGER TASK    ##################
 
 Upload Files With File Protocol
-    [Documentation]    Upload files using file:/// protocol URLs - all options in template format
-    [Tags]    postgres_oracle
+    [Documentation]    Upload expression library files to SnapLogic using file:/// protocol URLs
+    ...    These files may contain custom transformations for the PostgreSQL to Oracle pipeline
+    [Tags]    postgres_oracle    upload_expr_library    file_protocol
     [Template]    Upload File Using File Protocol Template
 
     # files exist via Docker mounts:
@@ -108,64 +115,89 @@ Upload Files With File Protocol
 
     # file_url    destination_path
     # === From Container Mount Points (files exist via mounts) ===
-    # testing the same pattern CAT uses
     file:///opt/snaplogic/expression-libraries/test.expr    ${upload_destination_file_path}
-    # Similar to CAT tests: /l$11 DEV GEN/.../EAI_Service_DEV/
 
     # === From App Mount (always available - entire test directory is mounted) ===
     file:///app/test/suite/test_data/actual_expected_data/expression_libraries/test.expr    ${upload_destination_file_path}/app_mount
 
     # === Using CURDIR Relative Paths (resolves to mounted paths) ===
-    # Need to go up TWO directories from postgres_oracle to reach suite level
+    # Need to go up TWO directories from psdemo_usecase1 to reach suite level
     file://${CURDIR}/../../test_data/actual_expected_data/expression_libraries/test.expr    ${upload_destination_file_path}/curdir
 
 Import Pipelines
-    [Documentation]    Imports the PostgreSQL to S3 pipeline into SnapLogic project
+    [Documentation]    Imports the PostgreSQL to Oracle data transfer pipeline into SnapLogic project
     ...    📋 ASSERTIONS:
     ...    • Pipeline file (.slp) exists and is readable
     ...    • Pipeline import API call succeeds
     ...    • Unique pipeline ID is generated and returned
     ...    • Pipeline nodes and configuration are valid
     ...    • Pipeline is successfully deployed to the project space
-    [Tags]    postgres_oracle
+    [Tags]    postgres_oracle    import_pipeline
     [Template]    Import Pipelines From Template
     ${unique_id}    ${pipeline_file_path}    ${pipeline_name_csv}    ${pipeline_name_csv_slp}
 
 Create Triggered_task
-    [Documentation]    Creates a triggered task for the imported pipeline
+    [Documentation]    Creates a triggered task for the PostgreSQL to Oracle pipeline
     ...    📋 ASSERTIONS:
     ...    • Task creation API call succeeds
     ...    • Task name and configuration are accepted
     ...    • Task is linked to the correct pipeline
     ...    • Task snode ID is generated and returned
     ...    • Task payload structure is valid
-    [Tags]    postgres_oracle
+    [Tags]    postgres_oracle    create_triggered_task
     [Template]    Create Triggered Task From Template
     ${unique_id}    ${project_path}    ${pipeline_name_csv}    ${task_csv}
 
 Execute Triggered Task
-    [Documentation]    Executes the pipeline task to export data from PostgreSQL to S3
+    [Documentation]    Executes the pipeline task to transfer data from PostgreSQL to Oracle
     ...    📋 ASSERTIONS:
     ...    • Task execution API call succeeds
     ...    • Pipeline runs without errors
-    ...    • Data successfully exported from PostgreSQL (4 rows)
-    ...    • Files created in S3 bucket (demo-bucket)
+    ...    • Data successfully transferred from PostgreSQL to Oracle
+    ...    • All rows from source table appear in target table
     ...    • Task completes within expected timeframe
     ...    • No pipeline execution errors or timeouts
-    [Tags]    postgres_oracle
+    [Tags]    postgres_oracle    execute_pipeline    data_transfer
+    
+    # First verify PostgreSQL has data
+    Connect to Postgres Database    ${POSTGRES_DBNAME}    ${POSTGRES_DBUSER}    ${POSTGRES_DBPASS}    ${POSTGRES_HOST}    ${POSTGRES_DBPORT}
+    ${pg_count}=    Query    SELECT COUNT(*) FROM employees
+    Log    PostgreSQL employees table has ${pg_count[0][0]} rows before pipeline execution
+    Should Be True    ${pg_count[0][0]} > 0    PostgreSQL employees table is empty - cannot run pipeline
+    Disconnect From Database
+    
+    # Execute the pipeline
     [Template]    Run Triggered Task With Parameters From Template
-    ${unique_id}    ${project_path}    ${pipeline_name_csv}    ${task_csv}    bucket=demo-bucket    actual_output_file=employees.csv
+    ${unique_id}    ${project_path}    ${pipeline_name_csv}    ${task_csv}
 
 Export Oracle Table To CSV After Pipeline
     [Documentation]    Exports Oracle employees table to CSV after the pipeline has transferred data
+    ...    Creates multiple CSV files with different sorting for validation
     ...    📋 ASSERTIONS:
     ...    • Oracle database connection successful
-    ...    • Employees table exists with data from pipeline
-    ...    • CSV file created with proper headers and data
-    ...    • File saved in actual output directory
-    ...    • Row count matches expected data
+    ...    • Employees table exists with data transferred from PostgreSQL
+    ...    • CSV files created with proper headers and data
+    ...    • Files saved in actual output directory
+    ...    • Row count matches source data
     ...    • CSV format is valid and can be parsed
-    [Tags]    postgres_oracle
+    [Tags]    postgres_oracle    oracle    export    csv    validation
+    
+    # First verify Oracle has data before trying to export
+    Connect to Oracle Database    ${ORACLE_DBNAME}    ${ORACLE_DBUSER}    ${ORACLE_DBPASS}    ${ORACLE_HOST}    ${ORACLE_DBPORT}
+    ${oracle_count}=    Query    SELECT COUNT(*) FROM employees
+    Log    Oracle employees table has ${oracle_count[0][0]} rows after pipeline execution
+    
+    # If no data, check if pipeline actually ran successfully
+    IF    ${oracle_count[0][0]} == 0
+        Log    WARNING: Oracle table is empty. Pipeline may have failed to transfer data.
+        # Check PostgreSQL source to confirm it had data
+        Connect to Postgres Database    ${POSTGRES_DBNAME}    ${POSTGRES_DBUSER}    ${POSTGRES_DBPASS}    ${POSTGRES_HOST}    ${POSTGRES_DBPORT}
+        ${pg_count}=    Query    SELECT COUNT(*) FROM employees  
+        Log    PostgreSQL source table has ${pg_count[0][0]} rows
+        Disconnect From Database
+    END
+    
+    # Proceed with export even if empty (will fail with proper message)
     [Template]    Export DB Table To CSV Template
     # db_type    table_name    csv_dir    order_by    filename
     oracle    employees    ${ACTUAL_DATA_DIR}    None    oracle_employees.csv
@@ -175,16 +207,17 @@ Export Oracle Table To CSV After Pipeline
 ################## COMPARISION TESTING    ##################
 
 Compare Actual vs Expected CSV Output
-    [Documentation]    Validates data integrity by comparing downloaded CSV against expected output
+    [Documentation]    Validates data integrity by comparing Oracle export against expected output
+    ...    Ensures data transferred from PostgreSQL to Oracle matches expectations
     ...    📋 ASSERTIONS:
-    ...    • Downloaded CSV file exists locally
+    ...    • Exported Oracle CSV file exists locally
     ...    • Expected CSV file exists for comparison
     ...    • File structures are identical (headers match)
-    ...    • Row counts are identical (no data loss)
+    ...    • Row counts are identical (no data loss during transfer)
     ...    • All field values match exactly (no data corruption)
     ...    • No extra or missing rows (complete data transfer)
     ...    • CSV formatting is preserved through pipeline
-    [Tags]    postgres_oracle
+    [Tags]    postgres_oracle    oracle    validation    comparison
     [Template]    Compare CSV Files Template
 
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status
@@ -193,16 +226,18 @@ Compare Actual vs Expected CSV Output
 #### Extra Verifications ####
 
 Copy Files With File Protocol
-    [Documentation]    Copy files between mounts using file:/// protocol URLs
-    [Tags]    postgres_oracle
+    [Documentation]    Copy expression library files between mounts using file:/// protocol URLs
+    ...    Useful for backing up or distributing custom transformations
+    [Tags]    postgres_oracle    file_protocol    copy
     [Template]    Copy File Using File Protocol Template
 
     # source_url    destination_url
     file:///opt/snaplogic/expression-libraries/test.expr    file:///opt/snaplogic/shared/test_copy.expr
 
 List Files With File Protocol
-    [Documentation]    List files in directories using file:/// protocol URLs
-    [Tags]    postgres_oracle
+    [Documentation]    List files in mounted directories using file:/// protocol URLs
+    ...    Verifies expression libraries and other resources are properly mounted
+    [Tags]    postgres_oracle    file_protocol    list
 
     # List expression files
     @{expr_files}=    List Files Using File Protocol Template    file:///opt/snaplogic/expression-libraries    *.expr
