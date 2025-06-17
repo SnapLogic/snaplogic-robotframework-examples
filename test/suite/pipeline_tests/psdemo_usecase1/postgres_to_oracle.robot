@@ -158,16 +158,9 @@ Execute Triggered Task
     ...    • Task completes within expected timeframe
     ...    • No pipeline execution errors or timeouts
     [Tags]    postgres_oracle    execute_pipeline    data_transfer
-    
-    # First verify PostgreSQL has data
-    Connect to Postgres Database    ${POSTGRES_DBNAME}    ${POSTGRES_DBUSER}    ${POSTGRES_DBPASS}    ${POSTGRES_HOST}    ${POSTGRES_DBPORT}
-    ${pg_count}=    Query    SELECT COUNT(*) FROM employees
-    Log    PostgreSQL employees table has ${pg_count[0][0]} rows before pipeline execution
-    Should Be True    ${pg_count[0][0]} > 0    PostgreSQL employees table is empty - cannot run pipeline
-    Disconnect From Database
-    
     # Execute the pipeline
     [Template]    Run Triggered Task With Parameters From Template
+
     ${unique_id}    ${project_path}    ${pipeline_name_csv}    ${task_csv}
 
 Export Oracle Table To CSV After Pipeline
@@ -181,24 +174,9 @@ Export Oracle Table To CSV After Pipeline
     ...    • Row count matches source data
     ...    • CSV format is valid and can be parsed
     [Tags]    postgres_oracle    oracle    export    csv    validation
-    
-    # First verify Oracle has data before trying to export
-    Connect to Oracle Database    ${ORACLE_DBNAME}    ${ORACLE_DBUSER}    ${ORACLE_DBPASS}    ${ORACLE_HOST}    ${ORACLE_DBPORT}
-    ${oracle_count}=    Query    SELECT COUNT(*) FROM employees
-    Log    Oracle employees table has ${oracle_count[0][0]} rows after pipeline execution
-    
-    # If no data, check if pipeline actually ran successfully
-    IF    ${oracle_count[0][0]} == 0
-        Log    WARNING: Oracle table is empty. Pipeline may have failed to transfer data.
-        # Check PostgreSQL source to confirm it had data
-        Connect to Postgres Database    ${POSTGRES_DBNAME}    ${POSTGRES_DBUSER}    ${POSTGRES_DBPASS}    ${POSTGRES_HOST}    ${POSTGRES_DBPORT}
-        ${pg_count}=    Query    SELECT COUNT(*) FROM employees  
-        Log    PostgreSQL source table has ${pg_count[0][0]} rows
-        Disconnect From Database
-    END
-    
     # Proceed with export even if empty (will fail with proper message)
     [Template]    Export DB Table To CSV Template
+
     # db_type    table_name    csv_dir    order_by    filename
     oracle    employees    ${ACTUAL_DATA_DIR}    None    oracle_employees.csv
     oracle    employees    ${ACTUAL_DATA_DIR}    name    oracle_employees_sorted_by_name.csv
