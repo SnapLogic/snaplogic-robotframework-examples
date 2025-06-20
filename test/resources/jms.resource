@@ -1,7 +1,10 @@
 *** Settings ***
 Documentation       Additional JMS/ActiveMQ queue management keywords
 
+# Main JMS/STOMP library for messaging operations
 Library             jms/robot_stomp_wrapper.py    host=${JMS_HOST}    port=${JMS_PORT}    username=${JMS_USERNAME}    password=${JMS_PASSWORD}    enable_enhanced_features=${JMS_ENHANCED_FEATURES}
+# Artemis cleanup library for managing addresses and queues
+Library             jms/cleanup_library_definitions.py    host=${JMS_HOST}    port=8161    username=${JMS_USERNAME}    password=${JMS_PASSWORD}
 Library             String
 Library             Collections
 Library             DateTime
@@ -1094,10 +1097,10 @@ Get Full Message Content From Queue
     TRY
         # Subscribe using the full destination
         ${consumer_id}=    Subscribe To Queue    ${destination}
-        
+
         # Set as active consumer for Get Text From Last Received Message
         Set Suite Variable    ${ACTIVE_CONSUMER_ID}    ${consumer_id}
-        
+
         ${received}=    Wait For Messages    1    5.0
 
         IF    ${received} == 0
@@ -1494,3 +1497,317 @@ Compare UI Display With Actual Message
         Log    Failed to compare UI display: ${error}    ERROR
         Fail    Could not compare UI display with actual message
     END
+
+Cleanup All Addresses And Queues
+    [Documentation]    Clean up all addresses and queues in ActiveMQ Artemis.
+    ...    This keyword replicates the functionality of the cleanup_queue_address_script.py
+    ...    by listing all addresses in the broker.
+    ...
+    ...    Note: This keyword requires the requests library and proper JMS connection.
+    ...
+    ...    Example:
+    ...    Cleanup All Addresses And Queues
+
+    Log    🔧 Starting cleanup - listing all addresses in ActiveMQ Artemis
+
+    TRY
+        # Import required libraries
+        ${requests}=    Evaluate    __import__('requests')
+        ${json}=    Evaluate    __import__('json')
+        ${re}=    Evaluate    __import__('re')
+
+        # Setup connection parameters
+        ${base_url}=    Set Variable    http://${JMS_HOST}:8161/console/jolokia
+        ${auth}=    Evaluate    ('${JMS_USERNAME}', '${JMS_PASSWORD}')
+
+        # Create request data for listing addresses
+        ${request_data}=    Create Dictionary
+        ...    type=read
+        ...    mbean=org.apache.activemq.artemis:broker="0.0.0.0",component=addresses,*
+        ...    attribute=*
+
+        Log    🔍 Fetching addresses using Jolokia READ...
+
+        # Make the request
+        ${response}=    Evaluate    ${requests}.post('${base_url}', json=${request_data}, auth=${auth})
+        ${status_code}=    Set Variable    ${response.status_code}
+        Log    📡 Response status: ${status_code}
+
+        IF    ${status_code} != 200
+            ${error_text}=    Set Variable    ${response.text}
+            Log    ❌ HTTP Error: ${error_text}    ERROR
+            Fail    Failed to fetch addresses from Artemis
+        END
+
+        # Parse response
+        ${data}=    Evaluate    ${response}.json()
+        ${error_message}=    Get From Dictionary    ${data}    error    ${EMPTY}
+
+        IF    '${error_message}' != '${EMPTY}' and 'address=' in '${error_message}'
+            Log    📊 Extracting addresses from API response...
+
+            # Extract addresses using regex
+            ${pattern}=    Set Variable    address="([^"]*)"
+            ${matches}=    Evaluate    ${re}.findall(r'${pattern}', '''${error_message}''')
+
+            # Remove duplicates and sort
+            ${unique_addresses}=    Evaluate    sorted(list(set(${matches})))
+            ${address_count}=    Get Length    ${unique_addresses}
+
+            Log    ✅ Found ${address_count} unique addresses
+
+            IF    ${address_count} > 0
+                Log    📋 Addresses found:
+                ${index}=    Set Variable    ${1}
+                FOR    ${address}    IN    @{unique_addresses}
+                    Log    ${SPACE}${SPACE}${SPACE}${index}. ${address}
+                    ${index}=    Evaluate    ${index} + 1
+                END
+            END
+
+            RETURN    ${unique_addresses}
+        ELSE
+            Log    ❌ Could not extract addresses from response    WARN
+            RETURN    @{EMPTY}
+        END
+    EXCEPT    AS    ${error}
+        Log    ❌ Error during cleanup: ${error}    ERROR
+        Fail    Failed to list addresses: ${error}
+    END
+
+# ========================================
+# ARTEMIS CLEANUP KEYWORDS
+# ========================================
+
+Test Cleanup All Addresses And Queues Functionality2
+    [Documentation]    Test the cleanup functionality - replaces problematic Evaluate expression
+    [Tags]    cleanup
+
+    Log    Running cleanup functionality test...    console=yes
+
+    # This replaces the problematic Evaluate expression with requests.post
+    ${result}=    Test Cleanup All Addresses And Queues Functionality
+
+    # Verify results
+    Should Be True    ${result}[success]
+    Should Be True    ${result}[deleted_count] >= 0
+
+    Log    Cleanup test results:    console=yes
+    Log    - Initial addresses: ${result}[initial_count]    console=yes
+    Log    - Final addresses: ${result}[final_count]    console=yes
+    Log    - Deleted: ${result}[deleted_count]    console=yes
+
+    RETURN    ${result}
+
+Cleanup Test Data
+    [Documentation]    Cleanup all test-related addresses and queues
+    [Tags]    cleanup    test-cleanup
+
+    Log    Cleaning up test data...    console=yes
+
+    ${results}=    Cleanup Test Addresses
+
+    Log    Test data cleanup complete    console=yes
+    RETURN    ${results}
+
+Get All Artemis Addresses
+    [Documentation]    Get all addresses from ActiveMQ Artemis
+    [Tags]    management    info
+
+    ${addresses}=    Get All Addresses
+    Log    Found ${addresses.__len__()} addresses    console=yes
+    RETURN    ${addresses}
+
+Get Artemis Cleanup Summary
+    [Documentation]    Get summary of addresses categorized by type
+    [Tags]    management    info
+
+    ${summary}=    Get Cleanup Summary
+
+    Log    Address Summary:    console=yes
+    Log    - Total: ${summary}[total]    console=yes
+    Log    - System: ${summary}[system_count]    console=yes
+    Log    - Test: ${summary}[test_count]    console=yes
+    Log    - User: ${summary}[user_count]    console=yes
+
+    RETURN    ${summary}
+
+Delete Artemis Addresses By Pattern
+    [Documentation]    Delete addresses matching a single pattern
+    [Tags]    cleanup    management
+    [Arguments]    ${pattern}
+
+    @{patterns}=    Create List    ${pattern}
+    ${results}=    Delete Addresses By Patterns    ${patterns}
+    RETURN    ${results}
+
+Delete Artemis Addresses By Patterns
+    [Documentation]    Delete addresses matching multiple patterns
+    [Tags]    cleanup    management
+    [Arguments]    @{patterns}
+
+    Log    Deleting addresses matching patterns: ${patterns}    console=yes
+    ${results}=    Delete Addresses By Patterns    ${patterns}
+    RETURN    ${results}
+
+Cleanup Artemis Specific Patterns
+    [Documentation]    Cleanup addresses matching specific patterns with logging
+    [Tags]    cleanup
+    [Arguments]    @{patterns}
+
+    Log    Cleaning up addresses matching patterns: ${patterns}    console=yes
+
+    # First list what will be deleted
+    ${matching}=    List Addresses Matching Patterns    ${patterns}
+    ${count}=    Get Length    ${matching}
+
+    IF    ${count} > 0
+        Log    Found ${count} addresses to delete:    console=yes
+        FOR    ${addr}    IN    @{matching}
+            Log    - ${addr}    console=yes
+        END
+
+        # Perform deletion
+        ${result}=    Delete Addresses By Patterns    ${patterns}
+    ELSE
+        Log    No addresses match the patterns    console=yes
+        ${result}=    Create Dictionary    status=no_matches
+    END
+
+    RETURN    ${result}
+
+Cleanup Suite Test Data
+    [Documentation]    Cleanup test data created by current suite
+    [Tags]    cleanup    suite
+    [Arguments]    ${suite_prefix}=${SUITE_NAME}
+
+    # Convert suite name to safe prefix
+    ${safe_prefix}=    Replace String    ${suite_prefix}    ${SPACE}    _
+    ${safe_prefix}=    Convert To Lower Case    ${safe_prefix}
+
+    Log    Cleaning up suite data with prefix: ${safe_prefix}    console=yes
+
+    @{patterns}=    Create List    ^${safe_prefix}\\.
+    ${result}=    Delete Artemis Addresses By Patterns    @{patterns}
+
+    RETURN    ${result}
+
+Verify System Addresses Exist
+    [Documentation]    Verify that system addresses are present
+    [Tags]    verify    system
+
+    ${addresses}=    Get All Artemis Addresses
+
+    # Check for critical system addresses
+    ${has_dlq}=    Run Keyword And Return Status    Should Contain    ${addresses}    DLQ
+    ${has_expiry}=    Run Keyword And Return Status    Should Contain    ${addresses}    ExpiryQueue
+
+    IF    not ${has_dlq}
+        Log    WARNING: DLQ system address not found!    WARN
+    END
+
+    IF    not ${has_expiry}
+        Log    WARNING: ExpiryQueue system address not found!    WARN
+    END
+
+    ${all_present}=    Evaluate    ${has_dlq} and ${has_expiry}
+    RETURN    ${all_present}
+
+Show Artemis Address Statistics
+    [Documentation]    Display statistics about current addresses
+    [Tags]    info    stats
+
+    ${summary}=    Get Artemis Cleanup Summary
+    ${all_addresses}=    Get All Artemis Addresses
+
+    Log    \n=== ADDRESS STATISTICS ===    console=yes
+    Log    Total Addresses: ${summary}[total]    console=yes
+
+    # Calculate percentages only if total > 0
+    IF    ${summary}[total] > 0
+        ${sys_pct}=    Evaluate    round(${summary}[system_count] * 100.0 / ${summary}[total], 1)
+        ${test_pct}=    Evaluate    round(${summary}[test_count] * 100.0 / ${summary}[total], 1)
+        ${user_pct}=    Evaluate    round(${summary}[user_count] * 100.0 / ${summary}[total], 1)
+
+        Log    ├─ System: ${summary}[system_count] (${sys_pct}%)    console=yes
+        Log    ├─ Test: ${summary}[test_count] (${test_pct}%)    console=yes
+        Log    └─ User: ${summary}[user_count] (${user_pct}%)    console=yes
+    ELSE
+        Log    No addresses found    console=yes
+    END
+
+    RETURN    ${summary}
+
+Safe Cleanup Test Addresses
+    [Documentation]    Safely cleanup only test-related addresses, preserving system and user addresses
+    [Tags]    cleanup    safe
+
+    # Get current state
+    ${before_summary}=    Get Artemis Cleanup Summary
+    Log    Before cleanup: ${before_summary}[test_count] test addresses found    console=yes
+
+    # Cleanup test data
+    ${result}=    Cleanup Test Data
+
+    # Get final state
+    ${after_summary}=    Get Artemis Cleanup Summary
+    Log    After cleanup: ${after_summary}[test_count] test addresses remaining    console=yes
+
+    # Verify system addresses still exist
+    ${system_ok}=    Verify System Addresses Exist
+    IF    not ${system_ok}    Fail    System addresses were affected by cleanup!
+
+    RETURN    ${result}
+
+Cleanup Artemis Test Queues
+    [Documentation]    Cleanup common test queue patterns
+    [Tags]    cleanup
+
+    @{test_patterns}=    Create List
+    ...    ^test\\.
+    ...    ^robot\\.
+    ...    ^temp\\.
+    ...    ^tmp\\.
+    ...    ^demo\\.
+    ...    \\.test$
+
+    ${result}=    Cleanup Artemis Specific Patterns    @{test_patterns}
+    RETURN    ${result}
+
+List Artemis Addresses By Pattern
+    [Documentation]    List addresses matching pattern without deleting
+    [Tags]    info
+    [Arguments]    ${pattern}
+
+    @{patterns}=    Create List    ${pattern}
+    ${matching}=    List Addresses Matching Patterns    ${patterns}
+
+    Log    Found ${matching.__len__()} addresses matching '${pattern}':    console=yes
+    FOR    ${addr}    IN    @{matching}
+        Log    - ${addr}    console=yes
+    END
+
+    RETURN    ${matching}
+
+List Addresses Matching Patterns
+    [Documentation]    List addresses that match given patterns
+    [Arguments]    ${patterns}
+
+    # Get all addresses first
+    ${all_addresses}=    Get All Addresses
+    ${matching}=    Create List
+
+    # Filter addresses that match any pattern
+    FOR    ${addr}    IN    @{all_addresses}
+        ${matches}=    Set Variable    ${FALSE}
+        FOR    ${pattern}    IN    @{patterns}
+            ${match}=    Run Keyword And Return Status    Should Match Regexp    ${addr}    ${pattern}
+            IF    ${match}
+                ${matches}=    Set Variable    ${TRUE}
+                BREAK
+            END
+        END
+        IF    ${matches}    Append To List    ${matching}    ${addr}
+    END
+
+    RETURN    ${matching}

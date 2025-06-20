@@ -1,7 +1,9 @@
 *** Settings ***
 Documentation       Basic JMS tests for queue operations
 
-Resource            ../../../resources/jms.resource
+# Resource    ../../../resources/jms.resource
+Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource
+Resource            snaplogic_common_robot/snaplogic_apis_keywords/jms.resource
 
 Suite Setup         Create Connection
 Suite Teardown      Close Connection

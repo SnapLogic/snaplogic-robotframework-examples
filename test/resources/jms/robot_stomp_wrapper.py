@@ -12,11 +12,17 @@ import json
 import time
 from typing import List, Dict, Optional, Union
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
+
 
 # Import from both libraries - fallback mechanism for missing components
+STOMP_AVAILABLE = True  # Track if STOMP is available
+
 try:
-    from stomp_library_definitions import (
+    # Try absolute import first for better IDE support
+    from snaplogic_common_robot.libraries.jms.stomp_library_definitions import (
         ArtemisSTOMPManager, 
         ArtemisMessageBuilder, 
         ArtemisTestUtilities,
@@ -28,19 +34,73 @@ try:
         PerformanceMetrics
     )
     ENHANCED_FEATURES_AVAILABLE = True
-except ImportError as e:
-    # If some classes are missing, try importing only the basic ones
+    logger.info("Successfully imported stomp_library_definitions with all features")
+except ImportError:
+    # Fallback to relative import
     try:
         from stomp_library_definitions import (
             ArtemisSTOMPManager, 
             ArtemisMessageBuilder, 
             ArtemisTestUtilities,
-            ArtemisSTOMPConnection
+            ArtemisSTOMPConnection,
+            ConsumedMessage,
+            MessageValidator,
+            DeadLetterQueueManager,
+            PerformanceTester,
+            PerformanceMetrics
         )
-        ENHANCED_FEATURES_AVAILABLE = False
-        logger.warn(f"Some enhanced features not available: {e}")
-    except ImportError:
-        raise ImportError("stomp_library_definitions module not found or missing required classes")
+        ENHANCED_FEATURES_AVAILABLE = True
+        logger.info("Successfully imported stomp_library_definitions with relative import")
+    except ImportError as e:
+        # If some classes are missing, try importing only the basic ones
+        try:
+            from stomp_library_definitions import (
+                ArtemisSTOMPManager, 
+                ArtemisMessageBuilder, 
+                ArtemisTestUtilities,
+                ArtemisSTOMPConnection
+            )
+            ENHANCED_FEATURES_AVAILABLE = False
+            logger.warn(f"Some enhanced features not available: {e}")
+        except ImportError:
+            # Complete fallback - no stomp library available
+            ENHANCED_FEATURES_AVAILABLE = False
+            STOMP_AVAILABLE = False
+            logger.warn("stomp_library_definitions module not found - running in limited mode")
+            
+            # Define minimal mock classes to prevent complete failure
+            class ArtemisSTOMPManager:
+                def __init__(self, *args, **kwargs):
+                    raise NotImplementedError("STOMP library not available. Please install stomp-py: pip install stomp-py")
+            
+            class ArtemisMessageBuilder:
+                @staticmethod
+                def create_text_message(*args, **kwargs):
+                    raise NotImplementedError("STOMP library not available")
+                @staticmethod
+                def create_json_message(*args, **kwargs):
+                    raise NotImplementedError("STOMP library not available")
+                @staticmethod
+                def create_order_message(*args, **kwargs):
+                    raise NotImplementedError("STOMP library not available")
+            
+            class ArtemisTestUtilities:
+                @staticmethod
+                def create_test_messages(*args, **kwargs):
+                    return ["Mock message"] * (args[1] if len(args) > 1 else 1)
+                @staticmethod
+                def create_test_destinations(*args, **kwargs):
+                    count = args[1] if len(args) > 1 else 1
+                    base = args[0] if args else "test"
+                    return [f"{base}::queue{i}" for i in range(count)]
+            
+            # Placeholder for other classes
+            ArtemisSTOMPConnection = object
+            ConsumedMessage = object
+            MessageValidator = object
+            DeadLetterQueueManager = object
+            PerformanceTester = object
+            PerformanceMetrics = object
 
 
 @library(scope='SUITE')
@@ -80,6 +140,13 @@ class robot_stomp_wrapper:
         self.password = password
         self.manager = None
         
+        # Check if STOMP is available
+        if not STOMP_AVAILABLE:
+            logger.warn("STOMP library not available. Limited functionality only.")
+            logger.warn("To enable full functionality, install stomp-py: pip install stomp-py")
+            self.enhanced_mode = False
+            return
+        
         # Enhanced features (only if available and enabled)
         self.enhanced_mode = ENHANCED_FEATURES_AVAILABLE and enable_enhanced_features
         
@@ -111,6 +178,9 @@ class robot_stomp_wrapper:
         Returns:
             bool: True if connected successfully
         """
+        if not STOMP_AVAILABLE:
+            raise Exception("Cannot connect: STOMP library not available. Please install stomp-py: pip install stomp-py")
+        
         self.manager = ArtemisSTOMPManager(self.host, self.port, self.username, self.password)
         
         # Use enhanced connection if available, otherwise basic
@@ -1614,12 +1684,14 @@ class robot_stomp_wrapper:
         return {
             'version': '1.0.0-unified',
             'mode': 'enhanced' if self.enhanced_mode else 'basic',
+            'stomp_available': STOMP_AVAILABLE,
             'enhanced_features_available': ENHANCED_FEATURES_AVAILABLE,
             'enhanced_mode_enabled': self.enhanced_mode,
             'available_features': available_features,
-            'connection_status': self.check_connection_status(),
+            'connection_status': self.check_connection_status() if STOMP_AVAILABLE else False,
             'supported_message_types': ['text', 'json', 'order', 'csv', 'xml'],
             'jms_compatibility_keywords': jms_compat_keywords,
             'total_keywords': total_keywords,
-            'jms_standard_coverage': '85%'
+            'jms_standard_coverage': '85%',
+            'error_message': 'STOMP library not available. Please install stomp-py: pip install stomp-py' if not STOMP_AVAILABLE else None
         }

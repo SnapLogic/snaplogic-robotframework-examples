@@ -1,7 +1,9 @@
 *** Settings ***
 Documentation       Demo Test - Send SAP IDoc JSON as Queue and Topic Messages
 
-Resource            ../../../resources/jms.resource
+# Resource    ../../../resources/jms.resource
+Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource
+Resource            snaplogic_common_robot/snaplogic_apis_keywords/jms.resource
 Resource            ../../../resources/files.resource
 Library             OperatingSystem
 Library             String

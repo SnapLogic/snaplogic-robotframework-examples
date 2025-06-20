@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Enhanced Artemis Manager with multiple pattern support and delete-all-except-system functionality
+This version is integrated with the robot_stomp_wrapper and stomp_library_definitions modules
 """
 
 import requests
@@ -9,8 +10,22 @@ import re
 import argparse
 from typing import List, Dict, Tuple
 import getpass
+import sys
+import os
+
+# Add the current directory to Python path to import local modules
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+try:
+    from stomp_library_definitions import ArtemisManagementClient
+    INTEGRATED_MODE = True
+except ImportError:
+    INTEGRATED_MODE = False
+
 
 class ArtemisManager:
+    """Legacy ArtemisManager for backward compatibility"""
+    
     def __init__(self, host='localhost', port=8161, username='admin', password='admin'):
         self.host = host
         self.port = port
@@ -20,8 +35,20 @@ class ArtemisManager:
         self.session = requests.Session()
         self.session.auth = (username, password)
         
+        # Try to use integrated management client if available
+        if INTEGRATED_MODE:
+            try:
+                self.management_client = ArtemisManagementClient(host, port, username, password)
+            except Exception:
+                self.management_client = None
+        else:
+            self.management_client = None
+        
     def get_all_addresses(self) -> List[str]:
         """Get addresses by extracting from Jolokia error messages"""
+        if self.management_client:
+            return self.management_client.get_all_addresses()
+            
         try:
             request_data = {
                 "type": "read",
@@ -67,6 +94,9 @@ class ArtemisManager:
     
     def delete_address(self, address: str) -> bool:
         """Delete an address using correct method signature"""
+        if self.management_client:
+            return self.management_client.delete_address(address, True)
+            
         try:
             request_data = {
                 "type": "exec",
@@ -110,7 +140,10 @@ class ArtemisManager:
             print(f"      Exception: {e}")
             return False
 
+
 class BulkOperations:
+    """Bulk operations for address management"""
+    
     def __init__(self, manager: ArtemisManager):
         self.manager = manager
     
@@ -242,6 +275,7 @@ class BulkOperations:
         
         return results
 
+
 def main():
     parser = argparse.ArgumentParser(
         description='ActiveMQ Artemis Bulk Management Tool (Enhanced)',
@@ -262,6 +296,9 @@ Examples:
   
   # Delete all except system addresses
   %(prog)s --operation delete-all-except-system
+  
+  # Use with Robot Framework library
+  %(prog)s --operation test-integration
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -270,7 +307,7 @@ Examples:
     parser.add_argument('--port', type=int, default=8161, help='Artemis web port')
     parser.add_argument('--username', default='admin', help='Username')
     parser.add_argument('--password', help='Password (will prompt if not provided)')
-    parser.add_argument('--operation', choices=['list', 'delete-addresses', 'cleanup', 'delete-all-except-system'], 
+    parser.add_argument('--operation', choices=['list', 'delete-addresses', 'cleanup', 'delete-all-except-system', 'test-integration'], 
                        help='Operation to perform')
     parser.add_argument('--pattern', help='Pattern for selection (regex). Use comma-separated for multiple patterns')
     parser.add_argument('--patterns', nargs='+', help='Multiple patterns for selection (space-separated)')
@@ -280,6 +317,56 @@ Examples:
     
     # Get password if not provided
     password = args.password or getpass.getpass("Password: ")
+    
+    # Check integration mode
+    if args.operation == 'test-integration':
+        print("🔧 Testing Integration with Robot Framework Library")
+        print("=" * 50)
+        
+        if INTEGRATED_MODE:
+            print("✅ Integration mode is ACTIVE")
+            print("   - stomp_library_definitions module found")
+            print("   - ArtemisManagementClient available")
+            
+            # Test creating management client
+            try:
+                test_client = ArtemisManagementClient(args.host, args.port, args.username, password)
+                print("   - Successfully created ArtemisManagementClient")
+                
+                # Test getting addresses
+                addresses = test_client.get_all_addresses()
+                print(f"   - Retrieved {len(addresses)} addresses")
+                
+            except Exception as e:
+                print(f"   ❌ Error testing integration: {e}")
+        else:
+            print("❌ Integration mode is INACTIVE")
+            print("   - stomp_library_definitions module not found")
+            print("   - Using standalone mode")
+        
+        # Test with robot framework if available
+        try:
+            from robot_stomp_wrapper import robot_stomp_wrapper
+            print("\n✅ robot_stomp_wrapper is available")
+            
+            # Create instance
+            wrapper = robot_stomp_wrapper(host=args.host, username=args.username, password=password)
+            print("   - Successfully created robot_stomp_wrapper instance")
+            
+            # Check if management features are available
+            info = wrapper.get_library_info()
+            if 'queue_address_management' in info.get('available_features', []):
+                print("   - Queue/Address management features are available")
+            else:
+                print("   - Queue/Address management features are NOT available")
+                
+        except ImportError:
+            print("\n❌ robot_stomp_wrapper not available")
+            print("   - Robot Framework library not found in path")
+        except Exception as e:
+            print(f"\n❌ Error testing Robot Framework integration: {e}")
+        
+        return
     
     # Initialize manager
     manager = ArtemisManager(args.host, args.port, args.username, password)
@@ -354,6 +441,7 @@ Examples:
         # Default: list addresses
         print("🔧 Default operation: listing addresses")
         manager.get_all_addresses()
+
 
 if __name__ == "__main__":
     main()
