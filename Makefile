@@ -16,7 +16,8 @@
 # -----------------------------------------------------------------------------
 .PHONY: robot-run-tests robot-run-all-tests snaplogic-start-services snaplogic-stop snaplogic-build-tools \
         snaplogic-stop-tools check-env clean-start launch-groundplex oracle-start oracle-stop \
-        postgres-start postgres-stop robotidy robocop lint groundplex-status stop-groundplex \
+        postgres-start postgres-stop mysql-start mysql-stop sqlserver-start sqlserver-stop \
+        robotidy robocop lint groundplex-status stop-groundplex \
         start-s3-emulator stop-s3-emulator run-s3-demo ensure-config-dir \
         activemq-start activemq-stop activemq-status activemq-setup run-jms-demo \
         start-services createplex-launch-groundplex \
@@ -30,7 +31,7 @@ SHELL = /bin/bash
 
 # Docker Compose profiles to be used (can be overridden by CLI)
 # COMPOSE_PROFILES ?= gp,oracle-dev,postgres-dev,minio-dev
-COMPOSE_PROFILES ?= tools,oracle-dev,minio,postgres-dev,activemq
+COMPOSE_PROFILES ?= tools,oracle-dev,minio,postgres-dev,activemq,mysql-dev,sqlserver-dev
 
 # =============================================================================
 #  🛠️ snaplogic tools lifecycle
@@ -273,6 +274,44 @@ postgres-stop:
 	docker volume rm $(docker volume ls -q | grep postgres) 2>/dev/null || true
 	@echo "✅ Postgres stopped and cleaned up."
 
+# =============================================================================
+# 🛢️ Start MySQL DB container
+# =============================================================================
+mysql-start:
+	@echo "Starting MySQL..."
+	docker compose --profile mysql-dev up -d mysql-db
+
+# =============================================================================
+# ⛔ Stop MySQL DB container and clean up volumes
+# =============================================================================
+mysql-stop:
+	@echo "Stopping MySQL DB container..."
+	docker compose stop mysql-db || true
+	@echo "Removing MySQL container and volumes..."
+	docker compose rm -f -v mysql-db || true
+	@echo "Cleaning up MySQL volumes..."
+	docker volume rm $(docker volume ls -q | grep mysql) 2>/dev/null || true
+	@echo "✅ MySQL stopped and cleaned up."
+
+# =============================================================================
+# 🛢️ Start SQL Server DB container
+# =============================================================================
+sqlserver-start:
+	@echo "Starting SQL Server..."
+	docker compose --profile sqlserver-dev up -d sqlserver-db
+
+# =============================================================================
+# ⛔ Stop SQL Server DB container and clean up volumes
+# =============================================================================
+sqlserver-stop:
+	@echo "Stopping SQL Server DB container..."
+	docker compose stop sqlserver-db || true
+	@echo "Removing SQL Server container and volumes..."
+	docker compose rm -f -v sqlserver-db || true
+	@echo "Cleaning up SQL Server volumes..."
+	docker volume rm $(docker volume ls -q | grep sqlserver) 2>/dev/null || true
+	@echo "✅ SQL Server stopped and cleaned up."
+
 
 # =============================================================================
 # 🧽 Format Robot files using Robotidy
@@ -438,3 +477,20 @@ rebuild-tools-with-updated-requirements:
 	
 	@echo "✅ Verifying snaplogic-common-robot version..."
 	docker-compose exec tools pip show snaplogic-common-robot
+
+# =============================================================================
+   # 📦update snaplogic-common-robot to absolute latest
+   # This target is useful for quick updates without rebuilding the entire tools container
+# =============================================================================
+
+quick-update-snaplogic-robot-only:
+	@echo "📦 Force updating snaplogic-common-robot to latest version..."
+	@echo "🔍 Current version:"
+	@docker-compose exec -T tools pip show snaplogic-common-robot || echo "Not installed"
+	@echo "🗑️  Uninstalling current version..."
+	@docker-compose exec -T tools pip uninstall -y snaplogic-common-robot
+	@echo "📥 Installing latest version from PyPI..."
+	@docker-compose exec -T tools pip install --no-cache-dir snaplogic-common-robot
+	@echo "✅ New version:"
+	@docker-compose exec -T tools pip show snaplogic-common-robot
+

@@ -1,0 +1,80 @@
+services:
+  mysql-db:
+    image: mysql:8.0
+    container_name: mysql-db
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "snaplogic"
+      MYSQL_DATABASE: "TEST"
+      MYSQL_USER: "testuser"
+      MYSQL_PASSWORD: "snaplogic"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-psnaplogic"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    profiles: [ dev, mysql-dev ]
+    networks:
+      - snaplogicnet
+    command: --default-authentication-plugin=mysql_native_password
+
+  mysql-schema-init:
+    image: mysql:8.0
+    container_name: mysql-schema-init
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+    command: |
+      bash -c "
+      echo 'MySQL is healthy, configuring TEST database and user permissions...'
+      mysql -h mysql-db -u root -psnaplogic <<'EOF'
+      -- Select the TEST database
+      USE TEST;
+
+      -- Grant all privileges on TEST database to testuser
+      GRANT ALL PRIVILEGES ON TEST.* TO 'testuser'@'%';
+      GRANT CREATE, ALTER, DROP, INDEX, INSERT, SELECT, UPDATE, DELETE, CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, EVENT, TRIGGER ON TEST.* TO 'testuser'@'%';
+
+      -- Additional grants for full functionality
+      GRANT PROCESS ON *.* TO 'testuser'@'%';
+      GRANT REFERENCES ON TEST.* TO 'testuser'@'%';
+
+      -- Ensure user can connect from any host
+      CREATE USER IF NOT EXISTS 'testuser'@'localhost' IDENTIFIED BY 'snaplogic';
+      GRANT ALL PRIVILEGES ON TEST.* TO 'testuser'@'localhost';
+
+      -- Flush privileges to ensure they take effect
+      FLUSH PRIVILEGES;
+
+      -- Verify user setup
+      SELECT user, host, Grant_priv, Super_priv FROM mysql.user WHERE user = 'testuser';
+      SHOW GRANTS FOR 'testuser'@'%';
+
+      -- Create sample table to verify permissions
+      CREATE TABLE IF NOT EXISTS test_verification (
+          id INT PRIMARY KEY AUTO_INCREMENT,
+          message VARCHAR(100),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      INSERT INTO test_verification (message) VALUES ('Database setup completed successfully');
+      
+      SELECT * FROM test_verification;
+      EOF
+      echo 'TEST database and user permissions configured successfully!'
+      "
+    profiles: [ dev, mysql-dev ]
+    networks:
+      - snaplogicnet
+
+volumes:
+  mysql_data:
+
+networks:
+  snaplogicnet:
+    driver: bridge
