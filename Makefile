@@ -19,7 +19,8 @@
         postgres-start postgres-stop robotidy robocop lint groundplex-status stop-groundplex \
         start-s3-emulator stop-s3-emulator run-s3-demo ensure-config-dir \
         activemq-start activemq-stop activemq-status activemq-setup run-jms-demo \
-        start-services createplex-launch-groundplex
+        start-services createplex-launch-groundplex \
+		rebuild-tools-with-updated-requirements
 
 # -----------------------------------------------------------------------------
 # Global Variables
@@ -415,3 +416,25 @@ run-jms-demo:
 	@echo "   • Suggested queues: sap.idoc.queue, test.queue, demo.queue"
 	@echo ""
 	@echo "📚 Example libraries: pyjms, stomp.py, or py4j with ActiveMQ client"
+
+# =============================================================================
+# 🔄 Rebuild tools container with updated requirements
+# =============================================================================
+rebuild-tools-with-updated-requirements:
+	@echo "🛑 Stopping and removing tools container..."
+	docker-compose --profile tools down
+	
+	@echo "🗑️  Removing old image to force complete rebuild..."
+	docker rmi snaplogic-test-example:latest || true
+	
+	@echo "🔨 Building tools container without cache..."
+	docker-compose build --no-cache tools
+	
+	@echo "🚀 Starting tools container..."
+	docker-compose --profile tools up -d
+	
+	@echo "⏳ Waiting for container to be ready..."
+	@sleep 5
+	
+	@echo "✅ Verifying snaplogic-common-robot version..."
+	docker-compose exec tools pip show snaplogic-common-robot
