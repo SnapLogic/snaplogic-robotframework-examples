@@ -23,8 +23,8 @@ Suite Setup         Check connections    # Check if the connection to the Oracle
 ${project_path}                     ${org_name}/${project_space}/${project_name}
 ${pipeline_file_path}               ${CURDIR}/../../../../src/pipelines
 
-${upload_source_file_path}          ${CURDIR}/../test_data/actual_expected_data/expression_libraries
-${container_source_file_path}       /opt/snaplogic/expression-libraries
+${upload_source_file_path}          ${CURDIR}/../../test_data/actual_expected_data/expression_libraries
+${container_source_file_path}       opt/snaplogic/test_data/actual_expected_data/expression_libraries
 ${upload_destination_file_path}     ${project_path}
 
 # Oracle_Pipeline and Task Configuration
@@ -68,14 +68,14 @@ Upload Files With File Protocol
     # file_url    destination_path
     # === From Container Mount Points (files exist via mounts) ===
     # testing the same pattern CAT uses
-    file:///opt/snaplogic/expression-libraries/test.expr    ${upload_destination_file_path}
+    file:///opt/snaplogic/test_data/actual_expected_data/expression_libraries/test.expr    ${upload_destination_file_path}
     # Similar to CAT tests: /l$11 DEV GEN/.../EAI_Service_DEV/
 
     # === From App Mount (always available - entire test directory is mounted) ===
     file:///app/test/suite/test_data/actual_expected_data/expression_libraries/test.expr    ${upload_destination_file_path}/app_mount
 
     # === Using CURDIR Relative Paths (resolves to mounted paths) ===
-    file://${CURDIR}/../test_data/actual_expected_data/expression_libraries/test.expr    ${upload_destination_file_path}/curdir
+    file://${CURDIR}/../../test_data/actual_expected_data/expression_libraries/test.expr    ${upload_destination_file_path}/curdir
 
 Upload Files
     [Documentation]    Data-driven test case using template format for multiple file upload scenarios

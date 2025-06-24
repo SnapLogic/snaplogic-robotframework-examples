@@ -173,7 +173,7 @@ Export Oracle Table To CSV After Pipeline
     ...    • Files saved in actual output directory
     ...    • Row count matches source data
     ...    • CSV format is valid and can be parsed
-    [Tags]    postgres_oracle    oracle    export    csv    validation
+    [Tags]    postgres_oracle    export    csv    validation
     # Proceed with export even if empty (will fail with proper message)
     [Template]    Export DB Table To CSV Template
 
@@ -218,7 +218,9 @@ List Files With File Protocol
     [Tags]    postgres_oracle    file_protocol    list
 
     # List expression files
-    @{expr_files}=    List Files Using File Protocol Template    file:///opt/snaplogic/test_data/expression_libraries    *.expr
+    @{expr_files}=    List Files Using File Protocol Template
+    ...    file:///opt/snaplogic/test_data/expression_libraries
+    ...    *.expr
     Log    Expression files: ${expr_files}
 
     # List CSV files in shared mount

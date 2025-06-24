@@ -213,7 +213,8 @@ htmlcov/
 # Development Tools
 # ==========================================
 
-
+# ActiveMQ data directory
+activemq-data/
 
 # Temporary files
 *.tmp

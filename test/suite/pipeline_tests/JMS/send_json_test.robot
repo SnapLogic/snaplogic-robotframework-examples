@@ -1,5 +1,15 @@
 *** Settings ***
-Documentation       Demo Test - Send SAP IDoc JSON as Queue and Topic Messages
+Documentation       Advanced JMS JSON Message Testing Suite with ActiveMQ Artemis
+...
+...                 This suite demonstrates advanced JMS capabilities including:
+...                 • Sending large JSON files that exceed ActiveMQ UI display limits
+...                 • Proving ActiveMQ stores complete messages despite UI limitations
+...                 • ANYCAST (Queue) vs MULTICAST (Topic) routing patterns
+...                 • Integration with SnapLogic JMS Consumer pipeline
+...                 • Message content validation and persistence verification
+...
+...                 KEY DISCOVERY: ActiveMQ Web UI only displays first 256 characters
+...                 but the complete message is stored and retrievable programmatically
 
 # Resource    ../../../resources/jms.resource
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource
@@ -10,25 +20,52 @@ Library             String
 Library             Collections
 Library             DateTime
 
-Suite Setup         Start Connection
+Suite Setup         Initialize Test Environment
 Suite Teardown      Stop Connection
 
 
 *** Variables ***
-${SAP_IDOC_JSON_PATH}       ${CURDIR}/../../test_data/actual_expected_data/input_data/SAP_IDoc Read output0.json
-# ${SAP_IDOC_JSON_PATH}    ${CURDIR}/../../test_data/actual_expected_data/input_data/employees.json
+${documents_json}                   ${CURDIR}/../../test_data/actual_expected_data/input_data/documents.json
+
+# Project Configuration
+${project_path}                     ${org_name}/${project_space}/${project_name}
+${pipeline_file_path}               /app/src/pipelines
+${upload_destination_file_path}     ${org_name}/shared
+
+# File Mount Pipeline Configuration
+${pipeline_name}                    jmsconsumer
+${pipeline_slp}                     jmsconsumer.slp
+${task_name}                        jmscosumer_Task
 
 
 *** Test Cases ***
 Send Any JSON File With Both Routing Types
-    [Documentation]    Send any JSON file using both ANYCAST and MULTICAST routing
-    ...    Demonstrates the difference between routing types
-    ...    Example:
-    ...    robot -v JSON_FILE_PATH:/path/to/file.json -t "Test Send Any JSON File With Both Routing Types" demo_test.robot
+    [Documentation]    Comprehensive test proving ActiveMQ stores complete messages beyond UI display limits
+    ...
+    ...    PURPOSE:
+    ...    • Demonstrates that ActiveMQ's 256-character Web UI limit is ONLY visual
+    ...    • Proves complete message integrity for large JSON files
+    ...    • Validates message storage and retrieval capabilities
+    ...    • Compares original file content with retrieved queue content
+    ...
+    ...    TEST WORKFLOW:
+    ...    1. Reads and validates JSON file (any size)
+    ...    2. Creates ANYCAST queue for point-to-point messaging
+    ...    3. Sends complete JSON content to queue
+    ...    4. Retrieves full message content programmatically
+    ...    5. Saves retrieved content to file for comparison
+    ...    6. Performs byte-by-byte comparison with original
+    ...    7. Demonstrates UI limitation vs actual storage
+    ...
+    ...    KEY FINDINGS:
+    ...    • ActiveMQ stores messages of ANY size completely
+    ...    • Web UI truncates display at 256 characters
+    ...    • Full content is always retrievable via API/code
+    ...    • Message integrity is 100% maintained
     [Tags]    json    routing    anycast    multicast4
 
     # Get file path from variable or use default
-    ${json_file_path}=    Get Variable Value    ${JSON_FILE_PATH}    ${SAP_IDOC_JSON_PATH}
+    ${json_file_path}=    Get Variable Value    ${JSON_FILE_PATH}    ${documents_json}
     ${base_name}=    Get Variable Value    ${BASE_NAME}    test.routing
 
     Log    \n=== SEND JSON WITH BOTH ROUTING TYPES ===    console=yes
@@ -127,16 +164,34 @@ Send Any JSON File With Both Routing Types
     Log    \n✅ Test proves ActiveMQ stores complete messages beyond UI limit!    console=yes
 
 Test Send JSON With Three Routing Scenarios
-    [Documentation]    Demonstrates three routing scenarios:
-    ...    1. ANYCAST only address
-    ...    2. MULTICAST only address
-    ...    3. BOTH routing types on same address
-    ...    Example:
-    ...    robot -v JSON_FILE_PATH:/path/to/file.json -t "Test Send JSON With Three Routing Scenarios" demo_test.robot
+    [Documentation]    Demonstrates all three ActiveMQ Artemis routing configurations in practice
+    ...
+    ...    PURPOSE:
+    ...    • Shows how ActiveMQ addresses can be configured with different routing types
+    ...    • Demonstrates practical use cases for each configuration
+    ...    • Helps architects choose the right pattern for their needs
+    ...
+    ...    SCENARIO 1 - ANYCAST ONLY (Queue Pattern):
+    ...    • Address configured for point-to-point messaging only
+    ...    • Each message consumed by exactly ONE consumer
+    ...    • Perfect for: Order processing, task distribution, work queues
+    ...    • UI shows: ["ANYCAST"]
+    ...
+    ...    SCENARIO 2 - MULTICAST ONLY (Topic Pattern):
+    ...    • Address configured for publish-subscribe only
+    ...    • Each message delivered to ALL active subscribers
+    ...    • Perfect for: Event notifications, broadcasts, real-time updates
+    ...    • UI shows: ["MULTICAST"]
+    ...
+    ...    SCENARIO 3 - BOTH ROUTING TYPES (Hybrid):
+    ...    • Single address supporting BOTH patterns simultaneously
+    ...    • Can have queues AND topics on the same address
+    ...    • Perfect for: Complex systems needing both patterns
+    ...    • UI shows: ["MULTICAST","ANYCAST"]
     [Tags]    routing6    anycast    multicast5    both    demo
 
     # Get file path from variable or use default
-    ${json_file_path}=    Get Variable Value    ${JSON_FILE_PATH}    ${SAP_IDOC_JSON_PATH}
+    ${json_file_path}=    Get Variable Value    ${JSON_FILE_PATH}    ${documents_json}
 
     Log    \n=== THREE ROUTING SCENARIOS DEMO ===    console=yes
     Log    File: ${json_file_path}    console=yes
@@ -154,7 +209,7 @@ Test Send JSON With Three Routing Scenarios
     Log    This address will ONLY support point-to-point delivery    console=yes
 
     ${anycast_only_address}=    Set Variable    demo.anycast.only.address
-    ${anycast_only_queue}=    Set Variable    demo.anycast.only.queue
+    ${anycast_only_queue}=    Set Variable    demo.queue
 
     # Create queue with ANYCAST routing
     ${anycast_dest}=    Create Queue    ${anycast_only_address}    ${anycast_only_queue}    ANYCAST
@@ -257,15 +312,39 @@ Test Send JSON With Three Routing Scenarios
     Log    \n✅ Successfully demonstrated all three routing scenarios!    console=yes
 
 Test Send Any JSON File To Queue
-    [Documentation]    Flexible test - Send any JSON file to a queue
-    ...    Can be run with custom file path and queue name
-    ...    Examples:
-    ...    robot -v JSON_FILE_PATH:/path/to/file.json -t "Test Send Any JSON File To Queue" demo_test.robot
-    ...    robot -v QUEUE_NAME:my.custom.queue -t "Test Send Any JSON File To Queue" demo_test.robot
+    [Documentation]    Flexible utility test for sending any JSON file to any JMS queue
+    ...
+    ...    PURPOSE:
+    ...    • Provides a reusable test for JMS queue operations
+    ...    • Validates JSON structure before sending
+    ...    • Creates queue with proper ANYCAST routing
+    ...    • Useful for testing, debugging, and demonstrations
+    ...
+    ...    FEATURES:
+    ...    • Accepts any valid JSON file as input
+    ...    • Configurable queue name via command line
+    ...    • JSON validation with detailed error reporting
+    ...    • Automatic queue creation with ANYCAST routing
+    ...    • Detailed logging of the entire process
+    ...
+    ...    STEP-BY-STEP PROCESS:
+    ...    1. Validates file existence and readability
+    ...    2. Reads complete file content
+    ...    3. Validates JSON structure and syntax
+    ...    4. Creates ANYCAST queue if not exists
+    ...    5. Generates unique message ID with timestamp
+    ...    6. Sends message with metadata headers
+    ...    7. Provides viewing instructions
+    ...
+    ...    USE CASES:
+    ...    • Testing JMS connectivity and configuration
+    ...    • Sending test data for pipeline development
+    ...    • Debugging message flow issues
+    ...    • Performance testing with large JSON files
     [Tags]    flexible2    json    any    queue
 
     # Get file path from variable or use default
-    ${json_file_path}=    Get Variable Value    ${JSON_FILE_PATH}    ${SAP_IDOC_JSON_PATH}
+    ${json_file_path}=    Get Variable Value    ${JSON_FILE_PATH}    ${documents_json}
     ${queue_name}=    Get Variable Value    ${QUEUE_NAME}    test.json.queue
 
     Log    \n=== SEND ANY JSON FILE TO QUEUE ===    console=yes
@@ -345,3 +424,94 @@ Test Send Any JSON File To Queue
     ...    console=yes
 
     Log    \n✅ Test completed successfully!    console=yes
+
+Import Pipelines
+    [Documentation]    Imports the JMS Consumer pipeline that processes messages from ActiveMQ queues
+    ...
+    ...    PIPELINE: jmsconsumer.slp
+    ...
+    ...    PIPELINE COMPONENTS:
+    ...    1. JMS Consumer - Reads messages from 'demo.queue'
+    ...    • Uses AUTO_ACKNOWLEDGE mode
+    ...    • Synchronous message processing
+    ...    • Connected to local-activemq-artemis account
+    ...
+    ...    2. JSON Parser - Converts binary stream to documents
+    ...    • Allows non-standard JSON
+    ...    • Array elements as separate documents
+    ...    • Error handling for malformed JSON
+    ...
+    ...    3. JSON Formatter - Prepares data for file output
+    ...    • Formats documents back to JSON
+    ...    • Maintains data structure integrity
+    ...
+    ...    4. File Writer - Saves processed messages
+    ...    • Output: jms_consumed_data.json
+    ...    • Overwrites existing file
+    ...    • Creates file even if empty
+    ...
+    ...    INTEGRATION POINTS:
+    ...    • Requires active ActiveMQ connection
+    ...    • Needs 'demo.queue' to exist (auto-created on first send)
+    ...    • Outputs to local file system
+    ...
+    ...    VERIFICATIONS:
+    ...    • Pipeline file exists at specified path
+    ...    • Import generates unique pipeline ID
+    ...    • All snap components properly configured
+    ...    • Pipeline deployed to correct project space
+    [Tags]    jmsconsumer
+    [Template]    Import Pipelines From Template
+    ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${pipeline_slp}
+
+Create Triggered_task
+    [Documentation]    Creates a triggered task for the JMS Consumer pipeline enabling on-demand execution
+    ...
+    ...    TASK CONFIGURATION:
+    ...    • Task Name: jmsconsumer_Task
+    ...    • Pipeline: jmsconsumer
+    ...    • Trigger: Manual/API based
+    ...    • Error Handling: Fail on error
+    ...    VERIFICATIONS:
+    ...    • Task creation returns valid task ID
+    ...    • Task properly linked to pipeline
+    ...    • Task accessible via project path
+    ...    • Task metadata correctly configured
+    [Tags]    jmsconsumer
+    [Template]    Create Triggered Task From Template
+    ${unique_id}    ${project_path}    ${pipeline_name}    ${task_name}
+
+Execute Triggered Task
+    [Documentation]    Executes the JMS Consumer pipeline to process messages from ActiveMQ queue
+    ...
+    ...    EXECUTION FLOW:
+    ...    1. Triggers the jmsconsumer_Task via API
+    ...    2. Pipeline connects to ActiveMQ broker
+    ...    3. Reads messages from 'demo.queue'
+    ...    4. Processes each message through the pipeline
+    ...    5. Outputs to jms_consumed_data.json
+    ...
+    ...    PROCESSING BEHAVIOR:
+    ...    • Consumes ALL available messages in queue
+    ...    • Messages removed from queue after processing
+    ...    • Each message parsed as JSON document
+    ...    • Failed parsing logged but doesn't stop pipeline
+    ...
+    ...    OUTPUT FILE STRUCTURE:
+    ...    • Location: Pipeline execution directory
+    ...    • Format: JSON array of processed messages
+    ...    • Overwrites previous executions
+    ...    • Contains all successfully parsed messages
+    [Tags]    jmsconsumer
+    # Execute the pipeline
+    [Template]    Run Triggered Task With Parameters From Template
+
+    ${unique_id}    ${project_path}    ${pipeline_name}    ${task_name}
+
+
+*** Keywords ***
+Initialize Test Environment
+    ${unique_id}=    Get Unique Id
+    Set Suite Variable    ${unique_id}    ${unique_id}
+    Wait Until Plex Status Is Up    /${ORG_NAME}/${GROUNDPLEX_LOCATION_PATH}/${GROUNDPLEX_NAME}
+    Start Connection

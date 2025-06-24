@@ -11,7 +11,8 @@ services:
       ARTEMIS_AUTO_CREATE_QUEUES: true
       ARTEMIS_AUTO_CREATE_ADDRESSES: true
     volumes:
-      - activemq_data:/var/lib/artemis-instance
+      # Mount ActiveMQ data to local directory
+      - ./activemq-data:/var/lib/artemis-instance
       # Optional: Mount custom configuration
       # - ./config/broker.xml:/var/lib/artemis-instance/etc/broker.xml
     ports:
@@ -125,8 +126,9 @@ services:
     networks:
       - snaplogicnet
 
-volumes:
-  activemq_data:
+# Named volume no longer needed - using local bind mount instead
+# volumes:
+#   activemq_data:
 
 networks:
   snaplogicnet:
