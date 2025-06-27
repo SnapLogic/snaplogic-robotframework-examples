@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: snaplogic
       POSTGRES_DB: snaplogic
     ports:
-      - "5434:5432"
+      - "5435:5432"  # Updated to avoid any potential conflicts
     volumes:
       - postgres_data:/var/lib/postgresql/data
     profiles: [ postgres-dev ]

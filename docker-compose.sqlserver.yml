@@ -1,6 +1,7 @@
 services:
   sqlserver-db:
     image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
     container_name: sqlserver-db
     ports:
       - "1433:1433"
@@ -12,7 +13,7 @@ services:
       - sqlserver_data:/var/opt/mssql
       - ./sqlserver-init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "Snaplogic123!", "-Q", "SELECT 1", "-b"]
+      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "Snaplogic123!", "-Q", "SELECT 1", "-b", "-C"]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -23,6 +24,7 @@ services:
 
   sqlserver-schema-init:
     image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
     container_name: sqlserver-schema-init
     depends_on:
       sqlserver-db:
@@ -32,7 +34,7 @@ services:
     command: |
       bash -c "
       echo 'SQL Server is healthy, creating TEST database and user...'
-      /opt/mssql-tools/bin/sqlcmd -S sqlserver-db -U sa -P 'Snaplogic123!' -Q \"
+      /opt/mssql-tools18/bin/sqlcmd -S sqlserver-db -U sa -P 'Snaplogic123!' -C -Q \"
       -- Create TEST database if not exists
       IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'TEST')
       BEGIN

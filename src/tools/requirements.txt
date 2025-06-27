@@ -5,3 +5,4 @@ psycopg2-binary # PostgreSQL database driver
 minio # MinIO client
 stomp.py # STOMP protocol client for JMS testing
 requests # HTTP client for ActiveMQ management API
+pymssql

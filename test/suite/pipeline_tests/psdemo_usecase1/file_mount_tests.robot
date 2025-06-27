@@ -56,9 +56,11 @@ Upload Files With File Protocol
     file:///opt/snaplogic/test_data/actual_expected_data/expression_libraries/mount_poc_source.expr    ${upload_destination_file_path}
     file:///opt/snaplogic/test_data/actual_expected_data/expression_libraries/mount_poc_target.expr    ${upload_destination_file_path}
 
-    # === Alternative: Using test container paths (if test container processes the file:// URL) ===
-    # file:///app/test/suite/test_data/actual_expected_data/expression_libraries/mount_poc_source.expr    ${upload_destination_file_path}
-    # file:///app/test/suite/test_data/actual_expected_data/expression_libraries/mount_poc_target.expr    ${upload_destination_file_path}
+    # === From App Mount (always available - entire test directory is mounted) ===
+    # file:///app/test/suite/test_data/actual_expected_data/expression_libraries/test.expr    ${upload_destination_file_path}
+
+    # === Using CURDIR Relative Paths (resolves to mounted paths) ===
+    # file://${CURDIR}/../../test_data/actual_expected_data/expression_libraries/test.expr    ${upload_destination_file_path}
 
 Import Pipelines
     [Documentation]    Imports the file reader/writer pipeline that demonstrates

@@ -12,6 +12,7 @@ Documentation       Resource file for Database operations and management
 Library             OperatingSystem    # File system operations for SQL scripts
 Library             DatabaseLibrary    # Generic database operations
 Library             psycopg2    # PostgreSQL driver
+Library             pymssql    # SQL Server driver
 Library             String    # String operations for SQL processing
 Library             Collections    # List and dictionary operations
 
@@ -66,6 +67,24 @@ Connect to Oracle Database
     ...    ${ORACLE_DBPORT}
 
     Log    ✅ Successfully connected to Oracle database
+
+Connect to SQL Server Database
+    [Documentation]    Sets up SQL Server database connection
+    ...    *Arguments:*
+    ...    - Database connection parameters
+    ...    *Example:*
+    ...    | Connect to SQL Server Database | TestDB | sa | password | localhost | 1433 |
+    [Arguments]    ${SQLSERVER_DBNAME}    ${SQLSERVER_DBUSER}    ${SQLSERVER_DBPASS}    ${SQLSERVER_HOST}    ${SQLSERVER_DBPORT}=1433
+
+    Connect To Database
+    ...    pymssql
+    ...    ${SQLSERVER_DBNAME}
+    ...    ${SQLSERVER_DBUSER}
+    ...    ${SQLSERVER_DBPASS}
+    ...    ${SQLSERVER_HOST}
+    ...    ${SQLSERVER_DBPORT}
+
+    Log    ✅ Successfully connected to SQL Server database
 
 Connect to Database Generic
     [Documentation]    Generic database connection supporting multiple database types
@@ -704,6 +723,15 @@ Execute SQL On Database
         ...    ${ORACLE_HOST}
         ...    ${ORACLE_DBPORT}
         Execute SQL String    ${sql}
+    ELSE IF    '${database_type}' == 'sqlserver'
+        # Connect to SQL Server
+        Connect to SQL Server Database
+        ...    ${SQLSERVER_DBNAME}
+        ...    ${SQLSERVER_DBUSER}
+        ...    ${SQLSERVER_DBPASS}
+        ...    ${SQLSERVER_HOST}
+        ...    ${SQLSERVER_DBPORT}
+        Execute SQL String    ${sql}
     ELSE
-        Fail    Unknown database type: ${database_type}. Use 'postgres' or 'oracle'
+        Fail    Unknown database type: ${database_type}. Use 'postgres', 'oracle', or 'sqlserver'
     END
