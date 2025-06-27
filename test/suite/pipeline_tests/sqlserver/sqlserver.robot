@@ -27,7 +27,7 @@ ${upload_source_file_path}          ${CURDIR}/../../test_data/actual_expected_da
 ${container_source_file_path}       opt/snaplogic/test_data/actual_expected_data/expression_libraries
 ${upload_destination_file_path}     ${org_name}/${project_space}/${project_name}
 
-# SQLServer_Pipeline and Task Configuration
+# SQL Server Pipeline and Task Configuration
 ${ACCOUNT_PAYLOAD_FILE}             acc_sqlserver.json
 ${pipeline_name}                    sqlserver
 ${pipeline_name_slp}                sqlserver.slp
@@ -37,6 +37,8 @@ ${task2}                            SQLServer_Task2
 # SQL Server test data configuration
 ${CSV_DATA_TO_DB}                   ${CURDIR}/../../test_data/actual_expected_data/input_data/employees.csv    # Source CSV from input_data folder
 ${JSON_DATA_TO_DB}                  ${CURDIR}/../../test_data/actual_expected_data/input_data/employees.json    # Source JSON from input_data folder
+${ACTUAL_DATA_DIR}                  ${CURDIR}/../../test_data/actual_expected_data/actual_output    # Base directory for downloaded files from S3
+${EXPECTED_OUTPUT_DIR}              ${CURDIR}/../../test_data/actual_expected_data/expected_output    # Expected output files for comparison
 
 @{notification_states}              Completed    Failed
 &{task_notifications}
@@ -75,10 +77,11 @@ Create table for DB Operations
     ...    • Table structure matches expected schema (id, name, role, salary columns)
     ...    • Database connection is established and functional
     ...    • No SQL syntax or permission errors occur
-    [Tags]    sqlserver2    data_setup
+    [Tags]    sqlserver    data_setup
     [Template]    Execute SQL String
     ${DROP_TABLE_EMPLOYEES}
     ${CREATE_TABLE_EMPLOYEES}
+    ${DROP_TABLE_EMPLOYEES2}
     ${CREATE_TABLE_EMPLOYEES2}
 
 Load CSV Data To SQL Server
@@ -91,7 +94,7 @@ Load CSV Data To SQL Server
     ...    • Inserted row count = Auto-detected expected count from file
     ...    • Table truncated before insertion (clean state)
     ...    • CSV column mapping to database columns successful
-    [Tags]    sqlserver2    data_setup
+    [Tags]    sqlserver    data_setup
     [Template]    Load CSV Data Template
     # CSV File    table_name    Truncate Table
     ${CSV_DATA_TO_DB}    employees    ${TRUE}
@@ -113,10 +116,10 @@ Load JSON Data To SQL Server
     ${JSON_DATA_TO_DB}    employees2    ${TRUE}
 
 Import Pipelines
-    [Documentation]    Imports the    pipeline
+    [Documentation]    Imports the SQL Server pipeline
     ...    Returns:
-    ...    uniquie_id --> which is used untill executinh the tasks
-    ...    pipeline_snodeid--> which is used to create the tasks
+    ...    unique_id --> which is used until executing the tasks
+    ...    pipeline_snodeid --> which is used to create the tasks
     [Tags]    sqlserver
     [Template]    Import Pipelines From Template
     ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${pipeline_name_slp}
@@ -142,17 +145,17 @@ Execute Triggered Task With Parameters
 ################## COMPARISION TESTING    ##################
 
 Compare Actual vs Expected CSV Output
-    [Documentation]    Validates data integrity by comparing Oracle export against expected output
-    ...    Ensures data transferred from PostgreSQL to Oracle matches expectations
+    [Documentation]    Validates data integrity by comparing SQL Server export against expected output
+    ...    Ensures data processed through SQL Server pipeline matches expectations
     ...    📋 ASSERTIONS:
-    ...    • Exported Oracle CSV file exists locally
+    ...    • Exported SQL Server CSV file exists locally
     ...    • Expected CSV file exists for comparison
     ...    • File structures are identical (headers match)
-    ...    • Row counts are identical (no data loss during transfer)
+    ...    • Row counts are identical (no data loss during processing)
     ...    • All field values match exactly (no data corruption)
-    ...    • No extra or missing rows (complete data transfer)
+    ...    • No extra or missing rows (complete data processing)
     ...    • CSV formatting is preserved through pipeline
-    [Tags]    postgres_oracle    oracle    validation    comparison
+    [Tags]    sqlserver
     [Template]    Compare CSV Files Template
 
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status
@@ -161,6 +164,7 @@ Compare Actual vs Expected CSV Output
 
 *** Keywords ***
 Check connections
+    [Documentation]    Verifies SQL Server database connection and Snaplex availability
     Wait Until Plex Status Is Up    /${ORG_NAME}/${GROUNDPLEX_LOCATION_PATH}/${GROUNDPLEX_NAME}
     Connect to SQL Server Database
     ...    ${SQLSERVER_DBNAME}

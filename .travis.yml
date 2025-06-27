@@ -21,6 +21,14 @@ env:
     - POSTGRES_DBUSER="snaplogic"
     - POSTGRES_DBPASS="snaplogic"
 
+    # SQL Server Account-specific environment variables
+    - SQLSERVER_ACCOUNT_NAME="Sqlserver_Slim_Account"
+    - SQLSERVER_HOST="sqlserver-db"
+    - SQLSERVER_DBNAME="TEST"
+    - SQLSERVER_DBPORT="1433"
+    - SQLSERVER_DBUSER="sa"
+    - SQLSERVER_DBPASS="Snaplogic123!"
+
     # S3 Account-specific environment variables
     - S3_ACCOUNT_NAME="S3_Slim_Account"
     - S3_ENDPOINT="http://minio:9000"
