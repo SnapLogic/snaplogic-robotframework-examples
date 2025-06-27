@@ -22,12 +22,20 @@ env:
     - POSTGRES_DBPASS="snaplogic"
 
     # SQL Server Account-specific environment variables
-    - SQLSERVER_ACCOUNT_NAME="Sqlserver_Slim_Account"
+    - SQLSERVER_ACCOUNT_NAME="SQLServer_Slim_Account"
     - SQLSERVER_HOST="sqlserver-db"
     - SQLSERVER_DBNAME="TEST"
     - SQLSERVER_DBPORT="1433"
-    - SQLSERVER_DBUSER="sa"
+    - SQLSERVER_DBUSER="testuser"
     - SQLSERVER_DBPASS="Snaplogic123!"
+
+    # MySQL Account-specific environment variables
+    - MYSQL_ACCOUNT_NAME="MySQL_Slim_Account"
+    - MYSQL_HOST="mysql-db"
+    - MYSQL_DBNAME="TEST"
+    - MYSQL_DBPORT="3306"
+    - MYSQL_DBUSER="testuser"
+    - MYSQL_DBPASS="snaplogic"
 
     # S3 Account-specific environment variables
     - S3_ACCOUNT_NAME="S3_Slim_Account"
