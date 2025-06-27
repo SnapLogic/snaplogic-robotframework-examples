@@ -42,11 +42,11 @@ ${task2}                            Oracle_Task2
 &{task_params_set1}
 ...                                 M_CURR_DATE=10/12/2024
 ...                                 DOMAIN_NAME=SLIM_DOM2
-...                                 ${ORACLE_ACCOUNT_NAME}=shared/${ORACLE_ACCOUNT_NAME}
+...                                 Oracle_Slim_Account=shared/${ORACLE_ACCOUNT_NAME}
 &{task_params_updated_set1}
 ...                                 M_CURR_DATE=10/13/2024
 ...                                 DOMAIN_NAME=SLIM_DOM3
-...                                 ${ORACLE_ACCOUNT_NAME}=shared/${ORACLE_ACCOUNT_NAME}
+...                                 Oracle_Slim_Account=shared/${ORACLE_ACCOUNT_NAME}
 
 
 *** Test Cases ***

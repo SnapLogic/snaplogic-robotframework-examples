@@ -48,11 +48,11 @@ ${EXPECTED_OUTPUT_DIR}              ${CURDIR}/../../test_data/actual_expected_da
 &{task_params_set1}
 ...                                 M_CURR_DATE=10/12/2024
 ...                                 DOMAIN_NAME=SLIM_DOM2
-...                                 ${SQLSERVER_ACCOUNT_NAME}=shared/${SQLSERVER_ACCOUNT_NAME}
+...                                 SQLServer_Slim_Account=shared/${SQLSERVER_ACCOUNT_NAME}
 &{task_params_updated_set1}
 ...                                 M_CURR_DATE=10/13/2024
 ...                                 DOMAIN_NAME=SLIM_DOM3
-...                                 ${SQLSERVER_ACCOUNT_NAME}=shared/${SQLSERVER_ACCOUNT_NAME}
+...                                 SQLServer_Slim_Account=shared/${SQLSERVER_ACCOUNT_NAME}
 
 
 *** Test Cases ***

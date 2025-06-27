@@ -1,0 +1,63 @@
+{
+    "path": "{{ACCOUNT_LOCATION_PATH}}",
+    "duplicate_check": true,
+    "account": {
+        "class_fqid": "com-snaplogic-snaps-jms-jmsaccount_1-main31019",
+        "property_map": {
+            "view_serial": 100,
+            "settings": {
+                "JarsTable": {
+                    "value": [
+                        {
+                            "value": null,
+                            "JarFile": {
+                                "value": "{{ JMS_JAR }}",
+                                "expression": false
+                            }
+                        }
+                    ]
+                },
+                "username": {
+                    "value": "{{JMS_USERNAME}}"
+                },
+                "connectionFactoryName": {
+                    "value": "{{JMS_CONNECTION_FACTORY}}"
+                },
+                "jndiProperties": {
+                    "value": [
+                        {
+                            "propertyName": {
+                                "value": "{{JMS_INITIAL_NAMING_FACTORY_PROPERTY_NAME}}"
+                            },
+                            "propertyValue": {
+                                "value": "{{JMS_INITIAL_NAMING_FACTORY_PROPERTY_VALUE }}"
+                            }
+                        },
+                        {
+                            "propertyName": {
+                                "value": "{{JMS_CONNECTION_FACTORY_PROPERTY_NAME}}"
+                            },
+                            "propertyValue": {
+                                "value": "{{JMS_CONNECTION_FACTORY_PROPERTY_VALUE}}"
+                            }
+                        }
+                    ]
+                },
+                "password": {
+                    "value": "{{JMS_PASSWORD}}"
+                }
+            },
+            "info": {
+                "label": {
+                    "value": "{{JMS_ACCOUNT_NAME}}"
+                },
+                "notes": {
+                    "value": null
+                }
+            }
+        },
+        "test_settings": {
+            "runtime_path_id": "{{ORG_NAME}}/rt/sidekick/{{GROUNDPLEX_ENV}}"
+        }
+    }
+}

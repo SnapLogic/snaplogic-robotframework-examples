@@ -30,7 +30,9 @@ ${documents_json}                   ${CURDIR}/../../test_data/actual_expected_da
 # Project Configuration
 ${project_path}                     ${org_name}/${project_space}/${project_name}
 ${pipeline_file_path}               /app/src/pipelines
-${upload_destination_file_path}     ${org_name}/shared
+${upload_destination_file_path}     ${org_name}/${project_space}/shared
+
+${ACCOUNT_PAYLOAD_FILE}             acc_jms.json
 
 # File Mount Pipeline Configuration
 ${pipeline_name}                    jmsconsumer
@@ -39,6 +41,25 @@ ${task_name}                        jmscosumer_Task
 
 
 *** Test Cases ***
+Upload Files With File Protocol
+    [Documentation]    Demonstrates uploading expression library files using file:/// protocol
+    ...    from directories mounted in the SnapLogic Groundplex container
+    ...    📋 ASSERTIONS:
+    ...    • Files exist in the mounted directory path
+    ...    • File protocol URLs are correctly formed
+    ...    • Upload operation succeeds using file:/// protocol
+    ...    • Files are accessible in SnapLogic project space
+    [Tags]    jms_jar
+    [Template]    Upload File Using File Protocol Template
+    file:///opt/snaplogic/test_data/accounts_jar_files/jms/artemis-jms-client-all-2.6.0.jar    ${upload_destination_file_path}
+
+Create Account
+    [Documentation]    Creates an account in the project space using the provided payload file.
+    ...    "account_payload_path"    value as assigned to global variable    in __init__.robot file
+    [Tags]    jmsaccount
+    [Template]    Create Account From Template
+    ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
+
 Send Any JSON File With Both Routing Types
     [Documentation]    Comprehensive test proving ActiveMQ stores complete messages beyond UI display limits
     ...
@@ -460,7 +481,7 @@ Import Pipelines
     ...    • Import generates unique pipeline ID
     ...    • All snap components properly configured
     ...    • Pipeline deployed to correct project space
-    [Tags]    jmsconsumer
+    [Tags]    jmsaccount    jmsconsumer
     [Template]    Import Pipelines From Template
     ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${pipeline_slp}
 

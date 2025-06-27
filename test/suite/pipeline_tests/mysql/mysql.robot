@@ -50,7 +50,7 @@ ${JSON_DATA_TO_DB}                  ${CURDIR}/../../test_data/actual_expected_da
 &{task_params_updated_set1}
 ...                                 M_CURR_DATE=10/13/2024
 ...                                 DOMAIN_NAME=SLIM_DOM3
-...                                 ${MYSQL_ACCOUNT_NAME}=shared/${MYSQL_ACCOUNT_NAME}
+...                                 Mysql_Slim_Account=shared/${MYSQL_ACCOUNT_NAME}
 
 
 *** Test Cases ***

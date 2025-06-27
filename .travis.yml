@@ -43,6 +43,17 @@ env:
     - S3_ACCESS_KEY="demouser"
     - S3_SECRET_KEY="demopassword"
 
+    # JMS/ActiveMQ Account-specific environment variables
+    - JMS_ACCOUNT_NAME="JMS_Slim_Account"
+    - JMS_HOST="activemq"
+    - JMS_PORT="61616"
+    - JMS_USERNAME="admin"
+    - JMS_PASSWORD="admin"
+    - JMS_CONNECTION_FACTORY="ConnectionFactory"
+    - JMS_INITIAL_CONTEXT_FACTORY="org.apache.activemq.artemis.jndi.ActiveMQInitialContextFactory"
+    - JMS_PROVIDER_URL="tcp://activemq:61616"
+    - JMS_QUEUE_NAME="demo.queue"
+
     - RELEASE_BUILD_VERSION="main-33084"
 
 dist: jammy
