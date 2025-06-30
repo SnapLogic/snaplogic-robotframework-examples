@@ -75,7 +75,7 @@ Create table for DB Operations
     ...    • Table structure matches expected schema (id, name, role, salary columns)
     ...    • Database connection is established and functional
     ...    • No SQL syntax or permission errors occur
-    [Tags]    mysql2    data_setup
+    [Tags]    mysql    data_setup
     [Template]    Execute SQL String
     ${DROP_TABLE_EMPLOYEES}
     ${CREATE_TABLE_EMPLOYEES}
@@ -89,23 +89,11 @@ Create Control Date Table
     ...    • Table structure includes domain_name, control_date, and last_updated columns
     ...    • Primary key constraint on domain_name established
     ...    • Timestamp auto-update functionality configured
-    [Tags]    mysql2    data_setup
+    [Tags]    mysql    data_setup
     [Template]    Execute SQL String
     ${DROP_TABLE_CONTROL_DATE}
     ${CREATE_TABLE_CONTROL_DATE}
     ${INSERT_CONTROL_DATE}
-
-Create Stored Procedure
-    [Documentation]    Creates stored procedure for updating employee salaries
-    ...    📋 ASSERTIONS:
-    ...    • Stored procedure creation successful
-    ...    • Procedure accepts emp_id and new_salary parameters
-    ...    • No syntax errors in procedure definition
-    ...    • Database supports stored procedure functionality
-    [Tags]    mysql2    data_setup
-    [Template]    Execute SQL String
-    ${DROP_STORED_PROCEDURE}
-    ${CREATE_STORED_PROCEDURE}
 
 Load CSV Data To MySQL
     [Documentation]    Loads CSV employee data into MySQL with automatic row count validation
@@ -117,7 +105,7 @@ Load CSV Data To MySQL
     ...    • Inserted row count = Auto-detected expected count from file
     ...    • Table truncated before insertion (clean state)
     ...    • CSV column mapping to database columns successful
-    [Tags]    mysql2    data_setup
+    [Tags]    mysql    data_setup
     [Template]    Load CSV Data Template
     # CSV File    table_name    Truncate Table
     ${CSV_DATA_TO_DB}    employees    ${TRUE}
@@ -132,7 +120,7 @@ Load JSON Data To MySQL
     ...    • Inserted row count = Auto-detected expected count from file
     ...    • Table NOT truncated (appends to existing CSV data)
     ...    • JSON field mapping to database columns successful
-    [Tags]    mysql2    data_setup
+    [Tags]    mysql    data_setup
     [Template]    Load JSON Data Template
     # JSON File    table_name    Truncate Table
     ${JSON_DATA_TO_DB}    employees2    ${TRUE}
@@ -143,7 +131,7 @@ Verify Data Load
     ...    • employees table contains expected number of rows
     ...    • employees2 table contains expected number of rows
     ...    • Data integrity maintained during load operations
-    [Tags]    mysql2    validation
+    [Tags]    mysql    validation
     ${count1}=    Query    ${COUNT_EMPLOYEES}
     ${count2}=    Query    ${COUNT_EMPLOYEES2}
     Log    Employees table has ${count1[0][0]} rows

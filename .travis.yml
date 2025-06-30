@@ -64,10 +64,6 @@ python:
 services:
   - docker
 
-branches:
-  only:
-    - main
-
 before_script:
   - echo "🔍Environment Variables set up and creating .env file:"
   - chmod +x ./setup_env.sh # Make the script executable
