@@ -1,5 +1,5 @@
 import:
-  - post_test_results_notify.yml
+  - SnapLogic/slim-tx-engine:travis/post_test_results_notify.yml
 
 env:
   global:
