@@ -49,7 +49,7 @@ Upload Files With File Protocol
     ...    • File protocol URLs are correctly formed
     ...    • Upload operation succeeds using file:/// protocol
     ...    • Files are accessible in SnapLogic project space
-    [Tags]    jms_jar
+    [Tags]    jmsaccount    jmsjar
     [Template]    Upload File Using File Protocol Template
     file:///opt/snaplogic/test_data/accounts_jar_files/jms/artemis-jms-client-all-2.6.0.jar    ${upload_destination_file_path}
 
@@ -59,130 +59,6 @@ Create Account
     [Tags]    jmsaccount
     [Template]    Create Account From Template
     ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
-
-Send Any JSON File With Both Routing Types
-    [Documentation]    Comprehensive test proving ActiveMQ stores complete messages beyond UI display limits
-    ...
-    ...    PURPOSE:
-    ...    • Demonstrates that ActiveMQ's 256-character Web UI limit is ONLY visual
-    ...    • Proves complete message integrity for large JSON files
-    ...    • Validates message storage and retrieval capabilities
-    ...    • Compares original file content with retrieved queue content
-    ...
-    ...    TEST WORKFLOW:
-    ...    1. Reads and validates JSON file (any size)
-    ...    2. Creates ANYCAST queue for point-to-point messaging
-    ...    3. Sends complete JSON content to queue
-    ...    4. Retrieves full message content programmatically
-    ...    5. Saves retrieved content to file for comparison
-    ...    6. Performs byte-by-byte comparison with original
-    ...    7. Demonstrates UI limitation vs actual storage
-    ...
-    ...    KEY FINDINGS:
-    ...    • ActiveMQ stores messages of ANY size completely
-    ...    • Web UI truncates display at 256 characters
-    ...    • Full content is always retrievable via API/code
-    ...    • Message integrity is 100% maintained
-    [Tags]    json    routing    anycast    multicast4
-
-    # Get file path from variable or use default
-    ${json_file_path}=    Get Variable Value    ${JSON_FILE_PATH}    ${documents_json}
-    ${base_name}=    Get Variable Value    ${BASE_NAME}    test.routing
-
-    Log    \n=== SEND JSON WITH BOTH ROUTING TYPES ===    console=yes
-    Log    File: ${json_file_path}    console=yes
-
-    # Read and validate JSON file
-    File Should Exist    ${json_file_path}
-    ${json_content}=    Get File    ${json_file_path}
-    ${file_name}=    Evaluate    os.path.basename("${json_file_path}")    os
-    ${content_length}=    Get Length    ${json_content}
-
-    # Validate JSON
-    ${json_data}=    Evaluate    json.loads($json_content)    json
-    Log    ✅ Valid JSON file: ${file_name} (${content_length} chars)    console=yes
-
-    # === ANYCAST ROUTING ===
-    Log    \n=== 1. ANYCAST ROUTING (Queue Pattern) ===    console=yes
-    ${anycast_address}=    Set Variable    ${base_name}.anycast.address
-    ${anycast_queue}=    Set Variable    ${base_name}.anycast.queue
-
-    # Create ANYCAST queue
-    ${anycast_dest}=    Create Queue    ${anycast_address}    ${anycast_queue}    ANYCAST
-    Log    Created ANYCAST queue: ${anycast_queue}    console=yes
-
-    # Send to ANYCAST
-    ${anycast_headers}=    Create Dictionary
-    ...    routing-type=ANYCAST
-    ...    delivery-pattern=point-to-point
-    ...    file=${file_name}
-    Send Text Message    ${anycast_dest}    ${json_content}    anycast-msg-001    ${anycast_headers}
-    Log    ✅ Sent to ANYCAST - only ONE consumer will receive this    console=yes
-
-    # NEW: Verify full message content
-    Log    \n=== VERIFYING FULL MESSAGE CONTENT ===    console=yes
-
-    # Get the full message content from the queue
-    Log    \nRetrieving full message content from queue...    console=yes
-    ${queue_content}    ${msg_length}=    Get Full Message Content From Queue    ${anycast_dest}
-    Log    Message length in queue: ${msg_length} chars    console=yes
-
-    # Verify the original JSON length matches what's in the queue
-    Should Be Equal As Numbers    ${msg_length}    ${content_length}
-    ...    msg=Queue message length (${msg_length}) doesn't match sent message length (${content_length})
-    Log    ✅ Message length verified!    console=yes
-
-    # Save the queue content to file
-    ${output_dir}=    Set Variable    ${CURDIR}/../../test_data/actual_expected_data/actual_jms_content
-    ${saved_file}=    Save Queue Content To File    ${queue_content}    ${file_name}    ${output_dir}
-    Log    \n💾 Queue content saved to file for verification    console=yes
-
-    # Compare the original file with the file saved from queue
-    Log    \n=== COMPARING ORIGINAL FILE WITH QUEUE CONTENT ===    console=yes
-    ${base_name}=    Evaluate    os.path.splitext("${file_name}")[0]    os
-    ${queue_file_path}=    Set Variable    ${output_dir}/${base_name}_from_queue.json
-
-    # Use Compare JSON Files Template with all required arguments
-    ${comparison_result}=    Compare JSON Files Template
-    ...    ${json_file_path}    # file1_path
-    ...    ${queue_file_path}    # file2_path
-    ...    ${TRUE}    # ignore_order
-    ...    ${TRUE}    # show_details
-    ...    IDENTICAL    # expected_status
-
-    Log    ✅ Original file and queue content are IDENTICAL!    console=yes
-    Log    Comparison result: ${comparison_result}    console=yes
-
-    # Display the actual content from the queue
-    Log    \n=== ACTUAL MESSAGE CONTENT FROM QUEUE ===    console=yes
-    Log    First 500 characters:    console=yes
-    ${preview}=    Get Substring    ${queue_content}    0    500
-    Log    ${preview}...    console=yes
-
-    # Display what the UI shows
-    Log    \n=== WHAT ACTIVEMQ UI SHOWS ===    console=yes
-    ${ui_preview}=    Get Substring    ${queue_content}    0    256
-    Log    ${ui_preview}...    console=yes
-
-    # Show results
-    Log    \n=== RESULTS ===    console=yes
-    Log    Original JSON file: ${content_length} chars    console=yes
-    Log    Message sent: ${content_length} chars    console=yes
-    Log    Message in queue: ${msg_length} chars    console=yes
-    Log    Saved to: ${saved_file}    console=yes
-
-    Log    \n📊 KEY FINDINGS:    console=yes
-    Log    - ActiveMQ successfully stores the full ${content_length} character message    console=yes
-    Log    - The Web UI only displays the first 256 characters    console=yes
-    IF    ${content_length} > 256
-        ${missing_in_ui}=    Evaluate    ${content_length} - 256
-        Log    - UI shows only 256 of ${content_length} chars (missing ${missing_in_ui} chars)    console=yes
-        ${ui_percentage}=    Evaluate    round(256.0 / ${content_length} * 100, 1)
-        Log    - That's only ${ui_percentage}% of the actual message!    console=yes
-    END
-    Log    - The 256 char limit is ONLY a UI display limitation    console=yes
-    Log    - Full content saved to: actual_jms_content/${file_name}    console=yes
-    Log    \n✅ Test proves ActiveMQ stores complete messages beyond UI limit!    console=yes
 
 Test Send JSON With Three Routing Scenarios
     [Documentation]    Demonstrates all three ActiveMQ Artemis routing configurations in practice
@@ -332,120 +208,6 @@ Test Send JSON With Three Routing Scenarios
 
     Log    \n✅ Successfully demonstrated all three routing scenarios!    console=yes
 
-Test Send Any JSON File To Queue
-    [Documentation]    Flexible utility test for sending any JSON file to any JMS queue
-    ...
-    ...    PURPOSE:
-    ...    • Provides a reusable test for JMS queue operations
-    ...    • Validates JSON structure before sending
-    ...    • Creates queue with proper ANYCAST routing
-    ...    • Useful for testing, debugging, and demonstrations
-    ...
-    ...    FEATURES:
-    ...    • Accepts any valid JSON file as input
-    ...    • Configurable queue name via command line
-    ...    • JSON validation with detailed error reporting
-    ...    • Automatic queue creation with ANYCAST routing
-    ...    • Detailed logging of the entire process
-    ...
-    ...    STEP-BY-STEP PROCESS:
-    ...    1. Validates file existence and readability
-    ...    2. Reads complete file content
-    ...    3. Validates JSON structure and syntax
-    ...    4. Creates ANYCAST queue if not exists
-    ...    5. Generates unique message ID with timestamp
-    ...    6. Sends message with metadata headers
-    ...    7. Provides viewing instructions
-    ...
-    ...    USE CASES:
-    ...    • Testing JMS connectivity and configuration
-    ...    • Sending test data for pipeline development
-    ...    • Debugging message flow issues
-    ...    • Performance testing with large JSON files
-    [Tags]    flexible2    json    any    queue
-
-    # Get file path from variable or use default
-    ${json_file_path}=    Get Variable Value    ${JSON_FILE_PATH}    ${documents_json}
-    ${queue_name}=    Get Variable Value    ${QUEUE_NAME}    test.json.queue
-
-    Log    \n=== SEND ANY JSON FILE TO QUEUE ===    console=yes
-    Log    File: ${json_file_path}    console=yes
-    Log    Queue: ${queue_name}    console=yes
-
-    # Step 1: Verify file exists
-    Log    \nStep 1: Checking if file exists...    console=yes
-    File Should Exist    ${json_file_path}    File not found: ${json_file_path}
-    ${file_name}=    Evaluate    os.path.basename("${json_file_path}")    os
-    Log    ✅ File found: ${file_name}    console=yes
-
-    # Step 2: Read the JSON file
-    Log    \nStep 2: Reading JSON file...    console=yes
-    ${json_content}=    Get File    ${json_file_path}
-    ${content_length}=    Get Length    ${json_content}
-    Log    ✅ File read: ${content_length} characters    console=yes
-
-    # Step 3: Validate JSON
-    Log    \nStep 3: Validating JSON...    console=yes
-    TRY
-        ${json_data}=    Evaluate    json.loads($json_content)    json
-        ${is_valid}=    Set Variable    True
-        Log    ✅ Valid JSON structure    console=yes
-
-        # Try to determine JSON type
-        ${json_type}=    Evaluate    type($json_data).__name__
-        Log    JSON type: ${json_type}    console=yes
-
-        # Show preview of JSON structure
-        ${preview}=    Evaluate
-        ...    json.dumps($json_data, indent=2)[:500] + "..." if len(json.dumps($json_data)) > 500 else json.dumps($json_data, indent=2)
-        ...    json
-        Log    JSON Preview:\n${preview}    console=yes
-    EXCEPT    AS    ${error}
-        Log    ❌ Invalid JSON: ${error}    console=yes
-        Fail    File contains invalid JSON
-    END
-
-    # Step 4: Create queue destination
-    Log    \nStep 4: Creating ANYCAST queue destination...    console=yes
-    # Use explicit ANYCAST routing
-    ${queue_address}=    Set Variable    ${queue_name}.address
-    ${queue_dest}=    Create Queue    ${queue_address}    ${queue_name}    ANYCAST
-    Log    ✅ ANYCAST Queue created: ${queue_name}    console=yes
-    Log    Address: ${queue_address}, Routing: ANYCAST    console=yes
-
-    # Step 5: Generate message ID and headers
-    ${timestamp}=    Get Current Date    result_format=epoch
-    ${message_id}=    Set Variable    anycast-json-msg-${timestamp}
-
-    # Add routing type to headers
-    ${headers}=    Create Dictionary
-    ...    routing-type=ANYCAST
-    ...    file-name=${file_name}
-    ...    content-size=${content_length}
-
-    # Step 6: Send JSON to ANYCAST queue
-    Log    \nStep 5: Sending JSON to ANYCAST queue...    console=yes
-    Send Text Message    ${queue_dest}    ${json_content}    ${message_id}    ${headers}
-    Log    ✅ Message sent successfully to ANYCAST queue!    console=yes
-
-    # Step 7: Display summary
-    Log    \n=== SUMMARY ===    console=yes
-    Log    File: ${file_name}    console=yes
-    Log    Queue: ${queue_name}    console=yes
-    Log    Message ID: ${message_id}    console=yes
-    Log    Size: ${content_length} characters    console=yes
-
-    Log    \n📋 TO VIEW THE MESSAGE:    console=yes
-    Log    1. Web UI: http://localhost:8161/console → Queues → ${queue_name}    console=yes
-    Log    2. Python: python view_messages.py ${queue_name}    console=yes
-
-    Log    \n💡 TIP: Run with custom file/queue:    console=yes
-    Log
-    ...    robot -v JSON_FILE_PATH:/your/file.json -v QUEUE_NAME:your.queue -t "Test Send Any JSON File To Queue" demo_test.robot
-    ...    console=yes
-
-    Log    \n✅ Test completed successfully!    console=yes
-
 Import Pipelines
     [Documentation]    Imports the JMS Consumer pipeline that processes messages from ActiveMQ queues
     ...
@@ -481,7 +243,7 @@ Import Pipelines
     ...    • Import generates unique pipeline ID
     ...    • All snap components properly configured
     ...    • Pipeline deployed to correct project space
-    [Tags]    jmsaccount    jmsconsumer
+    [Tags]    jmsconsumer
     [Template]    Import Pipelines From Template
     ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${pipeline_slp}
 

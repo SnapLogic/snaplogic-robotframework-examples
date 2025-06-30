@@ -1,6 +1,6 @@
 {
     "path": "{{ACCOUNT_LOCATION_PATH}}",
-    "duplicate_check": true,
+    "duplicate_check": false,
     "account": {
         "class_fqid": "com-snaplogic-snaps-jms-jmsaccount_1-main31019",
         "property_map": {

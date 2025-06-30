@@ -1,6 +1,6 @@
 {
     "path": "{{ACCOUNT_LOCATION_PATH}}",
-    "duplicate_check": true,
+    "duplicate_check": false,
     "account": {
         "class_fqid": "com-snaplogic-snap-api-sql-accounts-postgresdatabaseaccount_1-main31019",
         "property_map": {

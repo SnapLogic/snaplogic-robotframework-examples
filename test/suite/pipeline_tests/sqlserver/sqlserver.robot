@@ -59,7 +59,7 @@ ${EXPECTED_OUTPUT_DIR}              ${CURDIR}/../../test_data/actual_expected_da
 Create Account
     [Documentation]    Creates an account in the project space using the provided payload file.
     ...    "account_payload_path"    value as assigned to global variable    in __init__.robot file
-    [Tags]    sqlserver
+    [Tags]    sqlserver    sqlserveraccount
     [Template]    Create Account From Template
     ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
 
