@@ -195,7 +195,7 @@ Compare Actual vs Expected CSV Output
     ...    • All field values match exactly (no data corruption)
     ...    • No extra or missing rows (complete data transfer)
     ...    • CSV formatting is preserved through pipeline
-    [Tags]    postgres_oracle    oracle    validation    comparison
+    [Tags]    postgres_oracle    validation    comparison
     [Template]    Compare CSV Files Template
 
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status

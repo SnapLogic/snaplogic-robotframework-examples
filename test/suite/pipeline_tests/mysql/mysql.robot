@@ -46,7 +46,7 @@ ${JSON_DATA_TO_DB}                  ${CURDIR}/../../test_data/actual_expected_da
 &{task_params_set1}
 ...                                 M_CURR_DATE=10/12/2024
 ...                                 DOMAIN_NAME=SLIM_DOM2
-...                                 ${MYSQL_ACCOUNT_NAME}=shared/${MYSQL_ACCOUNT_NAME}
+...                                 Mysql_Slim_Account=shared/${MYSQL_ACCOUNT_NAME}
 &{task_params_updated_set1}
 ...                                 M_CURR_DATE=10/13/2024
 ...                                 DOMAIN_NAME=SLIM_DOM3
@@ -120,7 +120,7 @@ Load JSON Data To MySQL
     ...    • Inserted row count = Auto-detected expected count from file
     ...    • Table NOT truncated (appends to existing CSV data)
     ...    • JSON field mapping to database columns successful
-    [Tags]    mysql    data_setup
+    [Tags]    mysql
     [Template]    Load JSON Data Template
     # JSON File    table_name    Truncate Table
     ${JSON_DATA_TO_DB}    employees2    ${TRUE}
@@ -131,7 +131,7 @@ Verify Data Load
     ...    • employees table contains expected number of rows
     ...    • employees2 table contains expected number of rows
     ...    • Data integrity maintained during load operations
-    [Tags]    mysql    validation
+    [Tags]    mysql
     ${count1}=    Query    ${COUNT_EMPLOYEES}
     ${count2}=    Query    ${COUNT_EMPLOYEES2}
     Log    Employees table has ${count1[0][0]} rows
@@ -172,7 +172,7 @@ Test Control Date Operations
     ...    • Control date can be updated successfully
     ...    • Date format conversion works correctly
     ...    • Select operations return expected format
-    [Tags]    mysql    control_date
+    [Tags]    mysql
     # Update control date
     Execute SQL String    ${UPDATE_CONTROL_DATE}    12/25/2024    SLIM_DOM1
 
@@ -195,7 +195,7 @@ Compare Actual vs Expected CSV Output
     ...    • All field values match exactly (no data corruption)
     ...    • No extra or missing rows (complete data processing)
     ...    • CSV formatting is preserved through pipeline
-    [Tags]    mysql    validation    comparison
+    [Tags]    mysql
     [Template]    Compare CSV Files Template
 
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status
