@@ -16,7 +16,7 @@ ${JMS_ENHANCED_FEATURES}    True
 *** Test Cases ***
 Test Clear Queue Functionality
     [Documentation]    Test that Clear Queue keyword successfully removes all messages from a queue
-    [Tags]    jms    queue    clear
+    [Tags]    jmsbasic    queue    clear
 
     # Setup: Send some test messages to the queue using Send Message To Queue
     Send Message To Queue    TestQueue    First test message
@@ -44,7 +44,7 @@ Test Clear Queue Functionality
 
 Test Create Consumer Functionality
     [Documentation]    Test that Create Consumer keyword successfully creates a consumer for a queue
-    [Tags]    jms    consumer    createconsumer
+    [Tags]    jmsbasic    consumer    createconsumer
 
     # Setup: Clear any existing messages from the test queue
     Log    About to clear potentially non-existent queue: ConsumerTestQueue
@@ -72,7 +72,7 @@ Test Create Consumer Functionality
 
 Test Create Message Functionality
     [Documentation]    Test that Create Message keyword successfully creates a message and sets it as default for Send operations
-    [Tags]    jms    message    createmessage
+    [Tags]    jmsbasic    message    createmessage
 
     # Setup: Clear any existing messages from the test queue
     Log    Clearing MessageTestQueue for test setup...
@@ -122,7 +122,7 @@ Test Create Message Functionality
 
 Test Create Producer Functionality
     [Documentation]    Test that Create Producer keyword successfully creates a producer and sets it as default for Send operations
-    [Tags]    jms    producer    createproducer
+    [Tags]    jmsbasic    producer    createproducer
 
     # Setup: Clear any existing messages from test queues
     Log    Clearing test queues for producer test setup...
@@ -187,7 +187,7 @@ Test Create Producer Functionality
 
 Test Get Queue Functionality
     [Documentation]    Test that Get Queue keyword successfully retrieves a queue destination
-    [Tags]    jms    queue    getqueue
+    [Tags]    jmsbasic    queue    getqueue
 
     # Setup: Clear any existing messages from test queue
     Log    Clearing GetQueueTest for test setup...
@@ -267,7 +267,7 @@ Test Get Queue Functionality
 
 Test Get Text From Last Received Message Functionality
     [Documentation]    Test that Get Text From Last Received Message keyword from jms2.resource successfully retrieves text from consumed messages with assertion support
-    [Tags]    jms    consumer    gettextfromlastreceivedmessage
+    [Tags]    jmsbasic    consumer    gettextfromlastreceivedmessage
 
     # Setup: Clear any existing messages from test queue
     Log    Clearing GetTextTestQueue for test setup...
@@ -398,7 +398,7 @@ Test Get Text From Last Received Message Functionality
 
 Test Get Text From Message Functionality
     [Documentation]    Test that Get Text From Message keyword successfully extracts text from message objects with assertion support
-    [Tags]    jms    message    gettextfrommessage
+    [Tags]    jmsbasic    message    gettextfrommessage
 
     # Setup: Clear any existing messages from test queue
     Log    Clearing GetTextFromMessageQueue for test setup...
@@ -539,7 +539,7 @@ Test Get Text From Message Functionality
 
 Test Create Queue Functionality
     [Documentation]    Test that Create Queue keyword successfully creates ANYCAST queues in ActiveMQ Artemis
-    [Tags]    jms    queue    createqueue
+    [Tags]    jmsbasic    queue    createqueue
 
     # Test 1: Create simple queue (address and queue name are same)
     Log    Testing Create Queue with simple name...
@@ -598,7 +598,7 @@ Test Create Queue Functionality
 
 Test Create Topic Functionality
     [Documentation]    Test that Create Topic keyword successfully creates MULTICAST topics in ActiveMQ Artemis
-    [Tags]    jms    topic    createtopic
+    [Tags]    jmsbasic    topic    createtopic
 
     # Test 1: Create simple topic (address and topic name are same)
     Log    Testing Create Topic with simple name...
@@ -691,7 +691,7 @@ Test Create Topic Functionality
 
 Test Create Queue And Topic Together
     [Documentation]    Test creating both queues and topics to demonstrate the difference
-    [Tags]    jms    queue    topic    anycast    multicast
+    [Tags]    jmsbasic    queue    topic    anycast    multicast
 
     # Setup: Clear test queues/topics
     Log    Setting up test by clearing any existing messages...
@@ -754,7 +754,7 @@ Test Create Queue And Topic Together
 
 Test Queue And Topic Routing Types
     [Documentation]    Verify that Create Queue creates ANYCAST and Create Topic creates MULTICAST
-    [Tags]    jms    queue    topic    routing2
+    [Tags]    jmsbasic    queue    topic    routing2
 
     # Create a queue - should be ANYCAST
     Log    Creating queue (should be ANYCAST)...
@@ -796,7 +796,7 @@ Test Send Keyword Functionality
     ...    - Sending multiple messages to the same queue
     ...    - Want to use Create Message for message management
     ...    - Working with a single producer workflow
-    [Tags]    jms    producer    send
+    [Tags]    jmsbasic    producer    send
 
     # Setup: Clear the test queue
     Log    Clearing SendTestQueue for test setup...
@@ -859,7 +859,7 @@ Test Send Message To Queue Functionality
     ...    - Need a quick one-off send
     ...    - Don't want to manage producers
     ...    - Sending to different queues occasionally
-    [Tags]    jms    queue    sendmessagetoqueue
+    [Tags]    jmsbasic    queue    sendmessagetoqueue
 
     # Setup: Clear multiple test queues
     Log    Clearing multiple queues for test setup...
@@ -928,7 +928,7 @@ Test Send Message To Producer Functionality
     ...    - Managing multiple producers
     ...    - Need explicit control over which producer to use
     ...    - Building complex routing scenarios
-    [Tags]    jms    producer    sendmessagetoproducer
+    [Tags]    jmsbasic    producer    sendmessagetoproducer
 
     # Setup: Clear test queues
     Log    Clearing queues for multi-producer test...
@@ -1036,7 +1036,7 @@ Send Any JSON File With Both Routing Types
     ...    • Web UI truncates display at 256 characters
     ...    • Full content is always retrievable via API/code
     ...    • Message integrity is 100% maintained
-    [Tags]    json    routing    anycast    multicast4
+    [Tags]    jmsbasic    routing    anycast    multicast4
 
     # Get file path from variable or use default
     ${json_file_path}=    Get Variable Value    ${JSON_FILE_PATH}    ${documents_json}
@@ -1167,7 +1167,7 @@ Test Send Any JSON File To Queue
     ...    • Sending test data for pipeline development
     ...    • Debugging message flow issues
     ...    • Performance testing with large JSON files
-    [Tags]    flexible2    json    any    queue
+    [Tags]    jmsbasic    json    any    queue
 
     # Get file path from variable or use default
     ${json_file_path}=    Get Variable Value    ${JSON_FILE_PATH}    ${documents_json}
