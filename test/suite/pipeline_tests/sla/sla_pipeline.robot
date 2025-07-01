@@ -37,7 +37,7 @@ Import Pipelines
     ...    **Expected Results:**
     ...    - Pipeline is successfully imported without errors
     ...    - pipeline node ID are generated and available for use
-    [Tags]    sla_pipeline
+    [Tags]    sla_pipeline    regression
     [Template]    Import Pipelines From Template
     ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${pipeline_name_slp}
 
@@ -57,7 +57,7 @@ Create Triggered_task
     ...    - Triggered task is successfully created
     ...    - Task metadata is properly configured and accessible
     ...    - Task is ready for execution
-    [Tags]    sla_pipeline
+    [Tags]    sla_pipeline    regression
     [Template]    Create Triggered Task From Template
     ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}
 
@@ -77,7 +77,7 @@ Execute Trigger Task Within Certain Time
     ...    - No execution errors or failures occur
     ...    - Task status indicates successful completion
     ...    - Pipeline processes data as expected
-    [Tags]    sla_pipeline
+    [Tags]    sla_pipeline    regression
     Run Triggered Task In Certain Time
     ...    30 Sec
     ...    5 Sec

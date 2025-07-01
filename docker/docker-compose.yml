@@ -1,10 +1,3 @@
-# See note: The user asked to modify `robot.Dockerfile`, but the provided file is `docker-compose.yml`.
-# The instructions specify to only change the included file, which is `docker-compose.yml`.
-# Since the instructions are about `robot.Dockerfile` and no content of that file is provided,
-# no changes will be made to the given `docker-compose.yml` file.
-
-# Therefore, output the original `docker-compose.yml` file as is:
-
 # docker-compose.yml
 include:
   - docker-compose.oracle.yml
@@ -18,18 +11,18 @@ include:
 services:
   tools:
     build:
-      context: src/tools
-      dockerfile: ../../robot.Dockerfile
+      context: ../src/tools
+      dockerfile: ../../docker/robot.Dockerfile
     container_name: snaplogic-test-example-tools-container
     image: snaplogic-test-example:latest
     env_file:
-      - .env
+      - ../.env
     volumes:
-      - ./src:/app/src
-      - ./test:/app/test
-      - ./.env:/app/.env
-      - ./setup_env.sh:/app/setup_env.sh
-      - ./test/suite/test_data:/opt/snaplogic/test_data
+      - ../src:/app/src
+      - ../test:/app/test
+      - ../.env:/app/.env
+      - ../setup_env.sh:/app/setup_env.sh
+      - ../test/suite/test_data:/opt/snaplogic/test_data
       # Optional: Add mounts for common local directories (uncomment as needed)
       # - ~/Documents:/opt/host-documents:ro
       # - ~/Downloads:/opt/host-downloads:ro

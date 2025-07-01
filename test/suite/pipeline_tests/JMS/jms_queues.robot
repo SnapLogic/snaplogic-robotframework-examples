@@ -49,14 +49,14 @@ Upload Files With File Protocol
     ...    • File protocol URLs are correctly formed
     ...    • Upload operation succeeds using file:/// protocol
     ...    • Files are accessible in SnapLogic project space
-    [Tags]    jmsaccount    jmsjar    jms
+    [Tags]    jmsaccount    jmsjar    jms    regression
     [Template]    Upload File Using File Protocol Template
     file:///opt/snaplogic/test_data/accounts_jar_files/jms/artemis-jms-client-all-2.6.0.jar    ${upload_destination_file_path}
 
 Create Account
     [Documentation]    Creates an account in the project space using the provided payload file.
     ...    "account_payload_path"    value as assigned to global variable    in __init__.robot file
-    [Tags]    jmsaccount    jms
+    [Tags]    jmsaccount    jms    regression
     [Template]    Create Account From Template
     ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
 
@@ -85,7 +85,7 @@ Test Send JSON With Three Routing Scenarios
     ...    • Can have queues AND topics on the same address
     ...    • Perfect for: Complex systems needing both patterns
     ...    • UI shows: ["MULTICAST","ANYCAST"]
-    [Tags]    jms    anycast    multicast5    both    demo
+    [Tags]    jms    anycast    multicast5    both    demo    regression
 
     # Get file path from variable or use default
     ${json_file_path}=    Get Variable Value    ${JSON_FILE_PATH}    ${documents_json}
@@ -243,7 +243,7 @@ Import Pipelines
     ...    • Import generates unique pipeline ID
     ...    • All snap components properly configured
     ...    • Pipeline deployed to correct project space
-    [Tags]    jms
+    [Tags]    jms    regression
     [Template]    Import Pipelines From Template
     ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${pipeline_slp}
 
@@ -260,7 +260,7 @@ Create Triggered_task
     ...    • Task properly linked to pipeline
     ...    • Task accessible via project path
     ...    • Task metadata correctly configured
-    [Tags]    jms
+    [Tags]    jms    regression
     [Template]    Create Triggered Task From Template
     ${unique_id}    ${project_path}    ${pipeline_name}    ${task_name}
 
@@ -285,7 +285,7 @@ Execute Triggered Task
     ...    • Format: JSON array of processed messages
     ...    • Overwrites previous executions
     ...    • Contains all successfully parsed messages
-    [Tags]    jms
+    [Tags]    jms    regression
     # Execute the pipeline
     [Template]    Run Triggered Task With Parameters From Template
 

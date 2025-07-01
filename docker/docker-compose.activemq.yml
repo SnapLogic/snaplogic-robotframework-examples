@@ -12,9 +12,9 @@ services:
       ARTEMIS_AUTO_CREATE_ADDRESSES: true
     volumes:
       # Mount ActiveMQ data to local directory
-      - ./activemq-data:/var/lib/artemis-instance
+      - ../activemq-data:/var/lib/artemis-instance
       # Optional: Mount custom configuration
-      # - ./config/broker.xml:/var/lib/artemis-instance/etc/broker.xml
+      # - ../config/broker.xml:/var/lib/artemis-instance/etc/broker.xml
     ports:
       - "8161:8161"  # Web Console
       - "61616:61616"  # JMS Port

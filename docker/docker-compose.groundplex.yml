@@ -7,10 +7,10 @@ services:
       - "8090:8090"
       - "8081:8081"
     volumes:
-      - ./test/.config/${GROUNDPLEX_NAME}.slpropz:/opt/snaplogic/etc/${GROUNDPLEX_NAME}.slpropz
+      - ../test/.config/${GROUNDPLEX_NAME}.slpropz:/opt/snaplogic/etc/${GROUNDPLEX_NAME}.slpropz
       - /var/run.docker.sock:/var/run/docker.sock
       # Mount entire actual_expected_data directory for comprehensive test data access
-      - ./test/suite/test_data:/opt/snaplogic/test_data
+      - ../test/suite/test_data:/opt/snaplogic/test_data
     profiles: [ gp ]
     networks:
       - snaplogicnet

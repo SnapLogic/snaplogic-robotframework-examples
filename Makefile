@@ -29,6 +29,11 @@
 DATE := $(shell date +'%Y-%m-%d-%H-%M')  # Used to tag Robot output
 SHELL = /bin/bash
 
+# Docker compose file location
+DOCKER_COMPOSE_FILE := docker/docker-compose.yml
+# Docker compose command with env file
+DOCKER_COMPOSE := docker compose --env-file .env -f $(DOCKER_COMPOSE_FILE)
+
 # Docker Compose profiles to be used (can be overridden by CLI)
 # COMPOSE_PROFILES ?= gp,oracle-dev,postgres-dev,minio-dev
 COMPOSE_PROFILES ?= tools,oracle-dev,minio,postgres-dev,activemq,mysql-dev,sqlserver-dev
@@ -39,12 +44,12 @@ COMPOSE_PROFILES ?= tools,oracle-dev,minio,postgres-dev,activemq,mysql-dev,sqlse
 # =============================================================================
 snaplogic-build-tools: snaplogic-stop-tools
 	@echo "Building image..."
-	docker compose build --no-cache tools
+	$(DOCKER_COMPOSE) build --no-cache tools
 
 snaplogic-stop-tools:
 	@echo "Stopping tools container..."
-	docker compose stop tools || true
-	docker compose rm -f tools || true
+	$(DOCKER_COMPOSE) stop tools || true
+	$(DOCKER_COMPOSE) rm -f tools || true
 
 # =============================================================================
 # ✅ Validate presence of the required .env file
@@ -65,7 +70,7 @@ check-env:
 # =============================================================================
 start-services:
 	@echo ":[Phase 2] Starting containers using compose profiles: $(COMPOSE_PROFILES)..."
-	COMPOSE_PROFILES=$(COMPOSE_PROFILES) docker compose up -d
+	COMPOSE_PROFILES=$(COMPOSE_PROFILES) $(DOCKER_COMPOSE) up -d
 	@echo "⏳ Waiting for services to stabilize..."
 	@sleep 30
 
@@ -83,6 +88,8 @@ createplex-launch-groundplex:
 
 # =============================================================================
 # 🧪 End-to-End Robot Test Workflow (including environment setup)
+#  → usage if user want to delete the projectspace(if exists) and create a clean project space add the flag PROJECT_SPACE_SETUP=True
+#.   make robot-run-all-tests TAGS="oracle,minio" PROJECT_SPACE_SETUP=True
 # =============================================================================
 robot-run-all-tests: check-env
 	@PROJECT_SPACE_SETUP_ACTUAL=$${PROJECT_SPACE_SETUP:-False}; \
@@ -123,7 +130,7 @@ robot-run-tests: check-env
 	@echo "🔧 Starting Robot Framework tests..."
 	$(eval INCLUDES=$(foreach arg,$(TAGS),--include $(arg)))
 	$(eval PROJECT_SPACE_SETUP_VAL=$(if $(PROJECT_SPACE_SETUP),$(PROJECT_SPACE_SETUP),False))
-	docker compose exec -w /app/test tools robot \
+	$(DOCKER_COMPOSE) exec -w /app/test tools robot \
 		-G $(DATE) \
 		--timestampoutputs \
 		--variable PROJECT_SPACE_SETUP:$(PROJECT_SPACE_SETUP_VAL) \
@@ -136,7 +143,7 @@ robot-run-tests: check-env
 # =============================================================================
 snaplogic-start-services: 
 	@echo ":==========starting services/containers using COMPOSE_PROFILES... =========="
-	COMPOSE_PROFILES=$(COMPOSE_PROFILES) docker compose up -d
+	COMPOSE_PROFILES=$(COMPOSE_PROFILES) $(DOCKER_COMPOSE) up -d
 	@echo "⏳ Waiting for services to stabilize..."
 	@sleep 30
 	
@@ -151,8 +158,8 @@ snaplogic-stop:
 	echo "Removing any stopped containers..."
 	docker container prune -f || true
 	echo "Running docker compose down..."
-	docker compose down --remove-orphans
-	docker-compose --profile tools down --volumes --remove-orphans
+	$(DOCKER_COMPOSE) down --remove-orphans
+	$(DOCKER_COMPOSE) --profile tools down --volumes --remove-orphans
 	echo "Ensuring snaplogic-network is removed..."
 	docker network rm snaplogic-network 2>/dev/null || true
 
@@ -167,7 +174,7 @@ clean-start: snaplogic-stop snaplogic-start-services launch-groundplex
 # =============================================================================
 launch-groundplex:
 	@echo "Launching Groundplex..."
-	docker compose  --profile gp up -d snaplogic-groundplex
+	$(DOCKER_COMPOSE) --profile gp up -d snaplogic-groundplex
 	make groundplex-status
 
 # =============================================================================
@@ -232,7 +239,7 @@ stop-groundplex:
 	fi
 
 	@echo "🧹 Bringing down container using Docker Compose profile 'gp'..."
-	docker compose --profile gp down --remove-orphans
+	$(DOCKER_COMPOSE) --profile gp down --remove-orphans
 
 	@echo "✅ Groundplex successfully stopped and cleaned up."
 
@@ -241,16 +248,16 @@ stop-groundplex:
 # =============================================================================
 oracle-start:
 	@echo "Starting Oracle..."
-	docker compose --profile oracle-dev up -d oracle-db
+	$(DOCKER_COMPOSE) --profile oracle-dev up -d oracle-db
 
 # =============================================================================
 # ⛔ Stop Oracle DB container and clean up volumes
 # =============================================================================
 oracle-stop:
 	@echo "Stopping Oracle DB container..."
-	docker compose stop oracle-db || true
+	$(DOCKER_COMPOSE) stop oracle-db || true
 	@echo "Removing Oracle container and volumes..."
-	docker compose rm -f -v oracle-db || true
+	$(DOCKER_COMPOSE) rm -f -v oracle-db || true
 	@echo "Cleaning up Oracle volumes..."
 	docker volume rm $(docker volume ls -q | grep oracle) 2>/dev/null || true
 	@echo "✅ Oracle stopped and cleaned up."
@@ -260,16 +267,16 @@ oracle-stop:
 # =============================================================================
 postgres-start:
 	@echo "Starting Postgres..."
-	docker compose --profile postgres-dev up -d postgres-db
+	$(DOCKER_COMPOSE) --profile postgres-dev up -d postgres-db
 
 # =============================================================================
 # ⛔ Stop Postgres DB container and clean up volumes
 # =============================================================================
 postgres-stop:
 	@echo "Stopping Postgres DB container..."
-	docker compose stop postgres-db || true
+	$(DOCKER_COMPOSE) stop postgres-db || true
 	@echo "Removing Postgres container and volumes..."
-	docker compose rm -f -v postgres-db || true
+	$(DOCKER_COMPOSE) rm -f -v postgres-db || true
 	@echo "Cleaning up Postgres volumes..."
 	docker volume rm $(docker volume ls -q | grep postgres) 2>/dev/null || true
 	@echo "✅ Postgres stopped and cleaned up."
@@ -279,16 +286,16 @@ postgres-stop:
 # =============================================================================
 mysql-start:
 	@echo "Starting MySQL..."
-	docker compose --profile mysql-dev up -d mysql-db
+	$(DOCKER_COMPOSE) --profile mysql-dev up -d mysql-db
 
 # =============================================================================
 # ⛔ Stop MySQL DB container and clean up volumes
 # =============================================================================
 mysql-stop:
 	@echo "Stopping MySQL DB container..."
-	docker compose stop mysql-db || true
+	$(DOCKER_COMPOSE) stop mysql-db || true
 	@echo "Removing MySQL container and volumes..."
-	docker compose rm -f -v mysql-db || true
+	$(DOCKER_COMPOSE) rm -f -v mysql-db || true
 	@echo "Cleaning up MySQL volumes..."
 	docker volume rm $(docker volume ls -q | grep mysql) 2>/dev/null || true
 	@echo "✅ MySQL stopped and cleaned up."
@@ -298,16 +305,16 @@ mysql-stop:
 # =============================================================================
 sqlserver-start:
 	@echo "Starting SQL Server..."
-	docker compose --profile sqlserver-dev up -d sqlserver-db
+	$(DOCKER_COMPOSE) --profile sqlserver-dev up -d sqlserver-db
 
 # =============================================================================
 # ⛔ Stop SQL Server DB container and clean up volumes
 # =============================================================================
 sqlserver-stop:
 	@echo "Stopping SQL Server DB container..."
-	docker compose stop sqlserver-db || true
+	$(DOCKER_COMPOSE) stop sqlserver-db || true
 	@echo "Removing SQL Server container and volumes..."
-	docker compose rm -f -v sqlserver-db || true
+	$(DOCKER_COMPOSE) rm -f -v sqlserver-db || true
 	@echo "Cleaning up SQL Server volumes..."
 	docker volume rm $(docker volume ls -q | grep sqlserver) 2>/dev/null || true
 	@echo "✅ SQL Server stopped and cleaned up."
@@ -344,14 +351,14 @@ ensure-config-dir:
 # =============================================================================
 start-s3-emulator:
 	@echo "Starting Minio..."
-	docker compose --profile minio-dev up -d minio
+	$(DOCKER_COMPOSE) --profile minio-dev up -d minio
 
 # =============================================================================
 # ⛔ Stop local MinIO S3 emulator
 # =============================================================================
 stop-s3-emulator:
 	@echo "Stopping Minio..."
-	docker compose stop minio
+	$(DOCKER_COMPOSE) stop minio
 
 # =============================================================================
 # 🧪 Run S3 demo Python script using MinIO credentials
@@ -373,7 +380,7 @@ run-s3-demo:
 # =============================================================================
 activemq-start:
 	@echo "Starting ActiveMQ JMS server..."
-	docker compose --profile activemq up -d activemq activemq-setup
+	$(DOCKER_COMPOSE) --profile activemq up -d activemq activemq-setup
 	@echo "⏳ Waiting for ActiveMQ to fully initialize..."
 	@sleep 15
 	@echo "✅ ActiveMQ started. Web Console: http://localhost:8161/console"
@@ -382,9 +389,9 @@ activemq-start:
 # =============================================================================
 # 🚀 Start ActiveMQ JMS server for development (no setup)
 # =============================================================================
-activemq-start:
+activemq-dev-start:
 	@echo "Starting ActiveMQ JMS server (dev mode)..."
-	docker compose --profile activemq-dev up -d activemq
+	$(DOCKER_COMPOSE) --profile activemq-dev up -d activemq
 	@echo "⏳ Waiting for ActiveMQ to fully initialize..."
 	@sleep 15
 	@echo "✅ ActiveMQ started in dev mode."
@@ -394,7 +401,7 @@ activemq-start:
 # =============================================================================
 activemq-stop:
 	@echo "Stopping ActiveMQ JMS server..."
-	docker compose stop activemq activemq-setup 2>/dev/null || true
+	$(DOCKER_COMPOSE) stop activemq activemq-setup 2>/dev/null || true
 	@echo "✅ ActiveMQ stopped."
 
 # =============================================================================
@@ -402,8 +409,8 @@ activemq-stop:
 # =============================================================================
 activemq-status:
 	@echo "🔍 Checking ActiveMQ status..."
-	@container_status=$(docker inspect -f '{{.State.Status}}' snaplogic-activemq 2>/dev/null || echo "not found"); \
-	if [ "$container_status" = "running" ]; then \
+	@container_status=$$(docker inspect -f '{{.State.Status}}' snaplogic-activemq 2>/dev/null || echo "not found"); \
+	if [ "$$container_status" = "running" ]; then \
 		echo "✅ ActiveMQ container is running"; \
 		echo "🌐 Web Console: http://localhost:8161/console"; \
 		echo "📡 JMS URL: tcp://localhost:61616"; \
@@ -415,7 +422,7 @@ activemq-status:
 			echo "⚠️  Web console not yet ready (may still be starting)"; \
 		fi; \
 	else \
-		echo "❌ ActiveMQ container is not running (status: $container_status)"; \
+		echo "❌ ActiveMQ container is not running (status: $$container_status)"; \
 		echo "💡 Run 'make activemq-start' to start ActiveMQ"; \
 	fi
 
@@ -461,22 +468,22 @@ run-jms-demo:
 # =============================================================================
 rebuild-tools-with-updated-requirements:
 	@echo "🛑 Stopping and removing tools container..."
-	docker-compose --profile tools down
+	$(DOCKER_COMPOSE) --profile tools down
 	
 	@echo "🗑️  Removing old image to force complete rebuild..."
 	docker rmi snaplogic-test-example:latest || true
 	
 	@echo "🔨 Building tools container without cache..."
-	docker-compose build --no-cache tools
+	$(DOCKER_COMPOSE) build --no-cache tools
 	
 	@echo "🚀 Starting tools container..."
-	docker-compose --profile tools up -d
+	$(DOCKER_COMPOSE) --profile tools up -d
 	
 	@echo "⏳ Waiting for container to be ready..."
 	@sleep 5
 	
 	@echo "✅ Verifying snaplogic-common-robot version..."
-	docker-compose exec tools pip show snaplogic-common-robot
+	$(DOCKER_COMPOSE) exec tools pip show snaplogic-common-robot
 
 # =============================================================================
    # 📦update snaplogic-common-robot to absolute latest
@@ -486,11 +493,10 @@ rebuild-tools-with-updated-requirements:
 quick-update-snaplogic-robot-only:
 	@echo "📦 Force updating snaplogic-common-robot to latest version..."
 	@echo "🔍 Current version:"
-	@docker-compose exec -T tools pip show snaplogic-common-robot || echo "Not installed"
+	@$(DOCKER_COMPOSE) exec -T tools pip show snaplogic-common-robot || echo "Not installed"
 	@echo "🗑️  Uninstalling current version..."
-	@docker-compose exec -T tools pip uninstall -y snaplogic-common-robot
+	@$(DOCKER_COMPOSE) exec -T tools pip uninstall -y snaplogic-common-robot
 	@echo "📥 Installing latest version from PyPI..."
-	@docker-compose exec -T tools pip install --no-cache-dir snaplogic-common-robot
+	@$(DOCKER_COMPOSE) exec -T tools pip install --no-cache-dir snaplogic-common-robot
 	@echo "✅ New version:"
-	@docker-compose exec -T tools pip show snaplogic-common-robot
-
+	@$(DOCKER_COMPOSE) exec -T tools pip show snaplogic-common-robot

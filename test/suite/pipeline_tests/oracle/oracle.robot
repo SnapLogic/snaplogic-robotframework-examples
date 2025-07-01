@@ -53,13 +53,13 @@ ${task2}                            Oracle_Task2
 Create Account
     [Documentation]    Creates an account in the project space using the provided payload file.
     ...    "account_payload_path"    value as assigned to global variable    in __init__.robot file
-    [Tags]    oracle
+    [Tags]    oracle    regression
     [Template]    Create Account From Template
     ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
 
 Upload Files With File Protocol
     [Documentation]    Upload files using file:/// protocol URLs - all options in template format
-    [Tags]    oracle
+    [Tags]    oracle    regression
     [Template]    Upload File Using File Protocol Template
 
     # files exist via Docker mounts:
@@ -80,7 +80,7 @@ Upload Files With File Protocol
 Upload Files
     [Documentation]    Data-driven test case using template format for multiple file upload scenarios
     ...    Each row represents a different upload configuration
-    [Tags]    oracle
+    [Tags]    oracle    regression
     [Template]    Upload Files To SnapLogic From Template
 
     # source_dir    file_name    destination_path
@@ -97,7 +97,7 @@ Import Pipelines
     ...    Returns:
     ...    uniquie_id --> which is used untill executinh the tasks
     ...    pipeline_snodeid--> which is used to create the tasks
-    [Tags]    oracle
+    [Tags]    oracle    regression
     [Template]    Import Pipelines From Template
     ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${pipeline_name_slp}
 
@@ -108,19 +108,19 @@ Create Triggered_task
     ...    Returns:
     ...    task_payload --> which is used to update the task params
     ...    task_snodeid --> which is used to update the task params
-    [Tags]    oracle
+    [Tags]    oracle    regression
     [Template]    Create Triggered Task From Template
     ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    ${task_params_set1}    ${task_notifications}
 
 Execute Triggered Task With Parameters
     [Documentation]    Updates the task parameters and runs the task
     ...    Prereq: Need task_payload,task_snodeid (from Create Triggered_task)
-    [Tags]    oracle
+    [Tags]    oracle    regression
     [Template]    Run Triggered Task With Parameters From Template
     ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    M_CURR_DATE=10/12/2024
 
 End to End Pipeline Workflow
-    [Tags]    end_to_end_workflow    import_pipeline    oracle2
+    [Tags]    end_to_end_workflow    import_pipeline    oracle2    regression
 
     # Step 1: Create Account
     Create Account From Template    ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}    ${env_file_path}

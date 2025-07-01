@@ -11,7 +11,7 @@ services:
       MYSQL_PASSWORD: "snaplogic"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./mysql-init:/docker-entrypoint-initdb.d
+      - ../mysql-init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-psnaplogic"]
       interval: 10s

@@ -56,7 +56,7 @@ Create Account
     ...    • PostgreSQL account configuration is valid and accepted
     ...    • Oracle account configuration is valid and accepted
     ...    • Account payloads are properly formatted and processed
-    [Tags]    postgres_oracle    create_account
+    [Tags]    postgres_oracle    create_account    regression
     [Template]    Create Account From Template
     ${account_payload_path}/acc_postgres.json
     ${account_payload_path}/acc_oracle.json
@@ -68,7 +68,7 @@ Create postgres table for DB Operations
     ...    • Table structure matches expected schema (name, role, salary columns)
     ...    • PostgreSQL database connection is established and functional
     ...    • No SQL syntax or permission errors occur
-    [Tags]    postgres_oracle    create_tables    source_setup
+    [Tags]    postgres_oracle    create_tables    source_setup    regression
     Execute SQL On Database    ${CREATE_TABLE_EMPLOYEES_PG}    postgres
     Execute SQL On Database    ${CREATE_TABLE_EMPLOYEES2_PG}    postgres
 
@@ -83,7 +83,7 @@ Load CSV Data To PostgreSQL
     ...    • Inserted row count = Auto-detected expected count from file
     ...    • Table truncated before insertion (clean state)
     ...    • CSV column mapping to database columns successful
-    [Tags]    postgres_oracle    load_data    source_setup
+    [Tags]    postgres_oracle    load_data    source_setup    regression
     [Template]    Load CSV Data Template
     # CSV File    table_name    Truncate Table
     ${CSV_DATA_TO_DB}    employees    ${TRUE}
@@ -96,7 +96,7 @@ Create oracle table for DB Operations
     ...    • Table structure matches expected schema (name, role, salary columns)
     ...    • Oracle database connection is established and functional
     ...    • No SQL syntax or permission errors occur
-    [Tags]    postgres_oracle    create_tables    target_setup    oracle
+    [Tags]    postgres_oracle    create_tables    target_setup    oracle    regression
     # Drop table if exists (ignore error if table doesn't exist)
     Run Keyword And Ignore Error    Execute SQL On Database    ${DROP_TABLE_EMPLOYEES}    oracle
     # Create table
@@ -107,7 +107,7 @@ Create oracle table for DB Operations
 Upload Files With File Protocol
     [Documentation]    Upload expression library files to SnapLogic using file:/// protocol URLs
     ...    These files may contain custom transformations for the PostgreSQL to Oracle pipeline
-    [Tags]    postgres_oracle    upload_expr_library    file_protocol
+    [Tags]    postgres_oracle    upload_expr_library    file_protocol    regression
     [Template]    Upload File Using File Protocol Template
 
     # files exist via Docker mounts:
@@ -132,7 +132,7 @@ Import Pipelines
     ...    • Unique pipeline ID is generated and returned
     ...    • Pipeline nodes and configuration are valid
     ...    • Pipeline is successfully deployed to the project space
-    [Tags]    postgres_oracle    import_pipeline
+    [Tags]    postgres_oracle    import_pipeline    regression
     [Template]    Import Pipelines From Template
     ${unique_id}    ${pipeline_file_path}    ${pipeline_name_csv}    ${pipeline_name_csv_slp}
 
@@ -144,7 +144,7 @@ Create Triggered_task
     ...    • Task is linked to the correct pipeline
     ...    • Task snode ID is generated and returned
     ...    • Task payload structure is valid
-    [Tags]    postgres_oracle    create_triggered_task
+    [Tags]    postgres_oracle    create_triggered_task    regression
     [Template]    Create Triggered Task From Template
     ${unique_id}    ${project_path}    ${pipeline_name_csv}    ${task_csv}
 
@@ -157,7 +157,7 @@ Execute Triggered Task
     ...    • All rows from source table appear in target table
     ...    • Task completes within expected timeframe
     ...    • No pipeline execution errors or timeouts
-    [Tags]    postgres_oracle    execute_pipeline    data_transfer
+    [Tags]    postgres_oracle    execute_pipeline    data_transfer    regression
     # Execute the pipeline
     [Template]    Run Triggered Task With Parameters From Template
 
@@ -173,7 +173,7 @@ Export Oracle Table To CSV After Pipeline
     ...    • Files saved in actual output directory
     ...    • Row count matches source data
     ...    • CSV format is valid and can be parsed
-    [Tags]    postgres_oracle    export    csv    validation
+    [Tags]    postgres_oracle    export    csv    validation    regression
     # Proceed with export even if empty (will fail with proper message)
     [Template]    Export DB Table To CSV Template
 
@@ -195,7 +195,7 @@ Compare Actual vs Expected CSV Output
     ...    • All field values match exactly (no data corruption)
     ...    • No extra or missing rows (complete data transfer)
     ...    • CSV formatting is preserved through pipeline
-    [Tags]    postgres_oracle    validation    comparison
+    [Tags]    postgres_oracle    validation    comparison    regression
     [Template]    Compare CSV Files Template
 
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status
@@ -206,7 +206,7 @@ Compare Actual vs Expected CSV Output
 Copy Files With File Protocol
     [Documentation]    Copy expression library files between mounts using file:/// protocol URLs
     ...    Useful for backing up or distributing custom transformations
-    [Tags]    postgres_oracle    file_protocol    copy
+    [Tags]    postgres_oracle    file_protocol    copy    regression
     [Template]    Copy File Using File Protocol Template
 
     # source_url    destination_url
@@ -215,7 +215,7 @@ Copy Files With File Protocol
 List Files With File Protocol
     [Documentation]    List files in mounted directories using file:/// protocol URLs
     ...    Verifies expression libraries and other resources are properly mounted
-    [Tags]    postgres_oracle    file_protocol    list
+    [Tags]    postgres_oracle    file_protocol    list    regression
 
     # List expression files
     @{expr_files}=    List Files Using File Protocol Template

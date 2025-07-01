@@ -59,7 +59,7 @@ ${EXPECTED_OUTPUT_DIR}              ${CURDIR}/../../test_data/actual_expected_da
 Create Account
     [Documentation]    Creates an account in the project space using the provided payload file.
     ...    "account_payload_path"    value as assigned to global variable    in __init__.robot file
-    [Tags]    sqlserver    sqlserveraccount
+    [Tags]    sqlserver    sqlserveraccount    regression
     [Template]    Create Account From Template
     ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
 
@@ -77,7 +77,7 @@ Create table for DB Operations
     ...    • Table structure matches expected schema (id, name, role, salary columns)
     ...    • Database connection is established and functional
     ...    • No SQL syntax or permission errors occur
-    [Tags]    sqlserver    data_setup
+    [Tags]    sqlserver    data_setup    regression
     [Template]    Execute SQL String
     ${DROP_TABLE_EMPLOYEES}
     ${CREATE_TABLE_EMPLOYEES}
@@ -94,7 +94,7 @@ Load CSV Data To SQL Server
     ...    • Inserted row count = Auto-detected expected count from file
     ...    • Table truncated before insertion (clean state)
     ...    • CSV column mapping to database columns successful
-    [Tags]    sqlserver    data_setup
+    [Tags]    sqlserver    data_setup    regression
     [Template]    Load CSV Data Template
     # CSV File    table_name    Truncate Table
     ${CSV_DATA_TO_DB}    employees    ${TRUE}
@@ -110,7 +110,7 @@ Load JSON Data To SQL Server
     ...    • Table NOT truncated (appends to existing CSV data)
     ...    • JSON field mapping to database columns successful
     ...    • JSON rows
-    [Tags]    sqlserver    data_setup
+    [Tags]    sqlserver    data_setup    regression
     [Template]    Load JSON Data Template
     # JSON File    table_name    Truncate Table
     ${JSON_DATA_TO_DB}    employees2    ${TRUE}
@@ -120,7 +120,7 @@ Import Pipelines
     ...    Returns:
     ...    unique_id --> which is used until executing the tasks
     ...    pipeline_snodeid --> which is used to create the tasks
-    [Tags]    sqlserver
+    [Tags]    sqlserver    regression
     [Template]    Import Pipelines From Template
     ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${pipeline_name_slp}
 
@@ -131,14 +131,14 @@ Create Triggered_task
     ...    Returns:
     ...    task_payload --> which is used to update the task params
     ...    task_snodeid --> which is used to update the task params
-    [Tags]    sqlserver
+    [Tags]    sqlserver    regression
     [Template]    Create Triggered Task From Template
     ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    ${task_params_set1}    ${task_notifications}
 
 Execute Triggered Task With Parameters
     [Documentation]    Updates the task parameters and runs the task
     ...    Prereq: Need task_payload,task_snodeid (from Create Triggered_task)
-    [Tags]    sqlserver
+    [Tags]    sqlserver    regression
     [Template]    Run Triggered Task With Parameters From Template
     ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    M_CURR_DATE=10/12/2024
 
@@ -155,7 +155,7 @@ Compare Actual vs Expected CSV Output
     ...    • All field values match exactly (no data corruption)
     ...    • No extra or missing rows (complete data processing)
     ...    • CSV formatting is preserved through pipeline
-    [Tags]    sqlserver
+    [Tags]    sqlserver    regression
     [Template]    Compare CSV Files Template
 
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status

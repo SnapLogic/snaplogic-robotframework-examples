@@ -38,7 +38,7 @@ Upload Files With File Protocol
     ...    • File protocol URLs are correctly formed
     ...    • Upload operation succeeds using file:/// protocol
     ...    • Files are accessible in SnapLogic project space
-    [Tags]    file_mount    upload
+    [Tags]    file_mount    upload    regression
     [Template]    Upload File Using File Protocol Template
 
     # IMPORTANT: File paths depend on which container processes the file:// URL
@@ -71,7 +71,7 @@ Import Pipelines
     ...    • Unique pipeline ID is generated and returned
     ...    • Pipeline contains file reader and writer snaps configured for mounts
     ...    • Pipeline is successfully deployed to the project space
-    [Tags]    file_mount
+    [Tags]    file_mount    regression
     [Template]    Import Pipelines From Template
     ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${pipeline_slp}
 
@@ -84,7 +84,7 @@ Create Triggered_task
     ...    • Task is linked to the correct pipeline
     ...    • Task snode ID is generated and returned
     ...    • Task is ready for execution
-    [Tags]    file_mount
+    [Tags]    file_mount    regression
     [Template]    Create Triggered Task From Template
     ${unique_id}    ${project_path}    ${pipeline_name}    ${task_name}
 
@@ -98,7 +98,7 @@ Execute Triggered Task
     ...    • File writer successfully writes to mounted target location
     ...    • Task completes within expected timeframe
     ...    • No pipeline execution errors or timeouts
-    [Tags]    file_mount
+    [Tags]    file_mount    regression
     [Template]    Run Triggered Task With Parameters From Template
     ${unique_id}    ${project_path}    ${pipeline_name}    ${task_name}
 

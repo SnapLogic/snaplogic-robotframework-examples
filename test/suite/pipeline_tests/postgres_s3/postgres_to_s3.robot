@@ -91,7 +91,7 @@ Create Account
     ...    • PostgreSQL account configuration is valid and accepted
     ...    • S3/MinIO account configuration is valid and accepted
     ...    • Account payloads are properly formatted and processed
-    [Tags]    postgres_s3    minio
+    [Tags]    postgres_s3    minio    regression
     [Template]    Create Account From Template
     ${account_payload_path}/acc_postgres.json
     ${account_payload_path}/acc_s3.json
@@ -103,7 +103,7 @@ Create table for DB Operations
     ...    • Table structure matches expected schema (name, role, salary columns)
     ...    • Database connection is established and functional
     ...    • No SQL syntax or permission errors occur
-    [Tags]    postgres_s3    minio
+    [Tags]    postgres_s3    minio    regression
     [Template]    Execute SQL String
     ${CREATE_TABLE_EMPLOYEES_PG}
     ${CREATE_TABLE_EMPLOYEES2_PG}
@@ -118,7 +118,7 @@ Load CSV Data To PostgreSQL
     ...    • Inserted row count = Auto-detected expected count from file
     ...    • Table truncated before insertion (clean state)
     ...    • CSV column mapping to database columns successful
-    [Tags]    postgres_s3    minio
+    [Tags]    postgres_s3    minio    regression
     [Template]    Load CSV Data Template
     # CSV File    table_name    Truncate Table
     ${CSV_DATA_TO_DB}    employees    ${TRUE}
@@ -134,7 +134,7 @@ Load JSON Data To PostgreSQL
     ...    • Table NOT truncated (appends to existing CSV data)
     ...    • JSON field mapping to database columns successful
     ...    • Total database rows = CSV rows + JSON rows
-    [Tags]    postgres_s3    minio
+    [Tags]    postgres_s3    minio    regression
     [Template]    Load JSON Data Template
     # JSON File    table_name    Truncate Table
     ${JSON_DATA_TO_DB}    employees2    ${TRUE}
@@ -149,7 +149,7 @@ Import Pipelines
     ...    • Unique pipeline ID is generated and returned
     ...    • Pipeline nodes and configuration are valid
     ...    • Pipeline is successfully deployed to the project space
-    [Tags]    postgres_s3    minio
+    [Tags]    postgres_s3    minio    regression
     [Template]    Import Pipelines From Template
     ${unique_id}    ${pipeline_file_path}    ${pipeline_name_csv}    ${pipeline_name_csv_slp}
     ${unique_id}    ${pipeline_file_path}    ${pipeline_name_json}    ${pipeline_name_json_slp}
@@ -162,7 +162,7 @@ Create Triggered_task
     ...    • Task is linked to the correct pipeline
     ...    • Task snode ID is generated and returned
     ...    • Task payload structure is valid
-    [Tags]    minio    postgres_s3
+    [Tags]    minio    postgres_s3    regression
     [Template]    Create Triggered Task From Template
     ${unique_id}    ${project_path}    ${pipeline_name_csv}    ${task_csv}
     ${unique_id}    ${project_path}    ${pipeline_name_json}    ${task_json}
@@ -176,7 +176,7 @@ Execute Triggered Task
     ...    • Files created in S3 bucket (demo-bucket)
     ...    • Task completes within expected timeframe
     ...    • No pipeline execution errors or timeouts
-    [Tags]    postgres_s3    minio
+    [Tags]    postgres_s3    minio    regression
     [Template]    Run Triggered Task With Parameters From Template
     ${unique_id}    ${project_path}    ${pipeline_name_csv}    ${task_csv}    bucket=demo-bucket    actual_output_file=employees.csv
     ${unique_id}    ${project_path}    ${pipeline_name_json}    ${task_json}    bucket=demo-bucket    actual_output_file=employees.json
@@ -192,7 +192,7 @@ Download actual Output data from S3
     ...    • Downloaded files have content (size > 0 bytes)
     ...    • Local download directory is created successfully
     ...    • File download completes within timeout
-    [Tags]    postgres_s3
+    [Tags]    postgres_s3    regression
     [Template]    Download And Validate File From Bucket
 
     # Test Data: download_location    bucket_name    file_name
@@ -211,7 +211,7 @@ Compare Actual vs Expected CSV Output
     ...    • All field values match exactly (no data corruption)
     ...    • No extra or missing rows (complete data transfer)
     ...    • CSV formatting is preserved through pipeline
-    [Tags]    csv    comparison    postgres_s3    validation    minio
+    [Tags]    csv    comparison    postgres_s3    validation    minio    regression
     [Template]    Compare CSV Files Template
 
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status
@@ -227,7 +227,7 @@ Compare Actual vs Expected JSON Output
     ...    • All object properties match exactly (no data corruption)
     ...    • No extra or missing records (complete data transfer)
     ...    • JSON formatting is valid and preserved through pipeline
-    [Tags]    json    comparison    postgres_s3    validation    minio
+    [Tags]    json    comparison    postgres_s3    validation    minio    regression
     [Template]    Compare JSON Files Template
 
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status
