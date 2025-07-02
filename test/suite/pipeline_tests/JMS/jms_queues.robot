@@ -31,6 +31,8 @@ ${documents_json}                   ${CURDIR}/../../test_data/actual_expected_da
 ${project_path}                     ${org_name}/${project_space}/${project_name}
 ${pipeline_file_path}               /app/src/pipelines
 ${upload_destination_file_path}     ${org_name}/${project_space}/shared
+${ACTUAL_DATA_DIR}                  ${CURDIR}/../../test_data/actual_expected_data/actual_output    # Base directory for downloaded files from S3
+${EXPECTED_OUTPUT_DIR}              ${CURDIR}/../../test_data/actual_expected_data/expected_output    # Expected output files for comparison
 
 ${ACCOUNT_PAYLOAD_FILE}             acc_jms.json
 

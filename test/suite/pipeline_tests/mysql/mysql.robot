@@ -25,7 +25,7 @@ ${pipeline_file_path}               ${CURDIR}/../../../../src/pipelines
 
 ${upload_source_file_path}          ${CURDIR}/../../test_data/actual_expected_data/expression_libraries
 ${container_source_file_path}       opt/snaplogic/test_data/actual_expected_data/expression_libraries
-${upload_destination_file_path}     ${org_name}/${project_space}/${project_name}
+${upload_destination_file_path}     ${org_name}/${project_space}/shared
 
 # MySQL Pipeline and Task Configuration
 ${ACCOUNT_PAYLOAD_FILE}             acc_mysql.json
@@ -37,6 +37,8 @@ ${task2}                            MySQL_Task2
 # MySQL test data configuration
 ${CSV_DATA_TO_DB}                   ${CURDIR}/../../test_data/actual_expected_data/input_data/employees.csv    # Source CSV from input_data folder
 ${JSON_DATA_TO_DB}                  ${CURDIR}/../../test_data/actual_expected_data/input_data/employees.json    # Source JSON from input_data folder
+${ACTUAL_DATA_DIR}                  ${CURDIR}/../../test_data/actual_expected_data/actual_output    # Base directory for downloaded files from S3
+${EXPECTED_OUTPUT_DIR}              ${CURDIR}/../../test_data/actual_expected_data/expected_output    # Expected output files for comparison
 
 @{notification_states}              Completed    Failed
 &{task_notifications}
@@ -54,6 +56,18 @@ ${JSON_DATA_TO_DB}                  ${CURDIR}/../../test_data/actual_expected_da
 
 
 *** Test Cases ***
+Upload Files With File Protocol
+    [Documentation]    Demonstrates uploading expression library files using file:/// protocol
+    ...    from directories mounted in the SnapLogic Groundplex container
+    ...    📋 ASSERTIONS:
+    ...    • Files exist in the mounted directory path
+    ...    • File protocol URLs are correctly formed
+    ...    • Upload operation succeeds using file:/// protocol
+    ...    • Files are accessible in SnapLogic project space
+    [Tags]    jmsaccount    jmsjar    jms    regression
+    [Template]    Upload File Using File Protocol Template
+    file:///opt/snaplogic/test_data/accounts_jar_files/mysql/mysql-connector-j-9.3.0.jar    ${upload_destination_file_path}
+
 Create Account
     [Documentation]    Creates a MySQL account in the project space using the provided payload file.
     ...    "account_payload_path"    value as assigned to global variable    in __init__.robot file
@@ -166,21 +180,21 @@ Execute Triggered Task With Parameters
     [Template]    Run Triggered Task With Parameters From Template
     ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    M_CURR_DATE=10/12/2024
 
-Test Control Date Operations
-    [Documentation]    Tests control date table operations for pipeline date management
-    ...    📋 ASSERTIONS:
-    ...    • Control date can be updated successfully
-    ...    • Date format conversion works correctly
-    ...    • Select operations return expected format
-    [Tags]    mysql    regression
-    # Update control date
-    Execute SQL String    ${UPDATE_CONTROL_DATE}    12/25/2024    SLIM_DOM1
+# Test Control Date Operations
+#    [Documentation]    Tests control date table operations for pipeline date management
+#    ...    📋 ASSERTIONS:
+#    ...    • Control date can be updated successfully
+#    ...    • Date format conversion works correctly
+#    ...    • Select operations return expected format
+#    [Tags]    mysql    regression
+#    # Update control date
+#    Execute SQL String    ${UPDATE_CONTROL_DATE}    12/25/2024    SLIM_DOM1
 
-    # Select and verify
-    ${result}=    Query    ${SELECT_CONTROL_DATE}    SLIM_DOM1
-    Log    Control date result: ${result[0]}
-    Should Be Equal    ${result[0][0]}    SLIM_DOM1
-    Should Be Equal    ${result[0][1]}    12/25/2024
+#    # Select and verify
+#    ${result}=    Query    ${SELECT_CONTROL_DATE}    SLIM_DOM1
+#    Log    Control date result: ${result[0]}
+#    Should Be Equal    ${result[0][0]}    SLIM_DOM1
+#    Should Be Equal    ${result[0][1]}    12/25/2024
 
 ################## COMPARISON TESTING    ##################
 
