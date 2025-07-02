@@ -47,12 +47,12 @@ env:
     # JMS/ActiveMQ Account-specific environment variables
     - JMS_ACCOUNT_NAME="JMS_Slim_Account"
     - JMS_HOST="activemq"
-    - JMS_PORT="61616"
+    - JMS_PORT="61616"  # Internal container port remains the same
     - JMS_USERNAME="admin"
     - JMS_PASSWORD="admin"
     - JMS_CONNECTION_FACTORY="ConnectionFactory"
     - JMS_INITIAL_CONTEXT_FACTORY="org.apache.activemq.artemis.jndi.ActiveMQInitialContextFactory"
-    - JMS_PROVIDER_URL="tcp://activemq:61616"
+    - JMS_PROVIDER_URL="tcp://activemq:61616"  # Internal container communication
     - JMS_QUEUE_NAME="demo.queue"
 
     - RELEASE_BUILD_VERSION="main-33084"
@@ -70,6 +70,15 @@ branches:
     - main
 
 before_script:
+  # Clean up any processes using ports that might conflict
+  - echo "🔍 Checking for port conflicts..."
+  - sudo netstat -tulpn | grep :5673 || echo "Port 5673 is free"
+  - sudo netstat -tulpn | grep :61617 || echo "Port 61617 is free"
+  - sudo netstat -tulpn | grep :61614 || echo "Port 61614 is free"
+  - sudo fuser -k 5673/tcp || echo "No process killed on port 5673"
+  - sudo fuser -k 61617/tcp || echo "No process killed on port 61617"
+  - sudo fuser -k 61614/tcp || echo "No process killed on port 61614"
+  - sleep 2
   - echo "🔍Environment Variables set up and creating .env file:"
   - chmod +x ./setup_env.sh # Make the script executable
   - ./setup_env.sh

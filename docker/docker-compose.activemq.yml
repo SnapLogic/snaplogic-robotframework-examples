@@ -17,9 +17,9 @@ services:
       # - ../config/broker.xml:/var/lib/artemis-instance/etc/broker.xml
     ports:
       - "8161:8161"  # Web Console
-      - "61616:61616"  # JMS Port
-      - "61613:61613"  # STOMP Port
-      - "5672:5672"   # AMQP Port
+      - "61617:61616"  # JMS Port (changed to avoid conflicts)
+      - "61614:61613"  # STOMP Port (changed to avoid conflicts)
+      - "5673:5672"   # AMQP Port (changed to avoid conflicts)
     profiles: [ activemq , activemq-dev ]
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://localhost:8161/console/ || exit 1" ]
