@@ -1,6 +1,6 @@
 services:
   activemq:
-    image: apache/activemq-artemis:latest
+    image: apache/activemq-artemis:2.28.0  # ✅ Stable version instead of :latest
     container_name: snaplogic-activemq
     environment:
       ARTEMIS_USER: admin
@@ -10,23 +10,35 @@ services:
       ARTEMIS_DEFAULT_QUEUE_ROUTING_TYPE: ANYCAST
       ARTEMIS_AUTO_CREATE_QUEUES: true
       ARTEMIS_AUTO_CREATE_ADDRESSES: true
+      # ✅ CI-friendly memory settings
+      JAVA_OPTS: "-Xmx512m -Xms256m -XX:+UseContainerSupport"
+      # ✅ Additional stability settings
+      EXTRA_ARGS: "--http-host 0.0.0.0 --relax-jolokia"
+    # ✅ Use temporary volume for CI (no bind mount issues)
     volumes:
-      # Mount ActiveMQ data to local directory
-      - ../activemq-data:/var/lib/artemis-instance
-      # Optional: Mount custom configuration
-      # - ../config/broker.xml:/var/lib/artemis-instance/etc/broker.xml
+      - activemq-temp-data:/var/lib/artemis-instance
     ports:
       - "8161:8161"  # Web Console
       - "61617:61616"  # JMS Port (changed to avoid conflicts)
       - "61614:61613"  # STOMP Port (changed to avoid conflicts)
       - "5673:5672"   # AMQP Port (changed to avoid conflicts)
-    profiles: [ activemq , activemq-dev ]
+    profiles: [ activemq, activemq-dev ]
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://localhost:8161/console/ || exit 1" ]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
+      interval: 30s      # ✅ More lenient for CI
+      timeout: 15s       # ✅ Longer timeout
+      retries: 10        # ✅ More retries for CI
+      start_period: 60s  # ✅ Longer startup grace period
+    restart: unless-stopped
+    # ✅ Resource limits for CI stability
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.5'
     networks:
       - snaplogicnet
 
@@ -42,10 +54,13 @@ services:
     profiles: [ activemq ]
     networks:
       - snaplogicnet
+    # ✅ Make setup non-critical
+    restart: "no"
 
-# Named volume no longer needed - using local bind mount instead
-# volumes:
-#   activemq_data:
+# ✅ Temporary volume for CI environments
+volumes:
+  activemq-temp-data:
+    driver: local
 
 networks:
   snaplogicnet:
