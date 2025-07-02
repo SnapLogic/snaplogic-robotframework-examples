@@ -115,7 +115,8 @@ Upload Files With File Protocol
 
     # file_url    destination_path
     # === From new comprehensive mount point ===
-    file:///opt/snaplogic/test_data/expression_libraries/test.expr    ${upload_destination_file_path}
+
+    file:///opt/snaplogic/test_data/actual_expected_data/expression_libraries/test.expr    ${upload_destination_file_path}
 
     # === From App Mount (always available - entire test directory is mounted) ===
     file:///app/test/suite/test_data/actual_expected_data/expression_libraries/test.expr    ${upload_destination_file_path}/app_mount

@@ -28,48 +28,9 @@ services:
     depends_on:
       minio:
         condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-      echo 'Starting MinIO setup...';
-      sleep 5;
-      set -x;
-      
-      mc alias set local http://minio:9000 minioadmin minioadmin;
-      echo 'MinIO client configured';
-      
-      mc admin user add local demouser demopassword;
-      echo 'User demouser created';
-      
-      mc admin policy attach local readwrite --user demouser;
-      echo 'Policy attached to demouser';
-      
-      mc ls local/demo-bucket || mc mb local/demo-bucket;
-      mc ls local/test-bucket || mc mb local/test-bucket;
-      echo 'Buckets created: demo-bucket, test-bucket';
-      
-      echo 'Hello from MinIO! This is a test file created during setup.' > /tmp/test-file.txt;
-      echo 'Created: '$(date) >> /tmp/test-file.txt;
-      echo 'MinIO Server: http://localhost:9000' >> /tmp/test-file.txt;
-      
-      mc cp /tmp/test-file.txt local/demo-bucket/welcome.txt;
-      mc cp /tmp/test-file.txt local/test-bucket/setup-info.txt;
-      echo 'Test files uploaded';
-      
-      echo '{"setup_date":"'$(date -Iseconds)'","buckets":["demo-bucket","test-bucket"],"users":["demouser"],"status":"completed"}' > /tmp/setup-config.json;
-      
-      mc cp /tmp/setup-config.json local/demo-bucket/config.json;
-      
-      echo '=== demo-bucket contents ===';
-      mc ls local/demo-bucket;
-      echo '=== test-bucket contents ===';
-      mc ls local/test-bucket;
-      
-      set +x;
-      echo 'MinIO setup completed successfully!';
-      echo 'Access MinIO Console at: http://localhost:9001';
-      echo 'Root credentials: minioadmin/minioadmin';
-      echo 'User credentials: demouser/demopassword';
-      "
+    volumes:
+      - ./scripts/minio-setup.sh:/setup.sh:ro
+    entrypoint: ["/bin/sh", "/setup.sh"]
     profiles: [ minio ]
     networks:
       - snaplogicnet

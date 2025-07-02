@@ -24,31 +24,9 @@ services:
     depends_on:
       oracle-db:
         condition: service_healthy
-    command: |
-      bash -c "
-      echo 'Oracle is healthy, creating TEST schema...'
-      sqlplus system/Oracle123@oracle-db:1521/FREEPDB1 <<'EOF'
-      SET SERVEROUTPUT ON;
-      BEGIN
-          EXECUTE IMMEDIATE 'CREATE USER TEST IDENTIFIED BY Test123';
-          DBMS_OUTPUT.PUT_LINE('TEST user created successfully');
-      EXCEPTION
-          WHEN OTHERS THEN
-              IF SQLCODE = -1920 THEN
-                  DBMS_OUTPUT.PUT_LINE('TEST user already exists');
-              ELSE
-                  RAISE;
-              END IF;
-      END;
-      /
-      GRANT CONNECT, RESOURCE, UNLIMITED TABLESPACE TO TEST;
-      GRANT CREATE SESSION, CREATE TABLE, CREATE VIEW TO TEST;
-      GRANT CREATE PROCEDURE, CREATE SEQUENCE, CREATE TRIGGER TO TEST;
-      SELECT username, account_status FROM dba_users WHERE username = 'TEST';
-      EXIT;
-      EOF
-      echo 'TEST schema setup completed!'
-      "
+    volumes:
+      - ./scripts/oracle-setup.sh:/setup.sh:ro
+    entrypoint: ["/bin/bash", "/setup.sh"]
     profiles: [ dev, oracle-dev ]
     networks:
       - snaplogicnet

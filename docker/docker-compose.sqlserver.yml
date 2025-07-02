@@ -31,64 +31,9 @@ services:
         condition: service_healthy
     environment:
       ACCEPT_EULA: "Y"
-    command: |
-      bash -c "
-      echo 'SQL Server is healthy, creating TEST database and user...'
-      /opt/mssql-tools18/bin/sqlcmd -S sqlserver-db -U sa -P 'Snaplogic123!' -C -Q \"
-      -- Create TEST database if not exists
-      IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'TEST')
-      BEGIN
-          CREATE DATABASE TEST;
-          PRINT 'TEST database created successfully';
-      END
-      ELSE
-      BEGIN
-          PRINT 'TEST database already exists';
-      END
-      GO
-
-      -- Switch to TEST database
-      USE TEST;
-      GO
-
-      -- Create login if not exists
-      IF NOT EXISTS (SELECT name FROM sys.server_principals WHERE name = 'testuser')
-      BEGIN
-          CREATE LOGIN testuser WITH PASSWORD = 'Snaplogic123!';
-          PRINT 'testuser login created successfully';
-      END
-      ELSE
-      BEGIN
-          PRINT 'testuser login already exists';
-      END
-      GO
-
-      -- Create user in TEST database
-      IF NOT EXISTS (SELECT name FROM sys.database_principals WHERE name = 'testuser')
-      BEGIN
-          CREATE USER testuser FOR LOGIN testuser;
-          PRINT 'testuser database user created successfully';
-      END
-      ELSE
-      BEGIN
-          PRINT 'testuser database user already exists';
-      END
-      GO
-
-      -- Grant permissions
-      ALTER ROLE db_owner ADD MEMBER testuser;
-      GRANT CREATE TABLE TO testuser;
-      GRANT CREATE VIEW TO testuser;
-      GRANT CREATE PROCEDURE TO testuser;
-      GRANT CREATE FUNCTION TO testuser;
-      GO
-
-      -- Verify setup
-      SELECT name, type_desc, create_date FROM sys.database_principals WHERE name = 'testuser';
-      GO
-      \"
-      echo 'TEST database and user setup completed!'
-      "
+    volumes:
+      - ./scripts/sqlserver-setup.sh:/setup.sh:ro
+    entrypoint: ["/bin/bash", "/setup.sh"]
     profiles: [ dev, sqlserver-dev ]
     networks:
       - snaplogicnet
