@@ -1,91 +1,15 @@
-version: ~> 1.0
-
-env:
-  global:
-    - HMD_HOME=$TRAVIS_BUILD_DIR
-
-    # Oracle Account-specific environment variables
-    - ORACLE_ACCOUNT_NAME="Oracle_Slim_Account"
-    - ORACLE_HOST="oracle-db"
-    - ORACLE_DBNAME="FREEPDB1"
-    - ORACLE_DBPORT="1521"
-    - ORACLE_DBUSER="SYSTEM"
-    - ORACLE_DBPASS="Oracle123"
-
-    # Postgres Account-specific environment variables
-    - POSTGRES_ACCOUNT_NAME="Postgres_Slim_Account"
-    - POSTGRES_HOST="postgres-db"
-    - POSTGRES_DBNAME="snaplogic"
-    - POSTGRES_DBPORT="5432"
-    - POSTGRES_DBUSER="snaplogic"
-    - POSTGRES_DBPASS="snaplogic"
-
-    # SQL Server Account-specific environment variables
-    - SQLSERVER_ACCOUNT_NAME="SQLServer_Slim_Account"
-    - SQLSERVER_HOST="sqlserver-db"
-    - SQLSERVER_DBNAME="TEST"
-    - SQLSERVER_DBPORT="1433"
-    - SQLSERVER_DBUSER="testuser"
-    - SQLSERVER_DBPASS="Snaplogic123!"
-
-    # MySQL Account-specific environment variables
-    - MYSQL_ACCOUNT_NAME="MySQL_Slim_Account"
-    - MYSQL_HOST="mysql-db"
-    - MYSQL_DBNAME="TEST"
-    - MYSQL_DBPORT="3306"
-    - MYSQL_DBUSER="testuser"
-    - MYSQL_DBPASS="snaplogic"
-
-    # S3 Account-specific environment variables
-    - S3_ACCOUNT_NAME="S3_Slim_Account"
-    - S3_ENDPOINT="http://minio:9000"
-    - S3_ACCESS_KEY="demouser"
-    - S3_SECRET_KEY="demopassword"
-
-    # JMS/ActiveMQ Account-specific environment variables
-    - JMS_ACCOUNT_NAME="JMS_Slim_Account"
-    - JMS_HOST="activemq"
-    - JMS_PORT="61616"
-    - JMS_USERNAME="admin"
-    - JMS_PASSWORD="admin"
-    - JMS_CONNECTION_FACTORY="ConnectionFactory"
-    - JMS_INITIAL_CONTEXT_FACTORY="org.apache.activemq.artemis.jndi.ActiveMQInitialContextFactory"
-    - JMS_PROVIDER_URL="tcp://activemq:61616"
-    - JMS_QUEUE_NAME="demo.queue"
-
-    - RELEASE_BUILD_VERSION="main-33084"
-
-dist: jammy
-group: stable
 language: python
-python:
-  - 3.12
-services:
-  - docker
+python: "3.12"
 
-branches:
-  only:
-    - main
-
-before_script:
-  - echo "🔍Environment Variables set up and creating .env file:"
-  - chmod +x ./setup_env.sh # Make the script executable
-  - ./setup_env.sh
-
-install: skip
-
-jobs:
-  include:
-    - stage: BuildImage
-      script:
-        - make snaplogic-start-services
-        - make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True
-      name: Build Docs
+script:
+  - echo "Testing Slack notifications"
+  - exit 1 # Force failure to trigger notification
 
 notifications:
   slack:
     rooms:
-      - secure: "dCopXedLNoE0emcUtKYZPqQhvrBdwxXyhnz8qIuEEvKASKBml4n4PR0HjneNxLxtgxih3BGN8m7pIb9IFW9UkvAMfGZSMRJecNiWKqImFaIDdXB9wnQeXOkTT1DbgWZT+t3c9DTqt8jT7oI/B6/pJR8HyS0+GKnGeG6gh+MUUGKzR9bB2ynh7ldLhbpXrs5IxuXh5kgxo7UnrhFm+a4AsqQmUfWcyVu3LF65u+gDTd1BdKwsPvJGey/Lzto+zsUBGBmlx4oIeYwiFrj/yyQCxIxpl35PFfAWSMdx937UYs60CsRhVaMLzbXZ5PFGIjXwK/T2okaf/RSEG28pTQ8NT3BvNmgcHwcaH7zKCQV05kfQ4spoWY3AXIKssQyznpKRq+HoUlU5OmS4TQrXRmEVra7bMQKaFSzi/091TJnK0/oIU6hOaoJvqSZusjN8QyNRhLkv5WJjISYLL8j8uA09VnDinMf881uSo74MCNfXxlmgsxaVEVEQ68bCv2XLaDRDEJQQn2JncHTha8KiNTO9DAaz4JhAtw86xWlwGDBqMLpX9yjVVfrBU4njLbLuvxWq+sbQR7XSAq9gvXL/5XwNhkc90wP5JQrLhJ3W5BCmMCiyyVchONElf27DN6FOYPRTJeb+y53P4axGlpnZVj98t+ws7U8O1wwTYhjJleySA34="
+      - secure: "kwKXJwPJNR+qzT/PkcPxIWFjvfTTtYcLbcIOplaLw/33MWxffd0YUp8Cvt+N5IEkDK05NG2C1MgVTWrP9NKspCjkfRCCZnIH6T/aRFnCdJzczl6iKlBNcZM6MvpDjYOuTJP0CsEBYO1cuwiT0tL14lTJopNdmu0UKq5K855ysSiCiGOpkfWRD+QGgX5d43JT8Ad/9V4LPqfZhyCS1FfC0M2vKk7u8O5bknnJtTBAex0k6IK0KyD/k3siFvC5ZQFV6ole9n4KdFcb1dtLQ1/97qv2gvLXMY6BHmi8+IK9gGJPbf+GO3A3KoYuVlI/sGl5hk+ekCT2ljRdOCXckcLtmh0DhgtvKV7b3EsHZ9gd5nB7OzJRv+Gz01yfKEpB8XsphGPbjQ20o2VVVfaBF7x0pZT5tmuLZ+4XQrE4amPITKVuAPHdWJmUFms1ojThVgB9d+XM5n8RhpvqKDcxcqGkQQjwH6UcyOCCKWAl8FeJJ3aXiRZofQ8ujrAEU2bQ4GOHl0ucA7wJF943huFXcS7QJb+bcprSyOfR7HxX8ZOSEHY4CxYErDTfW/ACq9fSMSEtDT8Relf4HV76ZyXZbBpnJLnTZCqldScLZCDigHagDg8qk6bdoms+NDaH18orkZ6G3LlUlPIkc4+WKaeDp81848JoBBXaN69ALePWSTyA00g="
     on_success: always
     on_failure: always
     on_error: always
+    on_pull_requests: true
