@@ -164,11 +164,11 @@ after_failure:
 notifications:
   slack:
     rooms:
-      - secure: "DYVuYTPjV1S87V+kucqpZT/IRwSRVxK3TEsifwsB1ZQqXMkBMBFPLTWDsu31wmQnzdn6A9NBUg52PyuwfF79oSFqCWMUMfKCgrCBzk5gcJJ05mrMQfV6NqngYCx8oMjuuiBDAWMn9OtvOmOA6zJM7CBa3RSOKxkMhDo3a6qYrHC1znzA0usxjalaLtQXU9R5CM4KydqWRBkwXb7TukSIbcpYUuZw+30INWZSC7TS1Ok9KTLUS3iWj3Ry9bpi61SIuY/OkQG+p19MR60ZCsRWgksc6fkKX5A4s6CzozJ8/QHAqeN5pX/wvES8DXM+S00UPY/XY5Qg6wrowJAPEfQx18qdAbqrD39cHpwOrE5lEhhEJcIDBFCMPRKPwPs1TSX2/mAcfLK5vF5TvJJ68OzR5X7gmgxVXV55H1fwE8xAPdkqdNFKm0hjK+fNDG5qfZ1sRCfSMzOVTDKtAgVJ7tIDN7bc7uTECgmHNUKy00fU8AIEKXAB59cH8W4aqvydzsj/w+cSajerqpcNV/kHI+524EDk2MzQwXtoOft8gAEwUlFH0qopKcVZWKoylRe4v3FTbzEyt1gP5SR8noPvxDv1y1/EdZlkx3YhpQc6Xaqs4CwGG1ZwNtahmnGkcPDqH4zO3Klk8cIpKMEsvnFXphY6yda5/IBiTjwrTaYldpNrfrA="
+      - secure: "dCopXedLNoE0emcUtKYZPqQhvrBdwxXyhnz8qIuEEvKASKBml4n4PR0HjneNxLxtgxih3BGN8m7pIb9IFW9UkvAMfGZSMRJecNiWKqImFaIDdXB9wnQeXOkTT1DbgWZT+t3c9DTqt8jT7oI/B6/pJR8HyS0+GKnGeG6gh+MUUGKzR9bB2ynh7ldLhbpXrs5IxuXh5kgxo7UnrhFm+a4AsqQmUfWcyVu3LF65u+gDTd1BdKwsPvJGey/Lzto+zsUBGBmlx4oIeYwiFrj/yyQCxIxpl35PFfAWSMdx937UYs60CsRhVaMLzbXZ5PFGIjXwK/T2okaf/RSEG28pTQ8NT3BvNmgcHwcaH7zKCQV05kfQ4spoWY3AXIKssQyznpKRq+HoUlU5OmS4TQrXRmEVra7bMQKaFSzi/091TJnK0/oIU6hOaoJvqSZusjN8QyNRhLkv5WJjISYLL8j8uA09VnDinMf881uSo74MCNfXxlmgsxaVEVEQ68bCv2XLaDRDEJQQn2JncHTha8KiNTO9DAaz4JhAtw86xWlwGDBqMLpX9yjVVfrBU4njLbLuvxWq+sbQR7XSAq9gvXL/5XwNhkc90wP5JQrLhJ3W5BCmMCiyyVchONElf27DN6FOYPRTJeb+y53P4axGlpnZVj98t+ws7U8O1wwTYhjJleySA34=
     on_success: always
     on_failure: always
     on_error: always
-    on_pull_requests: false
+    on_pull_requests: true
     template:
       - "Build <%{build_url}|#%{build_number}> (<%{compare_url}|%{commit}>) of %{repository_slug}@%{branch}"
       - "by %{author} %{result} in %{duration}"
