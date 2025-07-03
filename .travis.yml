@@ -100,19 +100,31 @@ script:
   - echo "🚀 Starting SnapLogic services..."
   - make snaplogic-start-services || echo "⚠️ Some services failed to start, analyzing..."
   
+  # ✅ Explicitly ensure tools container is running
+  - echo "🔧 Ensuring tools container is running..."
+  - docker compose --env-file .env -f docker/docker-compose.yml --profile tools up -d
+  - sleep 10
+  
+  # ✅ Check if tools container is actually running and restart if needed
+  - |
+    if ! docker ps --filter "name=snaplogic-test-example-tools-container" --filter "status=running" --quiet | grep -q .; then
+      echo "⚠️ Tools container not running, attempting restart..."
+      docker compose --env-file .env -f docker/docker-compose.yml stop tools || true
+      docker compose --env-file .env -f docker/docker-compose.yml rm -f tools || true
+      echo "🔄 Rebuilding and starting tools container..."
+      docker compose --env-file .env -f docker/docker-compose.yml build --no-cache tools
+      docker compose --env-file .env -f docker/docker-compose.yml --profile tools up -d
+      sleep 15
+    fi
+  
   # ✅ Show what's actually running
   - echo "📊 Container status check:"
   - docker ps -a
   
-  # ✅ Check specifically for critical services
-  - echo "🔍 Checking critical services..."
-  - docker ps --filter "name=oracle-db" --filter "status=running" --quiet || echo "❌ Oracle DB not running"
-  - docker ps --filter "name=snaplogic-groundplex" --filter "status=running" --quiet || echo "❌ Groundplex not running"
-  - docker ps --filter "name=snaplogic-minio" --filter "status=running" --quiet || echo "❌ Minio not running"
-  
-  # ✅ Show ActiveMQ specific status
-  - echo "🔍 ActiveMQ status:"
-  - docker ps --filter "name=snaplogic-activemq" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" || echo "ActiveMQ container not found"
+  # ✅ Check specifically for tools container
+  - echo "🔍 Checking tools container..."
+  - docker ps --filter "name=snaplogic-test-example-tools-container" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" || echo "❌ Tools container not found"
+  - docker logs snaplogic-test-example-tools-container --tail 20 || echo "❌ Could not get tools container logs"
   
   # ✅ Continue with tests regardless of service failures
   - echo "🧪 Running Oracle tests (critical services check passed)..."

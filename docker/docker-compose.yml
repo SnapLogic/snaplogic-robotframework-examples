@@ -27,7 +27,7 @@ services:
       # - ~/Documents:/opt/host-documents:ro
       # - ~/Downloads:/opt/host-downloads:ro
       # - ~/Desktop:/opt/host-desktop:ro
-    command: [ "sh", "-c", "/app/setup_env.sh && /app/setup_env.sh && tail -f /dev/null" ]
+    command: [ "sh", "-c", "echo 'Tools container started' && tail -f /dev/null" ]
     profiles: [ tools ]
     networks:
       - snaplogicnet
