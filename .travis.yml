@@ -1,3 +1,7 @@
+import:
+  - SnapLogic/slim-tx-engine:travis/slim_common_travis.yml
+  - SnapLogic/slim-tx-engine:travis/post_test_results_notify.yml
+
 language: python
 python: "3.12"
 
@@ -5,11 +9,11 @@ script:
   - echo "Testing Slack notifications"
   - exit 1 # Force failure to trigger notification
 
-notifications:
-  slack:
-    rooms:
-      - secure: "kwKXJwPJNR+qzT/PkcPxIWFjvfTTtYcLbcIOplaLw/33MWxffd0YUp8Cvt+N5IEkDK05NG2C1MgVTWrP9NKspCjkfRCCZnIH6T/aRFnCdJzczl6iKlBNcZM6MvpDjYOuTJP0CsEBYO1cuwiT0tL14lTJopNdmu0UKq5K855ysSiCiGOpkfWRD+QGgX5d43JT8Ad/9V4LPqfZhyCS1FfC0M2vKk7u8O5bknnJtTBAex0k6IK0KyD/k3siFvC5ZQFV6ole9n4KdFcb1dtLQ1/97qv2gvLXMY6BHmi8+IK9gGJPbf+GO3A3KoYuVlI/sGl5hk+ekCT2ljRdOCXckcLtmh0DhgtvKV7b3EsHZ9gd5nB7OzJRv+Gz01yfKEpB8XsphGPbjQ20o2VVVfaBF7x0pZT5tmuLZ+4XQrE4amPITKVuAPHdWJmUFms1ojThVgB9d+XM5n8RhpvqKDcxcqGkQQjwH6UcyOCCKWAl8FeJJ3aXiRZofQ8ujrAEU2bQ4GOHl0ucA7wJF943huFXcS7QJb+bcprSyOfR7HxX8ZOSEHY4CxYErDTfW/ACq9fSMSEtDT8Relf4HV76ZyXZbBpnJLnTZCqldScLZCDigHagDg8qk6bdoms+NDaH18orkZ6G3LlUlPIkc4+WKaeDp81848JoBBXaN69ALePWSTyA00g="
-    on_success: always
-    on_failure: always
-    on_error: always
-    on_pull_requests: true
+# notifications:
+#   slack:
+#     rooms:
+#       - secure: "kwKXJwPJNR+qzT/PkcPxIWFjvfTTtYcLbcIOplaLw/33MWxffd0YUp8Cvt+N5IEkDK05NG2C1MgVTWrP9NKspCjkfRCCZnIH6T/aRFnCdJzczl6iKlBNcZM6MvpDjYOuTJP0CsEBYO1cuwiT0tL14lTJopNdmu0UKq5K855ysSiCiGOpkfWRD+QGgX5d43JT8Ad/9V4LPqfZhyCS1FfC0M2vKk7u8O5bknnJtTBAex0k6IK0KyD/k3siFvC5ZQFV6ole9n4KdFcb1dtLQ1/97qv2gvLXMY6BHmi8+IK9gGJPbf+GO3A3KoYuVlI/sGl5hk+ekCT2ljRdOCXckcLtmh0DhgtvKV7b3EsHZ9gd5nB7OzJRv+Gz01yfKEpB8XsphGPbjQ20o2VVVfaBF7x0pZT5tmuLZ+4XQrE4amPITKVuAPHdWJmUFms1ojThVgB9d+XM5n8RhpvqKDcxcqGkQQjwH6UcyOCCKWAl8FeJJ3aXiRZofQ8ujrAEU2bQ4GOHl0ucA7wJF943huFXcS7QJb+bcprSyOfR7HxX8ZOSEHY4CxYErDTfW/ACq9fSMSEtDT8Relf4HV76ZyXZbBpnJLnTZCqldScLZCDigHagDg8qk6bdoms+NDaH18orkZ6G3LlUlPIkc4+WKaeDp81848JoBBXaN69ALePWSTyA00g="
+#     on_success: always
+#     on_failure: always
+#     on_error: always
+#     on_pull_requests: true
