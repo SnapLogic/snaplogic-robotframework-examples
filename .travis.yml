@@ -4,10 +4,14 @@ import:
   - SnapLogic/slim-tx-engine:travis/slim_common_travis.yml
   - SnapLogic/slim-tx-engine:travis/post_test_results_notify.yml
 
+before_install:
+  - sudo apt-get update
+
 jobs:
   include:
     - stage: Build and Upload
       script:
         # Step 1: Make sure entrypoint.sh is executable
         - echo "🔹 Setting up environment..."
-        - chmod +x /setup_env.sh
+
+      name: Build and Upload Package
