@@ -1,5 +1,3 @@
-# Travis CI Configuration with Slack Notifications
-# This file combines the main Travis configuration with Slack notification settings
 version: ~> 1.0
 
 env:
@@ -47,12 +45,12 @@ env:
     # JMS/ActiveMQ Account-specific environment variables
     - JMS_ACCOUNT_NAME="JMS_Slim_Account"
     - JMS_HOST="activemq"
-    - JMS_PORT="61616"  # Internal container port remains the same
+    - JMS_PORT="61616"
     - JMS_USERNAME="admin"
     - JMS_PASSWORD="admin"
     - JMS_CONNECTION_FACTORY="ConnectionFactory"
     - JMS_INITIAL_CONTEXT_FACTORY="org.apache.activemq.artemis.jndi.ActiveMQInitialContextFactory"
-    - JMS_PROVIDER_URL="tcp://activemq:61616"  # Internal container communication
+    - JMS_PROVIDER_URL="tcp://activemq:61616"
     - JMS_QUEUE_NAME="demo.queue"
 
     - RELEASE_BUILD_VERSION="main-33084"
@@ -70,117 +68,24 @@ branches:
     - main
 
 before_script:
-  # ✅ Enhanced port conflict cleanup
-  - echo "🔍 Checking for port conflicts..."
-  - sudo netstat -tulpn | grep :5673 || echo "Port 5673 is free"
-  - sudo netstat -tulpn | grep :61617 || echo "Port 61617 is free"
-  - sudo netstat -tulpn | grep :61614 || echo "Port 61614 is free"
-  - sudo netstat -tulpn | grep :8161 || echo "Port 8161 is free"
-  
-  # ✅ Kill any conflicting processes
-  - sudo fuser -k 5673/tcp || echo "No process killed on port 5673"
-  - sudo fuser -k 61617/tcp || echo "No process killed on port 61617"
-  - sudo fuser -k 61614/tcp || echo "No process killed on port 61614"
-  - sudo fuser -k 8161/tcp || echo "No process killed on port 8161"
-  
-  - sleep 2
-  - echo "🔍 Environment Variables set up and creating .env file:"
-  - chmod +x ./setup_env.sh
+  - echo "🔍Environment Variables set up and creating .env file:"
+  - chmod +x ./setup_env.sh # Make the script executable
   - ./setup_env.sh
-  - chmod +x docker/scripts/*.sh
-  
-  # ✅ Pre-pull critical images to avoid timeout issues
-  - echo "📥 Pre-pulling critical Docker images..."
-  - docker pull apache/activemq-artemis:2.28.0 || echo "Could not pre-pull ActiveMQ image"
 
 install: skip
 
-script:
-  # ✅ Try to start services, but don't fail the build if some services fail
-  - echo "🚀 Starting SnapLogic services..."
-  - make snaplogic-start-services || echo "⚠️ Some services failed to start, analyzing..."
-  
-  # ✅ Explicitly ensure tools container is running
-  - echo "🔧 Ensuring tools container is running..."
-  - docker compose --env-file .env -f docker/docker-compose.yml --profile tools up -d
-  - sleep 10
-  
-  # ✅ Check if tools container is actually running and restart if needed
-  - |
-    if ! docker ps --filter "name=snaplogic-test-example-tools-container" --filter "status=running" --quiet | grep -q .; then
-      echo "⚠️ Tools container not running, attempting restart..."
-      docker compose --env-file .env -f docker/docker-compose.yml stop tools || true
-      docker compose --env-file .env -f docker/docker-compose.yml rm -f tools || true
-      echo "🔄 Rebuilding and starting tools container..."
-      docker compose --env-file .env -f docker/docker-compose.yml build --no-cache tools
-      docker compose --env-file .env -f docker/docker-compose.yml --profile tools up -d
-      sleep 15
-    fi
-  
-  # ✅ Show what's actually running
-  - echo "📊 Container status check:"
-  - docker ps -a
-  
-  # ✅ Check specifically for tools container
-  - echo "🔍 Checking tools container..."
-  - docker ps --filter "name=snaplogic-test-example-tools-container" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" || echo "❌ Tools container not found"
-  - docker logs snaplogic-test-example-tools-container --tail 20 || echo "❌ Could not get tools container logs"
-  
-  # ✅ Continue with tests regardless of service failures
-  - echo "🧪 Running Oracle tests (critical services check passed)..."
-  - make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True
+jobs:
+  include:
+    - stage: BuildImage
+      script:
+        - make snaplogic-start-services
+        - make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True
+      name: Build Docs
 
-# Jobs section removed - using main script section for simplicity
-
-# After success/failure - can be used for additional notifications or cleanup
-after_success:
-  - echo "✅ Build succeeded!"
-  - echo "📊 Final service status:"
-  - docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-  - echo "📁 Test results are available in robot_output directory"
-
-after_failure:
-  - echo "❌ Build failed! Gathering diagnostic information..."
-  - echo "📊 Final container status:"
-  - docker ps -a
-  
-  # ✅ Get logs from all containers
-  - echo "📝 Container logs:"
-  - docker logs snaplogic-test-example-tools-container --tail 50 || true
-  - docker logs snaplogic-activemq --tail 50 || true
-  - docker logs oracle-db --tail 30 || true
-  - docker logs snaplogic-groundplex --tail 30 || true
-  
-  # ✅ Check for specific error patterns
-  - echo "🔍 Checking for common issues:"
-  - docker logs snaplogic-activemq 2>&1 | grep -i "error\|exception\|failed" || echo "No obvious errors in ActiveMQ logs"
-  
-  # ✅ Resource usage check
-  - echo "💾 System resource usage:"
-  - df -h || true
-  - free -h || true
-
-# Slack Notifications Configuration
 notifications:
   slack:
     rooms:
-      - secure: "dCopXedLNoE0emcUtKYZPqQhvrBdwxXyhnz8qIuEEvKASKBml4n4PR0HjneNxLxtgxih3BGN8m7pIb9IFW9UkvAMfGZSMRJecNiWKqImFaIDdXB9wnQeXOkTT1DbgWZT+t3c9DTqt8jT7oI/B6/pJR8HyS0+GKnGeG6gh+MUUGKzR9bB2ynh7ldLhbpXrs5IxuXh5kgxo7UnrhFm+a4AsqQmUfWcyVu3LF65u+gDTd1BdKwsPvJGey/Lzto+zsUBGBmlx4oIeYwiFrj/yyQCxIxpl35PFfAWSMdx937UYs60CsRhVaMLzbXZ5PFGIjXwK/T2okaf/RSEG28pTQ8NT3BvNmgcHwcaH7zKCQV05kfQ4spoWY3AXIKssQyznpKRq+HoUlU5OmS4TQrXRmEVra7bMQKaFSzi/091TJnK0/oIU6hOaoJvqSZusjN8QyNRhLkv5WJjISYLL8j8uA09VnDinMf881uSo74MCNfXxlmgsxaVEVEQ68bCv2XLaDRDEJQQn2JncHTha8KiNTO9DAaz4JhAtw86xWlwGDBqMLpX9yjVVfrBU4njLbLuvxWq+sbQR7XSAq9gvXL/5XwNhkc90wP5JQrLhJ3W5BCmMCiyyVchONElf27DN6FOYPRTJeb+y53P4axGlpnZVj98t+ws7U8O1wwTYhjJleySA34=
+      - secure: "dCopXedLNoE0emcUtKYZPqQhvrBdwxXyhnz8qIuEEvKASKBml4n4PR0HjneNxLxtgxih3BGN8m7pIb9IFW9UkvAMfGZSMRJecNiWKqImFaIDdXB9wnQeXOkTT1DbgWZT+t3c9DTqt8jT7oI/B6/pJR8HyS0+GKnGeG6gh+MUUGKzR9bB2ynh7ldLhbpXrs5IxuXh5kgxo7UnrhFm+a4AsqQmUfWcyVu3LF65u+gDTd1BdKwsPvJGey/Lzto+zsUBGBmlx4oIeYwiFrj/yyQCxIxpl35PFfAWSMdx937UYs60CsRhVaMLzbXZ5PFGIjXwK/T2okaf/RSEG28pTQ8NT3BvNmgcHwcaH7zKCQV05kfQ4spoWY3AXIKssQyznpKRq+HoUlU5OmS4TQrXRmEVra7bMQKaFSzi/091TJnK0/oIU6hOaoJvqSZusjN8QyNRhLkv5WJjISYLL8j8uA09VnDinMf881uSo74MCNfXxlmgsxaVEVEQ68bCv2XLaDRDEJQQn2JncHTha8KiNTO9DAaz4JhAtw86xWlwGDBqMLpX9yjVVfrBU4njLbLuvxWq+sbQR7XSAq9gvXL/5XwNhkc90wP5JQrLhJ3W5BCmMCiyyVchONElf27DN6FOYPRTJeb+y53P4axGlpnZVj98t+ws7U8O1wwTYhjJleySA34="
     on_success: always
     on_failure: always
     on_error: always
-    on_pull_requests: true
-    template:
-      - "Build <%{build_url}|#%{build_number}> (<%{compare_url}|%{commit}>) of %{repository_slug}@%{branch}"
-      - "by %{author} %{result} in %{duration}"
-      - "Message: %{commit_message}"
-      - "View results: %{build_url}"
-
-# Cache Docker images and pip packages for faster builds
-cache:
-  directories:
-    - $HOME/.cache/pip
-    - $HOME/docker
-
-# Clean up
-after_script:
-  - make snaplogic-stop || true
