@@ -168,7 +168,7 @@ notifications:
     on_success: always
     on_failure: always
     on_error: always
-    on_pull_requests: false
+    on_pull_requests: true
     template:
       - "Build <%{build_url}|#%{build_number}> (<%{compare_url}|%{commit}>) of %{repository_slug}@%{branch}"
       - "by %{author} %{result} in %{duration}"
