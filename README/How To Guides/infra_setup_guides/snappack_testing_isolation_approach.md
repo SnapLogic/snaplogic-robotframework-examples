@@ -102,9 +102,3 @@ Ensure that **local testing strategies are repeatable** and **included in core d
 - [ ] Configure environment variables
 - [ ] Set up test data provisioning
 - [ ] Define cleanup procedures
-
-### 6. Maintenance
-- [ ] Establish version compatibility matrix
-- [ ] Document known limitations
-- [ ] Create update procedures
-- [ ] Define support escalation path
