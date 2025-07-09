@@ -1,15 +1,17 @@
-version: "~> 1.0"
-import:
-  - SnapLogic/slim-tx-engine:travis/slim_common_travis.yml
-  - SnapLogic/slim-tx-engine:travis/post_test_results_notify.yml
+language: python
+os: linux
+dist: focal
+
 before_install:
   - sudo apt-get update
+
 jobs:
   include:
     - stage: Build and Upload
       script:
-        - "echo \"\U0001F539 Setting up environment...\""
+        - echo "🔹 Setting up environment..."
       name: Build and Upload Package
+
 notifications:
   slack:
     rooms:
