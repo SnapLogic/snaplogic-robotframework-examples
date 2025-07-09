@@ -1,17 +1,18 @@
-version: ~> 1.0
-
+version: "~> 1.0"
 import:
   - SnapLogic/slim-tx-engine:travis/slim_common_travis.yml
   - SnapLogic/slim-tx-engine:travis/post_test_results_notify.yml
-
 before_install:
   - sudo apt-get update
-
 jobs:
   include:
     - stage: Build and Upload
       script:
-        # Step 1: Make sure entrypoint.sh is executable
-        - echo "🔹 Setting up environment..."
-
+        - "echo \"\U0001F539 Setting up environment...\""
       name: Build and Upload Package
+notifications:
+  slack:
+    rooms:
+      - secure: "S233CTqbSLm2n049GHOQ6aR25lY9CBN95JFVjFe/WfXMAkXkldhyBBVM+KsOAgCHmiF14G3gA8w2LyC/vwKPnvBv+EZgHFzT5BHE1PA+eMfR0fiZEVllfGJhPgx9hT9av56iIS9CXbRbCSzH0FMdNi+9/oo/REcjWKXFK0vVHrHIQUZoPpc211+pC80/2FCkpUPQIKvq1Orb/zD8NtxeMoxCdUTPda4/dQu7mxFRCgpFHPf9qFI6AbtTK5nCLnOkcJ5zfOrAjI5ojfVfJaH4fC5COmP7vpk+0H9vOidl/5uWx4FN4Mx3/1KWZLMTkNNrTIRNu03xVjnCgfg8SxG07Ll2SHQgJd8mlZL8RCrOH/m5yRWsyNA+XD7iUJc45JVyrBmXR1qyzaPqgHhemD0eeH1/v+AFr+O7LPoXyFJemODJDeLHjn0DOfHwMIjTFeLvA3eMRspJHerpQyj/wYah+/A9mAL6MYG2MGMLnPTMZV0Ctf+gADiI2UTcibKbLPuq0zMsOSnYrPdsGUTzoIKOAgmP2vv14Vw359ZtLSSAFNjaqNmlgAKKnKZ2FOrq3BoiZ/Hxl+OTN6vcf9MyPgb5ryz2lr9bghIOO92nDXzWRCwfPiMkfLif2yVGMuY1rwlsk0c9yzapt4yLhIphdpCTsxPwi9bkughY9pTzc1+lZjA="
+    on_success: always
+    on_failure: always
