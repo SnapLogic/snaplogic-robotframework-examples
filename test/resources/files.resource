@@ -25,8 +25,36 @@ Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_key
 ################## FILE ANALYSIS AND COUNTING ##################
 
 Count Data Rows In CSV
-    [Documentation]    Counts the number of data rows in a CSV file (excluding header)
-    [Arguments]    ${csv_file}
+    [Documentation]    Counts the number of data rows in a CSV file (excluding header rows)
+    ...
+    ...    This keyword reads a CSV file and returns the count of data rows,
+    ...    excluding any header rows. The number of header rows can be customized
+    ...    to accommodate different CSV file formats.
+    ...
+    ...    Arguments:
+    ...    ${csv_file}    - Path to the CSV file to analyze
+    ...    ${header_rows}    - Number of header rows to exclude (default: 1)
+    ...    Set to 0 for headerless CSV files
+    ...    Set to 2+ for multi-line headers
+    ...
+    ...    Returns:
+    ...    Number of data rows in the CSV file (always >= 0)
+    ...
+    ...    Examples:
+    ...    # Standard CSV with single header row (default)
+    ...    ${count}=    Count Data Rows In CSV    data.csv
+    ...
+    ...    # CSV without headers
+    ...    ${count}=    Count Data Rows In CSV    raw_data.csv    header_rows=0
+    ...
+    ...    # CSV with complex 3-row header
+    ...    ${count}=    Count Data Rows In CSV    complex_report.csv    header_rows=3
+    ...
+    ...    # Using with variable
+    ...    ${headers}=    Set Variable    2
+    ...    ${count}=    Count Data Rows In CSV    report.csv    header_rows=${headers}
+    ...
+    [Arguments]    ${csv_file}    ${header_rows}=1
 
     File Should Exist    ${csv_file}
 
@@ -34,13 +62,13 @@ Count Data Rows In CSV
     ${csv_content}=    Read Csv File To List    ${csv_file}
     ${total_rows}=    Get Length    ${csv_content}
 
-    # Subtract 1 for header row (assuming CSV has headers)
-    ${data_rows}=    Evaluate    ${total_rows} - 1
+    # Subtract header rows from total
+    ${data_rows}=    Evaluate    ${total_rows} - ${header_rows}
 
     # Ensure we don't return negative numbers
     ${data_rows}=    Evaluate    max(0, ${data_rows})
 
-    Log    📊 CSV file analysis: ${total_rows} total rows, ${data_rows} data rows
+    Log    📊 CSV file analysis: ${total_rows} total rows, ${header_rows} header rows, ${data_rows} data rows
 
     RETURN    ${data_rows}
 
@@ -62,13 +90,18 @@ Count Data Rows In JSON
 
 Count Rows In File
     [Documentation]    Universal row counter that detects file type and counts appropriately
-    [Arguments]    ${file_path}
+    ...
+    ...    Arguments:
+    ...    ${file_path}    - Path to the file to analyze
+    ...    ${header_rows}    - Number of header rows (only applies to CSV files, default: 1)
+    ...
+    [Arguments]    ${file_path}    ${header_rows}=1
 
     # Detect file type by extension
     ${file_extension}=    Get File Extension From Path    ${file_path}
 
     IF    '${file_extension}' == '.csv'
-        ${row_count}=    Count Data Rows In CSV    ${file_path}
+        ${row_count}=    Count Data Rows In CSV    ${file_path}    header_rows=${header_rows}
     ELSE IF    '${file_extension}' == '.json'
         ${row_count}=    Count Data Rows In JSON    ${file_path}
     ELSE
