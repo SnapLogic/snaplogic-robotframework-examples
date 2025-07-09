@@ -6,6 +6,11 @@ import:
 
 before_install:
   - sudo apt-get update
+  - sudo apt-get install -y jq
+  - pip install -U pip
+  - export ARTIFACT_BUCKET=artifacts.slimdev.snaplogic
+  - export PACKAGE_FOLDER=python-packages
+  - export FULL_VERSION_FILE=.FULL_VERSION
 
 jobs:
   include:
