@@ -7,3 +7,4 @@ stomp.py # STOMP protocol client for JMS testing
 requests # HTTP client for ActiveMQ management API
 pymssql # Microsoft SQL Server database driver
 pymysql # MySQL database driver
+teradatasql # Teradata database driver

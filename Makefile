@@ -17,6 +17,7 @@
 .PHONY: robot-run-tests robot-run-all-tests snaplogic-start-services snaplogic-stop snaplogic-build-tools \
         snaplogic-stop-tools check-env clean-start launch-groundplex oracle-start oracle-stop \
         postgres-start postgres-stop mysql-start mysql-stop sqlserver-start sqlserver-stop \
+        teradata-start teradata-stop \
         robotidy robocop lint groundplex-status stop-groundplex \
         start-s3-emulator stop-s3-emulator run-s3-demo ensure-config-dir \
         activemq-start activemq-stop activemq-status activemq-setup run-jms-demo \
@@ -318,6 +319,32 @@ sqlserver-stop:
 	@echo "Cleaning up SQL Server volumes..."
 	docker volume rm $(docker volume ls -q | grep sqlserver) 2>/dev/null || true
 	@echo "✅ SQL Server stopped and cleaned up."
+
+# =============================================================================
+# 🛢️ Start Teradata DB container
+# =============================================================================
+teradata-start:
+	@echo "Starting Teradata..."
+	@echo "⚠️  Note: Teradata requires significant resources (6GB RAM, 2 CPUs)"
+	$(DOCKER_COMPOSE) --profile teradata-dev up -d teradata-db
+	@echo "⏳ Teradata is starting. This may take 5-10 minutes on first run."
+	@echo "💡 Monitor startup progress with: docker compose -f docker/docker-compose.yml logs -f teradata-db"
+	@echo "🌐 Once started:"
+	@echo "   - Database port: 1025"
+	@echo "   - Viewpoint UI: http://localhost:8020"
+	@echo "   - Username: testuser / Password: snaplogic"
+
+# =============================================================================
+# ⛔ Stop Teradata DB container and clean up volumes
+# =============================================================================
+teradata-stop:
+	@echo "Stopping Teradata DB container..."
+	$(DOCKER_COMPOSE) stop teradata-db || true
+	@echo "Removing Teradata container and volumes..."
+	$(DOCKER_COMPOSE) rm -f -v teradata-db || true
+	@echo "Cleaning up Teradata volumes..."
+	docker volume rm $(docker volume ls -q | grep teradata) 2>/dev/null || true
+	@echo "✅ Teradata stopped and cleaned up."
 
 
 # =============================================================================

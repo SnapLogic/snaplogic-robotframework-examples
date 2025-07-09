@@ -7,6 +7,7 @@ include:
   # - docker-compose.activemq.yml
   - docker-compose.sqlserver.yml
   - docker-compose.mysql.yml
+  # - docker-compose.teradata.yml  # Commented out - requires special access from Teradata
 
 services:
   tools:

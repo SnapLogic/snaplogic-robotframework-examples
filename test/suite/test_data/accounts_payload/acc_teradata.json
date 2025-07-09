@@ -1,0 +1,156 @@
+{
+    "path": "{{ACCOUNT_LOCATION_PATH}}",
+    "duplicate_check": true,
+    "account": {
+        "class_fqid": "com-snaplogic-snap-api-sql-accounts-teradata16databaseaccount-v1-430patches2925",
+        "property_map": {
+            "view_serial": 100,
+            "settings": {
+                "jdbcDriverClass": {
+                    "value": "com.teradata.jdbc.TeraDriver"
+                },
+                "connectionProperties": {
+                    "value": {
+                        "sshpassword": {
+                            "expression": false
+                        },
+                        "sshTunnelConfiguration": {
+                            "value": false,
+                            "expression": false
+                        },
+                        "databaseName": {
+                            "value": "{{TERADATA_DBNAME}}",
+                            "expression": false
+                        },
+                        "PassPhrase": {
+                            "expression": false
+                        },
+                        "portNumber": {
+                            "value": 1025,
+                            "expression": false
+                        },
+                        "keyStoreURL": {
+                            "value": null,
+                            "expression": false
+                        },
+                        "keyAlias": {
+                            "value": null,
+                            "expression": false
+                        },
+                        "hostname": {
+                            "value": "{{TERADATA_HOST}}",
+                            "expression": false
+                        },
+                        "username": {
+                            "value": "{{TERADATA_DBUSER}}",
+                            "expression": false
+                        },
+                        "AuthenticationMode": {
+                            "value": "Password"
+                        },
+                        "sshhostname": {
+                            "value": null,
+                            "expression": false
+                        },
+                        "password": {
+                            "expression": false,
+                            "value": "{{TERADATA_DBPASS}}"
+                        },
+                        "keystorePassword": {
+                            "expression": false
+                        },
+                        "sshusername": {
+                            "value": null,
+                            "expression": false
+                        }
+                    }
+                },
+                "advancedProperties": {
+                    "value": {
+                        "maxPoolSize": {
+                            "value": 50,
+                            "expression": false
+                        },
+                        "urlProperties": {
+                            "value": [
+                                {
+                                    "urlPropertyName": {
+                                        "value": "CHARSET",
+                                        "expression": false
+                                    },
+                                    "urlPropertyValue": {
+                                        "value": "UTF8",
+                                        "expression": false
+                                    }
+                                },
+                                {
+                                    "urlPropertyName": {
+                                        "value": "TMODE",
+                                        "expression": false
+                                    },
+                                    "urlPropertyValue": {
+                                        "value": "ANSI",
+                                        "expression": false
+                                    }
+                                }
+                            ]
+                        },
+                        "idleConnectionTestPeriod": {
+                            "value": 5,
+                            "expression": false
+                        },
+                        "maxIdleTime": {
+                            "value": 30,
+                            "expression": false
+                        },
+                        "autoCommit": {
+                            "value": true,
+                            "expression": false
+                        },
+                        "retryAttempts": {
+                            "value": 0
+                        },
+                        "minPoolSize": {
+                            "value": 0
+                        },
+                        "evictConnectionOnClose": {
+                            "value": false
+                        },
+                        "acquireIncrement": {
+                            "value": 1
+                        },
+                        "checkoutTimeout": {
+                            "value": 10000,
+                            "expression": false
+                        },
+                        "fetchSize": {
+                            "value": 100,
+                            "expression": false
+                        },
+                        "batchSize": {
+                            "value": 50,
+                            "expression": false
+                        }
+                    }
+                },
+                "JdbcDriversProp": {
+                    "value": [
+                        "shared/terajdbc4.jar",
+                        "shared/tdgssconfig.jar"
+                    ]
+                }
+            },
+            "info": {
+                "label": {
+                    "value": "{{TERADATA_ACCOUNT_NAME}}"
+                },
+                "notes": {
+                    "value": null
+                }
+            }
+        },
+        "test_settings": {
+            "runtime_path_id": null
+        }
+    }
+}

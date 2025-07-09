@@ -1,0 +1,58 @@
+services:
+  teradata-db:
+    image: teradata/tpt
+    container_name: teradata-db
+    hostname: teradata
+    ports:
+      - "1025:1025"  # Teradata Database port
+      - "8010:8010"  # Data Mover
+      - "8020:8020"  # Viewpoint
+    environment:
+      ACCEPT_EULA: "Y"
+      DBS_CONTROL: "Y"
+      PLATFORM: "DOCKER"
+    volumes:
+      - teradata_data:/opt/teradata
+    healthcheck:
+      test: ["CMD", "pdestate", "-a"]
+      interval: 30s
+      timeout: 30s
+      retries: 10
+      start_period: 300s  # Teradata takes longer to start
+    profiles: [ dev, teradata-dev ]
+    networks:
+      - snaplogicnet
+    # Teradata requires significant resources
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+          cpus: '2'
+        reservations:
+          memory: 4G
+          cpus: '1'
+
+  teradata-schema-init:
+    image: teradata/teradata-express:17.20
+    container_name: teradata-schema-init
+    depends_on:
+      teradata-db:
+        condition: service_healthy
+    volumes:
+      - ./scripts/teradata-setup.sh:/setup.sh:ro
+    entrypoint: ["/bin/bash", "/setup.sh"]
+    environment:
+      TD_HOST: teradata-db
+      TD_USER: dbc
+      TD_PASSWORD: dbc
+    profiles: [ dev, teradata-dev ]
+    networks:
+      - snaplogicnet
+
+volumes:
+  teradata_data:
+    driver: local
+
+networks:
+  snaplogicnet:
+    driver: bridge
