@@ -1,22 +1,92 @@
-version: ~> 1.0
+version: "~> 1.0"
 
-import:
-  - SnapLogic/slim-tx-engine:travis/slim_common_travis.yml
-  - SnapLogic/slim-tx-engine:travis/post_test_results_notify.yml
+# ===== ENVIRONMENT VARIABLES =====
+env:
+  global:
+    # Build Configuration
+    - HMD_HOME=$TRAVIS_BUILD_DIR
+    - RELEASE_BUILD_VERSION="main-33084"
+    
+    # Oracle Database Configuration
+    - ORACLE_ACCOUNT_NAME="Oracle_Slim_Account"
+    - ORACLE_HOST="oracle-db"
+    - ORACLE_DBNAME="FREEPDB1"
+    - ORACLE_DBPORT="1521"
+    - ORACLE_DBUSER="SYSTEM"
+    - ORACLE_DBPASS="Oracle123"
+    
+    # PostgreSQL Database Configuration
+    - POSTGRES_ACCOUNT_NAME="Postgres_Slim_Account"
+    - POSTGRES_HOST="postgres-db"
+    - POSTGRES_DBNAME="snaplogic"
+    - POSTGRES_DBPORT="5432"
+    - POSTGRES_DBUSER="snaplogic"
+    - POSTGRES_DBPASS="snaplogic"
+    
+    # SQL Server Database Configuration
+    - SQLSERVER_ACCOUNT_NAME="SQLServer_Slim_Account"
+    - SQLSERVER_HOST="sqlserver-db"
+    - SQLSERVER_DBNAME="TEST"
+    - SQLSERVER_DBPORT="1433"
+    - SQLSERVER_DBUSER="testuser"
+    - SQLSERVER_DBPASS="Snaplogic123!"
+    
+    # MySQL Database Configuration
+    - MYSQL_ACCOUNT_NAME="MySQL_Slim_Account"
+    - MYSQL_HOST="mysql-db"
+    - MYSQL_DBNAME="TEST"
+    - MYSQL_DBPORT="3306"
+    - MYSQL_DBUSER="testuser"
+    - MYSQL_DBPASS="snaplogic"
+    
+    # S3/MinIO Configuration
+    - S3_ACCOUNT_NAME="S3_Slim_Account"
+    - S3_ENDPOINT="http://minio:9000"
+    - S3_ACCESS_KEY="demouser"
+    - S3_SECRET_KEY="demopassword"
+    
+    # JMS/ActiveMQ Configuration
+    - JMS_ACCOUNT_NAME="JMS_Slim_Account"
+    - JMS_HOST="activemq"
+    - JMS_PORT="61616"
+    - JMS_USERNAME="admin"
+    - JMS_PASSWORD="admin"
+    - JMS_CONNECTION_FACTORY="ConnectionFactory"
+    - JMS_INITIAL_CONTEXT_FACTORY="org.apache.activemq.artemis.jndi.ActiveMQInitialContextFactory"
+    - JMS_PROVIDER_URL="tcp://activemq:61616"
+    - JMS_QUEUE_NAME="demo.queue"
 
-before_install:
-  - sudo apt-get update
-  - sudo apt-get install -y jq
-  - pip install -U pip
-  - export ARTIFACT_BUCKET=artifacts.slimdev.snaplogic
-  - export PACKAGE_FOLDER=python-packages
-  - export FULL_VERSION_FILE=.FULL_VERSION
+# ===== BUILD ENVIRONMENT =====
+dist: jammy
+group: stable
+language: python
+python:
+  - 3.12
+  
+services:
+  - docker
 
+# ===== BUILD CONFIGURATION =====
+install: skip
+
+before_script:
+  - "echo \"\U0001F50DEnvironment Variables set up and creating .env file:\""
+  - chmod +x ./setup_env.sh
+  - "./setup_env.sh"
+
+# ===== JOBS =====
 jobs:
   include:
-    - stage: Build and Upload
+    - stage: start-services
       script:
-        # Step 1: Make sure entrypoint.sh is executable
-        - echo "🔹 Setting up environment..."
+        - make snaplogic-start-services
+        - make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True
+      name: Build Docs
 
-      name: Build and Upload Package
+# ===== NOTIFICATIONS =====
+notifications:
+  slack:
+    rooms:
+      - secure: SlF5EB6bNzPqZZQtrPjDwfaBEV3qY9Tk1OzZqeguIDYZv6CFTe0nVrQUzbCHTnEyeaUc2RcfArRQmr5t0cQnjW5XuPy1WbD5igaoDI/jLY8lwnjIdliJvJnK11428+PQ6O0Q6cjyK7fX54dR2TIygHgr6Vx5yu+k8ONk78nWdSqwcpKI8ZzURHc5SUTV/LBAVfXg4gpuC4J0U6CZC+ttuGLkxlEhKVum7e8BELZns+EoJMkvMD/HiV14gsC77j3e0wT9nzGSOS/fxifVTVRiQn+QZbj7FNa9BJWsrQFbWyrZqtC+0xyZMtt8/ev1AVTETvXJtXYkJflYSuNCjEtCBBz9F36QvaTWMjB/chg+FmuOsxbnHm1D+ekRTrZ53Bzd4qikFX6RnBMyjMrFAwArf9mz7/RmVXUofjvPpC+JP3mQH1NItTEF09c5rvVyyzAFzqkBQPY3OSZeUM7UDE75NamB30GaTvqXqjwXQcdsjUWJuMu6TwAqUGuFARb9m/O0+SWWo/lM0IXT2JrK6r9S1JganSK0SHo9SttRkfXQtYlteXxA/Rou5VWO+auHlsiwjPTPjSQvII5rp8qampnI3LuaSH7RcRWwrzX3ktnhS5xG6eyLFD4P9kDP7v9YjLwo/iBzme+DFeTC1EbkhMSjawtDNjB7kooZgp9TkqTzRNA=
+    on_success: always
+    on_failure: always
