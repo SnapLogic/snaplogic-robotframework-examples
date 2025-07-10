@@ -4,7 +4,7 @@ include:
   - docker-compose.groundplex.yml
   - docker-compose.s3emulator.yml
   - docker-compose.postgres.yml
-  # - docker-compose.activemq.yml
+  - docker-compose.activemq.yml
   - docker-compose.sqlserver.yml
   - docker-compose.mysql.yml
   # - docker-compose.teradata.yml  # Commented out - requires special access from Teradata

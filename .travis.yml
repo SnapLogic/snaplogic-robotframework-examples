@@ -6,7 +6,7 @@ env:
     # Build Configuration
     - HMD_HOME=$TRAVIS_BUILD_DIR
     - RELEASE_BUILD_VERSION="main-33084"
-    
+
     # Oracle Database Configuration
     - ORACLE_ACCOUNT_NAME="Oracle_Slim_Account"
     - ORACLE_HOST="oracle-db"
@@ -14,7 +14,7 @@ env:
     - ORACLE_DBPORT="1521"
     - ORACLE_DBUSER="SYSTEM"
     - ORACLE_DBPASS="Oracle123"
-    
+
     # PostgreSQL Database Configuration
     - POSTGRES_ACCOUNT_NAME="Postgres_Slim_Account"
     - POSTGRES_HOST="postgres-db"
@@ -22,7 +22,7 @@ env:
     - POSTGRES_DBPORT="5432"
     - POSTGRES_DBUSER="snaplogic"
     - POSTGRES_DBPASS="snaplogic"
-    
+
     # SQL Server Database Configuration
     - SQLSERVER_ACCOUNT_NAME="SQLServer_Slim_Account"
     - SQLSERVER_HOST="sqlserver-db"
@@ -30,7 +30,7 @@ env:
     - SQLSERVER_DBPORT="1433"
     - SQLSERVER_DBUSER="testuser"
     - SQLSERVER_DBPASS="Snaplogic123!"
-    
+
     # MySQL Database Configuration
     - MYSQL_ACCOUNT_NAME="MySQL_Slim_Account"
     - MYSQL_HOST="mysql-db"
@@ -38,13 +38,13 @@ env:
     - MYSQL_DBPORT="3306"
     - MYSQL_DBUSER="testuser"
     - MYSQL_DBPASS="snaplogic"
-    
+
     # S3/MinIO Configuration
     - S3_ACCOUNT_NAME="S3_Slim_Account"
     - S3_ENDPOINT="http://minio:9000"
     - S3_ACCESS_KEY="demouser"
     - S3_SECRET_KEY="demopassword"
-    
+
     # JMS/ActiveMQ Configuration
     - JMS_ACCOUNT_NAME="JMS_Slim_Account"
     - JMS_HOST="activemq"
@@ -62,7 +62,7 @@ group: stable
 language: python
 python:
   - 3.12
-  
+
 services:
   - docker
 
@@ -80,7 +80,7 @@ jobs:
     - stage: start-services
       script:
         - make snaplogic-start-services
-        - make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True
+        - make robot-run-all-tests TAGS="oracle mysql sqlserver file_mount postgres_s3 jms sla" PROJECT_SPACE_SETUP=True
       name: Build Docs
 
 # ===== NOTIFICATIONS =====
