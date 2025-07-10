@@ -38,22 +38,57 @@ required_vars=(
 
 # Optional database/service variables (available from Travis.yaml)
 optional_vars=(
+    # Build Configuration
+    "HMD_HOME"
+    
+    # Oracle Database Configuration
     "ORACLE_ACCOUNT_NAME"
     "ORACLE_HOST"
     "ORACLE_DBNAME"
     "ORACLE_DBPORT"
     "ORACLE_DBUSER"
     "ORACLE_DBPASS"
+    
+    # PostgreSQL Database Configuration
     "POSTGRES_ACCOUNT_NAME"
     "POSTGRES_HOST"
     "POSTGRES_DBNAME"
     "POSTGRES_DBPORT"
     "POSTGRES_DBUSER"
     "POSTGRES_DBPASS"
+    
+    # SQL Server Database Configuration
+    "SQLSERVER_ACCOUNT_NAME"
+    "SQLSERVER_HOST"
+    "SQLSERVER_DBNAME"
+    "SQLSERVER_DBPORT"
+    "SQLSERVER_DBUSER"
+    "SQLSERVER_DBPASS"
+    
+    # MySQL Database Configuration
+    "MYSQL_ACCOUNT_NAME"
+    "MYSQL_HOST"
+    "MYSQL_DBNAME"
+    "MYSQL_DBPORT"
+    "MYSQL_DBUSER"
+    "MYSQL_DBPASS"
+    
+    # S3/MinIO Configuration
     "S3_ACCOUNT_NAME"
     "S3_ENDPOINT"
     "S3_ACCESS_KEY"
     "S3_SECRET_KEY"
+    
+    # JMS/ActiveMQ Configuration
+    "JMS_ACCOUNT_NAME"
+    "JMS_HOST"
+    "JMS_PORT"
+    "JMS_USERNAME"
+    "JMS_PASSWORD"
+    "JMS_CONNECTION_FACTORY"
+    "JMS_INITIAL_CONTEXT_FACTORY"
+    "JMS_PROVIDER_URL"
+    "JMS_QUEUE_NAME"
 )
 
 # Check for missing required variables
