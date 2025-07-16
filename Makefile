@@ -37,7 +37,7 @@ DOCKER_COMPOSE := docker compose --env-file .env -f $(DOCKER_COMPOSE_FILE)
 
 # Docker Compose profiles to be used (can be overridden by CLI)
 # COMPOSE_PROFILES ?= gp,oracle-dev,postgres-dev,minio-dev
-COMPOSE_PROFILES ?= tools,oracle-dev,minio,postgres-dev,mysql-dev,sqlserver-dev,db2-dev
+COMPOSE_PROFILES ?= tools,oracle-dev,minio,postgres-dev,mysql-dev,sqlserver-dev,activemq
 
 # =============================================================================
 #  🛠️ snaplogic tools lifecycle
