@@ -1,0 +1,163 @@
+# Snowflake Docker Compose Configuration
+#
+# IMPORTANT: WHY SNOWFLAKE CANNOT RUN IN DOCKER
+# =============================================
+# Unlike traditional databases (MySQL, PostgreSQL, DB2, etc.), Snowflake CANNOT be run locally
+# in a Docker container. Here's why:
+#
+# 1. CLOUD-NATIVE ARCHITECTURE
+#    - Snowflake is a Software-as-a-Service (SaaS) platform
+#    - It runs exclusively on cloud infrastructure (AWS, Azure, or GCP)
+#    - There is no downloadable/installable version of Snowflake
+#
+# 2. PROPRIETARY INFRASTRUCTURE
+#    - Snowflake manages its own compute clusters across multiple cloud regions
+#    - Storage is handled by cloud object storage (S3, Azure Blob, GCS)
+#    - The query engine, metadata layer, and optimization are all cloud-based
+#
+# 3. MULTI-TENANT ARCHITECTURE
+#    - Snowflake serves multiple customers on shared infrastructure
+#    - Resource isolation and scaling are handled by Snowflake's cloud services
+#    - Cannot be replicated in a single container environment
+#
+# WHAT THIS COMPOSE FILE PROVIDES
+# ================================
+# This setup provides the SnowSQL CLI client in a container, which allows you to:
+# - Connect to your actual Snowflake account in the cloud
+# - Run queries and manage database objects
+# - Execute SQL scripts
+# - Import/export data
+#
+# PREREQUISITES
+# =============
+# You need a Snowflake account. Options:
+# - Sign up for a 30-day free trial at https://signup.snowflake.com/
+# - Use your organization's Snowflake account
+# - Create a developer account
+#
+# CONNECTION CONFIGURATION
+# ========================
+# Create a file at ./snowflake-config/config with your connection details:
+#
+# [connections.myaccount]
+# accountname = <account_identifier>
+# username = <your_username>
+# password = <your_password>  # Optional - can use authenticator instead
+# warehouse = <warehouse_name>
+# database = <database_name>
+# schema = <schema_name>
+# role = <role_name>
+#
+# Example:
+# [connections.myaccount]
+# accountname = xy12345.us-east-1
+# username = testuser
+# warehouse = COMPUTE_WH
+# database = TESTDB
+# schema = PUBLIC
+# role = SYSADMIN
+#
+# USAGE
+# =====
+# 1. Start the container:
+#    docker-compose -f docker-compose.snowflake.yml up -d
+#
+# 2. Connect to Snowflake:
+#    docker exec -it snowsql-client snowsql -c myaccount
+#
+# 3. Run SQL commands:
+#    docker exec -it snowsql-client snowsql -c myaccount -q "SELECT CURRENT_VERSION()"
+#
+# 4. Execute SQL files:
+#    docker exec -it snowsql-client snowsql -c myaccount -f /scripts/my_script.sql
+#
+#
+# CONTAINER ARCHITECTURE EXPLANATION
+# ==================================
+# This compose file creates a client container, not a database server.
+# Here's how it differs from other database containers:
+#
+# Traditional Database Containers (MySQL, PostgreSQL, etc.):
+# - Run the actual database server inside the container
+# - Data is stored locally in Docker volumes
+# - You connect to localhost:port to access the database
+# - Example: mysql-db container runs MySQL server on port 3306
+#
+# Snowflake Client Container:
+# - Only runs the SnowSQL CLI client tool
+# - No database server (Snowflake only runs in the cloud)
+# - Connects to external Snowflake cloud service
+# - Container stays running using 'tail -f /dev/null' trick
+# - You 'docker exec' into container to run snowsql commands
+#
+# Why This Approach:
+# - Provides consistent Docker-based workflow
+# - Manages SnowSQL installation and configuration
+# - Allows mounting of SQL scripts and data files
+# - Isolates Snowflake tools from host system
+
+services:
+  snowsql-client:
+    image: python:3.9-alpine
+    container_name: snowsql-client
+    environment:
+      # Snowflake environment variables (optional - can be set in config file)
+      SNOWSQL_ACCOUNT: ${SNOWFLAKE_ACCOUNT:-}
+      SNOWSQL_USER: ${SNOWFLAKE_USER:-}
+      SNOWSQL_PWD: ${SNOWFLAKE_PASSWORD:-}
+      SNOWSQL_DATABASE: ${SNOWFLAKE_DATABASE:-}
+      SNOWSQL_SCHEMA: ${SNOWFLAKE_SCHEMA:-}
+      SNOWSQL_WAREHOUSE: ${SNOWFLAKE_WAREHOUSE:-}
+      SNOWSQL_ROLE: ${SNOWFLAKE_ROLE:-}
+    volumes:
+      # Mount config directory for SnowSQL configuration
+      - ./snowflake-config:/root/.snowsql:ro
+      # Mount scripts directory for SQL scripts
+      - ../snowflake-scripts:/scripts:ro
+      # Mount data directory for import/export
+      - ../snowflake-data:/data
+    # Container startup command explanation:
+    # This command performs several steps when the container starts:
+    # 1. Installs required packages (curl and bash) using Alpine's package manager
+    # 2. Downloads the official SnowSQL installer from Snowflake's repository
+    # 3. Runs the installer with specific environment variables:
+    #    - SNOWSQL_DEST: Where to install the snowsql binary (/usr/local/bin)
+    #    - SNOWSQL_LOGIN_SHELL: Shell config file to update (/root/.bashrc)
+    # 4. Removes the installer script to save space
+    # 5. Displays helpful usage instructions in the container logs
+    # 6. IMPORTANT: Uses 'tail -f /dev/null' to keep the container running indefinitely
+    #    Without this, the container would exit immediately after installation
+    #    This allows you to 'docker exec' into the container later
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      "
+      echo 'Installing SnowSQL CLI...' &&
+      apk add --no-cache curl bash &&
+      curl -O https://sfc-repo.snowflakecomputing.com/snowsql/bootstrap/1.2.31/linux_x86_64/snowsql-1.2.31-linux_x86_64.bash &&
+      SNOWSQL_DEST=/usr/local/bin SNOWSQL_LOGIN_SHELL=/root/.bashrc bash snowsql-1.2.31-linux_x86_64.bash &&
+      rm snowsql-1.2.31-linux_x86_64.bash &&
+      echo 'SnowSQL installed successfully!' &&
+      echo '' &&
+      echo 'To connect to Snowflake, run:' &&
+      echo '  docker exec -it snowsql-client snowsql' &&
+      echo '' &&
+      echo 'Or with a specific connection:' &&
+      echo '  docker exec -it snowsql-client snowsql -c myaccount' &&
+      echo '' &&
+      echo 'Container ready. Keeping alive...' &&
+      tail -f /dev/null
+      "
+    healthcheck:
+      test: ["CMD", "which", "snowsql"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles: [dev, snowflake-dev]
+    networks:
+      - snaplogicnet
+
+
+
+networks:
+  snaplogicnet:
+    driver: bridge

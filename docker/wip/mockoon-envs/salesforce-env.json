@@ -1,0 +1,144 @@
+{
+  "uuid": "salesforce-mock-env",
+  "lastMigration": 28,
+  "name": "Salesforce API Mock",
+  "endpointPrefix": "services/data/v59.0",
+  "latency": 0,
+  "port": 3000,
+  "hostname": "",
+  "folders": [],
+  "routes": [
+    {
+      "uuid": "auth-route",
+      "type": "http",
+      "documentation": "OAuth 2.0 Token Endpoint",
+      "method": "post",
+      "endpoint": "oauth2/token",
+      "responses": [
+        {
+          "uuid": "auth-success",
+          "body": "{\n  \"access_token\": \"{{faker 'random.alphaNumeric' 40}}\",\n  \"instance_url\": \"http://localhost:3000\",\n  \"id\": \"https://login.salesforce.com/id/{{faker 'random.alphaNumeric' 18}}/{{faker 'random.alphaNumeric' 18}}\",\n  \"token_type\": \"Bearer\",\n  \"issued_at\": \"{{now}}\",\n  \"signature\": \"{{faker 'random.alphaNumeric' 32}}\"\n}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Success",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "uuid": "query-route",
+      "type": "http",
+      "documentation": "SOQL Query Endpoint",
+      "method": "get",
+      "endpoint": "query",
+      "responses": [
+        {
+          "uuid": "query-success",
+          "body": "{\n  \"totalSize\": 2,\n  \"done\": true,\n  \"records\": [\n    {\n      \"attributes\": {\n        \"type\": \"Account\",\n        \"url\": \"/services/data/v59.0/sobjects/Account/{{faker 'random.alphaNumeric' 18}}\"\n      },\n      \"Id\": \"{{faker 'random.alphaNumeric' 18}}\",\n      \"Name\": \"{{faker 'company.name'}}\",\n      \"Type\": \"{{faker 'helpers.arrayElement' ['Customer', 'Partner', 'Prospect']}}\",\n      \"Industry\": \"{{faker 'helpers.arrayElement' ['Technology', 'Finance', 'Healthcare', 'Retail']}}\"\n    },\n    {\n      \"attributes\": {\n        \"type\": \"Account\",\n        \"url\": \"/services/data/v59.0/sobjects/Account/{{faker 'random.alphaNumeric' 18}}\"\n      },\n      \"Id\": \"{{faker 'random.alphaNumeric' 18}}\",\n      \"Name\": \"{{faker 'company.name'}}\",\n      \"Type\": \"{{faker 'helpers.arrayElement' ['Customer', 'Partner', 'Prospect']}}\",\n      \"Industry\": \"{{faker 'helpers.arrayElement' ['Technology', 'Finance', 'Healthcare', 'Retail']}}\"\n    }\n  ]\n}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Success",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "uuid": "create-account",
+      "type": "http",
+      "documentation": "Create Account",
+      "method": "post",
+      "endpoint": "sobjects/Account",
+      "responses": [
+        {
+          "uuid": "create-success",
+          "body": "{\n  \"id\": \"001{{faker 'random.alphaNumeric' 15 'upper'}}\",\n  \"success\": true,\n  \"errors\": []\n}",
+          "latency": 0,
+          "statusCode": 201,
+          "label": "Created",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "uuid": "get-account",
+      "type": "http",
+      "documentation": "Get Account by ID",
+      "method": "get",
+      "endpoint": "sobjects/Account/:id",
+      "responses": [
+        {
+          "uuid": "get-success",
+          "body": "{\n  \"Id\": \"{{urlParam 'id'}}\",\n  \"Name\": \"{{faker 'company.name'}}\",\n  \"Type\": \"{{faker 'helpers.arrayElement' ['Customer', 'Partner', 'Prospect']}}\",\n  \"Industry\": \"{{faker 'helpers.arrayElement' ['Technology', 'Finance', 'Healthcare', 'Retail']}}\",\n  \"BillingCity\": \"{{faker 'address.city'}}\",\n  \"BillingState\": \"{{faker 'address.stateAbbr'}}\",\n  \"AnnualRevenue\": {{faker 'datatype.number' '{\"min\": 1000000, \"max\": 100000000}'}},\n  \"NumberOfEmployees\": {{faker 'datatype.number' '{\"min\": 10, \"max\": 10000}'}},\n  \"CreatedDate\": \"{{faker 'date.past'}}\",\n  \"LastModifiedDate\": \"{{faker 'date.recent'}}\"\n}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Success",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "uuid": "update-account",
+      "type": "http",
+      "documentation": "Update Account",
+      "method": "patch",
+      "endpoint": "sobjects/Account/:id",
+      "responses": [
+        {
+          "uuid": "update-success",
+          "body": "",
+          "latency": 0,
+          "statusCode": 204,
+          "label": "No Content"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "uuid": "bulk-job",
+      "type": "http",
+      "documentation": "Create Bulk API Job",
+      "method": "post",
+      "endpoint": "jobs/ingest",
+      "responses": [
+        {
+          "uuid": "bulk-success",
+          "body": "{\n  \"id\": \"{{faker 'random.alphaNumeric' 18}}\",\n  \"state\": \"Open\",\n  \"object\": \"{{body 'object'}}\",\n  \"operation\": \"{{body 'operation'}}\",\n  \"createdDate\": \"{{now 'YYYY-MM-DDTHH:mm:ss.SSSZ'}}\",\n  \"systemModstamp\": \"{{now 'YYYY-MM-DDTHH:mm:ss.SSSZ'}}\",\n  \"concurrencyMode\": \"Parallel\",\n  \"contentType\": \"CSV\"\n}",
+          "latency": 0,
+          "statusCode": 201,
+          "label": "Created",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      ],
+      "enabled": true
+    }
+  ]
+}

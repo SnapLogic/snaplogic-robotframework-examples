@@ -1,0 +1,278 @@
+openapi: 3.0.0
+info:
+  title: Salesforce REST API Mock
+  version: v59.0
+  description: Mock implementation of common Salesforce REST API endpoints
+
+servers:
+  - url: http://localhost:4010/services/data/v59.0
+    description: Mock Salesforce API server
+
+paths:
+  # Authentication endpoint
+  /oauth2/token:
+    post:
+      summary: OAuth 2.0 Token Endpoint
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                grant_type:
+                  type: string
+                  example: password
+                client_id:
+                  type: string
+                client_secret:
+                  type: string
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Successful authentication
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    example: "00D5g000004zqcE!ARcAQPMHLF9OXXXXXX"
+                  instance_url:
+                    type: string
+                    example: "https://mock-instance.salesforce.com"
+                  id:
+                    type: string
+                  token_type:
+                    type: string
+                    example: "Bearer"
+                  issued_at:
+                    type: string
+                  signature:
+                    type: string
+
+  # Query endpoint
+  /query:
+    get:
+      summary: SOQL Query
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          example: "SELECT Id, Name FROM Account LIMIT 10"
+      responses:
+        '200':
+          description: Query results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalSize:
+                    type: integer
+                    example: 2
+                  done:
+                    type: boolean
+                    example: true
+                  records:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        attributes:
+                          type: object
+                          properties:
+                            type:
+                              type: string
+                            url:
+                              type: string
+                        Id:
+                          type: string
+                        Name:
+                          type: string
+
+  # Account endpoints
+  /sobjects/Account:
+    post:
+      summary: Create Account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Name:
+                  type: string
+                Type:
+                  type: string
+                Industry:
+                  type: string
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: "0015g00000XXXXX"
+                  success:
+                    type: boolean
+                    example: true
+                  errors:
+                    type: array
+                    items:
+                      type: object
+
+  /sobjects/Account/{id}:
+    get:
+      summary: Get Account by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Account details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Id:
+                    type: string
+                  Name:
+                    type: string
+                  Type:
+                    type: string
+                  Industry:
+                    type: string
+                  CreatedDate:
+                    type: string
+                  LastModifiedDate:
+                    type: string
+    
+    patch:
+      summary: Update Account
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Name:
+                  type: string
+                Type:
+                  type: string
+      responses:
+        '204':
+          description: Account updated successfully
+    
+    delete:
+      summary: Delete Account
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Account deleted successfully
+
+  # Contact endpoints
+  /sobjects/Contact:
+    post:
+      summary: Create Contact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                FirstName:
+                  type: string
+                LastName:
+                  type: string
+                Email:
+                  type: string
+                AccountId:
+                  type: string
+      responses:
+        '201':
+          description: Contact created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  success:
+                    type: boolean
+                  errors:
+                    type: array
+
+  # Bulk API endpoints
+  /jobs/ingest:
+    post:
+      summary: Create Bulk API Job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                object:
+                  type: string
+                operation:
+                  type: string
+                  enum: [insert, update, upsert, delete]
+      responses:
+        '201':
+          description: Job created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  state:
+                    type: string
+                  object:
+                    type: string
+                  operation:
+                    type: string
+                  createdDate:
+                    type: string
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []

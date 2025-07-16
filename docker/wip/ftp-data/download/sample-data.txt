@@ -1,0 +1,8 @@
+Sample data file for FTP/SFTP testing.
+This file can be downloaded by SnapLogic File Reader Snaps.
+
+Test Data:
+- Customer ID: 12345
+- Order Date: 2024-01-15
+- Amount: $1,234.56
+- Status: Completed

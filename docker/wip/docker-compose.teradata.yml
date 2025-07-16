@@ -1,0 +1,123 @@
+# Teradata Docker Compose Configuration
+#
+# ⚠️ CRITICAL LIMITATION: TERADATA DOCKER IMAGES ARE NOT PUBLICLY AVAILABLE
+# =========================================================================
+# 
+# Unlike other databases (MySQL, PostgreSQL, etc.), Teradata does NOT provide
+# publicly accessible Docker images. The images referenced in this file:
+# - teradata/tpt
+# - teradata/teradata-express:17.20
+# 
+# These require special access from Teradata Corporation.
+#
+# HOW TO GET TERADATA DOCKER IMAGES:
+# ==================================
+# 
+# 1. Teradata Developer License (Most Common)
+#    - Register at: https://downloads.teradata.com/
+#    - Request access to Teradata Express for Docker
+#    - Requires approval from Teradata
+#    - May require a business email (not personal gmail/hotmail)
+#    - Process can take several days
+#
+# 2. Teradata Partner Program
+#    - For companies with Teradata partnership
+#    - Contact your Teradata account manager
+#    - Provides access to Docker images
+#
+# 3. Teradata Customer Access
+#    - If your organization has a Teradata license
+#    - Use your support portal credentials
+#    - Download from Teradata's private registry
+#
+#
+# PLATFORM COMPATIBILITY (If you have access to images):
+# =====================================================
+# - Linux (x86_64): Works with proper licensing
+# - Windows (x86_64): Works with Docker Desktop
+# - macOS Intel (x86_64): Works with Docker Desktop
+# - macOS Apple Silicon (M1/M2/M3): ❌ NOT SUPPORTED
+#   - Teradata images are x86_64 only
+#   - No ARM64 support planned
+#
+# RESOURCE REQUIREMENTS:
+# =====================
+# - Minimum RAM: 6GB (4GB reserved, 6GB limit)
+# - Minimum CPUs: 2 cores
+# - Disk Space: 20GB+ recommended
+# - Startup Time: 5-10 minutes
+#
+# CONNECTION DETAILS (when running):
+# =================================
+# - Database Port: 1025
+# - Data Mover Port: 8010  
+# - Viewpoint UI: http://localhost:8020
+# - Default User: dbc
+# - Default Password: dbc
+# - Initial Database: DBC
+#
+# IMPORTANT NOTES:
+# ===============
+# - This compose file will NOT work without proper Teradata image access
+# - The main compose file has this commented out by default
+# - Consider using cloud alternatives for easier setup
+# - Teradata is resource-intensive - ensure your system meets requirements
+
+services:
+  teradata-db:
+    image: teradata/tpt
+    container_name: teradata-db
+    hostname: teradata
+    ports:
+      - "1025:1025"  # Teradata Database port
+      - "8010:8010"  # Data Mover
+      - "8020:8020"  # Viewpoint
+    environment:
+      ACCEPT_EULA: "Y"
+      DBS_CONTROL: "Y"
+      PLATFORM: "DOCKER"
+    volumes:
+      - teradata_data:/opt/teradata
+    healthcheck:
+      test: ["CMD", "pdestate", "-a"]
+      interval: 30s
+      timeout: 30s
+      retries: 10
+      start_period: 300s  # Teradata takes longer to start
+    profiles: [ dev, teradata-dev ]
+    networks:
+      - snaplogicnet
+    # Teradata requires significant resources
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+          cpus: '2'
+        reservations:
+          memory: 4G
+          cpus: '1'
+
+  teradata-schema-init:
+    image: teradata/teradata-express:17.20
+    container_name: teradata-schema-init
+    depends_on:
+      teradata-db:
+        condition: service_healthy
+    volumes:
+      - ./scripts/teradata-setup.sh:/setup.sh:ro
+    entrypoint: ["/bin/bash", "/setup.sh"]
+    environment:
+      TD_HOST: teradata-db
+      TD_USER: dbc
+      TD_PASSWORD: dbc
+    profiles: [ dev, teradata-dev ]
+    networks:
+      - snaplogicnet
+
+volumes:
+  teradata_data:
+    driver: local
+
+networks:
+  snaplogicnet:
+    driver: bridge

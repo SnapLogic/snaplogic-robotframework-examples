@@ -193,6 +193,11 @@ src/python/build
 test_results_summary.md
 github_summary.md
 
+# Snowflake configuration with credentials
+docker/snowflake-config/config
+# Keep the example config
+!docker/snowflake-config/config.example
+
 # ==========================================
 # Test Files and Outputs
 # ==========================================

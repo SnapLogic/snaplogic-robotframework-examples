@@ -1,0 +1,155 @@
+# File Transfer Services for SnapLogic Testing
+# ============================================
+#
+# This Docker Compose file provides mock file transfer services (FTP, SFTP, MFT)
+# for testing SnapLogic file-based integrations.
+#
+# PORT MAPPING:
+# ------------
+# 2121 - FTP Server      : Mock FTP server (ftp://localhost:2121)
+# 2222 - SFTP Server     : Mock SFTP/SSH server (sftp://localhost:2222)
+# 8443 - MFT Web UI      : MFT management interface (https://localhost:8443)
+# 2223 - MFT SFTP        : MFT SFTP endpoint (sftp://localhost:2223)
+# 2021 - MFT FTPS        : MFT FTPS endpoint (ftps://localhost:2021)
+# 5000 - MFT REST API    : MFT REST API for automation (http://localhost:5000)
+# 21000-21010            : FTP passive mode ports
+#
+# DEFAULT CREDENTIALS:
+# -------------------
+# FTP/SFTP: testuser / testpass
+# MFT Admin: admin / admin123
+# MFT User: mftuser / mftpass
+#
+# QUICK START:
+# -----------
+# Start all services:
+#   docker-compose -f docker-compose-file-transfer.yml up -d
+#
+# Test FTP:
+#   curl -u testuser:testpass ftp://localhost:2121/
+#
+# Test SFTP:
+#   sftp -P 2222 testuser@localhost
+#
+# Access MFT Web UI:
+#   https://localhost:8443
+#
+# STOP SERVICES:
+# -------------
+# docker-compose -f docker-compose-file-transfer.yml down
+#
+
+version: '3.8'
+
+services:
+  # Mock FTP Server
+  ftp-server:
+    image: atmoz/vsftpd:latest
+    container_name: ftp-mock-server
+    ports:
+      - "2121:21"
+      - "21000-21010:21000-21010"  # Passive mode ports
+    environment:
+      FTP_USER: ${FTP_USER:-testuser}
+      FTP_PASS: ${FTP_PASS:-testpass}
+      PASV_ADDRESS: localhost
+      PASV_MIN_PORT: 21000
+      PASV_MAX_PORT: 21010
+    volumes:
+      - ./ftp-data:/home/vsftpd
+      - ./ftp-config:/etc/vsftpd
+    networks:
+      - snaplogic-test
+
+  # Mock SFTP/SSH Server
+  sftp-server:
+    image: atmoz/sftp:latest
+    container_name: sftp-mock-server
+    ports:
+      - "2222:22"
+    environment:
+      SFTP_USERS: ${SFTP_USERS:-testuser:testpass:1001:100:upload,download}
+    volumes:
+      - ./sftp-data:/home/testuser
+      - ./sftp-keys:/etc/ssh/keys
+    command: testuser:testpass:1001:100:upload,download
+    networks:
+      - snaplogic-test
+
+  # MFT (Managed File Transfer) Services
+  # Using CrushFTP as it provides MFT capabilities
+  mft-server:
+    image: crushftp/crushftp:latest
+    container_name: mft-mock-server
+    ports:
+      - "8443:443"   # HTTPS Web UI
+      - "2223:2222"  # SFTP
+      - "2021:21"    # FTPS
+      - "5000:8080"  # HTTP API
+      - "9090:9090"  # Admin port
+    environment:
+      CRUSH_ADMIN_USER: ${MFT_ADMIN_USER:-admin}
+      CRUSH_ADMIN_PASSWORD: ${MFT_ADMIN_PASSWORD:-admin123}
+      CRUSH_ADMIN_PROTOCOL: https
+    volumes:
+      - ./mft-data:/var/opt/CrushFTP10
+      - ./mft-config:/etc/crushftp
+      - ./mft-logs:/var/log/crushftp
+    networks:
+      - snaplogic-test
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:443/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MFT REST API Mock (for integration testing)
+  mft-api-mock:
+    image: wiremock/wiremock:3.3.1
+    container_name: mft-api-mock
+    ports:
+      - "5001:8080"
+    volumes:
+      - ./mft-api-mappings:/home/wiremock/mappings
+      - ./mft-api-files:/home/wiremock/__files
+    command: --global-response-templating --verbose
+    networks:
+      - snaplogic-test
+
+  # MFT Database (for audit trails and metadata)
+  mft-db:
+    image: postgres:15-alpine
+    container_name: mft-mock-db
+    environment:
+      POSTGRES_DB: mft_db
+      POSTGRES_USER: mft_user
+      POSTGRES_PASSWORD: mft_pass
+    volumes:
+      - ./mft-db-init:/docker-entrypoint-initdb.d
+      - mft-db-data:/var/lib/postgresql/data
+    networks:
+      - snaplogic-test
+
+  # MFT Monitoring Dashboard (using Grafana)
+  mft-monitor:
+    image: grafana/grafana:latest
+    container_name: mft-monitor
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${MFT_MONITOR_PASSWORD:-monitor123}
+      GF_USERS_ALLOW_SIGN_UP: false
+    volumes:
+      - ./mft-grafana:/var/lib/grafana
+      - ./mft-dashboards:/etc/grafana/provisioning/dashboards
+    networks:
+      - snaplogic-test
+
+networks:
+  snaplogic-test:
+    driver: bridge
+    name: snaplogic-test-network
+
+volumes:
+  mft-db-data:
+    driver: local

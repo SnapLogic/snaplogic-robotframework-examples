@@ -1,0 +1,167 @@
+# API Mocking Services for SnapLogic Testing
+# ==========================================
+#
+# This Docker Compose file provides a comprehensive API mocking environment for testing
+# SnapLogic integrations with various external services.
+#
+# PORT MAPPING:
+# ------------
+# 8080 - Prism Mock       : OpenAPI-based REST mocking (http://localhost:8080)
+# 8081 - WireMock        : Advanced REST mocking with templates (http://localhost:8081)
+# 8082 - JSON Server     : Simple JSON database REST API (http://localhost:8082)
+# 8083 - Mockoon         : Multi-environment API mocking (http://localhost:8083)
+# 8085 - GraphQL Faker   : GraphQL API mocking (http://localhost:8085)
+# 8086 - CastleMock      : SOAP/REST mock server (http://localhost:8086)
+# 8087 - Mock OIDC       : OAuth2/OpenID Connect server (http://localhost:8087)
+# 8025 - MailHog Web UI  : Email testing web interface (http://localhost:8025)
+# 1025 - MailHog SMTP    : SMTP server for email testing (smtp://localhost:1025)
+#
+# QUICK START:
+# -----------
+# Start all services:
+#   docker-compose -f docker-compose-api-mocks.yml up -d
+#
+# Start specific services:
+#   docker-compose -f docker-compose-api-mocks.yml up -d prism-mock wiremock
+#
+# Use different API configurations:
+#   OPENAPI_SPEC=generic-rest-api.yaml docker-compose -f docker-compose-api-mocks.yml up -d
+#
+# ENVIRONMENT VARIABLES:
+# --------------------
+# OPENAPI_SPEC   : OpenAPI spec file for Prism (default: salesforce/salesforce-openapi.yaml)
+# JSON_DB        : JSON database file (default: salesforce/salesforce-db.json)
+# MOCKOON_ENV    : Mockoon environment file (default: salesforce-env.json)
+# GRAPHQL_SCHEMA : GraphQL schema file (default: default.graphql)
+# LOG_LEVEL      : Logging level (default: info)
+#
+# TESTING EXAMPLES:
+# ----------------
+# REST API (Prism):        curl http://localhost:8080/api/v1/users
+# Salesforce (WireMock):   curl http://localhost:8081/services/data/v59.0/oauth2/token
+# CRUD (JSON Server):      curl http://localhost:8082/products
+# GraphQL:                 curl -X POST http://localhost:8085/graphql -d '{"query":"{users{id}}"}
+# Email Web UI:            open http://localhost:8025
+#
+# STOP ALL SERVICES:
+# -----------------
+# docker-compose -f docker-compose-api-mocks.yml down
+#
+
+version: '3.8'
+
+services:
+  # Prism - OpenAPI Mock Server (supports any OpenAPI spec)
+  prism-mock:
+    image: stoplight/prism:4
+    container_name: prism-api-mock
+    ports:
+      - "8080:4010"
+    volumes:
+      # Mount directory containing OpenAPI specs
+      - ./api-specs:/specs:ro
+    # Default to Salesforce, but can be overridden with OPENAPI_SPEC env var
+    command: mock -h 0.0.0.0 /specs/${OPENAPI_SPEC:-salesforce/salesforce-openapi.yaml}
+    networks:
+      - snaplogic-test
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+
+  # WireMock - Advanced request matching for any REST API
+  wiremock:
+    image: wiremock/wiremock:3.3.1
+    container_name: wiremock-api-mock
+    ports:
+      - "8081:8080"
+    volumes:
+      # Mount all API mock mappings
+      - ./wiremock-mappings:/home/wiremock/mappings
+      - ./wiremock-files:/home/wiremock/__files
+    command: --global-response-templating --verbose --disable-banner
+    networks:
+      - snaplogic-test
+
+  # JSON Server - Generic REST API with JSON database
+  json-server:
+    image: clue/json-server
+    container_name: json-server-mock
+    ports:
+      - "8082:80"
+    volumes:
+      # Mount directory containing JSON databases
+      - ./json-dbs:/data
+    # Default to salesforce db, but can be overridden with JSON_DB env var
+    environment:
+      - DB_FILE=${JSON_DB:-salesforce/salesforce-db.json}
+    command: --watch /data/${DB_FILE:-salesforce/salesforce-db.json} --routes /data/routes.json --middlewares /data/middleware.js
+    networks:
+      - snaplogic-test
+
+  # Mockoon - Multi-environment API mocking
+  mockoon:
+    image: mockoon/cli:latest
+    container_name: mockoon-api-mock
+    ports:
+      - "8083:3000"
+    volumes:
+      - ./mockoon-envs:/data
+    # Default to Salesforce, but can be overridden with MOCKOON_ENV env var
+    command: start --data /data/${MOCKOON_ENV:-salesforce-env.json} --port 3000
+    networks:
+      - snaplogic-test
+
+  # GraphQL Mock Server
+  graphql-mock:
+    image: apisguru/graphql-faker:latest
+    container_name: graphql-api-mock
+    ports:
+      - "8085:9002"
+    volumes:
+      - ./graphql-schemas:/schemas
+    command: --extend-url /schemas/${GRAPHQL_SCHEMA:-default.graphql} --port 9002
+    networks:
+      - snaplogic-test
+
+  # SOAP Mock Server (using CastleMock)
+  soap-mock:
+    image: castlemock/castlemock:latest
+    container_name: soap-api-mock
+    ports:
+      - "8086:8080"
+    volumes:
+      - ./castlemock-data:/castle/data
+    environment:
+      - CASTLE_MOCK_DATA_DIR=/castle/data
+    networks:
+      - snaplogic-test
+
+  # Mock SMTP Server (for email testing)
+  smtp-mock:
+    image: mailhog/mailhog:latest
+    container_name: smtp-mock-server
+    ports:
+      - "8025:8025"  # Web UI
+      - "1025:1025"  # SMTP
+    networks:
+      - snaplogic-test
+
+  # Mock OAuth2/OIDC Server
+  oauth-mock:
+    image: quay.io/oauth2-proxy/mockoidc:latest
+    container_name: oauth-mock-server
+    ports:
+      - "8087:8080"
+    environment:
+      MOCKOIDC_CLIENT_ID: ${OAUTH_CLIENT_ID:-test-client}
+      MOCKOIDC_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET:-test-secret}
+    networks:
+      - snaplogic-test
+
+networks:
+  snaplogic-test:
+    driver: bridge
+    name: snaplogic-test-network
+
+volumes:
+  castlemock-data:
+    driver: local

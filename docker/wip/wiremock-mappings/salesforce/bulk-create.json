@@ -1,0 +1,28 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "POST",
+    "url": "/services/data/v59.0/composite/sobjects",
+    "bodyPatterns": [
+      {
+        "matchesJsonPath": "$.records"
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "transformers": ["response-template"],
+    "jsonBody": [
+      {{#each (jsonPath request.body '$.records') as |record|}}
+      {
+        "id": "001{{randomValue type='ALPHANUMERIC' length='15'}}",
+        "success": true,
+        "errors": []
+      }{{#unless @last}},{{/unless}}
+      {{/each}}
+    ]
+  }
+}

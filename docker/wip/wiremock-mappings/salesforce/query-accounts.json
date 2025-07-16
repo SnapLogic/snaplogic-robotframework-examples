@@ -1,0 +1,48 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/services/data/v59.0/query.*"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "totalSize": 3,
+      "done": true,
+      "records": [
+        {
+          "attributes": {
+            "type": "Account",
+            "url": "/services/data/v59.0/sobjects/Account/001XXXXXXXXXXXXXXX"
+          },
+          "Id": "001XXXXXXXXXXXXXXX",
+          "Name": "Mock Account 1",
+          "Type": "Customer",
+          "Industry": "Technology"
+        },
+        {
+          "attributes": {
+            "type": "Account",
+            "url": "/services/data/v59.0/sobjects/Account/001XXXXXXXXXXXXXXY"
+          },
+          "Id": "001XXXXXXXXXXXXXXY",
+          "Name": "Mock Account 2",
+          "Type": "Partner",
+          "Industry": "Finance"
+        },
+        {
+          "attributes": {
+            "type": "Account",
+            "url": "/services/data/v59.0/sobjects/Account/001XXXXXXXXXXXXXXZ"
+          },
+          "Id": "001XXXXXXXXXXXXXXZ",
+          "Name": "Mock Account 3",
+          "Type": "Prospect",
+          "Industry": "Healthcare"
+        }
+      ]
+    }
+  }
+}
