@@ -81,6 +81,7 @@ jobs:
       script:
         - make snaplogic-start-services
         - make robot-run-all-tests TAGS="oracle mysql sqlserver file_mount postgres_s3 sla" PROJECT_SPACE_SETUP=True
+        - make slack-notify
       name: Build Docs
 
 # ===== NOTIFICATIONS =====

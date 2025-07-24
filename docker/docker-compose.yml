@@ -22,6 +22,7 @@ services:
       - ../test:/app/test
       - ../.env:/app/.env
       - ../setup_env.sh:/app/setup_env.sh
+      - ../.travis.yml:/app/.travis.yml
       - ../test/suite/test_data:/opt/snaplogic/test_data
       # Optional: Add mounts for common local directories (uncomment as needed)
       # - ~/Documents:/opt/host-documents:ro

@@ -221,6 +221,15 @@ htmlcov/
 # ActiveMQ data directory
 activemq-data/
 
+# MySQL initialization directory
+mysql-init/
+
+# Oracle initialization directory
+oracle-init/
+
+# SQL Server initialization directory
+sqlserver-init/
+
 # Temporary files
 *.tmp
 *.temp
