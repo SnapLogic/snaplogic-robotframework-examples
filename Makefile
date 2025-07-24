@@ -22,6 +22,7 @@
         start-s3-emulator stop-s3-emulator run-s3-demo ensure-config-dir \
         activemq-start activemq-stop activemq-status activemq-setup run-jms-demo \
         start-services createplex-launch-groundplex \
+        salesforce-mock-start salesforce-mock-stop salesforce-mock-status salesforce-mock-restart \
 		rebuild-tools-with-updated-requirements
 
 # -----------------------------------------------------------------------------
@@ -600,6 +601,76 @@ run-jms-demo:
 	@echo "📚 Example libraries: pyjms, stomp.py, or py4j with ActiveMQ client"
 
 # =============================================================================
+# 🔌 Salesforce WireMock API Server Management
+# =============================================================================
+
+# =============================================================================
+# 🚀 Start Salesforce WireMock server for API mocking
+# =============================================================================
+salesforce-mock-start:
+	@echo "🚀 Starting Salesforce WireMock API server..."
+	@echo "🔗 Connecting to snaplogicnet network (same as Groundplex)"
+	cd docker && docker-compose -f docker-compose.salesforce-mock.yml up -d
+	@echo "⏳ Waiting for WireMock to initialize..."
+	@sleep 5
+	@echo "✅ Salesforce mock service started!"
+	@echo ""
+	@echo "🌐 Available endpoints:"
+	@echo "   • Base URL: http://localhost:8089 (will show 403 - this is normal!)"
+	@echo "   • OAuth Token: POST http://localhost:8089/services/oauth2/token"
+	@echo "   • Query API: GET http://localhost:8089/services/data/v59.0/query"
+	@echo "   • CRUD Operations: http://localhost:8089/services/data/v59.0/sobjects/Account"
+	@echo "   • Admin Console: http://localhost:8089/__admin/"
+	@echo "   • View Mappings: http://localhost:8089/__admin/mappings"
+	@echo ""
+	@echo "🔧 Configure SnapLogic Salesforce Account:"
+	@echo "   • Login URL: http://localhost:8089"
+	@echo "   • Username: snap-qa@snaplogic.com (or any value)"
+	@echo "   • Password: any value"
+	@echo ""
+	@echo "🧪 Test the service:"
+	@echo "   curl -X POST http://localhost:8089/services/oauth2/token -d 'grant_type=password'"
+
+# =============================================================================
+# ⛔ Stop Salesforce WireMock server
+# =============================================================================
+salesforce-mock-stop:
+	@echo "⛔ Stopping Salesforce WireMock server..."
+	cd docker && docker-compose -f docker-compose.salesforce-mock.yml down
+	@echo "✅ Salesforce mock service stopped."
+
+# =============================================================================
+# 🔍 Check Salesforce WireMock server status
+# =============================================================================
+salesforce-mock-status:
+	@echo "🔍 Checking Salesforce WireMock status..."
+	@container_status=$(docker inspect -f '{{.State.Status}}' salesforce-api-mock 2>/dev/null || echo "not found"); \
+	if [ "$container_status" = "running" ]; then \
+		echo "✅ Salesforce mock container is running"; \
+		echo "🌐 Base URL: http://localhost:8089"; \
+		echo "📊 Admin Console: http://localhost:8089/__admin/"; \
+		echo "📝 Request Journal: http://localhost:8089/__admin/requests"; \
+		echo "🧪 Testing OAuth endpoint..."; \
+		if curl -s -f -X POST http://localhost:8089/services/oauth2/token -d "grant_type=password" >/dev/null 2>&1; then \
+			echo "✅ OAuth endpoint is accessible"; \
+		else \
+			echo "⚠️  OAuth endpoint not ready (may still be starting)"; \
+		fi; \
+	else \
+		echo "❌ Salesforce mock container is not running (status: $container_status)"; \
+		echo "💡 Run 'make salesforce-mock-start' to start the mock service"; \
+	fi
+
+# =============================================================================
+# 🔄 Restart Salesforce WireMock server
+# =============================================================================
+salesforce-mock-restart:
+	@echo "🔄 Restarting Salesforce WireMock server..."
+	@$(MAKE) salesforce-mock-stop
+	@sleep 2
+	@$(MAKE) salesforce-mock-start
+
+# =============================================================================
 # 🔄 Rebuild tools container with updated requirements
 # =============================================================================
 rebuild-tools-with-updated-requirements:
@@ -636,3 +707,9 @@ quick-update-snaplogic-robot-only:
 	@$(DOCKER_COMPOSE) exec -T tools pip install --no-cache-dir snaplogic-common-robot
 	@echo "✅ New version:"
 	@$(DOCKER_COMPOSE) exec -T tools pip show snaplogic-common-robot
+
+
+# Send slack notifications for test results
+slack-notify:
+	@echo "Sending Slack notifications for test results..."
+	docker compose exec -w /test tools bash -c 'LATEST_OUTPUT=$$(ls -t robot_output/output-*.xml | head -1) && echo "Processing: $$LATEST_OUTPUT" && python resources/testresults_slack_notifications.py $$LATEST_OUTPUT'

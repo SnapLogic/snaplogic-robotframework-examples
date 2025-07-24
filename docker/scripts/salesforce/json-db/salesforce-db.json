@@ -1,0 +1,71 @@
+{
+  "accounts": [
+    {
+      "id": "001000000000001",
+      "Name": "Acme Corporation",
+      "Type": "Customer",
+      "Industry": "Technology",
+      "Phone": "(555) 123-4567",
+      "Website": "https://www.acme.com",
+      "AnnualRevenue": 50000000,
+      "NumberOfEmployees": 500,
+      "CreatedDate": "2024-01-15T10:30:00.000Z",
+      "LastModifiedDate": "2024-06-20T14:22:00.000Z"
+    },
+    {
+      "id": "001000000000002",
+      "Name": "Global Innovations Inc",
+      "Type": "Partner",
+      "Industry": "Manufacturing",
+      "Phone": "(555) 234-5678",
+      "Website": "https://www.globalinnovations.com",
+      "AnnualRevenue": 75000000,
+      "NumberOfEmployees": 1200,
+      "CreatedDate": "2024-02-20T09:15:00.000Z",
+      "LastModifiedDate": "2024-07-01T16:45:00.000Z"
+    },
+    {
+      "id": "001000000000003",
+      "Name": "TechStart Solutions",
+      "Type": "Prospect",
+      "Industry": "Software",
+      "Phone": "(555) 345-6789",
+      "Website": "https://www.techstart.io",
+      "AnnualRevenue": 10000000,
+      "NumberOfEmployees": 50,
+      "CreatedDate": "2024-03-10T11:00:00.000Z",
+      "LastModifiedDate": "2024-07-15T10:30:00.000Z"
+    }
+  ],
+  "contacts": [
+    {
+      "id": "003000000000001",
+      "FirstName": "John",
+      "LastName": "Doe",
+      "Email": "john.doe@acme.com",
+      "Phone": "(555) 123-4567",
+      "AccountId": "001000000000001",
+      "Title": "CEO"
+    },
+    {
+      "id": "003000000000002",
+      "FirstName": "Jane",
+      "LastName": "Smith",
+      "Email": "jane.smith@globalinnovations.com",
+      "Phone": "(555) 234-5678",
+      "AccountId": "001000000000002",
+      "Title": "VP of Sales"
+    }
+  ],
+  "opportunities": [
+    {
+      "id": "006000000000001",
+      "Name": "Acme - Enterprise Deal",
+      "AccountId": "001000000000001",
+      "Amount": 500000,
+      "CloseDate": "2024-12-31",
+      "StageName": "Negotiation",
+      "Probability": 75
+    }
+  ]
+}

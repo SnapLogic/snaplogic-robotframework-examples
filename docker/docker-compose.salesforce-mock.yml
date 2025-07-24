@@ -1,0 +1,113 @@
+# Salesforce API Mock Service for SnapLogic Testing
+# ==================================================
+#
+# This Docker Compose file provides a Salesforce API mock environment specifically
+# for testing SnapLogic Salesforce Snap integrations.
+#
+# QUICK START:
+# -----------
+# Start the service:
+#   docker-compose -f docker-compose.salesforce-mock.yml up -d
+#
+# Stop the service:
+#   docker-compose -f docker-compose.salesforce-mock.yml down
+#
+# AVAILABLE ENDPOINTS:
+# -------------------
+# Salesforce Mock API: http://localhost:8089
+# - OAuth Token: POST http://localhost:8089/services/oauth2/token
+# - REST API: http://localhost:8089/services/data/v59.0/*
+# - Bulk API: http://localhost:8089/services/async/59.0/*
+#
+# SNAPLOGIC CONFIGURATION:
+# -----------------------
+# For Salesforce Account settings in SnapLogic:
+# - Login URL: http://salesforce-api-mock:8080
+# - Username: snap-qa@snaplogic.com (or any value)
+# - Password: any value
+# - Security Token: leave empty (or any value)
+# 
+# Note: Use container name and internal port (8080) when SnapLogic 
+# is running in Docker on the same network. If SnapLogic is running 
+# on your host machine, use http://localhost:8089
+#
+# The mock will accept any credentials and return a valid response.
+
+version: '3.8'
+
+services:
+  # WireMock - Salesforce API Mock Server
+  salesforce-mock:
+    image: wiremock/wiremock:3.3.1
+    container_name: salesforce-api-mock
+    ports:
+      - "8089:8080"
+    volumes:
+      # Mount Salesforce-specific mock mappings
+      - ./scripts/salesforce/wiremock/mappings:/home/wiremock/mappings:ro
+      - ./scripts/salesforce/wiremock/__files:/home/wiremock/__files:ro
+    command: >
+      --global-response-templating 
+      --verbose 
+      --disable-banner
+      --enable-stub-cors
+    networks:
+      - snaplogicnet
+    environment:
+      - WIREMOCK_OPTIONS=--max-request-journal-entries=1000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/__admin/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Alternative: Prism Mock (OpenAPI-based) - Uncomment if preferred
+  # salesforce-prism:
+  #   image: stoplight/prism:4
+  #   container_name: salesforce-prism-mock
+  #   ports:
+  #     - "8080:4010"
+  #   volumes:
+  #     - ./wip/api-specs/salesforce:/specs:ro
+  #   command: mock -h 0.0.0.0 /specs/salesforce-openapi.yaml
+  #   networks:
+  #     - snaplogicnet
+
+  # JSON Server - For persistent CRUD operations
+  salesforce-json-server:
+    image: clue/json-server
+    container_name: salesforce-json-mock
+    ports:
+      - "8082:80"
+    volumes:
+      - ./scripts/salesforce/json-db:/data
+    command: --watch /data/salesforce-db.json --host 0.0.0.0
+    networks:
+      - snaplogicnet
+
+networks:
+  snaplogicnet:
+    driver: bridge
+
+# Usage Examples:
+# ==============
+#
+# 1. Test OAuth Authentication:
+#    curl -X POST http://localhost:8089/services/oauth2/token \
+#      -H "Content-Type: application/x-www-form-urlencoded" \
+#      -d "grant_type=password&client_id=test&client_secret=test&username=test@test.com&password=test"
+#
+# 2. Query Accounts:
+#    curl -X GET "http://localhost:8089/services/data/v59.0/query?q=SELECT+Id,Name+FROM+Account" \
+#      -H "Authorization: Bearer mock-token-12345"
+#
+# 3. Create Account:
+#    curl -X POST http://localhost:8089/services/data/v59.0/sobjects/Account \
+#      -H "Content-Type: application/json" \
+#      -H "Authorization: Bearer mock-token-12345" \
+#      -d '{"Name": "Test Account", "Type": "Customer"}'
+#
+# 4. Get Account by ID:
+#    curl -X GET http://localhost:8089/services/data/v59.0/sobjects/Account/001000000000001 \
+#      -H "Authorization: Bearer mock-token-12345"
