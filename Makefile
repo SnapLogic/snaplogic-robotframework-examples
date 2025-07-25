@@ -712,4 +712,5 @@ quick-update-snaplogic-robot-only:
 # Send slack notifications for test results
 slack-notify:
 	@echo "Sending Slack notifications for test results..."
-	$(DOCKER_COMPOSE) exec -w /app/test tools bash -c 'LATEST_OUTPUT=$$(ls -t robot_output/output-*.xml | head -1) && echo "Processing: $$LATEST_OUTPUT" && python testresults_slack_notifications.py $$LATEST_OUTPUT'
+	slack-notify:
+	docker compose --env-file .env -f docker/docker-compose.yml exec -w /app/test tools bash -c 'SLACK_WEBHOOK_URL=$(SLACK_WEBHOOK_URL) LATEST_OUTPUT=$$(ls -t robot_output/output-*.xml | head -1) && echo "Processing: $$LATEST_OUTPUT" && python testresults_slack_notifications.py $$LATEST_OUTPUT'
