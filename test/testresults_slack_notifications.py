@@ -9,7 +9,17 @@ from robot.api import ExecutionResult
 from tabulate import tabulate
 
 # SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/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"
-SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/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"
+SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/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"
+
+# Print masked webhook URL for debugging (show first part and last 4 chars)
+if SLACK_WEBHOOK_URL:
+    if len(SLACK_WEBHOOK_URL) > 50:
+        masked_url = SLACK_WEBHOOK_URL[:50] + "..." + SLACK_WEBHOOK_URL[-4:]
+    else:
+        masked_url = SLACK_WEBHOOK_URL[:20] + "..." if len(SLACK_WEBHOOK_URL) > 20 else SLACK_WEBHOOK_URL
+    print(f"Slack webhook URL configured: {masked_url}")
+else:
+    print("WARNING: No Slack webhook URL configured")
 
 
 # Global variables for commit information
@@ -269,8 +279,10 @@ def send_slack_notification(table, pass_percentage, fail_percentage, knownissues
     }
 
     # ---------- SEND NOTIFICATION ----------
+    print(f"Sending notification to Slack webhook: {SLACK_WEBHOOK_URL[:50]}...")
     response = requests.post(SLACK_WEBHOOK_URL, json=payload)
     if response.status_code != 200:
+        print(f"Full webhook URL: {SLACK_WEBHOOK_URL}")
         raise ValueError(f"Request to Slack returned an error {response.status_code}, the response is:\n{response.text}")
 
 
