@@ -9,7 +9,7 @@ from robot.api import ExecutionResult
 from tabulate import tabulate
 
 # SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/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"
-SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/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"
+SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/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"
 
 
 # Global variables for commit information
