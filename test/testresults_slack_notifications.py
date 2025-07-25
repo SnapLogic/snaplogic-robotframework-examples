@@ -9,7 +9,7 @@ from robot.api import ExecutionResult
 from tabulate import tabulate
 
 # SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/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"
-SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/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"
+SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/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"
 
 # Print masked webhook URL for debugging (show first part and last 4 chars)
 if SLACK_WEBHOOK_URL:
