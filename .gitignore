@@ -215,6 +215,14 @@ coverage/
 htmlcov/
 
 # ==========================================
+# Exceptions - Files/Folders to Track
+# ==========================================
+
+# Allow all files in accounts_jar_files directory (including .jar files)
+!test/suite/test_data/accounts_jar_files/
+!test/suite/test_data/accounts_jar_files/**
+
+# ==========================================
 # Development Tools
 # ==========================================
 

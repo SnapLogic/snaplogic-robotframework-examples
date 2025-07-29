@@ -1,0 +1,130 @@
+{
+    "path": "{{ACCOUNT_LOCATION_PATH}}",
+    "duplicate_check": true,
+    "account": {
+        "class_fqid": "com-snaplogic-snaps-jdbc-jdbcdatabaseaccount_2-main31019",
+        "property_map": {
+            "view_serial": 100,
+            "settings": {
+                "connectionProperties": {
+                    "value": {
+                        "sshpassword": {
+                            "expression": false
+                        },
+                        "privateKeyPassphrase": {
+                            "expression": false
+                        },
+                        "sshTunnelConfiguration": {
+                            "value": false
+                        },
+                        "dbName": {
+                            "value": "Auto detect"
+                        },
+                        "sshPort": {
+                            "value": 22,
+                            "expression": false
+                        },
+                        "JdbcDriversProp": {
+                            "value": [
+                                {
+                                    "jdbcDriver": {
+                                        "value": "../shared/{{ DB2_JDBC_JAR }}"
+                                    }
+                                }
+                            ]
+                        },
+                        "privateKeyUrl": {
+                            "value": null,
+                            "expression": false
+                        },
+                        "jdbcUrl": {
+                            "value": "{{ DB2_JDBC_URL }}",
+                            "expression": false
+                        },
+                        "jdbcDriverClass": {
+                            "value": "{{ DB2_JDBC_DRIVER_CLASS }}",
+                            "expression": false
+                        },
+                        "username": {
+                            "value": "{{ DB2_DBUSER }}",
+                            "expression": false
+                        },
+                        "testQuery": {
+                            "value": "{{ DB2_TEST_QUERY }}",
+                            "expression": false
+                        },
+                        "AuthenticationMode": {
+                            "value": "Password"
+                        },
+                        "sshhostname": {
+                            "value": null,
+                            "expression": false
+                        },
+                        "password": {
+                            "expression": false,
+                            "value": "{{ DB2_DBPASS }}"
+                        },
+                        "PrivateKey": {
+                            "expression": false
+                        },
+                        "sshusername": {
+                            "value": null,
+                            "expression": false
+                        }
+                    }
+                },
+                "advancedProperties": {
+                    "value": {
+                        "maxPoolSize": {
+                            "value": 15,
+                            "expression": false
+                        },
+                        "urlProperties": {
+                            "value": []
+                        },
+                        "maxIdleTime": {
+                            "value": 60,
+                            "expression": false
+                        },
+                        "autoCommit": {
+                            "value": true
+                        },
+                        "retryAttempts": {
+                            "value": 0
+                        },
+                        "minPoolSize": {
+                            "value": 0,
+                            "expression": false
+                        },
+                        "acquireIncrement": {
+                            "value": 2
+                        },
+                        "checkoutTimeout": {
+                            "value": 10000,
+                            "expression": false
+                        },
+                        "fetchSize": {
+                            "value": 100,
+                            "expression": false
+                        },
+                        "batchSize": {
+                            "value": 50,
+                            "expression": false
+                        }
+                    }
+                }
+            },
+            "info": {
+                "label": {
+                    "value": "{{ DB2_ACCOUNT_NAME }}"
+                },
+                "notes": {
+                    "value": null
+                }
+            }
+        },
+        "test_settings": {
+            "runtime_path_id": "ml-legacy-migration/rt/sidekick/slgroundple2xautomationdev"
+        }
+    }
+}
