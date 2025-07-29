@@ -7,12 +7,14 @@ include:
   - docker-compose.activemq.yml
   - docker-compose.sqlserver.yml
   - docker-compose.mysql.yml
+  - docker-compose.db2.yml
 
 services:
   tools:
     build:
       context: ../src/tools
       dockerfile: ../../docker/robot.Dockerfile
+    platform: linux/amd64  # Force x86_64 for ibm_db compatibility
     container_name: snaplogic-test-example-tools-container
     image: snaplogic-test-example:latest
     env_file:

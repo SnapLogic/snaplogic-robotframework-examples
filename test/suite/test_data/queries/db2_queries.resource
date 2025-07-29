@@ -1,7 +1,12 @@
 *** Variables ***
-${DROP_TABLE_EMPLOYEES}         DROP TABLE employees
-
-${DROP_TABLE_EMPLOYEES2}        DROP TABLE employees2
+${DROP_TABLE_EMPLOYEES}         DROP TABLE IF EXISTS employees
+${DROP_TABLE_EMPLOYEES2}        DROP TABLE IF EXISTS employees2
+${DROP_TABLE_CONTROL_DATE}      DROP TABLE IF EXISTS control_date
+${DROP_VIEW_HIGH_EARNERS}       DROP VIEW IF EXISTS high_earners
+${DROP_BACKUP_TABLE}            DROP TABLE IF EXISTS employees_backup
+${DROP_STORED_PROCEDURE}        DROP PROCEDURE IF EXISTS update_employee_salary
+${DROP_INDEX_EMPLOYEES}         DROP INDEX IF EXISTS idx_employees_name
+${DROP_INDEX_EMPLOYEES2}        DROP INDEX IF EXISTS idx_employees2_name
 
 ${CREATE_TABLE_EMPLOYEES}
 ...                             CREATE TABLE employees (
@@ -25,10 +30,8 @@ ${CREATE_TABLE_CONTROL_DATE}
 ...                             CREATE TABLE control_date (
 ...                             domain_name VARCHAR(50) NOT NULL PRIMARY KEY,
 ...                             control_date DATE NOT NULL,
-...                             last_updated TIMESTAMP NOT NULL WITH DEFAULT CURRENT TIMESTAMP
+...                             last_updated TIMESTAMP NOT NULL DEFAULT CURRENT TIMESTAMP
 ...                             )
-
-${DROP_TABLE_CONTROL_DATE}      DROP TABLE control_date
 
 ${INSERT_CONTROL_DATE}
 ...                             MERGE INTO control_date AS target
@@ -48,8 +51,8 @@ ${UPDATE_CONTROL_DATE}
 ...                             WHERE domain_name = %s
 
 ${SELECT_CONTROL_DATE}
-...                             SELECT domain_name, 
-...                             VARCHAR_FORMAT(control_date, 'MM/DD/YYYY') as formatted_date,
+...                             SELECT domain_name,
+...                             VARCHAR_FORMAT(control_date, 'MM/DD/YYYY') AS formatted_date,
 ...                             last_updated
 ...                             FROM control_date
 ...                             WHERE domain_name = %s
@@ -66,12 +69,9 @@ ${CREATE_STORED_PROCEDURE}
 ...                             WHERE id = emp_id;
 ...                             END
 
-${DROP_STORED_PROCEDURE}        DROP PROCEDURE update_employee_salary
-
 ${CALL_STORED_PROCEDURE}        CALL update_employee_salary(%s, %s)
 
 ${SELECT_ALL_EMPLOYEES}         SELECT * FROM employees ORDER BY id
-
 ${SELECT_ALL_EMPLOYEES2}        SELECT * FROM employees2 ORDER BY id
 
 ${INSERT_EMPLOYEE}
@@ -83,20 +83,13 @@ ${INSERT_EMPLOYEE2}
 ...                             VALUES (%s, %s, %s)
 
 ${TRUNCATE_EMPLOYEES}           TRUNCATE TABLE employees IMMEDIATE
-
 ${TRUNCATE_EMPLOYEES2}          TRUNCATE TABLE employees2 IMMEDIATE
 
-${COUNT_EMPLOYEES}              SELECT COUNT(*) as count FROM employees
-
-${COUNT_EMPLOYEES2}             SELECT COUNT(*) as count FROM employees2
+${COUNT_EMPLOYEES}              SELECT COUNT(*) AS count FROM employees
+${COUNT_EMPLOYEES2}             SELECT COUNT(*) AS count FROM employees2
 
 ${CREATE_INDEX_EMPLOYEES}       CREATE INDEX idx_employees_name ON employees(name)
-
 ${CREATE_INDEX_EMPLOYEES2}      CREATE INDEX idx_employees2_name ON employees2(name)
-
-${DROP_INDEX_EMPLOYEES}         DROP INDEX idx_employees_name
-
-${DROP_INDEX_EMPLOYEES2}        DROP INDEX idx_employees2_name
 
 ${ALTER_TABLE_ADD_COLUMN}
 ...                             ALTER TABLE employees
@@ -111,9 +104,6 @@ ${CREATE_VIEW_HIGH_EARNERS}
 ...                             SELECT id, name, role, salary
 ...                             FROM employees
 ...                             WHERE salary > 50000
-...                             ORDER BY salary DESC
-
-${DROP_VIEW_HIGH_EARNERS}       DROP VIEW high_earners
 
 ${SELECT_FROM_VIEW}             SELECT * FROM high_earners
 
@@ -122,14 +112,17 @@ ${BACKUP_TABLE_EMPLOYEES}
 ...                             (SELECT * FROM employees)
 ...                             WITH DATA
 
-${DROP_BACKUP_TABLE}            DROP TABLE employees_backup
+${SHOW_TABLES}
+...                             SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = CURRENT SCHEMA AND TYPE = 'T'
 
-${SHOW_TABLES}                  SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = CURRENT SCHEMA AND TYPE = 'T'
-
-${DESCRIBE_TABLE}               SELECT COLNAME, TYPENAME, LENGTH, SCALE, NULLS FROM SYSCAT.COLUMNS WHERE TABNAME = 'EMPLOYEES' AND TABSCHEMA = CURRENT SCHEMA ORDER BY COLNO
+${DESCRIBE_TABLE}
+...                             SELECT COLNAME, TYPENAME, LENGTH, SCALE, NULLS
+...                             FROM SYSCAT.COLUMNS
+...                             WHERE TABNAME = 'EMPLOYEES' AND TABSCHEMA = CURRENT SCHEMA
+...                             ORDER BY COLNO
 
 ${CHECK_TABLE_EXISTS}
-...                             SELECT COUNT(*) as table_exists
+...                             SELECT COUNT(*) AS table_exists
 ...                             FROM SYSCAT.TABLES
 ...                             WHERE TABSCHEMA = CURRENT SCHEMA
 ...                             AND TABNAME = UPPER(%s)

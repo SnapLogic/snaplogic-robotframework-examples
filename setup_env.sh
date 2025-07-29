@@ -72,6 +72,19 @@ optional_vars=(
     "MYSQL_DBPORT"
     "MYSQL_DBUSER"
     "MYSQL_DBPASS"
+    "MYSQL_JAR"
+
+    # DB2 Database Configuration
+    "DB2_ACCOUNT_NAME"
+    "DB2_HOST"
+    "DB2_DBNAME"
+    "DB2_DBPORT"
+    "DB2_DBUSER"
+    "DB2_DBPASS"
+    "DB2_JDBC_JAR"
+    "DB2_JDBC_DRIVER_CLASS"
+    "DB2_JDBC_URL"
+    "DB2_TEST_QUERY"
     
     # S3/MinIO Configuration
     "S3_ACCOUNT_NAME"

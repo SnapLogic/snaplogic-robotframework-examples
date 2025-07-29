@@ -63,14 +63,14 @@ Upload Files With File Protocol
     ...    • File protocol URLs are correctly formed
     ...    • Upload operation succeeds using file:/// protocol
     ...    • Files are accessible in SnapLogic project space
-    [Tags]    db2account    db2jar    db2    regression
+    [Tags]    db2    db2jar    regression
     [Template]    Upload File Using File Protocol Template
     file:///opt/snaplogic/test_data/accounts_jar_files/db2/db2jcc4.jar    ${upload_destination_file_path}
 
 Create Account
     [Documentation]    Creates a DB2 account in the project space using the provided payload file.
     ...    "account_payload_path"    value as assigned to global variable    in __init__.robot file
-    [Tags]    db2    regression
+    [Tags]    db2_file    regression
     [Template]    Create Account From Template
     ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
 
@@ -94,19 +94,6 @@ Create table for DB Operations
     ${CREATE_TABLE_EMPLOYEES}
     ${DROP_TABLE_EMPLOYEES2}
     ${CREATE_TABLE_EMPLOYEES2}
-
-Create Control Date Table
-    [Documentation]    Creates the control date table for managing pipeline execution dates
-    ...    📋 ASSERTIONS:
-    ...    • Control date table creation successful
-    ...    • Table structure includes domain_name, control_date, and last_updated columns
-    ...    • Primary key constraint on domain_name established
-    ...    • Timestamp auto-update functionality configured
-    [Tags]    db2
-    [Template]    Execute SQL String
-    ${DROP_TABLE_CONTROL_DATE}
-    ${CREATE_TABLE_CONTROL_DATE}
-    ${INSERT_CONTROL_DATE}
 
 Load CSV Data To DB2
     [Documentation]    Loads CSV employee data into DB2 with automatic row count validation
@@ -234,4 +221,11 @@ Initialize Variables
 Connect to DB2 Database
     [Documentation]    Establishes connection to DB2 database using ibm_db
     [Arguments]    ${dbname}    ${dbuser}    ${dbpass}    ${dbhost}    ${dbport}
-    Connect To Database Using Custom Params    ibm_db    DATABASE=${dbname};HOSTNAME=${dbhost};PORT=${dbport};PROTOCOL=TCPIP;UID=${dbuser};PWD=${dbpass}
+    # Build connection string for DB2
+    ${db_connect_string}=    Set Variable
+    ...    DATABASE=${dbname};HOSTNAME=${dbhost};PORT=${dbport};PROTOCOL=TCPIP;UID=${dbuser};PWD=${dbpass}
+    # Despite deprecation warning, this is the only way that works reliably with ibm_db
+    Connect To Database Using Custom Params    ibm_db    ${db_connect_string}
+    # Verify connection
+    ${result}=    Query    SELECT 1 FROM SYSIBM.SYSDUMMY1
+    Should Be Equal As Integers    ${result[0][0]}    1

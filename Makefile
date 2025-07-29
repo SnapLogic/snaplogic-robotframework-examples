@@ -23,7 +23,8 @@
         activemq-start activemq-stop activemq-status activemq-setup run-jms-demo \
         start-services createplex-launch-groundplex \
         salesforce-mock-start salesforce-mock-stop salesforce-mock-status salesforce-mock-restart \
-		rebuild-tools-with-updated-requirements
+		rebuild-tools-with-updated-requirements install-requirements-local install-requirements-venv \
+		update-requirements-all clean-install-requirements
 
 # -----------------------------------------------------------------------------
 # Global Variables
@@ -708,6 +709,73 @@ quick-update-snaplogic-robot-only:
 	@echo "✅ New version:"
 	@$(DOCKER_COMPOSE) exec -T tools pip show snaplogic-common-robot
 
+
+# =============================================================================
+# 📦 Install requirements in local virtual environment
+# =============================================================================
+install-requirements-local:
+	@echo "📦 Installing requirements in local environment..."
+	@if [ -z "$VIRTUAL_ENV" ]; then \
+		echo "❌ No virtual environment activated!"; \
+		echo "💡 Please activate your virtual environment first:"; \
+		echo "   source ../.venv/bin/activate"; \
+		echo "   or use: make install-requirements-venv"; \
+		exit 1; \
+	fi
+	@echo "✅ Virtual environment detected: $VIRTUAL_ENV"
+	@echo "🔧 Installing requirements..."
+	pip install -r src/tools/requirements.txt
+	@echo "✅ Requirements installed successfully!"
+	@echo "📋 Installed packages:"
+	@pip list | head -20
+
+# =============================================================================
+# 🐍 Activate venv and install requirements (all-in-one)
+# =============================================================================
+install-requirements-venv:
+	@echo "🐍 Setting up virtual environment and installing requirements..."
+	@if [ ! -d "../.venv" ]; then \
+		echo "❌ Virtual environment not found at ../.venv"; \
+		echo "💡 Creating new virtual environment..."; \
+		python3 -m venv ../.venv; \
+	fi
+	@echo "📦 Installing requirements in virtual environment..."
+	@../.venv/bin/pip install --upgrade pip
+	@../.venv/bin/pip install -r src/tools/requirements.txt
+	@echo "✅ Requirements installed successfully!"
+	@echo "💡 To activate the virtual environment, run:"
+	@echo "   source ../.venv/bin/activate"
+
+# =============================================================================
+# 🔄 Update requirements in both local venv and Docker tools container
+# =============================================================================
+update-requirements-all: install-requirements-venv
+	@echo "🔄 Updating Docker tools container..."
+	@if docker ps | grep -q snaplogic-test-example-tools-container; then \
+		echo "📋 Copying requirements to running container..."; \
+		docker cp src/tools/requirements.txt snaplogic-test-example-tools-container:/app/src/tools/requirements.txt; \
+		echo "📦 Installing in container..."; \
+		docker exec snaplogic-test-example-tools-container pip install -r /app/src/tools/requirements.txt; \
+		echo "✅ Docker container updated!"; \
+	else \
+		echo "⚠️  Tools container not running. Run 'make rebuild-tools-with-updated-requirements' to rebuild."; \
+	fi
+
+# =============================================================================
+# 🧹 Clean and reinstall requirements in venv
+# =============================================================================
+clean-install-requirements:
+	@echo "🧹 Clean installing requirements..."
+	@if [ -z "$VIRTUAL_ENV" ]; then \
+		echo "⚠️  Activating virtual environment..."; \
+		source ../.venv/bin/activate; \
+	fi
+	@echo "🗑️  Removing all packages..."
+	@pip freeze | xargs pip uninstall -y 2>/dev/null || true
+	@echo "📦 Installing fresh requirements..."
+	@pip install --upgrade pip
+	@pip install -r src/tools/requirements.txt
+	@echo "✅ Clean install completed!"
 
 # Send slack notifications for test results
 slack-notify:

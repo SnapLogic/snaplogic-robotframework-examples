@@ -1,6 +1,6 @@
 {
     "path": "{{ACCOUNT_LOCATION_PATH}}",
-    "duplicate_check": true,
+    "duplicate_check": false,
     "account": {
         "class_fqid": "com-snaplogic-snap-api-sql-accounts-mysqldatabaseaccount_1-441patches31523",
         "property_map": {
@@ -113,7 +113,13 @@
                     }
                 },
                 "JdbcDriversProp": {
-                    "value": []
+                    "value": [
+                        {
+                            "jdbcDriver": {
+                                "value": "{{ MYSQL_JAR }}"
+                            }
+                        }
+                    ]
                 }
             },
             "info": {

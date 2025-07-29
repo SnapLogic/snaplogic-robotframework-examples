@@ -7,6 +7,7 @@ stomp.py # STOMP protocol client for JMS testing
 requests # HTTP client for ActiveMQ management API
 pymssql # Microsoft SQL Server database driver
 pymysql # MySQL database driver
+ibm_db # IBM DB2 database driver
 teradatasql # Teradata database driver
 snowflake-connector-python # Snowflake database driver
 robotframework-pabot==2.18.0

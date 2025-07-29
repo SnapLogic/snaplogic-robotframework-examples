@@ -28,7 +28,7 @@
                             "value": [
                                 {
                                     "jdbcDriver": {
-                                        "value": "../shared/{{ DB2_JDBC_JAR }}"
+                                        "value": "{{ DB2_JDBC_JAR }}"
                                     }
                                 }
                             ]
