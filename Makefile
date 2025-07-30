@@ -780,7 +780,7 @@ clean-install-requirements:
 # Send slack notifications for test results
 slack-notify:
 	@echo "Sending Slack notifications for test results..."
-	docker compose --env-file .env -f docker/docker-compose.yml exec -e SLACK_WEBHOOK_URL -w /app/test tools bash -c 'LATEST_OUTPUT=$(ls -t robot_output/output-*.xml | head -1) && echo "Processing: $LATEST_OUTPUT" && python testresults_slack_notifications.py "$LATEST_OUTPUT"'
+	docker compose --env-file .env -f docker/docker-compose.yml exec -w /app/test tools bash -c 'LATEST_OUTPUT=$$(ls -t robot_output/output-*.xml | head -1) && echo "Processing: $$LATEST_OUTPUT" && python testresults_slack_notifications.py "$$LATEST_OUTPUT"'
 
 # =============================================================================
 # 📤 Upload Robot Framework test results to S3

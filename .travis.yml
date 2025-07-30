@@ -97,8 +97,9 @@ jobs:
         - export TRAVIS_COMMIT_AUTHOR_EMAIL="$(git log -1 --pretty=format:'%ae')"
         - make snaplogic-start-services
         - make robot-run-all-tests TAGS="oracle mysql sqlserver file_mount postgres_s3 sla" PROJECT_SPACE_SETUP=True
-        - make slack-notify
         - make upload-test-results
+        - make slack-notify
+
       name: Build Docs
 
 # ===== NOTIFICATIONS =====
