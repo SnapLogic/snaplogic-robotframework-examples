@@ -783,6 +783,10 @@ slack-notify:
 	docker compose --env-file .env -f docker/docker-compose.yml exec -e SLACK_WEBHOOK_URL -w /app/test tools bash -c 'LATEST_OUTPUT=$$(ls -t robot_output/output-*.xml | head -1) && echo "Processing: $$LATEST_OUTPUT" && python testresults_slack_notifications.py "$$LATEST_OUTPUT"'
 # =============================================================================
 # 📤 Upload Robot Framework test results to S3
+# Usage:
+#   make upload-test-results                     # Upload all files with zip
+#   CREATE_ZIP=false make upload-test-results    # Upload without zip file
+#   UPLOAD_LATEST_ONLY=true make upload-test-results  # Upload only latest files
 # =============================================================================
 upload-test-results:
 	@echo "📤 Uploading test results to S3..."
@@ -802,7 +806,7 @@ upload-test-results:
 		fi; \
 	fi
 	@echo "🚀 Running upload script inside tools container..."
-	$(DOCKER_COMPOSE) exec -w /app/test -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY tools python upload_robot_results.py
+	$(DOCKER_COMPOSE) exec -w /app/test -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e CREATE_ZIP -e UPLOAD_LATEST_ONLY -e LATEST_COUNT tools python upload_robot_results.py
 
 # =============================================================================
 # 🚀 Upload test results using AWS CLI (alternative to Python script)
