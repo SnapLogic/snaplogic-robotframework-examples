@@ -211,7 +211,7 @@ Copy Files With File Protocol
     [Template]    Copy File Using File Protocol Template
 
     # source_url    destination_url
-    file:///opt/snaplogic/test_data/expression_libraries/test.expr    file:///opt/snaplogic/shared/test_copy.expr
+    file:///opt/snaplogic/test_data/actual_expected_data/expression_libraries/test.expr    file:///opt/snaplogic/shared/test_copy.expr
 
 List Files With File Protocol
     [Documentation]    List files in mounted directories using file:/// protocol URLs
@@ -220,7 +220,7 @@ List Files With File Protocol
 
     # List expression files
     @{expr_files}=    List Files Using File Protocol Template
-    ...    file:///opt/snaplogic/test_data/expression_libraries
+    ...    file:///opt/snaplogic/test_data/actual_expected_data/expression_libraries
     ...    *.expr
     Log    Expression files: ${expr_files}
 

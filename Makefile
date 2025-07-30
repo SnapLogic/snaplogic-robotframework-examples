@@ -24,7 +24,7 @@
         start-services createplex-launch-groundplex \
         salesforce-mock-start salesforce-mock-stop salesforce-mock-status salesforce-mock-restart \
 		rebuild-tools-with-updated-requirements install-requirements-local install-requirements-venv \
-		update-requirements-all clean-install-requirements
+		update-requirements-all clean-install-requirements upload-test-results upload-test-results-cli
 
 # -----------------------------------------------------------------------------
 # Global Variables
@@ -780,4 +780,85 @@ clean-install-requirements:
 # Send slack notifications for test results
 slack-notify:
 	@echo "Sending Slack notifications for test results..."
-	docker compose --env-file .env -f docker/docker-compose.yml exec -e SLACK_WEBHOOK_URL -w /app/test tools bash -c 'LATEST_OUTPUT=$$(ls -t robot_output/output-*.xml | head -1) && echo "Processing: $$LATEST_OUTPUT" && python testresults_slack_notifications.py "$$LATEST_OUTPUT"'
+	docker compose --env-file .env -f docker/docker-compose.yml exec -e SLACK_WEBHOOK_URL -w /app/test tools bash -c 'LATEST_OUTPUT=$(ls -t robot_output/output-*.xml | head -1) && echo "Processing: $LATEST_OUTPUT" && python testresults_slack_notifications.py "$LATEST_OUTPUT"'
+
+# =============================================================================
+# 📤 Upload Robot Framework test results to S3
+# =============================================================================
+upload-test-results:
+	@echo "📤 Uploading test results to S3..."
+	@echo "🔍 Checking for AWS credentials..."
+	@if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then \
+		echo "⚠️  AWS credentials not found in environment."; \
+		echo "🔍 Checking .env file for credentials..."; \
+		if [ -f ".env" ] && grep -q "AWS_ACCESS_KEY_ID" .env && grep -q "AWS_SECRET_ACCESS_KEY" .env; then \
+			echo "✅ Found AWS credentials in .env file"; \
+			export $(cat .env | grep -E '^AWS_' | xargs); \
+		else \
+			echo "❌ AWS credentials not found. Please set:"; \
+			echo "   export AWS_ACCESS_KEY_ID=your_access_key"; \
+			echo "   export AWS_SECRET_ACCESS_KEY=your_secret_key"; \
+			echo "   Or add them to your .env file"; \
+			exit 1; \
+		fi; \
+	fi
+	@echo "🚀 Running upload script inside tools container..."
+	$(DOCKER_COMPOSE) exec -w /app/test -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY tools python upload_robot_results.py
+
+# =============================================================================
+# 🚀 Upload test results using AWS CLI (alternative to Python script)
+# =============================================================================
+upload-test-results-cli:
+	@echo "📤 Uploading test results to S3 using AWS CLI..."
+	@echo "🔍 Checking for AWS credentials..."
+	@if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then \
+		echo "⚠️  AWS credentials not found in environment."; \
+		echo "🔍 Checking .env file for credentials..."; \
+		if [ -f ".env" ] && grep -q "AWS_ACCESS_KEY_ID" .env && grep -q "AWS_SECRET_ACCESS_KEY" .env; then \
+			echo "✅ Found AWS credentials in .env file"; \
+			source .env && export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; \
+		else \
+			echo "❌ AWS credentials not found. Please set:"; \
+			echo "   export AWS_ACCESS_KEY_ID=your_access_key"; \
+			echo "   export AWS_SECRET_ACCESS_KEY=your_secret_key"; \
+			echo "   Or add them to your .env file"; \
+			exit 1; \
+		fi; \
+	fi
+	@echo "⏰ Creating timestamp..."
+	$(eval TIMESTAMP := $(shell date +'%Y%m%d-%H%M%S'))
+	@echo "📁 Timestamp: $(TIMESTAMP)"
+	@echo "🚀 Uploading files to S3..."
+	@echo "📤 Uploading XML files..."
+	@$(DOCKER_COMPOSE) exec -T -w /app/test \
+		-e AWS_ACCESS_KEY_ID \
+		-e AWS_SECRET_ACCESS_KEY \
+		tools bash -c 'aws s3 cp robot_output/ s3://artifacts.slimdev.snaplogic/RF_CommonTests_Results/$(TIMESTAMP)/ \
+		--recursive --exclude "*" --include "output-*.xml" --no-progress || echo "No XML files to upload"'
+	@echo "📤 Uploading HTML log files..."
+	@$(DOCKER_COMPOSE) exec -T -w /app/test \
+		-e AWS_ACCESS_KEY_ID \
+		-e AWS_SECRET_ACCESS_KEY \
+		tools bash -c 'aws s3 cp robot_output/ s3://artifacts.slimdev.snaplogic/RF_CommonTests_Results/$(TIMESTAMP)/ \
+		--recursive --exclude "*" --include "log-*.html" --no-progress || echo "No log files to upload"'
+	@echo "📤 Uploading HTML report files..."
+	@$(DOCKER_COMPOSE) exec -T -w /app/test \
+		-e AWS_ACCESS_KEY_ID \
+		-e AWS_SECRET_ACCESS_KEY \
+		tools bash -c 'aws s3 cp robot_output/ s3://artifacts.slimdev.snaplogic/RF_CommonTests_Results/$(TIMESTAMP)/ \
+		--recursive --exclude "*" --include "report-*.html" --no-progress || echo "No report files to upload"'
+	@echo "" 
+	@echo "======================================================================"
+	@echo "✅ All uploads completed successfully!"
+	@echo "📍 Complete S3 Location:"
+	@echo "   s3://artifacts.slimdev.snaplogic/RF_CommonTests_Results/$(TIMESTAMP)/"
+	@echo ""
+	@echo "🌐 S3 Console URL:"
+	@echo "   https://s3.console.aws.amazon.com/s3/buckets/artifacts.slimdev.snaplogic?prefix=RF_CommonTests_Results/$(TIMESTAMP)/"
+	@echo ""
+	@echo "📋 AWS CLI command to list uploaded files:"
+	@echo "   aws s3 ls s3://artifacts.slimdev.snaplogic/RF_CommonTests_Results/$(TIMESTAMP)/"
+	@echo ""
+	@echo "📥 AWS CLI command to download all files:"
+	@echo "   aws s3 sync s3://artifacts.slimdev.snaplogic/RF_CommonTests_Results/$(TIMESTAMP)/ ./downloaded_results/"
+	@echo "======================================================================"
