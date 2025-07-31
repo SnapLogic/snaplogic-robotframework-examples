@@ -37,8 +37,7 @@ ${task2}                            MySQL_Task2
 # MySQL test data configuration
 ${CSV_DATA_TO_DB}                   ${CURDIR}/../../test_data/actual_expected_data/input_data/employees.csv    # Source CSV from input_data folder
 ${JSON_DATA_TO_DB}                  ${CURDIR}/../../test_data/actual_expected_data/input_data/employees.json    # Source JSON from input_data folder
-# ${ACTUAL_DATA_DIR}    ${CURDIR}/../../test_data/actual_expected_data/actual_output    
-${ACTUAL_DATA_DIR}                  /app/test/suite/test_data/actual_expected_data/actual_output    
+${ACTUAL_DATA_DIR}                  /app/test/suite/test_data/actual_expected_data/actual_output
 ${EXPECTED_OUTPUT_DIR}              ${CURDIR}/../../test_data/actual_expected_data/expected_output    # Expected output files for comparison
 
 @{notification_states}              Completed    Failed

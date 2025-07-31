@@ -121,6 +121,10 @@ robot-run-all-tests: check-env
 	echo ":========== [Phase 2] Computing and starting containers using COMPOSE_PROFILES... =========="; \
 	$(MAKE) launch-groundplex; \
 	\
+	echo ":========== [Phase 2.1] Setting permissions for test data directories =========="; \
+	chmod +x ./scripts/set_travis_permissions.sh; \
+	./scripts/set_travis_permissions.sh || echo "Warning: Could not set all permissions"; \
+	\
 	echo ":========== [Phase 3] Running user-defined robot tests... =========="; \
 	$(MAKE) robot-run-tests TAGS="$(TAGS)" PROJECT_SPACE_SETUP=False
 	
