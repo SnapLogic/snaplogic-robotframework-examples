@@ -1,5 +1,7 @@
 # SnapPack Testing Isolation Approach
 
+**Reference:** [SnapPack Testing Strategy Spreadsheet](https://docs.google.com/spreadsheets/d/1QtLjaeiO54McZFNVzny1tN7LcMQMcB1U5nbASPSSfcQ/edit?usp=sharing)
+
 ## SnapLogic Mocking Strategies
 
 Below is the outline of **three approaches** to mocking SnapLogic integrations:

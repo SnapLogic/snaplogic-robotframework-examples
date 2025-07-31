@@ -36,7 +36,7 @@ ${task2}                            DB2_Task2
 # DB2 test data configuration
 ${CSV_DATA_TO_DB}                   ${CURDIR}/../../test_data/actual_expected_data/input_data/employees.csv    # Source CSV from input_data folder
 ${JSON_DATA_TO_DB}                  ${CURDIR}/../../test_data/actual_expected_data/input_data/employees.json    # Source JSON from input_data folder
-${ACTUAL_DATA_DIR}                  ${CURDIR}/../../test_data/actual_expected_data/actual_output    # Base directory for downloaded files from S3
+${ACTUAL_DATA_DIR}                  /app/test/suite/test_data/actual_expected_data/actual_output
 ${EXPECTED_OUTPUT_DIR}              ${CURDIR}/../../test_data/actual_expected_data/expected_output    # Expected output files for comparison
 
 @{notification_states}              Completed    Failed
