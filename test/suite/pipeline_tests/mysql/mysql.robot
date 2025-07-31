@@ -64,7 +64,7 @@ Upload Files With File Protocol
     ...    • File protocol URLs are correctly formed
     ...    • Upload operation succeeds using file:/// protocol
     ...    • Files are accessible in SnapLogic project space
-    [Tags]    jmsaccount    jmsjar    jms    regression
+    [Tags]    sql    regression
     [Template]    Upload File Using File Protocol Template
     file:///opt/snaplogic/test_data/accounts_jar_files/mysql/mysql-connector-j-9.3.0.jar    ${upload_destination_file_path}
 
