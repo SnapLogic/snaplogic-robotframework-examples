@@ -1,0 +1,179 @@
+✅ Found .env file at: .env
+🔧 Starting Robot Framework tests...
+docker compose --env-file .env -f docker/docker-compose.yml exec -w /app/test tools robot \
+	-G 2025-07-17-18-17   \
+	--timestampoutputs \
+	--variable PROJECT_SPACE_SETUP:False \
+	--variable TAGS:"ots" \
+	--include ots \
+	--outputdir robot_output suite/
+==============================================================================
+Suite                                                                         
+==============================================================================
+env_file_path is:/app/test/suite/../../.env
+📝 Auto-detected JSON primitive ORG_ADMIN_PASSWORD -> Sriven$PYT2025
+📝 Auto-detected JSON primitive ORACLE_DBPORT -> 1521
+📝 Auto-detected JSON primitive POSTGRES_DBPORT -> 5432
+📝 Auto-detected JSON primitive JMS_PORT -> 61613
+Loaded environment variables from: /app/test/suite/../../.env
+env file path(from init_file):/app/test/suite/../../.env
+Project space is: Sai_projectSpace
+Suite.Pipeline Tests                                                          
+==============================================================================
+Suite.Pipeline Tests.Oracle                                                   
+==============================================================================
+Suite.Pipeline Tests.Oracle.OTS QLIK DLY :: OTS QLIK DLY :: ETL Test Suite ...
+==============================================================================
+
+⏳ Waiting for Snaplex at path '/SL-CATRobotPOC/Sai_projectSpace/shared/sl-groundplex-automation' to become up and running...
+
+Start Time: 2025-07-17 12:47:20
+
+snapplex status URL is:https://cdn.elastic.snaplogic.com/api/1/rest/public/snaplex/SL-CATRobotPOC?plex_path=%2FSL-CATRobotPOC%2FSai_projectSpace%2Fshared%2Fsl-groundplex-automation
+
+
+Snaplex status is: alert
+
+
+✅ Snaplex at path '/SL-CATRobotPOC/Sai_projectSpace/shared/sl-groundplex-automation' is now up and running.
+
+End Time: 2025-07-17 12:47:22
+⏱️ Total time taken is: 0 minutes and 2 seconds
+Create Account :: Creates SnapLogic account using Oracle account p... 📄 Loading environment variables from: /app/test/suite/../../.env
+🧩 Rendering account JSON with env variables
+🔍 Account Name: oracle_acct, Org: SL-CATRobotPOC
+Project Space [Sai_projectSpace/shared] is used"
+✅ Account [oracle_acct] already exists. Skipping creation.
+| PASS |
+------------------------------------------------------------------------------
+Upload Files With File Protocol :: Upload files via file:/// URLs     
+Uploading 1 file(s) matching: test.expr from /opt/snaplogic/test_data/actual_expected_data/expression_libraries
+uploading /opt/snaplogic/test_data/actual_expected_data/expression_libraries/test.expr to SL-CATRobotPOC/Sai_projectSpace/Saikiran Pamula
+
+Uploading 1 file(s) matching: test.expr from /app/test/suite/test_data/actual_expected_data/expression_libraries
+uploading /app/test/suite/test_data/actual_expected_data/expression_libraries/test.expr to SL-CATRobotPOC/Sai_projectSpace/Saikiran Pamula/app_mount
+
+Uploading 1 file(s) matching: test.expr from /app/test/suite/pipeline_tests/oracle/../../test_data/actual_expected_data/expression_libraries
+uploading /app/test/suite/pipeline_tests/oracle/../../test_data/actual_expected_data/expression_libraries/test.expr to SL-CATRobotPOC/Sai_projectSpace/Saikiran Pamula/curdir
+| PASS |
+------------------------------------------------------------------------------
+Upload Files :: Data-driven uploads for multiple files or patterns    
+Uploading 1 file(s) matching: test.expr from /app/test/suite/pipeline_tests/oracle/../../test_data/actual_expected_data/expression_libraries
+uploading /app/test/suite/pipeline_tests/oracle/../../test_data/actual_expected_data/expression_libraries/test.expr to SL-CATRobotPOC/Sai_projectSpace/Saikiran Pamula
+| PASS |
+------------------------------------------------------------------------------
+Initialize Data And Validate Sources :: Creates tables, inserts du... | PASS |
+------------------------------------------------------------------------------
+Clean Target Table And Validate Empty :: Deletes data in target OT... | PASS |
+------------------------------------------------------------------------------
+Validate Join Query :: Validates join logic between ACCOUNTS and S... | FAIL |
+Could not get length of 'None'.
+------------------------------------------------------------------------------
+Import And Run Pipeline :: Imports pipeline, creates task, and run... Org Snode Id is:68655a7ebc154877cc3ef337
+...Import Pipeline URL is: https://cdn.elastic.snaplogic.com/api/2/68655a7ebc154877cc3ef337/rest/project/import/pipe/slp/SL-CATRobotPOC/Sai_projectSpace/Saikiran%20Pamula?duplicate_check=false
+...pipeline_name is....:OTS_QLIK_DLY_1752756442
+...pipeline_filePath is....:/app/test/suite/pipeline_tests/oracle/../../../../src/pipelines/OTS_QLIK_DLY.slp
+...pipeline:(OTS_QLIK_DLY_1752756442)_imported to projectpath...:SL-CATRobotPOC/Sai_projectSpace/Saikiran Pamula
+📌 Set suite variable: ${OTS_QLIK_DLY_1752756442_snode_id} = 6878f0e73262ff8adae30a8f
+📌 pipeline_snode_id is : 6878f0e73262ff8adae30a8f
+📌 FullTaskName is : OTS_QLIK_DLY_OTS_QLIK_DLY_Task_1752756442
+Current directory: /usr/local/lib/python3.12/site-packages/snaplogic_common_robot/snaplogic_apis_keywords
+payload is: /usr/local/lib/python3.12/site-packages/snaplogic_common_robot/snaplogic_apis_keywords/../test_data/triggered_task.json
+Plex_name is: sl-groundplex-automation
+runtime_path_id is: SL-CATRobotPOC/rt/sidekick/slgroundplexautomationdev
+Payload created for Creating Task: {'job_class': 'PipelineJob', 'job_name': 'OTS_QLIK_DLY_OTS_QLIK_DLY_Task_1752756442', 'note': 'Test-note-1', 'path_id': 'SL-CATRobotPOC/Sai_projectSpace/Saikiran Pamula', 'parameters': {'pipeline_snode_id': '6878f0e73262ff8adae30a8f', 'enabled': True, 'runtime_path_id': 'SL-CATRobotPOC/rt/sidekick/slgroundplexautomationdev', 'llfeed_token': 'JNqovrcPPz6Jkzy3HnkBVJrq4qgs63Yg', 'include_external_urls': True, 'execution_timeout': 1, 'notification': {'recipients': 'ots_notifications@yourorg.com', 'states': ['Completed', 'Failed']}, 'num_instances': 1, 'debug_next_runs': 5, 'pipeline_parameters': {'M_CURR_DATE': '2025-07-17', 'Oracle_Account': 'shared/oracle_acct'}}, 'name': 'OTS_QLIK_DLY_OTS_QLIK_DLY_Task_1752756442', 'org_path': '/SL-CATRobotPOC'}
+Create Task Api URL is:https://cdn.elastic.snaplogic.com/api/1/rest/slsched/job?duplicate_check=True
+
+==== ✅ CREATED_TASK- PAYLOAD ====
+{
+    "job_class": "PipelineJob",
+    "job_name": "OTS_QLIK_DLY_OTS_QLIK_DLY_Task_1752756442",
+    "note": "Test-note-1",
+    "path_id": "SL-CATRobotPOC/Sai_projectSpace/Saikiran Pamula",
+    "parameters": {
+        "pipeline_snode_id": "6878f0e73262ff8adae30a8f",
+        "enabled": true,
+        "runtime_path_id": "SL-CATRobotPOC/rt/sidekick/slgroundplexautomationdev",
+        "llfeed_token": "JNqovrcPPz6Jkzy3HnkBVJrq4qgs63Yg",
+        "include_external_urls": true,
+        "execution_timeout": 1,
+        "notification": {
+            "recipients": "ots_notifications@yourorg.com",
+            "states": [
+                "Completed",
+                "Failed"
+            ]
+        },
+        "num_instances": 1,
+        "debug_next_runs": 5,
+        "pipeline_parameters": {
+            "M_CURR_DATE": "2025-07-17",
+            "Oracle_Account": "shared/oracle_acct"
+        }
+    },
+    "name": "OTS_QLIK_DLY_OTS_QLIK_DLY_Task_1752756442",
+    "org_path": "/SL-CATRobotPOC"
+}
+📌 Set suite variable task_payoad_var: OTS_QLIK_DLY_OTS_QLIK_DLY_Task_1752756442_payload={'job_class': 'PipelineJob', 'job_name': 'OTS_QLIK_DLY_OTS_QLIK_DLY_Task_1752756442', 'note': 'Test-note-1', 'path_id': 'SL-CATRobotPOC/Sai_projectSpace/Saikiran Pamula', 'parameters': {'pipeline_snode_id': '6878f0e73262ff8adae30a8f', 'enabled': True, 'runtime_path_id': 'SL-CATRobotPOC/rt/sidekick/slgroundplexautomationdev', 'llfeed_token': 'JNqovrcPPz6Jkzy3HnkBVJrq4qgs63Yg', 'include_external_urls': True, 'execution_timeout': 1, 'notification': {'recipients': 'ots_notifications@yourorg.com', 'states': ['Completed', 'Failed']}, 'num_instances': 1, 'debug_next_runs': 5, 'pipeline_parameters': {'M_CURR_DATE': '2025-07-17', 'Oracle_Account': 'shared/oracle_acct'}}, 'name': 'OTS_QLIK_DLY_OTS_QLIK_DLY_Task_1752756442', 'org_path': '/SL-CATRobotPOC'}
+📌 Set suite variable task_snode_id: OTS_QLIK_DLY_OTS_QLIK_DLY_Task_1752756442_snodeid=6878f0eec46900ef086715df
+
+📝 Existing pipeline_parameters BEFORE any update:
+{
+    "M_CURR_DATE": "2025-07-17",
+    "Oracle_Account": "shared/oracle_acct"
+}
+
+==== ✅ UPDATED TASK PAYLOAD ====
+{
+    "job_class": "PipelineJob",
+    "job_name": "OTS_QLIK_DLY_OTS_QLIK_DLY_Task_1752756442",
+    "note": "Test-note-1",
+    "path_id": "SL-CATRobotPOC/Sai_projectSpace/Saikiran Pamula",
+    "parameters": {
+        "pipeline_snode_id": "6878f0e73262ff8adae30a8f",
+        "enabled": true,
+        "runtime_path_id": "SL-CATRobotPOC/rt/sidekick/slgroundplexautomationdev",
+        "llfeed_token": "JNqovrcPPz6Jkzy3HnkBVJrq4qgs63Yg",
+        "include_external_urls": true,
+        "execution_timeout": 1,
+        "notification": {
+            "recipients": "ots_notifications@yourorg.com",
+            "states": [
+                "Completed",
+                "Failed"
+            ]
+        },
+        "num_instances": 1,
+        "debug_next_runs": 5,
+        "pipeline_parameters": {
+            "M_CURR_DATE": "2025-07-17",
+            "Oracle_Account": "shared/oracle_acct"
+        }
+    },
+    "name": "OTS_QLIK_DLY_OTS_QLIK_DLY_Task_1752756442",
+    "org_path": "/SL-CATRobotPOC"
+}
+| FAIL |
+Keyword 'Run Triggered Task Api' failed after retrying for 30 seconds. The last error was: Failed to run task [OTS_QLIK_DLY_OTS_QLIK_DLY_Task_1752756442]: Failed to running task [OTS_QLIK_DLY_OTS_QLIK_DLY_Task_1752756442]: HTTP 500 error
+------------------------------------------------------------------------------
+Validate Pipeline Output :: Validates final record count and optio... | FAIL |
+Record count mismatch in OTS_DAILY: 0 != 100
+------------------------------------------------------------------------------
+OTS Pipeline End-to-End :: Complete regression test from data init... | FAIL |
+No keyword with name 'Initialize Data And Validate Sources' found.
+------------------------------------------------------------------------------
+Suite.Pipeline Tests.Oracle.OTS QLIK DLY :: OTS QLIK DLY :: ETL Te... | FAIL |
+9 tests, 5 passed, 4 failed
+==============================================================================
+Suite.Pipeline Tests.Oracle                                           | FAIL |
+9 tests, 5 passed, 4 failed
+==============================================================================
+Suite.Pipeline Tests                                                  | FAIL |
+9 tests, 5 passed, 4 failed
+==============================================================================
+Suite                                                                 | FAIL |
+9 tests, 5 passed, 4 failed
+==============================================================================
+Output:  /app/test/robot_output/output-20250717-124718.xml
+Log:     /app/test/robot_output/log-20250717-124718.html
+Report:  /app/test/robot_output/report-20250717-124718.html
