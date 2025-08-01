@@ -1,0 +1,34 @@
+{
+  "account": {
+    "oracle": {
+      "account": "../shared/oracle_acct"
+    },
+    "postgres": {
+      "account": "../Saikiran_Dev_Test/postgres_acc"
+    },
+    "s3": {
+      "name": "s3_account",
+      "endpoint": "http://minio:9000",
+      "access_key": "minioadmin",
+      "secret_key": "minioadmin",
+      "region": "us-east-1"
+    },
+    "jms": {
+      "name": "jms_account",
+      "host": "activemq",
+      "port": "61613",
+      "username": "admin",
+      "password": "admin",
+      "broker_url": "tcp://activemq:61616",
+      "enhanced_features": true
+    }
+  },
+  "SL_Admin": {
+    "account": "../shared/SL_Admin"
+  },
+  "functions": {
+    "getOrgName": "function() { return pipe.projectPath.split('/')[1].toUpperCase(); }",
+    "getEnv": "function() { return this.getOrgName().split('_')[1]; }",
+    "getEnvValue": "function(key) { return this.get(key).get(this.getEnv()); }"
+  }
+}
