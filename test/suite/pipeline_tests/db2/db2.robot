@@ -13,6 +13,7 @@ Library             DependencyLibrary
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource    # SnapLogic API keywords from installed package
 Resource            ../../test_data/queries/db2_queries.resource    # DB2 queries
 Resource            ../../../resources/files.resource    # CSV/JSON file operations
+Library             ${CURDIR}/../../../resources/db2/db2_connection.py   
 
 Suite Setup         Check connections    # Check if the connection to the DB2 database is successful and snaplex is up
 
@@ -63,14 +64,14 @@ Upload Files With File Protocol
     ...    • File protocol URLs are correctly formed
     ...    • Upload operation succeeds using file:/// protocol
     ...    • Files are accessible in SnapLogic project space
-    [Tags]    db2    db2jar    regression
+    [Tags]    db23    db2jar    regression
     [Template]    Upload File Using File Protocol Template
     file:///opt/snaplogic/test_data/accounts_jar_files/db2/db2jcc4.jar    ${upload_destination_file_path}
 
 Create Account
     [Documentation]    Creates a DB2 account in the project space using the provided payload file.
     ...    "account_payload_path"    value as assigned to global variable    in __init__.robot file
-    [Tags]    db2_file    regression
+    [Tags]    db23    regression
     [Template]    Create Account From Template
     ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
 
@@ -88,7 +89,7 @@ Create table for DB Operations
     ...    • Table structure matches expected schema (id, name, role, salary columns)
     ...    • Database connection is established and functional
     ...    • No SQL syntax or permission errors occur
-    [Tags]    db2
+    [Tags]    db23
     [Template]    Execute SQL String
     ${DROP_TABLE_EMPLOYEES}
     ${CREATE_TABLE_EMPLOYEES}
@@ -218,14 +219,14 @@ Initialize Variables
     ${unique_id}=    Get Unique Id
     Set Suite Variable    ${unique_id}    ${unique_id}
 
+
 Connect to DB2 Database
     [Documentation]    Establishes connection to DB2 database using ibm_db
     [Arguments]    ${dbname}    ${dbuser}    ${dbpass}    ${dbhost}    ${dbport}
-    # Build connection string for DB2
-    ${db_connect_string}=    Set Variable
-    ...    DATABASE=${dbname};HOSTNAME=${dbhost};PORT=${dbport};PROTOCOL=TCPIP;UID=${dbuser};PWD=${dbpass}
-    # Despite deprecation warning, this is the only way that works reliably with ibm_db
-    Connect To Database Using Custom Params    ibm_db    ${db_connect_string}
+    
+    # The keyword name from Python class method
+    DB2Connection.Connect Db2 To Database Library    ${dbname}    ${dbhost}    ${dbport}    ${dbuser}    ${dbpass}
+    
     # Verify connection
     ${result}=    Query    SELECT 1 FROM SYSIBM.SYSDUMMY1
     Should Be Equal As Integers    ${result[0][0]}    1

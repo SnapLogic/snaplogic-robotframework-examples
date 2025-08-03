@@ -8,9 +8,25 @@ RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     unixodbc-dev \
+    wget \
+    libxml2 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the requirements file
+# Install IBM DB2 CLI driver (required for ibm_db) - only for x86_64
+RUN if [ "$(uname -m)" != "aarch64" ]; then \
+    mkdir -p /opt/ibm && \
+    cd /opt/ibm && \
+    wget https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli/linuxx64_odbc_cli.tar.gz && \
+    tar -xzf linuxx64_odbc_cli.tar.gz && \
+    rm linuxx64_odbc_cli.tar.gz; \
+    fi
+
+# Set environment variables for IBM DB2
+ENV IBM_DB_HOME=/opt/ibm/clidriver
+ENV PATH=$PATH:$IBM_DB_HOME/bin
+ENV LD_LIBRARY_PATH=$IBM_DB_HOME/lib
+
+# Copy the requirements file from the correct location
 COPY requirements.txt . 
 
 # Install dependencies, excluding ibm_db on ARM64
