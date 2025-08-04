@@ -455,8 +455,16 @@ Load CSV To Database Table
     TRY
         # Truncate table if requested
         IF    ${truncate_table}
-            Execute SQL String    TRUNCATE TABLE ${table_name}
-            Log    🗑️ Truncated table: ${table_name}
+            # For DB2, we need to use IMMEDIATE clause
+            TRY
+                # Try standard TRUNCATE first
+                Execute SQL String    TRUNCATE TABLE ${table_name}
+                Log    🗑️ Truncated table: ${table_name} (standard syntax)
+            EXCEPT
+                # If it fails, try DB2 syntax with IMMEDIATE
+                Execute SQL String    TRUNCATE TABLE ${table_name} IMMEDIATE
+                Log    🗑️ Truncated table: ${table_name} (DB2 syntax with IMMEDIATE)
+            END
         END
 
         # Read CSV file as associative data (dictionary format)
@@ -493,8 +501,16 @@ Load JSON To Database Table
     TRY
         # Truncate table if requested
         IF    ${truncate_table}
-            Execute SQL String    TRUNCATE TABLE ${table_name}
-            Log    🗑️ Truncated table: ${table_name}
+            # For DB2, we need to use IMMEDIATE clause
+            TRY
+                # Try standard TRUNCATE first
+                Execute SQL String    TRUNCATE TABLE ${table_name}
+                Log    🗑️ Truncated table: ${table_name} (standard syntax)
+            EXCEPT
+                # If it fails, try DB2 syntax with IMMEDIATE
+                Execute SQL String    TRUNCATE TABLE ${table_name} IMMEDIATE
+                Log    🗑️ Truncated table: ${table_name} (DB2 syntax with IMMEDIATE)
+            END
         END
 
         # Use JSONLibrary to load JSON file - REFACTORED
@@ -525,13 +541,23 @@ Get Table Columns
     [Documentation]    Gets column names from database table
     [Arguments]    ${table_name}
 
-    ${query}=    Set Variable
-    ...    SELECT column_name FROM information_schema.columns WHERE table_name = '${table_name}' AND column_name != 'id' ORDER BY ordinal_position
-    ${result}=    Query    ${query}
-
+    # For DB2, we need to use SYSCAT.COLUMNS instead of information_schema
+    TRY
+        # Try DB2 specific query first
+        ${query}=    Set Variable
+        ...    SELECT COLNAME FROM SYSCAT.COLUMNS WHERE TABNAME = UPPER('${table_name}') AND UPPER(COLNAME) != 'ID' ORDER BY COLNO
+        ${result}=    Query    ${query}
+    EXCEPT
+        # Fall back to standard query for other databases
+        ${query}=    Set Variable
+        ...    SELECT column_name FROM information_schema.columns WHERE table_name = '${table_name}' AND column_name != 'id' ORDER BY ordinal_position
+        ${result}=    Query    ${query}
+    END
+    
     ${columns}=    Create List
     FOR    ${row}    IN    @{result}
         ${column}=    Get From List    ${row}    0
+        # Keep column names as returned by database (DB2 returns uppercase)
         Append To List    ${columns}    ${column}
     END
 
@@ -543,16 +569,23 @@ Build Insert SQL From Dict
 
     ${columns}=    Create List
     ${values}=    Create List
+    
+    Log    Building INSERT SQL for table: ${table_name}
+    Log    Row data: ${row_dict}
+    Log    Table columns: ${table_columns}
 
     # Only include columns that exist in both CSV and table
     FOR    ${csv_column}    ${csv_value}    IN    &{row_dict}
-        ${clean_csv_column}=    Convert To Lower Case    ${csv_column}
+        # For case-insensitive comparison
+        ${csv_column_upper}=    Convert To Upper Case    ${csv_column}
 
         FOR    ${table_column}    IN    @{table_columns}
-            ${clean_table_column}=    Convert To Lower Case    ${table_column}
+            # Compare in uppercase for case-insensitive match
+            ${table_column_upper}=    Convert To Upper Case    ${table_column}
 
-            IF    '${clean_csv_column}' == '${clean_table_column}'
+            IF    '${csv_column_upper}' == '${table_column_upper}'
                 ${escaped_value}=    Set Variable    '${csv_value}'
+                # Use the actual table column name (preserves case from DB)
                 Append To List    ${columns}    ${table_column}
                 Append To List    ${values}    ${escaped_value}
                 BREAK
@@ -563,6 +596,8 @@ Build Insert SQL From Dict
     ${columns_str}=    Evaluate    ', '.join($columns)
     ${values_str}=    Evaluate    ', '.join($values)
     ${sql}=    Set Variable    INSERT INTO ${table_name} (${columns_str}) VALUES (${values_str})
+    
+    Log    Generated SQL: ${sql}
 
     RETURN    ${sql}
 

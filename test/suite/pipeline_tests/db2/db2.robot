@@ -64,14 +64,14 @@ Upload Files With File Protocol
     ...    • File protocol URLs are correctly formed
     ...    • Upload operation succeeds using file:/// protocol
     ...    • Files are accessible in SnapLogic project space
-    [Tags]    db23    db2jar    regression
+    [Tags]    db2    db2jar    regression
     [Template]    Upload File Using File Protocol Template
     file:///opt/snaplogic/test_data/accounts_jar_files/db2/db2jcc4.jar    ${upload_destination_file_path}
 
 Create Account
     [Documentation]    Creates a DB2 account in the project space using the provided payload file.
     ...    "account_payload_path"    value as assigned to global variable    in __init__.robot file
-    [Tags]    db23    regression
+    [Tags]    db2    regression
     [Template]    Create Account From Template
     ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
 
@@ -89,7 +89,7 @@ Create table for DB Operations
     ...    • Table structure matches expected schema (id, name, role, salary columns)
     ...    • Database connection is established and functional
     ...    • No SQL syntax or permission errors occur
-    [Tags]    db23
+    [Tags]    db2
     [Template]    Execute SQL String
     ${DROP_TABLE_EMPLOYEES}
     ${CREATE_TABLE_EMPLOYEES}
@@ -207,13 +207,13 @@ Compare Actual vs Expected CSV Output
 Check connections
     [Documentation]    Verifies DB2 database connection and Snaplex availability
     Wait Until Plex Status Is Up    /${ORG_NAME}/${GROUNDPLEX_LOCATION_PATH}/${GROUNDPLEX_NAME}
-    
+
     # Debug: Log the DB2 connection parameters
     Log    DB2 Host: ${DB2_HOST}    console=True
     Log    DB2 Port: ${DB2_DBPORT}    console=True
     Log    DB2 Database: ${DB2_DBNAME}    console=True
     Log    DB2 User: ${DB2_DBUSER}    console=True
-    
+
     Connect to DB2 Database
     ...    ${DB2_DBNAME}
     ...    ${DB2_DBUSER}
