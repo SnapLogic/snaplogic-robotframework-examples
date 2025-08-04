@@ -13,7 +13,7 @@ Library             DependencyLibrary
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource    # SnapLogic API keywords from installed package
 Resource            ../../test_data/queries/db2_queries.resource    # DB2 queries
 Resource            ../../../resources/files.resource    # CSV/JSON file operations
-Library             ${CURDIR}/../../../resources/db2/db2_connection.py   
+Library             ../../../resources/db2/db2_connection.py
 
 Suite Setup         Check connections    # Check if the connection to the DB2 database is successful and snaplex is up
 
@@ -219,14 +219,13 @@ Initialize Variables
     ${unique_id}=    Get Unique Id
     Set Suite Variable    ${unique_id}    ${unique_id}
 
-
 Connect to DB2 Database
     [Documentation]    Establishes connection to DB2 database using ibm_db
     [Arguments]    ${dbname}    ${dbuser}    ${dbpass}    ${dbhost}    ${dbport}
-    
+
     # The keyword name from Python class method
-    DB2Connection.Connect Db2 To Database Library    ${dbname}    ${dbhost}    ${dbport}    ${dbuser}    ${dbpass}
-    
+    Connect Db2 To Database Library    ${dbname}    ${dbhost}    ${dbport}    ${dbuser}    ${dbpass}
+
     # Verify connection
     ${result}=    Query    SELECT 1 FROM SYSIBM.SYSDUMMY1
     Should Be Equal As Integers    ${result[0][0]}    1
