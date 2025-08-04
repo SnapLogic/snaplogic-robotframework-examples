@@ -207,6 +207,13 @@ Compare Actual vs Expected CSV Output
 Check connections
     [Documentation]    Verifies DB2 database connection and Snaplex availability
     Wait Until Plex Status Is Up    /${ORG_NAME}/${GROUNDPLEX_LOCATION_PATH}/${GROUNDPLEX_NAME}
+    
+    # Debug: Log the DB2 connection parameters
+    Log    DB2 Host: ${DB2_HOST}    console=True
+    Log    DB2 Port: ${DB2_DBPORT}    console=True
+    Log    DB2 Database: ${DB2_DBNAME}    console=True
+    Log    DB2 User: ${DB2_DBUSER}    console=True
+    
     Connect to DB2 Database
     ...    ${DB2_DBNAME}
     ...    ${DB2_DBUSER}
