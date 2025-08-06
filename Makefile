@@ -540,7 +540,7 @@ stop-s3-emulator:
 run-s3-demo:
 	@echo "Running minio_demo.py script..."
 	python3 test/suite/test_data/python_helper_files/minio_demo.py \
-		--endpoint http://localhost:9000 \
+		--endpoint http://localhost:9010 \
 		--access-key minioadmin \
 		--secret-key minioadmin \
 		--bucket demo-bucket2

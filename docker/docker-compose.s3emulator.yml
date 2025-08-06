@@ -6,13 +6,14 @@ services:
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
-      MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
-      MINIO_SERVER_URL: http://localhost:9000
+      # Remove or comment out these as they can cause issues
+      # MINIO_BROWSER_REDIRECT_URL: http://localhost:9011
+      # MINIO_SERVER_URL: http://localhost:9010
     volumes:
       - minio_data:/data
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9010:9000"  # Changed from 9000 to 9010 to avoid conflict
+      - "9011:9001"  # Changed from 9001 to 9011 for consistency
     profiles: [ minio , minio-dev ]
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
