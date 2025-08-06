@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salesforce Mock vs Real - Visual Comparison</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #0070d2;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .real-sf {
+            border-top: 4px solid #00a1e0;
+        }
+
+        .mock-sf {
+            border-top: 4px solid #7dd420;
+        }
+
+        .icon {
+            font-size: 2em;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+
+        .feature-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+
+        .check {
+            color: #7dd420;
+            font-weight: bold;
+        }
+
+        .cross {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        .warning {
+            color: #ffb000;
+            font-weight: bold;
+        }
+
+        .architecture-section {
+            margin: 50px 0;
+        }
+
+        .architecture-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .architecture-box {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .architecture-diagram {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        .flow-section {
+            margin: 50px 0;
+        }
+
+        .flow-container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .flow-steps {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .flow-step {
+            flex: 1;
+            min-width: 200px;
+            background: #f0f7ff;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .flow-step.mock {
+            background: #f0fff4;
+        }
+
+        .flow-step h4 {
+            margin: 0 0 10px 0;
+            color: #0070d2;
+        }
+
+        .arrow {
+            position: absolute;
+            right: -25px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 24px;
+            color: #ccc;
+        }
+
+        .metrics-section {
+            margin: 50px 0;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 3em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .metric-value.real {
+            color: #00a1e0;
+        }
+
+        .metric-value.mock {
+            color: #7dd420;
+        }
+
+        .comparison-table {
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin: 30px 0;
+        }
+
+        .comparison-table th {
+            background: #0070d2;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .comparison-table td {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .legend {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 30px 0;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        @media (max-width: 768px) {
+
+            .comparison-grid,
+            .architecture-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .flow-steps {
+                flex-direction: column;
+            }
+
+            .arrow {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎭 Salesforce: Real vs Mock Server Comparison</h1>
+
+        <!-- Main Feature Comparison -->
+        <div class="comparison-grid">
+            <div class="card real-sf">
+                <h2><span class="icon">☁️</span> Real Salesforce</h2>
+                <ul class="feature-list">
+                    <li><span class="check">✓</span> Full authentication & security</li>
+                    <li><span class="check">✓</span> Persistent data storage</li>
+                    <li><span class="check">✓</span> Business logic & validation</li>
+                    <li><span class="check">✓</span> Triggers & workflows</li>
+                    <li><span class="check">✓</span> Multi-user support</li>
+                    <li><span class="check">✓</span> API limits enforced</li>
+                    <li><span class="check">✓</span> Real-time integrations</li>
+                    <li><span class="cross">✗</span> Requires licenses ($$$)</li>
+                    <li><span class="cross">✗</span> Internet required</li>
+                    <li><span class="cross">✗</span> Setup complexity</li>
+                </ul>
+            </div>
+
+            <div class="card mock-sf">
+                <h2><span class="icon">🎪</span> Mock Server</h2>
+                <ul class="feature-list">
+                    <li><span class="cross">✗</span> No real authentication</li>
+                    <li><span class="cross">✗</span> No data persistence</li>
+                    <li><span class="cross">✗</span> No validation rules</li>
+                    <li><span class="cross">✗</span> No triggers/workflows</li>
+                    <li><span class="cross">✗</span> Single user only</li>
+                    <li><span class="check">✓</span> No API limits</li>
+                    <li><span class="cross">✗</span> No integrations</li>
+                    <li><span class="check">✓</span> Completely free</li>
+                    <li><span class="check">✓</span> Works offline</li>
+                    <li><span class="check">✓</span> Simple setup</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Architecture Comparison -->
+        <div class="architecture-section">
+            <h2 style="text-align: center;">🏗️ Architecture Comparison</h2>
+            <div class="architecture-grid">
+                <div class="architecture-box real-sf">
+                    <h3>Real Salesforce Architecture</h3>
+                    <div class="architecture-diagram">┌─────────────────────┐
+                        │ Your App │
+                        └──────────┬──────────┘
+                        │ HTTPS/TLS
+                        ▼
+                        ┌─────────────────────┐
+                        │ Load Balancers │
+                        ├─────────────────────┤
+                        │ App Servers (Pods) │
+                        ├─────────────────────┤
+                        │ Oracle Databases │
+                        ├─────────────────────┤
+                        │ File Storage │
+                        ├─────────────────────┤
+                        │ Search Index │
+                        ├─────────────────────┤
+                        │ Integration Layer │
+                        └─────────────────────┘</div>
+                </div>
+
+                <div class="architecture-box mock-sf">
+                    <h3>Mock Server Architecture</h3>
+                    <div class="architecture-diagram">┌─────────────────────┐
+                        │ Your App │
+                        └──────────┬──────────┘
+                        │ HTTP
+                        ▼
+                        ┌─────────────────────┐
+                        │ Docker Container │
+                        ├─────────────────────┤
+                        │ WireMock Server │
+                        ├─────────────────────┤
+                        │ JSON Mappings │
+                        └─────────────────────┘
+
+
+
+
+                        Simple & Lightweight!</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Authentication Flow -->
+        <div class="flow-section">
+            <h2 style="text-align: center;">🔐 Authentication Flow</h2>
+
+            <div class="flow-container">
+                <h3>Real Salesforce</h3>
+                <div class="flow-steps">
+                    <div class="flow-step">
+                        <h4>1. Login Request</h4>
+                        <p>Username + Password + Security Token</p>
+                        <span class="arrow">→</span>
+                    </div>
+                    <div class="flow-step">
+                        <h4>2. Validation</h4>
+                        <p>Check credentials, IP, permissions</p>
+                        <span class="arrow">→</span>
+                    </div>
+                    <div class="flow-step">
+                        <h4>3. Session Token</h4>
+                        <p>Valid for 2 hours, then expires</p>
+                        <span class="arrow">→</span>
+                    </div>
+                    <div class="flow-step">
+                        <h4>4. API Access</h4>
+                        <p>Token required for all calls</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flow-container">
+                <h3>Mock Server</h3>
+                <div class="flow-steps">
+                    <div class="flow-step mock">
+                        <h4>1. Login Request</h4>
+                        <p>ANY username/password</p>
+                        <span class="arrow">→</span>
+                    </div>
+                    <div class="flow-step mock">
+                        <h4>2. No Validation</h4>
+                        <p>Always accepts</p>
+                        <span class="arrow">→</span>
+                    </div>
+                    <div class="flow-step mock">
+                        <h4>3. Mock Token</h4>
+                        <p>Never expires</p>
+                        <span class="arrow">→</span>
+                    </div>
+                    <div class="flow-step mock">
+                        <h4>4. API Access</h4>
+                        <p>Token optional</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="metrics-section">
+            <h2 style="text-align: center;">📊 Performance & Limits Comparison</h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <h3>API Calls/Day</h3>
+                    <div class="metric-value real">15,000</div>
+                    <p>Real Salesforce (Developer Edition)</p>
+                </div>
+                <div class="metric-card">
+                    <h3>API Calls/Day</h3>
+                    <div class="metric-value mock">∞</div>
+                    <p>Mock Server</p>
+                </div>
+                <div class="metric-card">
+                    <h3>Response Time</h3>
+                    <div class="metric-value real">100-500ms</div>
+                    <p>Real Salesforce (varies)</p>
+                </div>
+                <div class="metric-card">
+                    <h3>Response Time</h3>
+                    <div class="metric-value mock">
+                        <10ms< /div>
+                            <p>Mock Server (local)</p>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Storage</h3>
+                        <div class="metric-value real">5GB+</div>
+                        <p>Real Salesforce</p>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Storage</h3>
+                        <div class="metric-value mock">0GB</div>
+                        <p>Mock Server (stateless)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Comparison Table -->
+            <h2 style="text-align: center;">📋 Detailed Feature Comparison</h2>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Real Salesforce</th>
+                        <th>Mock Server</th>
+                        <th>Use Case</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Authentication</strong></td>
+                        <td>OAuth 2.0, SAML, JWT</td>
+                        <td>Accepts any credentials</td>
+                        <td>Mock for development, Real for security testing</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Data Operations</strong></td>
+                        <td>CRUD with full validation</td>
+                        <td>Returns static responses</td>
+                        <td>Mock for unit tests, Real for integration tests</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Query Language</strong></td>
+                        <td>Full SOQL/SOSL support</td>
+                        <td>Ignores query syntax</td>
+                        <td>Mock for basic queries, Real for complex reports</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Bulk Operations</strong></td>
+                        <td>Up to 10,000 records</td>
+                        <td>Returns mock success</td>
+                        <td>Always test bulk ops with Real</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Triggers/Workflows</strong></td>
+                        <td>Full automation support</td>
+                        <td>None</td>
+                        <td>Real required for process testing</td>
+                    </tr>
+                    <tr>
+                        <td><strong>API Limits</strong></td>
+                        <td>Enforced (daily/concurrent)</td>
+                        <td>Unlimited</td>
+                        <td>Mock for load testing prep</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cost</strong></td>
+                        <td>$25-300/user/month</td>
+                        <td>Free</td>
+                        <td>Mock for cost-sensitive environments</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Setup Time</strong></td>
+                        <td>Hours to days</td>
+                        <td>Minutes</td>
+                        <td>Mock for quick prototypes</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Internet Required</strong></td>
+                        <td>Yes</td>
+                        <td>No</td>
+                        <td>Mock for offline development</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Multi-user</strong></td>
+                        <td>Yes, with permissions</td>
+                        <td>No</td>
+                        <td>Real for UAT and collaboration</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- When to Use What -->
+            <div class="flow-section">
+                <h2 style="text-align: center;">🎯 Decision Matrix: When to Use What?</h2>
+                <div class="comparison-grid">
+                    <div class="card">
+                        <h3 style="color: #00a1e0;">Use Real Salesforce When:</h3>
+                        <ul>
+                            <li>🚀 Going to production</li>
+                            <li>🧪 Integration testing</li>
+                            <li>👥 Testing multi-user scenarios</li>
+                            <li>⚡ Testing performance limits</li>
+                            <li>🔒 Security validation</li>
+                            <li>📊 Working with real data volumes</li>
+                            <li>🔄 Testing automation (triggers/flows)</li>
+                            <li>✅ User acceptance testing</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <h3 style="color: #7dd420;">Use Mock Server When:</h3>
+                        <ul>
+                            <li>💻 Local development</li>
+                            <li>🧩 Unit testing</li>
+                            <li>🚦 CI/CD pipelines</li>
+                            <li>📚 Learning/training</li>
+                            <li>🎪 Demos and POCs</li>
+                            <li>💰 Budget constraints</li>
+                            <li>✈️ Offline development</li>
+                            <li>🔧 Rapid prototyping</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Legend -->
+            <div class="legend">
+                <div class="legend-item">
+                    <span class="check">✓</span> Available/Supported
+                </div>
+                <div class="legend-item">
+                    <span class="cross">✗</span> Not Available
+                </div>
+                <div class="legend-item">
+                    <span class="warning">⚠</span> Limited Support
+                </div>
+                <div class="legend-item">
+                    <span style="color: #00a1e0;">■</span> Real Salesforce
+                </div>
+                <div class="legend-item">
+                    <span style="color: #7dd420;">■</span> Mock Server
+                </div>
+            </div>
+
+            <!-- Summary -->
+            <div class="card"
+                style="margin-top: 50px; text-align: center; background: linear-gradient(135deg, #0070d2 0%, #00a1e0 100%); color: white;">
+                <h2 style="color: white;">💡 Key Takeaway</h2>
+                <p style="font-size: 1.2em; margin: 20px 0;">
+                    <strong>Mock Server</strong> = Fast, Free, Perfect for Development & Testing<br>
+                    <strong>Real Salesforce</strong> = Complete, Secure, Required for Production
+                </p>
+                <p style="font-size: 1.1em;">
+                    Use Mock for speed, use Real for accuracy!
+                </p>
+            </div>
+        </div>
+</body>
+
+</html>

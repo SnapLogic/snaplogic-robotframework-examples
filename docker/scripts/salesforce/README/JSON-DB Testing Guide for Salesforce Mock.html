@@ -1,0 +1,274 @@
+# JSON-DB Testing Guide for Salesforce Mock
+
+This guide shows you how to test JSON-DB functionality alongside WireMock for your Salesforce mock environment.
+
+## 🚀 Quick Start
+
+### 1. Restart Services to Load New Mappings
+```bash
+# Restart WireMock to load the new mappings
+docker restart salesforce-api-mock
+
+# Verify both services are running
+docker ps | grep salesforce
+```
+
+### 2. Verify JSON-DB is Accessible
+```bash
+# Test JSON-DB directly
+curl http://localhost:8082/accounts | jq .
+
+# You should see 3 test accounts
+```
+
+## 📊 Understanding the Architecture
+
+```
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│ SnapLogic │────▶│ WireMock │ │ JSON-DB │
+│ Port: 8089 │ │ Port: 8089 │────▶│ Port: 8082 │
+└─────────────────┘ └─────────────────┘ └─────────────────┘
+▲ ▲
+│ │
+Salesforce API Direct Access
+Simulation (For Testing)
+```
+
+## 🧪 Test Scenarios
+
+### Test 1: Direct JSON-DB CRUD Operations
+
+#### 1.1 READ - Get All Accounts
+```bash
+# Get all accounts from JSON-DB
+curl http://localhost:8082/accounts | jq .
+```
+
+#### 1.2 CREATE - Add New Account
+```bash
+# Create a new account in JSON-DB
+curl -X POST http://localhost:8082/accounts \
+-H "Content-Type: application/json" \
+-d '{
+"Name": "Test Company Created at '"$(date)"'",
+"Type": "Prospect",
+"Industry": "Healthcare",
+"Phone": "(555) 999-8888",
+"Website": "https://www.testcompany.com",
+"AnnualRevenue": 25000000,
+"NumberOfEmployees": 150
+}' | jq .
+
+# Save the ID from the response for next steps
+```
+
+#### 1.3 READ - Get Specific Account
+```bash
+# Replace [ID] with the ID from create response
+curl http://localhost:8082/accounts/[ID] | jq .
+```
+
+#### 1.4 UPDATE - Modify Account
+```bash
+# Update the account (replace [ID])
+curl -X PATCH http://localhost:8082/accounts/[ID] \
+-H "Content-Type: application/json" \
+-d '{
+"AnnualRevenue": 30000000,
+"Type": "Customer",
+"LastModifiedDate": "'"$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")"'"
+}' | jq .
+```
+
+#### 1.5 DELETE - Remove Account
+```bash
+# Delete the account (replace [ID])
+curl -X DELETE http://localhost:8082/accounts/[ID]
+
+# Verify it's gone
+curl http://localhost:8082/accounts | jq '. | length'
+```
+
+### Test 2: Query Operations with JSON-DB
+
+#### 2.1 Filter by Type
+```bash
+# Get all Customer accounts
+curl "http://localhost:8082/accounts?Type=Customer" | jq .
+```
+
+#### 2.2 Filter by Multiple Fields
+```bash
+# Get Technology Partners
+curl "http://localhost:8082/accounts?Type=Partner&Industry=Technology" | jq .
+```
+
+#### 2.3 Sorting
+```bash
+# Sort by Annual Revenue
+curl "http://localhost:8082/accounts?_sort=AnnualRevenue&_order=desc" | jq .
+```
+
+#### 2.4 Pagination
+```bash
+# Get first 2 accounts
+curl "http://localhost:8082/accounts?_limit=2&_page=1" | jq .
+```
+
+### Test 3: Related Data Operations
+
+#### 3.1 Get Contacts for an Account
+```bash
+# Get all contacts for Acme Corporation
+curl "http://localhost:8082/contacts?AccountId=001000000000001" | jq .
+```
+
+#### 3.2 Create Related Contact
+```bash
+# Create a new contact
+curl -X POST http://localhost:8082/contacts \
+-H "Content-Type: application/json" \
+-d '{
+"FirstName": "Test",
+"LastName": "Contact",
+"Email": "test.contact@acme.com",
+"Phone": "(555) 111-2222",
+"AccountId": "001000000000001",
+"Title": "Test Engineer"
+}' | jq .
+```
+
+### Test 4: WireMock + JSON-DB Integration
+
+#### 4.1 Test Dynamic Responses
+```bash
+# Query through WireMock (notice the dynamic date in response)
+curl -X GET "http://localhost:8089/services/data/v52.0/query/?q=SELECT+Name+FROM+Account+WHERE+Type='Customer'" \
+-H "Authorization: Bearer mock-token" | jq .
+```
+
+#### 4.2 Test OAuth Flow
+```bash
+# Get OAuth token from WireMock
+TOKEN=$(curl -X POST http://localhost:8089/services/oauth2/token \
+-d "grant_type=password" \
+| jq -r .access_token)
+
+echo "Token: $TOKEN"
+```
+
+## 🔄 Advanced Testing: Bulk Operations
+
+### Create Multiple Accounts
+```bash
+# Create 5 test accounts
+for i in {1..5}; do
+curl -X POST http://localhost:8082/accounts \
+-H "Content-Type: application/json" \
+-d '{
+"Name": "Bulk Test Company '"$i"'",
+"Type": "Prospect",
+"Industry": "Technology",
+"AnnualRevenue": '"$((RANDOM * 1000000))"'
+}' | jq -c '{id: .id, name: .Name}'
+done
+```
+
+### Query with Complex Filters
+```bash
+# Get high-value accounts
+curl "http://localhost:8082/accounts?AnnualRevenue_gte=50000000" | jq '.[] | {Name, AnnualRevenue}'
+```
+
+## 📋 SnapLogic Pipeline Testing
+
+### Step 1: Create a Test Pipeline
+
+1. **Create New Pipeline** in SnapLogic Designer
+2. **Add Salesforce Read Snap**:
+- Account: `sfdc_acct` (your mock account)
+- Object Type: `Account`
+- SOQL Query: `SELECT Id, Name, Type, AnnualRevenue FROM Account`
+
+3. **Add Mapper Snap** to transform data
+4. **Add JSON Formatter** to see results
+
+### Step 2: Test CRUD Pipeline
+
+Create a pipeline with these snaps in sequence:
+
+1. **Sequence Snap** → Generate test data
+2. **Mapper Snap** → Format for Salesforce
+3. **Salesforce Create** → Create account
+4. **Salesforce Read** → Read it back
+5. **Salesforce Update** → Modify it
+6. **Salesforce Delete** → Remove it
+
+## 🐛 Troubleshooting
+
+### Issue: Changes Don't Persist
+**Solution**: JSON-DB stores data in memory. Restart loses data.
+```bash
+# Backup data before restart
+curl http://localhost:8082/db > backup.json
+
+# After restart, restore (manual process)
+```
+
+### Issue: 404 Errors
+**Solution**: Check the exact URL format
+```bash
+# Correct
+curl http://localhost:8082/accounts
+
+# Wrong (no trailing slash)
+curl http://localhost:8082/accounts/
+```
+
+### Issue: WireMock Not Using JSON-DB
+**Current Setup**: WireMock and JSON-DB are separate. They don't automatically sync.
+**Solution**: Use JSON-DB directly for stateful testing, WireMock for API simulation.
+
+## 🎯 Best Practices
+
+1. **Use WireMock for**:
+- OAuth flows
+- API structure testing
+- Error simulation
+- Static responses
+
+2. **Use JSON-DB for**:
+- CRUD testing
+- Data persistence testing
+- Relationship testing
+- Query testing
+
+3. **Combine Both for**:
+- Full integration testing
+- Complex workflows
+- Realistic simulations
+
+## 📊 Monitoring
+
+### Check JSON-DB Status
+```bash
+# Count records
+echo "Accounts: $(curl -s http://localhost:8082/accounts | jq length)"
+echo "Contacts: $(curl -s http://localhost:8082/contacts | jq length)"
+echo "Opportunities: $(curl -s http://localhost:8082/opportunities | jq length)"
+```
+
+### View Recent WireMock Requests
+```bash
+# See last 5 requests
+curl http://localhost:8089/__admin/requests | jq '.requests[0:5] | .[] | {url: .request.url, method: .request.method}'
+```
+
+## 🚀 Next Steps
+
+1. **Extend the Data Model**: Add more Salesforce objects to `salesforce-db.json`
+2. **Create Custom Routes**: Add routes for complex operations
+3. **Build Test Suites**: Automate these tests with Robot Framework
+4. **Integrate with CI/CD**: Use for automated testing
+
+Remember: JSON-DB is perfect for development and testing, but always validate with real Salesforce before production!

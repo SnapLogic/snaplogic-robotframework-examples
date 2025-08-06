@@ -1,0 +1,10 @@
+{
+  "name": "Delete Account",
+  "request": {
+    "method": "DELETE",
+    "urlPathPattern": "/services/data/v[0-9]+\\.[0-9]+/sobjects/Account/[0-9a-zA-Z]+"
+  },
+  "response": {
+    "status": 204
+  }
+}

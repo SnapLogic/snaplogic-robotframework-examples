@@ -11,6 +11,13 @@ services:
       - /var/run.docker.sock:/var/run/docker.sock
       # Mount entire actual_expected_data directory for comprehensive test data access
       - ../test/suite/test_data:/opt/snaplogic/test_data
+      # Mount custom global.properties for JVM options
+      - ./config/global.properties:/opt/snaplogic/etc/global.properties
+    environment:
+      # Allow HTTP connections for Salesforce (development only!)
+      - SL_JAVA_OPTS=-Dcom.snaplogic.snaps.salesforce.force.http=true -Dhttp.protocols=http,https
+      # JAVA_TOOL_OPTIONS is picked up by all Java processes
+      - JAVA_TOOL_OPTIONS=-Dcom.snaplogic.snaps.salesforce.force.http=true -Dhttp.protocols=http,https
     profiles: [ gp ]
     networks:
       - snaplogicnet

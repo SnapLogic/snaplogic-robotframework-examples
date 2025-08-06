@@ -1,0 +1,74 @@
+{
+  "name": "List All SObjects",
+  "priority": 5,
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/services/data/v[0-9]+\\.[0-9]+/sobjects/?$"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "encoding": "UTF-8",
+      "maxBatchSize": 200,
+      "sobjects": [
+        {
+          "name": "Account",
+          "label": "Account",
+          "keyPrefix": "001",
+          "labelPlural": "Accounts",
+          "custom": false,
+          "createable": true,
+          "deletable": true,
+          "queryable": true,
+          "retrieveable": true,
+          "searchable": true,
+          "undeletable": true,
+          "updateable": true,
+          "urls": {
+            "sobject": "/services/data/v59.0/sobjects/Account",
+            "describe": "/services/data/v59.0/sobjects/Account/describe"
+          }
+        },
+        {
+          "name": "Contact",
+          "label": "Contact",
+          "keyPrefix": "003",
+          "labelPlural": "Contacts",
+          "custom": false,
+          "createable": true,
+          "deletable": true,
+          "queryable": true,
+          "retrieveable": true,
+          "searchable": true,
+          "undeletable": true,
+          "updateable": true,
+          "urls": {
+            "sobject": "/services/data/v59.0/sobjects/Contact",
+            "describe": "/services/data/v59.0/sobjects/Contact/describe"
+          }
+        },
+        {
+          "name": "Opportunity",
+          "label": "Opportunity",
+          "keyPrefix": "006",
+          "labelPlural": "Opportunities",
+          "custom": false,
+          "createable": true,
+          "deletable": true,
+          "queryable": true,
+          "retrieveable": true,
+          "searchable": true,
+          "undeletable": true,
+          "updateable": true,
+          "urls": {
+            "sobject": "/services/data/v59.0/sobjects/Opportunity",
+            "describe": "/services/data/v59.0/sobjects/Opportunity/describe"
+          }
+        }
+      ]
+    }
+  }
+}

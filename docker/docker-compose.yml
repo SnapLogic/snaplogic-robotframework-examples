@@ -8,6 +8,7 @@ include:
   - docker-compose.sqlserver.yml
   - docker-compose.mysql.yml
   - docker-compose.db2.yml
+  - docker-compose.salesforce-mock.yml
 
 services:
   tools:

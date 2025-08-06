@@ -173,7 +173,7 @@ snaplogic-stop:
 # =============================================================================
 # 🧹 Clean restart of all relevant services and DB
 # =============================================================================
-clean-start: snaplogic-stop snaplogic-start-services launch-groundplex
+clean-start: snaplogic-stop snaplogic-start-services createplex-launch-groundplex
 	@echo "You should be good to go"
 
 # =============================================================================
@@ -249,6 +249,38 @@ stop-groundplex:
 	$(DOCKER_COMPOSE) --profile gp down --remove-orphans
 
 	@echo "✅ Groundplex successfully stopped and cleaned up."
+
+# =============================================================================
+# 🔄 Restart Groundplex (stop and launch)
+# =============================================================================
+restart-groundplex: stop-groundplex launch-groundplex
+	@echo "✅ Groundplex successfully restarted!"
+
+# =============================================================================
+# 🔍 Check Groundplex Java Options and Configuration
+# =============================================================================
+groundplex-check-java-opts:
+	@echo "🔍 Checking SL_JAVA_OPTS in Groundplex container..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "📋 Environment Variable:"
+	@docker exec snaplogic-groundplex printenv SL_JAVA_OPTS || echo "❌ SL_JAVA_OPTS not set"
+	@echo ""
+	@echo "🔍 All JAVA-related environment variables:"
+	@docker exec snaplogic-groundplex env | grep -i java || echo "No Java env vars found"
+	@echo ""
+	@echo "🔧 Java Process Arguments (main JCC):"
+	@docker exec snaplogic-groundplex ps aux | grep "jcc.war jcc" | grep -v grep || echo "JCC process not found"
+	@echo ""
+	@echo "📊 JCC Status:"
+	@docker exec snaplogic-groundplex bash -c "cd /opt/snaplogic/bin && ./jcc.sh status" || echo "JCC not running"
+	@echo ""
+	@echo "🔍 Checking if Salesforce options are present in Java process:"
+	@if docker exec snaplogic-groundplex ps aux | grep -q "salesforce.force.http"; then \
+		echo "✅ Salesforce HTTP option is ACTIVE"; \
+	else \
+		echo "❌ Salesforce HTTP option NOT found in Java process"; \
+	fi
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # =============================================================================
 # 🛢️ Start Oracle DB container
@@ -606,16 +638,15 @@ run-jms-demo:
 	@echo "📚 Example libraries: pyjms, stomp.py, or py4j with ActiveMQ client"
 
 # =============================================================================
-# 🔌 Salesforce WireMock API Server Management
+# 🔌 Salesforce Mock API Server Management
 # =============================================================================
 
 # =============================================================================
-# 🚀 Start Salesforce WireMock server for API mocking
+# 🚀 Start Salesforce Mock server for API mocking
 # =============================================================================
 salesforce-mock-start:
-	@echo "🚀 Starting Salesforce WireMock API server..."
-	@echo "🔗 Connecting to snaplogicnet network (same as Groundplex)"
-	cd docker && docker-compose -f docker-compose.salesforce-mock.yml up -d
+	@echo "🚀 Starting Salesforce Mock API server..."
+	$(DOCKER_COMPOSE) --profile salesforce-dev up -d salesforce-mock salesforce-json-server
 	@echo "⏳ Waiting for WireMock to initialize..."
 	@sleep 5
 	@echo "✅ Salesforce mock service started!"
@@ -637,48 +668,84 @@ salesforce-mock-start:
 	@echo "   curl -X POST http://localhost:8089/services/oauth2/token -d 'grant_type=password'"
 
 # =============================================================================
-# ⛔ Stop Salesforce WireMock server
+# ⛔ Stop Salesforce Mock server and clean up volumes
 # =============================================================================
 salesforce-mock-stop:
-	@echo "⛔ Stopping Salesforce WireMock server..."
-	cd docker && docker-compose -f docker-compose.salesforce-mock.yml down
-	@echo "✅ Salesforce mock service stopped."
+	@echo "⛔ Stopping Salesforce Mock server containers..."
+	$(DOCKER_COMPOSE) stop salesforce-mock salesforce-json-server || true
+	@echo "Removing Salesforce mock containers and volumes..."
+	$(DOCKER_COMPOSE) rm -f -v salesforce-mock salesforce-json-server || true
+	@echo "Cleaning up Salesforce mock volumes..."
+	docker volume rm $(docker volume ls -q | grep salesforce) 2>/dev/null || true
+	@echo "✅ Salesforce mock stopped and cleaned up."
 
 # =============================================================================
-# 🔍 Check Salesforce WireMock server status
+# 🔍 Check Salesforce Mock server status
 # =============================================================================
 salesforce-mock-status:
-	@echo "🔍 Checking Salesforce WireMock status..."
-	@container_status=$(docker inspect -f '{{.State.Status}}' salesforce-api-mock 2>/dev/null || echo "not found"); \
-	if [ "$container_status" = "running" ]; then \
-		echo "✅ Salesforce mock container is running"; \
-		echo "🌐 Base URL: http://localhost:8089"; \
-		echo "📊 Admin Console: http://localhost:8089/__admin/"; \
-		echo "📝 Request Journal: http://localhost:8089/__admin/requests"; \
-		echo "🧪 Testing OAuth endpoint..."; \
-		if curl -s -f -X POST http://localhost:8089/services/oauth2/token -d "grant_type=password" >/dev/null 2>&1; then \
-			echo "✅ OAuth endpoint is accessible"; \
+	@bash -c '\
+		echo "🔍 Checking Salesforce Mock status..."; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		wiremock_status=$$(docker inspect -f "{{.State.Status}}" salesforce-api-mock 2>/dev/null || echo "not found"); \
+		json_server_status=$$(docker inspect -f "{{.State.Status}}" salesforce-json-mock 2>/dev/null || echo "not found"); \
+		if [ "$$wiremock_status" = "running" ]; then \
+			echo "✅ WireMock container is running"; \
+			echo "   Container: salesforce-api-mock"; \
+			echo "   Port: 8089"; \
 		else \
-			echo "⚠️  OAuth endpoint not ready (may still be starting)"; \
+			echo "❌ WireMock container is not running (status: $$wiremock_status)"; \
 		fi; \
-	else \
-		echo "❌ Salesforce mock container is not running (status: $container_status)"; \
-		echo "💡 Run 'make salesforce-mock-start' to start the mock service"; \
-	fi
-
+		if [ "$$json_server_status" = "running" ]; then \
+			echo "✅ JSON Server container is running"; \
+			echo "   Container: salesforce-json-mock"; \
+			echo "   Port: 8082"; \
+		else \
+			echo "❌ JSON Server container is not running (status: $$json_server_status)"; \
+		fi; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		if [ "$$wiremock_status" = "running" ] && [ "$$json_server_status" = "running" ]; then \
+			echo "🌐 Available endpoints:"; \
+			echo "   • Base URL: http://localhost:8089"; \
+			echo "   • Admin Console: http://localhost:8089/__admin/"; \
+			echo "   • Request Journal: http://localhost:8089/__admin/requests"; \
+			echo "   • JSON Server: http://localhost:8082"; \
+			echo ""; \
+			echo "🧪 Testing service health..."; \
+			if curl -s -f http://localhost:8089/__admin/health >/dev/null 2>&1; then \
+				echo "   ✅ WireMock health check passed"; \
+			else \
+				echo "   ⚠️  WireMock health check failed"; \
+			fi; \
+			if curl -s -f -X POST http://localhost:8089/services/oauth2/token -d "grant_type=password" >/dev/null 2>&1; then \
+				echo "   ✅ OAuth endpoint is accessible"; \
+			else \
+				echo "   ⚠️  OAuth endpoint not responding"; \
+			fi; \
+			if curl -s -f http://localhost:8082/ >/dev/null 2>&1; then \
+				echo "   ✅ JSON Server is accessible"; \
+			else \
+				echo "   ⚠️  JSON Server not responding"; \
+			fi; \
+		elif [ "$$wiremock_status" = "running" ] || [ "$$json_server_status" = "running" ]; then \
+			echo "⚠️  WARNING: Only partial services are running"; \
+			echo "💡 Run '\''make salesforce-mock-restart'\'' to restart all services"; \
+		else \
+			echo "💡 Run '\''make salesforce-mock-start'\'' to start the mock services"; \
+		fi'
 # =============================================================================
-# 🔄 Restart Salesforce WireMock server
+# 🔄 Restart Salesforce Mock server
 # =============================================================================
 salesforce-mock-restart:
-	@echo "🔄 Restarting Salesforce WireMock server..."
+	@echo "🔄 Restarting Salesforce Mock server..."
 	@$(MAKE) salesforce-mock-stop
 	@sleep 2
 	@$(MAKE) salesforce-mock-start
 
 # =============================================================================
 # 🔄 Rebuild tools container with updated requirements
+#   → This target is useful for development when you need to update the tools container if there are changes in the requirements.txt file or .env file
 # =============================================================================
-rebuild-tools-with-updated-requirements:
+rebuild-tools:
 	@echo "🛑 Stopping and removing tools container..."
 	$(DOCKER_COMPOSE) --profile tools down
 	
