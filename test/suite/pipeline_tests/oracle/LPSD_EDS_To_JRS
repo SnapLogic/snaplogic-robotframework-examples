@@ -1,0 +1,379 @@
+*** Settings ***
+Documentation     LPSD_EDS_To_JRS Pipeline ETL Automation Suite
+Library           OperatingSystem
+Library           DatabaseLibrary
+Resource          queries_oracle.resource
+Suite Setup       Prepare Environment and Tables
+Suite Teardown    Cleanup Test Artifacts
+
+*** Variables ***
+${INPUT_FOLDER}           /project_data/EAI_Service_${ENV}/EAIDFTPSite/LPSD/
+${SOURCE_FILE}            EDS_Notice_Reason_Data.txt
+${INCORRECT_FILE}         Notice_Reason_Data.bad
+${EMPTY_FILE}             empty.txt
+${HEADER_FILE}            header_eds_notice.txt
+${STAGING_TABLE}          JRS_STAGE
+${TARGET_TABLE}           JRS_TARGET
+${EMAIL_RECIPIENT}        Web_Support@cat.com
+
+*** Test Cases ***
+
+TC_001A_Check_File_Exists_And_Run
+    [Documentation]    File should exist; pipeline proceeds
+    Create Source File ${INPUT_FOLDER}/${SOURCE_FILE} with Valid Data
+    Run Pipeline
+    File Should Exist    ${INPUT_FOLDER}/${SOURCE_FILE}
+    Pipeline Should Complete Successfully
+
+TC_001B_Handle_Missing_File
+    [Documentation]    Pipeline exits and sends email when file missing
+    Empty Folder    ${INPUT_FOLDER}
+    Run Pipeline
+    File Should Not Exist    ${INPUT_FOLDER}/${SOURCE_FILE}
+    Email Notification Should Be Sent    ${EMAIL_RECIPIENT}
+
+TC_001C_Handle_Incorrect_Filename
+    [Documentation]    With incorrect name, pipeline logs error and skips
+    Create Source File ${INPUT_FOLDER}/${INCORRECT_FILE} with Valid Data
+    Run Pipeline
+    Pipeline Log Should Contain    "Filename is incorrect"
+    No Data Loaded To Table    ${STAGING_TABLE}
+
+TC_002A_Staging_Table_Truncate
+    [Documentation]    Only new data in staging table after pipeline run
+    Seed Table With Dummy Data    ${STAGING_TABLE}
+    Run Pipeline
+    Table Row Count Should Equal Input Data    ${STAGING_TABLE}
+
+TC_003C_Header_Parsing
+    [Documentation]    Header should be skipped, fields parsed
+    Create Source File ${INPUT_FOLDER}/${HEADER_FILE} with Header and Data
+    Run Parser
+    Output Should Exclude Header    ${HEADER_FILE}
+
+TC_004A_Validate_Transformation
+    [Documentation]    Output matches STTM mapping rules
+    Create Source File ${INPUT_FOLDER}/${SOURCE_FILE} with Valid Data
+    Run Pipeline Transform
+    Validate Output Against STTM
+
+TC_004B_Invalid_Data_Type_Handling
+    [Documentation]    String in numeric field errors, row skipped
+    Create Source File ${INPUT_FOLDER}/${SOURCE_FILE} with Invalid Data Types
+    Run Pipeline Transform
+    Pipeline Log Should Contain    "Transformation error"
+    Invalid Row Should Not Be Inserted
+
+TC_005A_Successful_Data_Load
+    [Documentation]    Valid data loads into SQL Server
+    Create Valid Source File    ${SOURCE_FILE}
+    Run Pipeline
+    Target Table Should Match Input Row Count    ${TARGET_TABLE}
+
+TC_005B_Not_Null_Violation
+    [Documentation]    Nulls in mandatory fields rejected
+    Create Source File With Nulls In Required Fields
+    Run Pipeline
+    No Invalid Row Inserted    ${TARGET_TABLE}
+    Pipeline Log Should Contain    "NOT NULL constraint violation"
+
+TC_005C_DB_Connection_Failure
+    [Documentation]    Simulate DB down, pipeline logs error gracefully
+    Simulate DB Downtime
+    Run Pipeline Load
+    Pipeline Log Should Contain    "DB Connection failed"
+    Pipeline Should Not Crash
+
+TC_006A_Full_Run_Success
+    [Documentation]    All configs/files valid, pipeline completes
+    Ensure All Valid Inputs And Configs
+    Run Full Pipeline
+    Pipeline Log Should Contain    "Pipeline completed successfully"
+    Output Should Match Expected
+
+TC_007A_Missing_Required_Fields
+    [Documentation]    Mandatory empty fields trigger validation errors
+    Create Source File Missing Required Fields
+    Run Pipeline
+    Pipeline Log Should Contain    "Validation error"
+    Invalid Rows Not Loaded
+
+TC_007B_Nulls_Optional_Fields
+    [Documentation]    Nulls in optional fields loaded
+    Create Source File With Nulls In Optional Fields
+    Run Pipeline
+    Output Shows Nulls Allowed Where Permitted
+
+TC_007C_Empty_Input_File
+    [Documentation]    Completely empty file: pipeline logs warning, exits safely
+    Create Source File ${INPUT_FOLDER}/${EMPTY_FILE} with no content
+    Run Pipeline
+    Pipeline Log Should Contain    "Input file empty"
+    No Data Processed
+
+*** Keywords ***
+
+Prepare Environment and Tables
+    Connect To Database
+    Create Table If Not Exists    ${STAGING_TABLE}
+    Create Table If Not Exists    ${TARGET_TABLE}
+    Truncate Table    ${STAGING_TABLE}
+    Truncate Table    ${TARGET_TABLE}
+
+Cleanup Test Artifacts
+    Delete All Test Files In Folder    ${INPUT_FOLDER}
+    Truncate Table    ${STAGING_TABLE}
+    Truncate Table    ${TARGET_TABLE}
+
+Create Source File
+    [Arguments]    ${filepath}    ${data}
+    # Keyword to generate input test file with specified data
+
+Seed Table With Dummy Data
+    [Arguments]    ${table}
+    # Insert dummy rows for truncate test
+
+Run Pipeline
+    # Keyword to trigger SnapLogic pipeline
+
+Run Parser
+    # Trigger just the parser step if possible
+
+Validate Output Against STTM
+    # Query table, compare columns and values to STTM logic
+
+Table Row Count Should Equal Input Data
+    [Arguments]    ${table}
+    # Compare count after pipeline to expected count
+
+Email Notification Should Be Sent
+    [Arguments]    ${recipient}
+    # Check/log for email sent (mock if needed)
+
+Pipeline Log Should Contain
+    [Arguments]    ${message}
+    # Parse log for expected string
+
+Simulate DB Downtime
+    # Temporarily disable DB or drop connection before running pipeline
+
+No Data Loaded To Table
+    [Arguments]    ${table}
+    # Table must be empty
+
+Target Table Should Match Input Row Count
+    [Arguments]    ${table}
+    # Validate output row count
+
+Invalid Row Should Not Be Inserted
+    [Arguments]    ${table}
+    # Ensure error rows not loaded
+
+Delete All Test Files In Folder
+    [Arguments]    ${folder}
+    # Clean up files after run
+
+Create Table If Not Exists
+    [Arguments]    ${table}
+    # SQL logic to create table if missing
+
+Truncate Table
+    [Arguments]    ${table}
+    # Remove all rows
+
+Connect To Database
+    # DB connect logic (Oracle, SQL Server etc)
+
+*** Settings ***
+Documentation     LPSD_EDS_To_JRS Pipeline ETL Automation Suite (SQL Server Version)
+Library           OperatingSystem
+Library           DatabaseLibrary
+Resource          queries_sqlserver.resource
+Suite Setup       Prepare Environment and Tables
+Suite Teardown    Cleanup Test Artifacts
+
+*** Variables ***
+${INPUT_FOLDER}           /project_data/EAI_Service_${ENV}/EAIDFTPSite/LPSD/
+${SOURCE_FILE}            EDS_Notice_Reason_Data.txt
+${INCORRECT_FILE}         Notice_Reason_Data.bad
+${EMPTY_FILE}             empty.txt
+${HEADER_FILE}            header_eds_notice.txt
+${STAGING_TABLE}          JRS_STAGE
+${TARGET_TABLE}           JRS_TARGET
+${EMAIL_RECIPIENT}        Web_Support@cat.com
+
+# DB Variables from .env
+${SQLSERVER_HOST}         %{SQLSERVER_HOST}
+${SQLSERVER_DBPORT}       %{SQLSERVER_DBPORT}
+${SQLSERVER_DBNAME}       %{SQLSERVER_DBNAME}
+${SQLSERVER_DBUSER}       %{SQLSERVER_DBUSER}
+${SQLSERVER_DBPASS}       %{SQLSERVER_DBPASS}
+
+*** Test Cases ***
+
+TC_001A_Check_File_Exists_And_Run
+    [Documentation]    File should exist; pipeline proceeds
+    Create Source File    ${INPUT_FOLDER}/${SOURCE_FILE}    Valid Data
+    Run Pipeline
+    File Should Exist    ${INPUT_FOLDER}/${SOURCE_FILE}
+    Pipeline Should Complete Successfully
+
+TC_001B_Handle_Missing_File
+    [Documentation]    Pipeline exits and sends email when file missing
+    Empty Folder    ${INPUT_FOLDER}
+    Run Pipeline
+    File Should Not Exist    ${INPUT_FOLDER}/${SOURCE_FILE}
+    Email Notification Should Be Sent    ${EMAIL_RECIPIENT}
+
+TC_001C_Handle_Incorrect_Filename
+    [Documentation]    With incorrect name, pipeline logs error and skips
+    Create Source File    ${INPUT_FOLDER}/${INCORRECT_FILE}    Valid Data
+    Run Pipeline
+    Pipeline Log Should Contain    Filename is incorrect
+    No Data Loaded To Table    ${STAGING_TABLE}
+
+TC_002A_Staging_Table_Truncate
+    [Documentation]    Only new data in staging table after pipeline run
+    Seed Table With Dummy Data    ${STAGING_TABLE}
+    Run Pipeline
+    Table Row Count Should Equal Input Data    ${STAGING_TABLE}
+
+TC_003C_Header_Parsing
+    [Documentation]    Header should be skipped, fields parsed
+    Create Source File    ${INPUT_FOLDER}/${HEADER_FILE}    Header and Data
+    Run Parser
+    Output Should Exclude Header    ${HEADER_FILE}
+
+TC_004A_Validate_Transformation
+    [Documentation]    Output matches STTM mapping rules
+    Create Source File    ${INPUT_FOLDER}/${SOURCE_FILE}    Valid Data
+    Run Pipeline Transform
+    Validate Output Against STTM
+
+TC_004B_Invalid_Data_Type_Handling
+    [Documentation]    String in numeric field errors, row skipped
+    Create Source File    ${INPUT_FOLDER}/${SOURCE_FILE}    Invalid Data Types
+    Run Pipeline Transform
+    Pipeline Log Should Contain    Transformation error
+    Invalid Row Should Not Be Inserted
+
+TC_005A_Successful_Data_Load
+    [Documentation]    Valid data loads into SQL Server
+    Create Valid Source File    ${SOURCE_FILE}
+    Run Pipeline
+    Target Table Should Match Input Row Count    ${TARGET_TABLE}
+
+TC_005B_Not_Null_Violation
+    [Documentation]    Nulls in mandatory fields rejected
+    Create Source File With Nulls In Required Fields
+    Run Pipeline
+    No Invalid Row Inserted    ${TARGET_TABLE}
+    Pipeline Log Should Contain    NOT NULL constraint violation
+
+TC_005C_DB_Connection_Failure
+    [Documentation]    Simulate DB down, pipeline logs error gracefully
+    Simulate DB Downtime
+    Run Pipeline Load
+    Pipeline Log Should Contain    DB Connection failed
+    Pipeline Should Not Crash
+
+TC_006A_Full_Run_Success
+    [Documentation]    All configs/files valid, pipeline completes
+    Ensure All Valid Inputs And Configs
+    Run Full Pipeline
+    Pipeline Log Should Contain    Pipeline completed successfully
+    Output Should Match Expected
+
+TC_007A_Missing_Required_Fields
+    [Documentation]    Mandatory empty fields trigger validation errors
+    Create Source File Missing Required Fields
+    Run Pipeline
+    Pipeline Log Should Contain    Validation error
+    Invalid Rows Not Loaded
+
+TC_007B_Nulls_Optional_Fields
+    [Documentation]    Nulls in optional fields loaded
+    Create Source File With Nulls In Optional Fields
+    Run Pipeline
+    Output Shows Nulls Allowed Where Permitted
+
+TC_007C_Empty_Input_File
+    [Documentation]    Completely empty file: pipeline logs warning, exits safely
+    Create Source File    ${INPUT_FOLDER}/${EMPTY_FILE}    no content
+    Run Pipeline
+    Pipeline Log Should Contain    Input file empty
+    No Data Processed
+
+*** Keywords ***
+
+Prepare Environment and Tables
+    Connect To SQL Server Database
+    Create Table If Not Exists    ${STAGING_TABLE}
+    Create Table If Not Exists    ${TARGET_TABLE}
+    Truncate Table    ${STAGING_TABLE}
+    Truncate Table    ${TARGET_TABLE}
+
+Cleanup Test Artifacts
+    Delete All Test Files In Folder    ${INPUT_FOLDER}
+    Truncate Table    ${STAGING_TABLE}
+    Truncate Table    ${TARGET_TABLE}
+
+Connect To SQL Server Database
+    ${jdbc_url}=    Set Variable    jdbc:sqlserver://${SQLSERVER_HOST}:${SQLSERVER_DBPORT};databaseName=${SQLSERVER_DBNAME}
+    Connect To Database    com.microsoft.sqlserver.jdbc.SQLServerDriver    ${jdbc_url}    ${SQLSERVER_DBUSER}    ${SQLSERVER_DBPASS}
+
+Create Source File
+    [Arguments]    ${filepath}    ${data}
+    # Implement file creation with ${data}
+
+Seed Table With Dummy Data
+    [Arguments]    ${table}
+    # Insert dummy rows for truncate test
+
+Run Pipeline
+    # Trigger SnapLogic pipeline
+
+Run Parser
+    # Trigger just the parser step
+
+Validate Output Against STTM
+    # Query table, compare to mapping logic
+
+Table Row Count Should Equal Input Data
+    [Arguments]    ${table}
+    # Compare row count after pipeline to input
+
+Email Notification Should Be Sent
+    [Arguments]    ${recipient}
+    # Check email logs
+
+Pipeline Log Should Contain
+    [Arguments]    ${message}
+    # Parse pipeline logs
+
+Simulate DB Downtime
+    # Temporarily block SQL Server connection
+
+No Data Loaded To Table
+    [Arguments]    ${table}
+    # Assert table empty
+
+Target Table Should Match Input Row Count
+    [Arguments]    ${table}
+    # Compare target row count to source
+
+Invalid Row Should Not Be Inserted
+    [Arguments]    ${table}
+    # Ensure invalid rows not loaded
+
+Delete All Test Files In Folder
+    [Arguments]    ${folder}
+    # Remove all test files
+
+Create Table If Not Exists
+    [Arguments]    ${table}
+    # SQL Server-specific CREATE TABLE IF NOT EXISTS logic
+
+Truncate Table
+    [Arguments]    ${table}
+    Execute Sql String    TRUNCATE TABLE ${table}
