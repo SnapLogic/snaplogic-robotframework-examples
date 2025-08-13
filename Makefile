@@ -18,7 +18,8 @@
         snaplogic-stop-tools check-env clean-start launch-groundplex oracle-start oracle-stop \
         postgres-start postgres-stop mysql-start mysql-stop sqlserver-start sqlserver-stop \
         teradata-start teradata-stop db2-start db2-stop snowflake-start snowflake-stop snowflake-setup \
-        robotidy robocop lint groundplex-status stop-groundplex \
+        robotidy robocop lint groundplex-status stop-groundplex restart-groundplex \
+        setup-groundplex-cert launch-groundplex-with-cert groundplex-check-cert groundplex-remove-cert \
         start-s3-emulator stop-s3-emulator run-s3-demo ensure-config-dir \
         activemq-start activemq-stop activemq-status activemq-setup run-jms-demo \
         start-services createplex-launch-groundplex \
@@ -39,7 +40,7 @@ DOCKER_COMPOSE := docker compose --env-file .env -f $(DOCKER_COMPOSE_FILE)
 
 # Docker Compose profiles to be used (can be overridden by CLI)
 # COMPOSE_PROFILES ?= gp,oracle-dev,postgres-dev,minio-dev
-COMPOSE_PROFILES ?= tools,oracle-dev,minio,postgres-dev,mysql-dev,sqlserver-dev,activemq
+COMPOSE_PROFILES ?= tools,oracle-dev,minio,postgres-dev,mysql-dev,sqlserver-dev,activemq,salesforce-mock-start
 
 # =============================================================================
 #  🛠️ snaplogic tools lifecycle
@@ -257,31 +258,122 @@ restart-groundplex: stop-groundplex launch-groundplex
 	@echo "✅ Groundplex successfully restarted!"
 
 # =============================================================================
-# 🔍 Check Groundplex Java Options and Configuration
+# 🔐 Setup certificates for Groundplex (for HTTPS connections to mocks)
 # =============================================================================
-groundplex-check-java-opts:
-	@echo "🔍 Checking SL_JAVA_OPTS in Groundplex container..."
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "📋 Environment Variable:"
-	@docker exec snaplogic-groundplex printenv SL_JAVA_OPTS || echo "❌ SL_JAVA_OPTS not set"
-	@echo ""
-	@echo "🔍 All JAVA-related environment variables:"
-	@docker exec snaplogic-groundplex env | grep -i java || echo "No Java env vars found"
-	@echo ""
-	@echo "🔧 Java Process Arguments (main JCC):"
-	@docker exec snaplogic-groundplex ps aux | grep "jcc.war jcc" | grep -v grep || echo "JCC process not found"
-	@echo ""
-	@echo "📊 JCC Status:"
-	@docker exec snaplogic-groundplex bash -c "cd /opt/snaplogic/bin && ./jcc.sh status" || echo "JCC not running"
-	@echo ""
-	@echo "🔍 Checking if Salesforce options are present in Java process:"
-	@if docker exec snaplogic-groundplex ps aux | grep -q "salesforce.force.http"; then \
-		echo "✅ Salesforce HTTP option is ACTIVE"; \
-	else \
-		echo "❌ Salesforce HTTP option NOT found in Java process"; \
-	fi
+setup-groundplex-cert:
+	@echo "🔐 Setting up certificates for Groundplex..."
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
+	@container_status=$$(docker inspect -f '{{.State.Status}}' snaplogic-groundplex 2>/dev/null || echo "not found"); \
+	if [ "$$container_status" != "running" ]; then \
+		echo "❌ Groundplex container is not running. Please run 'make launch-groundplex' first."; \
+		exit 1; \
+	fi
+
+	@echo "📥 Extracting WireMock certificate..."
+	@echo | openssl s_client -connect localhost:8443 -servername localhost 2>/dev/null | openssl x509 > /tmp/wiremock.crt 2>/dev/null || { \
+		echo "⚠️  Could not extract certificate from localhost:8443"; \
+		echo "💡 Make sure WireMock is running with HTTPS on port 8443"; \
+		exit 1; \
+	}
+
+	@echo "📋 Copying certificate to Groundplex container..."
+	@docker cp /tmp/wiremock.crt snaplogic-groundplex:/tmp/wiremock.crt
+
+	@echo "🔑 Importing certificate into Java truststore..."
+	@docker exec snaplogic-groundplex bash -c '\
+		JAVA_HOME="/opt/snaplogic/pkgs/jdk-11.0.24+8-jre"; \
+		if [ ! -d "$$JAVA_HOME" ]; then \
+			JAVA_HOME=$$(ls -d /opt/snaplogic/pkgs/jdk* 2>/dev/null | head -1); \
+		fi; \
+		echo "Found JAVA_HOME: $$JAVA_HOME"; \
+		KEYTOOL="$$JAVA_HOME/bin/keytool"; \
+		TRUSTSTORE="$$JAVA_HOME/lib/security/cacerts"; \
+		if [ ! -f "$$TRUSTSTORE" ]; then \
+			echo "❌ Could not find Java truststore at $$TRUSTSTORE"; \
+			exit 1; \
+		fi; \
+		echo "Using truststore: $$TRUSTSTORE"; \
+		"$$KEYTOOL" -import -trustcacerts -keystore "$$TRUSTSTORE" \
+			-storepass changeit -noprompt -alias wiremock \
+			-file /tmp/wiremock.crt 2>/dev/null && \
+			echo "✅ Certificate imported successfully" || \
+			echo "⚠️  Certificate may already exist (this is OK)"; \
+		rm -f /tmp/wiremock.crt \
+	'
+
+	@echo "🔄 Restarting JCC to apply certificate changes..."
+	@docker exec snaplogic-groundplex bash -c 'cd /opt/snaplogic/bin && ./jcc.sh restart'
+
+	@echo "⏳ Waiting for JCC to restart..."
+	@sleep 30
+
+	@docker exec snaplogic-groundplex bash -c 'cd /opt/snaplogic/bin && ./jcc.sh status' && \
+		echo "✅ Certificate imported and Groundplex restarted successfully!" || \
+		echo "❌ JCC failed to restart. Please check logs."
+
+# =============================================================================
+# 🚀 Launch Groundplex with certificate setup (combined target)
+# =============================================================================
+launch-groundplex-with-cert: launch-groundplex
+	@echo "⏳ Waiting for Groundplex to be ready..."
+	@sleep 30
+	@$(MAKE) setup-groundplex-cert
+
+# =============================================================================
+# 🔍 Check certificate status in Groundplex
+# =============================================================================
+groundplex-check-cert:
+	@echo "🔍 Checking certificate status in Groundplex..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@docker exec snaplogic-groundplex bash -c '\
+		JAVA_HOME="/opt/snaplogic/pkgs/jdk-11.0.24+8-jre"; \
+		if [ ! -d "$$JAVA_HOME" ]; then \
+			JAVA_HOME=$$(ls -d /opt/snaplogic/pkgs/jdk* 2>/dev/null | head -1); \
+		fi; \
+		KEYTOOL="$$JAVA_HOME/bin/keytool"; \
+		TRUSTSTORE="$$JAVA_HOME/lib/security/cacerts"; \
+		if [ ! -f "$$TRUSTSTORE" ]; then \
+			echo "❌ Could not find Java truststore"; \
+			exit 1; \
+		fi; \
+		echo "📁 Truststore location: $$TRUSTSTORE"; \
+		echo; \
+		echo "🔐 Checking for WireMock certificate:"; \
+		if "$$KEYTOOL" -list -keystore "$$TRUSTSTORE" -storepass changeit -alias wiremock >/dev/null 2>&1; then \
+			echo "✅ WireMock certificate is installed"; \
+		else \
+			echo "❌ WireMock certificate not found"; \
+		fi; \
+		echo; \
+		echo "📋 Total certificates in truststore:"; \
+		"$$KEYTOOL" -list -keystore "$$TRUSTSTORE" -storepass changeit 2>/dev/null | grep "Entry," | wc -l \
+	'
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# =============================================================================
+# 🗑️ Remove certificate from Groundplex truststore
+# =============================================================================
+groundplex-remove-cert:
+	@echo "🗑️ Removing WireMock certificate from Groundplex truststore..."
+	@docker exec snaplogic-groundplex bash -c '\
+		JAVA_HOME="/opt/snaplogic/pkgs/jdk-11.0.24+8-jre"; \
+		if [ ! -d "$$JAVA_HOME" ]; then \
+			JAVA_HOME=$$(ls -d /opt/snaplogic/pkgs/jdk* 2>/dev/null | head -1); \
+		fi; \
+		KEYTOOL="$$JAVA_HOME/bin/keytool"; \
+		TRUSTSTORE="$$JAVA_HOME/lib/security/cacerts"; \
+		if [ ! -f "$$TRUSTSTORE" ]; then \
+			echo "❌ Could not find Java truststore"; \
+			exit 1; \
+		fi; \
+		if "$$KEYTOOL" -delete -keystore "$$TRUSTSTORE" -storepass changeit -alias wiremock >/dev/null 2>&1; then \
+			echo "✅ Certificate removed successfully"; \
+		else \
+			echo "⚠️  Certificate not found or already removed"; \
+		fi \
+	'
+	@echo "🔄 Restart JCC with 'make restart-groundplex' to apply changes"
 # =============================================================================
 # 🛢️ Start Oracle DB container
 # =============================================================================
