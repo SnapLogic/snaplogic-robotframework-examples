@@ -1,0 +1,78 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FEFEFE
+
+title How WireMock Matches Requests to Mapping Files
+
+start
+
+:Request arrives at WireMock;
+note right
+  Example: POST /services/oauth2/token
+  Headers: Content-Type: application/json
+  Body: {grant_type: "password", ...}
+end note
+
+:Load all mapping files;
+note left
+  • 01-oauth-token.json
+  • 02-get-user-info.json
+  • 03-get-api-versions.json
+  • ... and so on
+end note
+
+:Sort mappings by priority;
+note right
+  Priority 1 (highest) → Priority 10 (lowest)
+  Default priority = 5
+end note
+
+partition "For Each Mapping File" {
+    :Read mapping criteria;
+    
+    if (Method matches?) then (yes)
+        note right: POST == POST ✅
+        
+        if (URL matches?) then (yes)
+            note right
+                Types of URL matching:
+                • **urlPath**: exact match
+                • **urlPathPattern**: regex
+                • **url**: full URL with domain
+            end note
+            
+            if (Query params match?) then (yes or not specified)
+                note right: Optional - only if defined
+                
+                if (Headers match?) then (yes or not specified)
+                    note right: Optional - only if defined
+                    
+                    if (Body matches?) then (yes or not specified)
+                        note right: Optional - only if defined
+                        
+                        :USE THIS MAPPING!;
+                        #palegreen:Return mapped response;
+                        stop
+                        
+                    else (no)
+                        :Continue to next mapping;
+                    endif
+                else (no)
+                    :Continue to next mapping;
+                endif
+            else (no)
+                :Continue to next mapping;
+            endif
+        else (no)
+            :Continue to next mapping;
+        endif
+    else (no)
+        :Continue to next mapping;
+    endif
+}
+
+:No mappings matched;
+#pink:Return 404 Not Found;
+stop
+
+@enduml

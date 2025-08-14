@@ -1,0 +1,26 @@
+{
+  "name": "Update Account - Field Level Security",
+  "priority": 2,
+  "request": {
+    "method": "PATCH",
+    "urlPath": "/services/data/v59.0/sobjects/Account/001RESTRICTED001",
+    "bodyPatterns": [
+      {
+        "contains": "AnnualRevenue"
+      }
+    ]
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": [
+      {
+        "message": "Field AnnualRevenue is not accessible",
+        "errorCode": "INVALID_FIELD_FOR_INSERT_UPDATE",
+        "fields": ["AnnualRevenue"]
+      }
+    ]
+  }
+}

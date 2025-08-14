@@ -1,0 +1,168 @@
+{
+  "priority": 2,
+  "name": "Proxy Describe Opportunity",
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/services/data/v[0-9]+\\.[0-9]+/sobjects/Opportunity/describe/?$"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "name": "Opportunity",
+      "label": "Opportunity",
+      "labelPlural": "Opportunities",
+      "keyPrefix": "006",
+      "custom": false,
+      "createable": true,
+      "deletable": true,
+      "queryable": true,
+      "retrieveable": true,
+      "searchable": true,
+      "undeletable": true,
+      "updateable": true,
+      "fields": [
+        {
+          "name": "Id",
+          "label": "Opportunity ID",
+          "type": "id",
+          "length": 18,
+          "createable": false,
+          "updateable": false,
+          "nillable": false
+        },
+        {
+          "name": "Name",
+          "label": "Opportunity Name",
+          "type": "string",
+          "length": 120,
+          "createable": true,
+          "updateable": true,
+          "nillable": false
+        },
+        {
+          "name": "AccountId",
+          "label": "Account ID",
+          "type": "reference",
+          "length": 18,
+          "createable": true,
+          "updateable": true,
+          "nillable": true,
+          "referenceTo": ["Account"]
+        },
+        {
+          "name": "Amount",
+          "label": "Amount",
+          "type": "currency",
+          "precision": 18,
+          "scale": 2,
+          "createable": true,
+          "updateable": true,
+          "nillable": true
+        },
+        {
+          "name": "CloseDate",
+          "label": "Close Date",
+          "type": "date",
+          "createable": true,
+          "updateable": true,
+          "nillable": false
+        },
+        {
+          "name": "StageName",
+          "label": "Stage",
+          "type": "picklist",
+          "length": 40,
+          "createable": true,
+          "updateable": true,
+          "nillable": false,
+          "picklistValues": [
+            {"value": "Prospecting", "label": "Prospecting", "active": true},
+            {"value": "Qualification", "label": "Qualification", "active": true},
+            {"value": "Needs Analysis", "label": "Needs Analysis", "active": true},
+            {"value": "Value Proposition", "label": "Value Proposition", "active": true},
+            {"value": "Id. Decision Makers", "label": "Id. Decision Makers", "active": true},
+            {"value": "Perception Analysis", "label": "Perception Analysis", "active": true},
+            {"value": "Proposal/Price Quote", "label": "Proposal/Price Quote", "active": true},
+            {"value": "Negotiation/Review", "label": "Negotiation/Review", "active": true},
+            {"value": "Closed Won", "label": "Closed Won", "active": true},
+            {"value": "Closed Lost", "label": "Closed Lost", "active": true}
+          ]
+        },
+        {
+          "name": "Probability",
+          "label": "Probability (%)",
+          "type": "percent",
+          "precision": 3,
+          "scale": 0,
+          "createable": true,
+          "updateable": true,
+          "nillable": true
+        },
+        {
+          "name": "Type",
+          "label": "Opportunity Type",
+          "type": "picklist",
+          "length": 40,
+          "createable": true,
+          "updateable": true,
+          "nillable": true,
+          "picklistValues": [
+            {"value": "Existing Customer - Upgrade", "label": "Existing Customer - Upgrade", "active": true},
+            {"value": "Existing Customer - Replacement", "label": "Existing Customer - Replacement", "active": true},
+            {"value": "Existing Customer - Downgrade", "label": "Existing Customer - Downgrade", "active": true},
+            {"value": "New Customer", "label": "New Customer", "active": true}
+          ]
+        },
+        {
+          "name": "LeadSource",
+          "label": "Lead Source",
+          "type": "picklist",
+          "length": 40,
+          "createable": true,
+          "updateable": true,
+          "nillable": true,
+          "picklistValues": [
+            {"value": "Web", "label": "Web", "active": true},
+            {"value": "Phone Inquiry", "label": "Phone Inquiry", "active": true},
+            {"value": "Partner Referral", "label": "Partner Referral", "active": true},
+            {"value": "Purchased List", "label": "Purchased List", "active": true},
+            {"value": "Other", "label": "Other", "active": true}
+          ]
+        },
+        {
+          "name": "Description",
+          "label": "Description",
+          "type": "textarea",
+          "length": 32000,
+          "createable": true,
+          "updateable": true,
+          "nillable": true
+        },
+        {
+          "name": "CreatedDate",
+          "label": "Created Date",
+          "type": "datetime",
+          "createable": false,
+          "updateable": false,
+          "nillable": false
+        },
+        {
+          "name": "LastModifiedDate",
+          "label": "Last Modified Date",
+          "type": "datetime",
+          "createable": false,
+          "updateable": false,
+          "nillable": false
+        }
+      ],
+      "urls": {
+        "sobject": "/services/data/v59.0/sobjects/Opportunity",
+        "describe": "/services/data/v59.0/sobjects/Opportunity/describe",
+        "rowTemplate": "/services/data/v59.0/sobjects/Opportunity/{ID}"
+      }
+    }
+  }
+}

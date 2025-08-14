@@ -1,0 +1,21 @@
+{
+  "priority": 1,
+  "name": "Proxy Get Opportunity by ID",
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/services/data/v[0-9]+\\.[0-9]+/sobjects/Opportunity/([0-9a-zA-Z]+)"
+  },
+  "response": {
+    "proxyBaseUrl": "http://salesforce-json-mock",
+    "transformers": ["response-template"],
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "transformerParameters": {
+      "urlRewrite": {
+        "from": "/services/data/v[0-9]+\\.[0-9]+/sobjects/Opportunity/([0-9a-zA-Z]+)",
+        "to": "/opportunities/$1"
+      }
+    }
+  }
+}

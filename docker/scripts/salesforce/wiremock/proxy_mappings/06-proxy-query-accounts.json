@@ -1,0 +1,31 @@
+{
+  "priority": 1,
+  "name": "Proxy Query Accounts to JSON Server",
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/services/data/v[0-9]+\\.[0-9]+/query",
+    "queryParameters": {
+      "q": {
+        "contains": "Account"
+      }
+    }
+  },
+  "response": {
+    "proxyBaseUrl": "http://salesforce-json-mock/accounts",
+    "transformers": ["response-template"],
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "transformerParameters": {
+      "bodyTransform": {
+        "type": "soqlResponse",
+        "wrapInSalesforceFormat": true,
+        "template": {
+          "totalSize": "{{size response.body}}",
+          "done": true,
+          "records": "{{response.body}}"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "Create Account - Failure Scenarios",
+  "priority": 1,
+  "request": {
+    "method": "POST",
+    "urlPathPattern": "/services/data/v[0-9]+\\.[0-9]+/sobjects/Account",
+    "bodyPatterns": [{
+      "matchesJsonPath": "$[?(@.Name =~ /.*FAIL.*/i)]"
+    }]
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "success": false,
+      "errors": [{
+        "message": "Test failure triggered by FAIL in name",
+        "errorCode": "TEST_VALIDATION_ERROR",
+        "fields": ["Name"]
+      }]
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "Get User Info - Expired Session",
+  "priority": 3,
+  "request": {
+    "method": "GET",
+    "urlPath": "/id/00DEXPIRED0000000/005EXPIRED0000000"
+  },
+  "response": {
+    "status": 401,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "error": "INVALID_SESSION_ID",
+      "message": "Session expired or invalid",
+      "errorCode": "401"
+    }
+  }
+}

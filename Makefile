@@ -734,6 +734,44 @@ run-jms-demo:
 # =============================================================================
 
 # =============================================================================
+# 🚀 Start JSON Server for Salesforce persistent CRUD operations
+# =============================================================================
+start-jsonserver:
+	@echo "🚀 Starting Salesforce JSON Server..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	docker compose -f docker/docker-compose.salesforce-mock.yml up -d salesforce-json-server
+	@echo "⏳ Waiting for JSON Server to initialize..."
+	@sleep 3
+	@echo "✅ JSON Server started!"
+	@echo ""
+	@echo "🌐 Available endpoints:"
+	@echo "   • From host machine: http://localhost:8082"
+	@echo "   • From Docker containers: http://salesforce-json-mock"
+	@echo "   • Database file: ./docker/scripts/salesforce/json-db/salesforce-db.json"
+	@echo ""
+	@echo "🧪 Test from your host machine:"
+	@echo "   curl http://localhost:8082/accounts"
+	@echo "   curl http://localhost:8082/contacts"
+	@echo "   curl http://localhost:8082/opportunities"
+	@echo ""
+	@echo "🐳 Test from Docker container (e.g., Groundplex):"
+	@echo "   docker exec snaplogic-groundplex curl http://salesforce-json-mock/accounts"
+	@echo ""
+	@echo "🔧 SnapLogic REST Snap configuration:"
+	@echo "   Service URL: http://salesforce-json-mock"
+	@echo "   Resource Path: /accounts"
+
+# =============================================================================
+# ⛔ Stop JSON Server
+# =============================================================================
+stop-jsonserver:
+	@echo "⛔ Stopping Salesforce JSON Server..."
+	docker compose -f docker/docker-compose.salesforce-mock.yml stop salesforce-json-server || true
+	@echo "🗑️ Removing JSON Server container..."
+	docker compose -f docker/docker-compose.salesforce-mock.yml rm -f salesforce-json-server || true
+	@echo "✅ JSON Server stopped and cleaned up."
+
+# =============================================================================
 # 🚀 Start Salesforce Mock server for API mocking
 # =============================================================================
 salesforce-mock-start:

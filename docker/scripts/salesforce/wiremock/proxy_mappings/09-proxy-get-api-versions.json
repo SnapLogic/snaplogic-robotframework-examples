@@ -1,0 +1,36 @@
+{
+  "priority": 3,
+  "name": "Proxy Get API Versions",
+  "request": {
+    "method": "GET",
+    "urlPath": "/services/data"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": [
+      {
+        "label": "Spring '24",
+        "url": "/services/data/v60.0",
+        "version": "60.0"
+      },
+      {
+        "label": "Winter '24",
+        "url": "/services/data/v59.0",
+        "version": "59.0"
+      },
+      {
+        "label": "Summer '23",
+        "url": "/services/data/v58.0",
+        "version": "58.0"
+      },
+      {
+        "label": "Spring '23",
+        "url": "/services/data/v57.0",
+        "version": "57.0"
+      }
+    ]
+  }
+}

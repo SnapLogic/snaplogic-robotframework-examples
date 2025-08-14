@@ -1,0 +1,42 @@
+{
+  "priority": 2,
+  "name": "Proxy Get User Info",
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/services/oauth2/userinfo"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "sub": "https://login.salesforce.com/id/00D000000000000EAA/005000000000000AAA",
+      "user_id": "005000000000000AAA",
+      "organization_id": "00D000000000000EAA",
+      "preferred_username": "test@example.com",
+      "nickname": "test",
+      "name": "Test User",
+      "email": "test@example.com",
+      "email_verified": true,
+      "given_name": "Test",
+      "family_name": "User",
+      "zoneinfo": "America/Los_Angeles",
+      "photos": {
+        "picture": "https://salesforce-api-mock:8443/profilephoto/005/F",
+        "thumbnail": "https://salesforce-api-mock:8443/profilephoto/005/T"
+      },
+      "profile": "https://salesforce-api-mock:8443/005000000000000AAA",
+      "picture": "https://salesforce-api-mock:8443/profilephoto/005/F",
+      "address": {
+        "country": "US"
+      },
+      "is_app_installed": true,
+      "language": "en_US",
+      "locale": "en_US",
+      "utcOffset": -28800000,
+      "updated_at": "{{now format='yyyy-MM-dd\\'T\\'HH:mm:ss.SSSZ'}}"
+    },
+    "transformers": ["response-template"]
+  }
+}

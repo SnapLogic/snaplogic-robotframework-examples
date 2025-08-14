@@ -19,6 +19,29 @@
 
 This guide explains how to set up HTTPS for WireMock mock services and configure SnapLogic Groundplex to trust the custom certificates, enabling secure communication between Groundplex and mock services.
 
+### Why You're Dealing with This
+
+In this case:
+
+* **Groundplex** (SnapLogic execution node) needs to connect to another service — your **WireMock Salesforce API mock** — over HTTPS.
+* That WireMock instance is running with a **self-signed certificate** (a cert you created yourself).
+* By default, Java (inside Groundplex) will reject connections to an unknown/self-signed certificate.
+* To make it trust that certificate, you **import** the public part of the certificate into Java's truststore (cacerts).
+* This is like saying: *"Hey Java, trust this server's ID card, even though it wasn't issued by a well-known authority."*
+
+### Self-signed vs. CA-signed Certificates
+
+* **CA-signed (public)**: Issued by a trusted Certificate Authority like Let's Encrypt or DigiCert. Browsers and Java already trust them — no manual importing needed.
+* **Self-signed**: You create it yourself. Cheaper and easier for local dev/test, but **not trusted by default**. You must manually tell systems (like Java) to trust it.
+
+### Finally
+
+You're:
+
+1. Generating a self-signed cert for your WireMock server.
+2. Copying it into the Groundplex container.
+3. Importing it into Java's truststore so Groundplex can talk to WireMock over HTTPS without complaining.
+
 ## Why Custom Certificates
 
 ### 🚨 The Problem
@@ -96,13 +119,13 @@ openssl req -new -x509 \
 
 **Certificate Fields Explained:**
 
-| Field | Value | Purpose |
-|-------|-------|---------|
-| `C` | US | Country Code |
-| `ST` | CA | State/Province (California) |
-| `L` | San Francisco | Locality/City |
-| `O` | SnapLogic | Organization |
-| `CN` | salesforce-api-mock | Common Name (primary hostname) |
+| Field | Value               | Purpose                        |
+| ----- | ------------------- | ------------------------------ |
+| `C`   | US                  | Country Code                   |
+| `ST`  | CA                  | State/Province (California)    |
+| `L`   | San Francisco       | Locality/City                  |
+| `O`   | SnapLogic           | Organization                   |
+| `CN`  | salesforce-api-mock | Common Name (primary hostname) |
 
 **Subject Alternative Names (SANs) Included:**
 - `DNS:salesforce-api-mock` - Docker service name (primary)
@@ -227,10 +250,10 @@ networks:
 
 **Volume Mount Explanation:**
 
-| Host Path | Container Path | Purpose |
-|-----------|---------------|---------|
+| Host Path                             | Container Path         | Purpose                    |
+| ------------------------------------- | ---------------------- | -------------------------- |
 | `./scripts/salesforce/wiremock/certs` | `/home/wiremock/certs` | Certificate files location |
-| `:ro` flag | Read-only mount | Security best practice |
+| `:ro` flag                            | Read-only mount        | Security best practice     |
 
 #### 2.2 Start WireMock Service
 

@@ -1,0 +1,33 @@
+{
+  "priority": 3,
+  "name": "Proxy Get Resources",
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/services/data/v[0-9]+\\.[0-9]+/?$"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "sobjects": "/services/data/v59.0/sobjects",
+      "identity": "https://login.salesforce.com/id/00D000000000000EAA/005000000000000AAA",
+      "connect": "/services/data/v59.0/connect",
+      "query": "/services/data/v59.0/query",
+      "search": "/services/data/v59.0/search",
+      "limits": "/services/data/v59.0/limits",
+      "recent": "/services/data/v59.0/recent",
+      "tooling": "/services/data/v59.0/tooling",
+      "chatter": "/services/data/v59.0/chatter",
+      "analytics": "/services/data/v59.0/analytics",
+      "wave": "/services/data/v59.0/wave",
+      "actions": "/services/data/v59.0/actions",
+      "appMenu": "/services/data/v59.0/appMenu",
+      "quickActions": "/services/data/v59.0/quickActions",
+      "commerce": "/services/data/v59.0/commerce",
+      "tabs": "/services/data/v59.0/tabs",
+      "theme": "/services/data/v59.0/theme"
+    }
+  }
+}

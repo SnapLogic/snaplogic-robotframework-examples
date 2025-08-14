@@ -1,0 +1,21 @@
+{
+  "name": "Update Account - Record Locked",
+  "priority": 2,
+  "request": {
+    "method": "PATCH",
+    "urlPath": "/services/data/v59.0/sobjects/Account/001LOCKED0000001"
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": [
+      {
+        "message": "unable to obtain exclusive access to this record or 1 records: 001LOCKED0000001",
+        "errorCode": "UNABLE_TO_LOCK_ROW",
+        "fields": []
+      }
+    ]
+  }
+}
