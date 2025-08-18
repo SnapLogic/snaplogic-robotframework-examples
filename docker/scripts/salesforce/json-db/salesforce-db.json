@@ -35,6 +35,30 @@
       "NumberOfEmployees": 50,
       "CreatedDate": "2024-03-10T11:00:00.000Z",
       "LastModifiedDate": "2024-07-15T10:30:00.000Z"
+    },
+    {
+      "Name": "Direct Test",
+      "id": "ksxZXbx"
+    },
+    {
+      "id": "001TEST999",
+      "Name": "Direct Test with ID"
+    },
+    {
+      "Name": "Container Test",
+      "id": "oRBxMD0"
+    },
+    {
+      "Name": "Direct Test to JSON Server",
+      "id": "yvJaDuv"
+    },
+    {
+      "Name": "Direct Test to JSON Server",
+      "id": "ZPmIxNS"
+    },
+    {
+      "Name": "Test from WireMock Container",
+      "id": "gYc02Lp"
     }
   ],
   "contacts": [

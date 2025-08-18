@@ -19,6 +19,34 @@
 
 This guide explains how to set up HTTPS for WireMock mock services and configure SnapLogic Groundplex to trust the custom certificates, enabling secure communication between Groundplex and mock services.
 
+### Architecture Overview
+
+The testing architecture consists of several key components working together:
+
+* **WireMock Server:** Handles API mocking with static and proxy mappings
+  - Static mappings return predefined responses for stateless operations
+  - Proxy mappings forward requests to JSON Server for stateful CRUD operations
+  - Serves both HTTP (port 8080) and HTTPS (port 8443) endpoints
+  - Uses custom certificates for proper hostname verification
+
+* **JSON Server:** Provides stateful data persistence for CRUD operations
+  - Stores created records in a JSON database file
+  - Maintains state across test runs
+  - Enables realistic workflow testing with data relationships
+  - Accessible at port 3000 internally within Docker network
+
+* **Groundplex:** Executes SnapLogic pipelines with SSL certificate trust
+  - Runs as a Docker container with JCC (Java Component Container)
+  - Contains Java truststore for managing SSL certificates
+  - Requires custom certificate import to trust WireMock's self-signed certificate
+  - Provides the execution environment for SnapLogic Snaps
+
+* **Robot Framework:** Orchestrates and verifies test execution
+  - Controls the entire test lifecycle
+  - Manages Groundplex container startup and configuration
+  - Executes test cases against the mock services
+  - Verifies responses and validates test outcomes
+
 ### Why You're Dealing with This
 
 In this case:

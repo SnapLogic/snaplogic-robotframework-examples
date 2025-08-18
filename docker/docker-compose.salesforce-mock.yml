@@ -3,14 +3,7 @@
 #
 # This Docker Compose file provides a Salesforce API mock environment specifically
 # for testing SnapLogic Salesforce Snap integrations with both HTTP and HTTPS support.
-#
-# QUICK START:
-# -----------
-# Start the service:
-#   docker-compose -f docker-compose.salesforce-mock.yml up -d
-#
-# Stop the service:
-#   docker-compose -f docker-compose.salesforce-mock.yml down
+
 #
 # AVAILABLE ENDPOINTS:
 # -------------------
@@ -60,11 +53,12 @@ services:
       - "8089:8080"  # HTTP port
       - "8443:8443"  # HTTPS port
     volumes:
-      # Mount Salesforce-specific mock mappings
-      - ./scripts/salesforce/wiremock/mappings:/home/wiremock/mappings:ro
+      # IMPORTANT: This folder must contain BOTH static AND proxy mappings
+      - ./scripts/salesforce/wiremock/proxy_mappings:/home/wiremock/mappings:ro
       - ./scripts/salesforce/wiremock/__files:/home/wiremock/__files:ro
       # Mount custom certificate keystore
       - ./scripts/salesforce/wiremock/certs/custom-keystore.p12:/home/wiremock/keystore.p12:ro
+
     command: >
       --port=8080
       --https-port=8443
@@ -88,46 +82,6 @@ services:
       retries: 3
       start_period: 10s
 
-  # Alternative: WireMock with Custom SSL Certificate (Uncomment if needed)
-  # salesforce-mock-custom-cert:
-  #   image: wiremock/wiremock:3.3.1
-  #   container_name: salesforce-api-mock-ssl
-  #   profiles:
-  #     - salesforce-ssl
-  #   ports:
-  #     - "8089:8080"
-  #     - "8443:8443"
-  #   volumes:
-  #     - ./scripts/salesforce/wiremock/mappings:/home/wiremock/mappings:ro
-  #     - ./scripts/salesforce/wiremock/__files:/home/wiremock/__files:ro
-  #     - ./certs/keystore.p12:/home/wiremock/keystore.p12:ro
-  #   command: >
-  #     --port=8080
-  #     --https-port=8443
-  #     --https-keystore=/home/wiremock/keystore.p12
-  #     --keystore-password=password
-  #     --keystore-type=PKCS12
-  #     --global-response-templating 
-  #     --verbose 
-  #     --disable-banner
-  #     --enable-stub-cors
-  #     --preserve-host-header
-  #   networks:
-  #     - snaplogicnet
-  #   environment:
-  #     - WIREMOCK_OPTIONS=--max-request-journal-entries=1000
-
-  # Alternative: Prism Mock (OpenAPI-based) - Uncomment if preferred
-  # salesforce-prism:
-  #   image: stoplight/prism:4
-  #   container_name: salesforce-prism-mock
-  #   ports:
-  #     - "8080:4010"
-  #   volumes:
-  #     - ./wip/api-specs/salesforce:/specs:ro
-  #   command: mock -h 0.0.0.0 /specs/salesforce-openapi.yaml
-  #   networks:
-  #     - snaplogicnet
 
   # JSON Server - For persistent CRUD operations
   salesforce-json-server:
@@ -147,59 +101,3 @@ networks:
   snaplogicnet:
     driver: bridge
 
-# Usage Examples:
-# ==============
-#
-# HTTP Examples:
-# -------------
-# 1. Test OAuth Authentication (HTTP):
-#    curl -X POST http://localhost:8089/services/oauth2/token \
-#      -H "Content-Type: application/x-www-form-urlencoded" \
-#      -d "grant_type=password&client_id=test&client_secret=test&username=test@test.com&password=test"
-#
-# 2. Query Accounts (HTTP):
-#    curl -X GET "http://localhost:8089/services/data/v59.0/query?q=SELECT+Id,Name+FROM+Account" \
-#      -H "Authorization: Bearer mock-token-12345"
-#
-# HTTPS Examples:
-# --------------
-# 3. Test OAuth Authentication (HTTPS with self-signed cert):
-#    curl -k -X POST https://localhost:8443/services/oauth2/token \
-#      -H "Content-Type: application/x-www-form-urlencoded" \
-#      -d "grant_type=password&client_id=test&client_secret=test&username=test@test.com&password=test"
-#
-# 4. Query Accounts (HTTPS):
-#    curl -k -X GET "https://localhost:8443/services/data/v59.0/query?q=SELECT+Id,Name+FROM+Account" \
-#      -H "Authorization: Bearer mock-token-12345"
-#
-# 5. Create Account (HTTPS):
-#    curl -k -X POST https://localhost:8443/services/data/v59.0/sobjects/Account \
-#      -H "Content-Type: application/json" \
-#      -H "Authorization: Bearer mock-token-12345" \
-#      -d '{"Name": "Test Account", "Type": "Customer"}'
-#
-# 6. Get Account by ID (HTTPS):
-#    curl -k -X GET https://localhost:8443/services/data/v59.0/sobjects/Account/001000000000001 \
-#      -H "Authorization: Bearer mock-token-12345"
-#
-# Custom Certificate Setup:
-# ------------------------
-# To use custom SSL certificates instead of self-signed:
-#
-# 1. Generate certificates:
-#    openssl genrsa -out key.pem 2048
-#    openssl req -new -x509 -key key.pem -out cert.pem -days 365 \
-#      -subj "/C=US/ST=CA/L=San Francisco/O=SnapLogic/CN=salesforce-api-mock"
-#    openssl pkcs12 -export -out keystore.p12 -inkey key.pem -in cert.pem \
-#      -password pass:password -name wiremock
-#
-# 2. Place keystore.p12 in ./certs/ directory
-#
-# 3. Uncomment and use the salesforce-mock-custom-cert service instead
-#
-# Troubleshooting:
-# ---------------
-# - Check logs: docker-compose -f docker-compose.salesforce-mock.yml logs salesforce-mock
-# - Verify HTTPS is working: curl -kv https://localhost:8443/__admin/health
-# - Test HTTP fallback: curl http://localhost:8089/__admin/health
-# - For certificate issues, ensure JAVA_OPTS includes -Djava.security.egd=file:/dev/./urandom

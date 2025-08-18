@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salesforce Mock Testing Architecture - Component Diagram</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px 40px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            margin: 0;
+            color: #333;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        
+        .header p {
+            margin: 5px 0 0 0;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .diagram-wrapper {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+            max-width: 95%;
+            max-height: 85vh;
+            overflow: auto;
+            position: relative;
+        }
+        
+        .diagram-container {
+            text-align: center;
+            position: relative;
+        }
+        
+        #diagram {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+        }
+        
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+            color: #666;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            color: #e74c3c;
+            padding: 20px;
+            background: #ffe6e6;
+            border-radius: 8px;
+            margin: 20px;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #48bb78;
+        }
+        
+        .btn-secondary:hover {
+            background: #38a169;
+        }
+        
+        .info-section {
+            background: #f7fafc;
+            border-left: 4px solid #667eea;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .info-section h3 {
+            margin-top: 0;
+            color: #2d3748;
+            font-size: 18px;
+        }
+        
+        .info-section ul {
+            margin: 10px 0;
+            padding-left: 20px;
+            color: #4a5568;
+        }
+        
+        .info-section li {
+            margin: 5px 0;
+        }
+        
+        .footer {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: auto;
+        }
+        
+        code {
+            background: #f1f1f1;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔧 Salesforce Mock Testing Architecture</h1>
+        <p>Component Diagram - WireMock & JSON-DB Integration</p>
+    </div>
+    
+    <div class="container">
+        <div class="diagram-wrapper">
+            <div class="info-section">
+                <h3>📊 Architecture Overview</h3>
+                <ul>
+                    <li><strong>WireMock Server:</strong> Handles API mocking with static and proxy mappings</li>
+                    <li><strong>JSON Server:</strong> Provides stateful data persistence for CRUD operations</li>
+                    <li><strong>Groundplex:</strong> Executes SnapLogic pipelines with SSL certificate trust</li>
+                    <li><strong>Robot Framework:</strong> Orchestrates and verifies test execution</li>
+                </ul>
+            </div>
+            
+            <div class="diagram-container">
+                <div id="diagram-content" class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading PlantUML diagram...</p>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn" onclick="refreshDiagram()">🔄 Refresh Diagram</button>
+                <button class="btn btn-secondary" onclick="downloadDiagram()">💾 Download Image</button>
+                <a href="http://www.plantuml.com/plantuml/uml/" target="_blank" class="btn btn-secondary">🔗 Open in PlantUML Editor</a>
+            </div>
+            
+            <div class="info-section">
+                <h3>🔑 Key Concepts</h3>
+                <ul>
+                    <li><strong>Static Mappings:</strong> Return predefined responses - "Fake it" approach</li>
+                    <li><strong>Proxy Mappings:</strong> Forward to JSON Server for persistence - "Make it" approach</li>
+                    <li><strong>SSL Certificate:</strong> Truststore enables HTTPS connections to WireMock</li>
+                    <li><strong>Mapping Selection:</strong> WireMock's internal engine handles all routing logic</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>SnapLogic Confidential | Generated from <code>salesforce-mock-components.puml</code></p>
+    </div>
+    
+    <script>
+        // PlantUML diagram source code
+        const pumlCode = `@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!include <awslib/AWSCommon>
+!include <logos/docker>
+!include <logos/python>
+!include <logos/java>
+
+skinparam groupInheritance 1
+
+title Salesforce Mock Testing Architecture Components
+
+actor developer as "Developer/Tester"
+actor snaplogic_cloud as "SnapLogic Cloud"
+
+component testing_framework as "<$python>\\nTesting Framework" {
+    rectangle robot_framework as "Robot Framework\\nTest Suite" {
+        package test_cases as "Test Cases"
+        package test_resources as "Test Resources"
+    }
+}
+
+component docker_compose_env as "<$docker>\\nDocker Compose Environment" {
+    
+    rectangle groundplex_container as "<$java>\\nGroundplex Container" {
+        component jcc as "JCC Runtime\\n(SnapLogic Node)"
+        component truststore as "Java Truststore\\n(SSL Certs)"
+        
+        jcc --> truststore : uses
+    }
+    
+    rectangle mock_services as "Mock Services Layer" {
+        component wiremock as "WireMock Server\\n:8443 (HTTPS)\\n:8080 (HTTP)" {
+            database mappings as "Static Mappings\\n(JSON Files)"
+            database proxy_mappings as "Proxy Mappings\\n(Forward to JSON-DB)"
+        }
+        
+        component json_server as "JSON Server\\n:3000" {
+            database json_db as "JSON Database\\n(salesforce-db.json)"
+        }
+        
+        wiremock --> mappings : reads
+        wiremock --> proxy_mappings : reads
+        proxy_mappings ..> json_server : forwards to
+        json_server <--> json_db : persists
+    }
+    
+    rectangle data_services as "Supporting Services" {
+        database oracle_db as "Oracle DB\\n(Optional)"
+        database postgres_db as "PostgreSQL\\n(Optional)"
+        component minio_s3 as "MinIO S3\\n(Optional)"
+        queue activemq as "ActiveMQ\\n(Optional)"
+    }
+    
+    jcc <--> wiremock : HTTPS/HTTP\\nrequests
+    jcc <..> oracle_db : optional\\nconnection
+    jcc <..> postgres_db : optional\\nconnection
+    jcc <..> minio_s3 : optional\\nconnection
+    jcc <..> activemq : optional\\nconnection
+}
+
+component snaplogic_platform as "SnapLogic Platform" {
+    rectangle pipeline_layer as "Pipeline Layer" {
+        component salesforce_snap as "Salesforce Snap"
+        component database_snaps as "Database Snaps"
+        component s3_snap as "S3 Snap"
+        component jms_snap as "JMS Snap"
+    }
+    
+    salesforce_snap --> jcc : OAuth/REST API
+    database_snaps ..> jcc : SQL queries
+    s3_snap ..> jcc : S3 operations
+    jms_snap ..> jcc : JMS messages
+}
+
+' Main interaction flows
+developer --> testing_framework : writes/runs tests
+testing_framework --> groundplex_container : controls
+testing_framework --> mock_services : verifies
+
+snaplogic_cloud --> jcc : manages
+snaplogic_platform --> groundplex_container : executes on
+
+' Key relationships
+note right of wiremock
+  **Mapping Selection Logic:**
+  1. Check proxy_mappings first
+  2. Fall back to static mappings
+  3. Return 404 if no match
+end note
+
+note bottom of json_server
+  **Stateful Operations:**
+  - CREATE: POST /accounts
+  - READ: GET /accounts/{id}
+  - UPDATE: PATCH /accounts/{id}
+  - DELETE: DELETE /accounts/{id}
+end note
+
+note left of truststore
+  **Certificate Setup:**
+  One-time installation of
+  WireMock's self-signed cert
+  enables HTTPS connections
+end note
+
+' Add sticky notes on the right side explaining the differences
+note right of mappings #FFFFCC
+  <b>📌 Static Mappings</b>
+  ────────────────────
+  <b>What:</b> Predefined JSON responses
+  <b>Use Cases:</b>
+  • OAuth authentication
+  • API metadata/versions
+  • Error scenarios
+  • Quick smoke tests
+  
+  <b>Behavior:</b>
+  • Returns same response every time
+  • No data persistence
+  • Fast response times
+  • Stateless operations
+  
+  <b>Example:</b> 01-oauth-token.json
+  Always returns same mock token
+end note
+
+note right of proxy_mappings #E8F5E9
+  <b>📌 Proxy Mappings</b>
+  ────────────────────
+  <b>What:</b> Forwards to JSON Server
+  <b>Use Cases:</b>
+  • CRUD operations
+  • Workflow testing
+  • Data relationships
+  • Integration tests
+  
+  <b>Behavior:</b>
+  • Persists data changes
+  • Maintains state across tests
+  • Dynamic responses
+  • Realistic data operations
+  
+  <b>Example:</b> 02-proxy-create-account.json
+  Actually stores the account in DB
+end note
+
+note right #FFE0B2
+  <b>🔑 Key Difference</b>
+  ────────────────────
+  <b>Static:</b> "Fake it"
+  • Pretends to do operations
+  • Returns mock success
+  • Data disappears
+  
+  <b>Proxy:</b> "Make it"
+  • Actually performs operations
+  • Real data persistence
+  • Can query created data
+  
+  <b>Decision:</b>
+  Need data to persist? → Use Proxy
+  Just need response? → Use Static
+end note
+
+footer SnapLogic Confidential
+
+@enduml`;
+
+        // Function to load the diagram
+        function loadDiagram() {
+            const encoded = encodeURIComponent(pumlCode);
+            const plantUmlServer = 'http://www.plantuml.com/plantuml';
+            const imageUrl = `${plantUmlServer}/svg/${btoa(unescape(encoded))}`;
+            
+            const diagramContent = document.getElementById('diagram-content');
+            
+            // Create image element
+            const img = new Image();
+            img.id = 'diagram';
+            img.onload = function() {
+                diagramContent.innerHTML = '';
+                diagramContent.classList.remove('loading');
+                diagramContent.appendChild(img);
+            };
+            
+            img.onerror = function() {
+                diagramContent.innerHTML = `
+                    <div class="error">
+                        <h3>⚠️ Unable to load diagram from PlantUML server</h3>
+                        <p>The diagram couldn't be loaded. This might be due to:</p>
+                        <ul style="text-align: left;">
+                            <li>No internet connection</li>
+                            <li>PlantUML server is unreachable</li>
+                            <li>Firewall blocking the request</li>
+                        </ul>
+                        <p style="margin-top: 15px;">
+                            <strong>Alternative options:</strong>
+                        </p>
+                        <ol style="text-align: left;">
+                            <li>Copy the PlantUML code and paste it in the <a href="http://www.plantuml.com/plantuml/uml/" target="_blank">online editor</a></li>
+                            <li>Use a local PlantUML installation</li>
+                            <li>Try the Kroki.io server (see button below)</li>
+                        </ol>
+                        <div style="margin-top: 20px;">
+                            <button class="btn" onclick="tryKrokiServer()">Try Alternative Server (Kroki.io)</button>
+                            <button class="btn btn-secondary" onclick="copyPlantUMLCode()">📋 Copy PlantUML Code</button>
+                        </div>
+                    </div>
+                `;
+            };
+            
+            img.src = imageUrl;
+        }
+        
+        // Function to try Kroki.io as alternative
+        function tryKrokiServer() {
+            const encoded = btoa(unescape(encodeURIComponent(pumlCode)));
+            const krokiUrl = `https://kroki.io/plantuml/svg/${encoded}`;
+            
+            const diagramContent = document.getElementById('diagram-content');
+            diagramContent.innerHTML = '<div class="loading"><div class="spinner"></div><p>Trying Kroki.io server...</p></div>';
+            
+            const img = new Image();
+            img.id = 'diagram';
+            img.onload = function() {
+                diagramContent.innerHTML = '';
+                diagramContent.classList.remove('loading');
+                diagramContent.appendChild(img);
+            };
+            
+            img.onerror = function() {
+                diagramContent.innerHTML = `
+                    <div class="error">
+                        <h3>⚠️ Alternative server also failed</h3>
+                        <p>Please copy the PlantUML code and use a local viewer or the online editor.</p>
+                        <button class="btn btn-secondary" onclick="copyPlantUMLCode()">📋 Copy PlantUML Code</button>
+                    </div>
+                `;
+            };
+            
+            img.src = krokiUrl;
+        }
+        
+        // Function to refresh the diagram
+        function refreshDiagram() {
+            document.getElementById('diagram-content').innerHTML = '<div class="loading"><div class="spinner"></div><p>Refreshing diagram...</p></div>';
+            setTimeout(loadDiagram, 500);
+        }
+        
+        // Function to download the diagram
+        function downloadDiagram() {
+            const img = document.getElementById('diagram');
+            if (img) {
+                const link = document.createElement('a');
+                link.download = 'salesforce-mock-components.svg';
+                link.href = img.src;
+                link.click();
+            } else {
+                alert('Please wait for the diagram to load first.');
+            }
+        }
+        
+        // Function to copy PlantUML code to clipboard
+        function copyPlantUMLCode() {
+            navigator.clipboard.writeText(pumlCode).then(function() {
+                alert('PlantUML code copied to clipboard! You can now paste it in any PlantUML editor.');
+            }, function(err) {
+                console.error('Could not copy text: ', err);
+                alert('Failed to copy. Please manually select and copy the code from the source.');
+            });
+        }
+        
+        // Load diagram when page loads
+        window.onload = function() {
+            loadDiagram();
+        };
+    </script>
+</body>
+</html>
