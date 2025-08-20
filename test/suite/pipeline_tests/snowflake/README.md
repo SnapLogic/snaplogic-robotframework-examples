@@ -86,30 +86,9 @@ docker-compose up -d
 
 ### Run All Tests
 ```bash
-robot snowflake_tests_dblibrary.robot
+make robot-run-all-tests TAGS=snowflake
 ```
 
-### Run Specific Tags
-```bash
-# Run regression tests only
-robot --include regression snowflake_tests_dblibrary.robot
-
-# Run data setup tests
-robot --include data_setup snowflake_tests_dblibrary.robot
-
-# Run generic SQL tests
-robot --include generic_sql snowflake_tests_dblibrary.robot
-```
-
-### Run with Custom Output Directory
-```bash
-robot --outputdir results snowflake_tests_dblibrary.robot
-```
-
-### Run with Variable Overrides
-```bash
-robot -v SNOWFLAKE_DATABASE:TEST_DB snowflake_tests_dblibrary.robot
-```
 
 ## 🔍 Two-Layer Validation Approach
 
@@ -128,7 +107,7 @@ robot -v SNOWFLAKE_DATABASE:TEST_DB snowflake_tests_dblibrary.robot
 ## 📊 Project Status (As of 08/20)
 
 ### ✅ Completed
-- [x] List requirements from Caterpillar experience
+- [x] List requirements from Other Customer's experience
 - [x] Build POC for Dylan's Snowflake pipeline
 - [x] Implement two-layer validation approach
 - [x] Create comprehensive test documentation
