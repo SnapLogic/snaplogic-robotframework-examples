@@ -107,7 +107,7 @@ make robot-run-all-tests TAGS=snowflake
 ## 📊 Project Status (As of 08/20)
 
 ### ✅ Completed
-- [x] List requirements from Other Customer's experience
+- [x] List requirements from other customers' experience
 - [x] Build POC for Dylan's Snowflake pipeline
 - [x] Implement two-layer validation approach
 - [x] Create comprehensive test documentation
