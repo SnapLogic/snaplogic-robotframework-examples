@@ -455,15 +455,26 @@ Load CSV To Database Table
     TRY
         # Truncate table if requested
         IF    ${truncate_table}
-            # For DB2, we need to use IMMEDIATE clause
+            # Try different TRUNCATE syntaxes based on database type
+            ${truncate_success}=    Set Variable    ${FALSE}
+            
+            # Try standard TRUNCATE first (works for most databases including Snowflake)
             TRY
-                # Try standard TRUNCATE first
                 Execute SQL String    TRUNCATE TABLE ${table_name}
                 Log    🗑️ Truncated table: ${table_name} (standard syntax)
+                ${truncate_success}=    Set Variable    ${TRUE}
             EXCEPT
-                # If it fails, try DB2 syntax with IMMEDIATE
-                Execute SQL String    TRUNCATE TABLE ${table_name} IMMEDIATE
-                Log    🗑️ Truncated table: ${table_name} (DB2 syntax with IMMEDIATE)
+                # If standard fails, try DB2 syntax with IMMEDIATE
+                TRY
+                    Execute SQL String    TRUNCATE TABLE ${table_name} IMMEDIATE
+                    Log    🗑️ Truncated table: ${table_name} (DB2 syntax with IMMEDIATE)
+                    ${truncate_success}=    Set Variable    ${TRUE}
+                EXCEPT
+                    # If both TRUNCATE attempts fail, fall back to DELETE
+                    Log    TRUNCATE failed, falling back to DELETE    level=WARN
+                    Execute SQL String    DELETE FROM ${table_name}
+                    Log    🗑️ Cleared table using DELETE: ${table_name}
+                END
             END
         END
 
@@ -501,15 +512,26 @@ Load JSON To Database Table
     TRY
         # Truncate table if requested
         IF    ${truncate_table}
-            # For DB2, we need to use IMMEDIATE clause
+            # Try different TRUNCATE syntaxes based on database type
+            ${truncate_success}=    Set Variable    ${FALSE}
+            
+            # Try standard TRUNCATE first (works for most databases including Snowflake)
             TRY
-                # Try standard TRUNCATE first
                 Execute SQL String    TRUNCATE TABLE ${table_name}
                 Log    🗑️ Truncated table: ${table_name} (standard syntax)
+                ${truncate_success}=    Set Variable    ${TRUE}
             EXCEPT
-                # If it fails, try DB2 syntax with IMMEDIATE
-                Execute SQL String    TRUNCATE TABLE ${table_name} IMMEDIATE
-                Log    🗑️ Truncated table: ${table_name} (DB2 syntax with IMMEDIATE)
+                # If standard fails, try DB2 syntax with IMMEDIATE
+                TRY
+                    Execute SQL String    TRUNCATE TABLE ${table_name} IMMEDIATE
+                    Log    🗑️ Truncated table: ${table_name} (DB2 syntax with IMMEDIATE)
+                    ${truncate_success}=    Set Variable    ${TRUE}
+                EXCEPT
+                    # If both TRUNCATE attempts fail, fall back to DELETE
+                    Log    TRUNCATE failed, falling back to DELETE    level=WARN
+                    Execute SQL String    DELETE FROM ${table_name}
+                    Log    🗑️ Cleared table using DELETE: ${table_name}
+                END
             END
         END
 
@@ -541,24 +563,34 @@ Get Table Columns
     [Documentation]    Gets column names from database table
     [Arguments]    ${table_name}
 
-    # For DB2, we need to use SYSCAT.COLUMNS instead of information_schema
+    # For Snowflake, use INFORMATION_SCHEMA.COLUMNS
     TRY
-        # Try DB2 specific query first
-        ${query}=    Set Variable
-        ...    SELECT COLNAME FROM SYSCAT.COLUMNS WHERE TABNAME = UPPER('${table_name}') AND UPPER(COLNAME) != 'ID' ORDER BY COLNO
+        # Try Snowflake/standard SQL first
+        ${query}=    Catenate    SEPARATOR=${SPACE}
+        ...    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+        ...    WHERE TABLE_NAME = UPPER('${table_name}')
+        ...    AND TABLE_SCHEMA = CURRENT_SCHEMA()
+        ...    AND UPPER(COLUMN_NAME) != 'ID'
+        ...    ORDER BY ORDINAL_POSITION
         ${result}=    Query    ${query}
     EXCEPT
-        # Fall back to standard query for other databases
+        # Fall back to DB2 specific query
         ${query}=    Set Variable
-        ...    SELECT column_name FROM information_schema.columns WHERE table_name = '${table_name}' AND column_name != 'id' ORDER BY ordinal_position
+        ...    SELECT COLNAME FROM SYSCAT.COLUMNS WHERE TABNAME = UPPER('${table_name}') AND UPPER(COLNAME) != 'ID' ORDER BY COLNO
         ${result}=    Query    ${query}
     END
     
     ${columns}=    Create List
     FOR    ${row}    IN    @{result}
         ${column}=    Get From List    ${row}    0
-        # Keep column names as returned by database (DB2 returns uppercase)
+        # Keep column names as returned by database
         Append To List    ${columns}    ${column}
+    END
+
+    # If no columns found, it might mean the table doesn't exist
+    ${column_count}=    Get Length    ${columns}
+    IF    ${column_count} == 0
+        Log    WARNING: No columns found for table ${table_name}. Table might not exist.    level=WARN
     END
 
     RETURN    ${columns}
@@ -574,7 +606,7 @@ Build Insert SQL From Dict
     Log    Row data: ${row_dict}
     Log    Table columns: ${table_columns}
 
-    # Only include columns that exist in both CSV and table
+    # Only include columns that exist in both CSV/JSON and table
     FOR    ${csv_column}    ${csv_value}    IN    &{row_dict}
         # For case-insensitive comparison
         ${csv_column_upper}=    Convert To Upper Case    ${csv_column}
@@ -584,7 +616,39 @@ Build Insert SQL From Dict
             ${table_column_upper}=    Convert To Upper Case    ${table_column}
 
             IF    '${csv_column_upper}' == '${table_column_upper}'
-                ${escaped_value}=    Set Variable    '${csv_value}'
+                # Handle different data types properly
+                ${value_type}=    Evaluate    type($csv_value).__name__
+                
+                # Handle NULL/None values
+                IF    $csv_value is None or '${csv_value}' == 'None'
+                    ${escaped_value}=    Set Variable    NULL
+                # Handle empty strings
+                ELSE IF    '${csv_value}' == '${EMPTY}' or '${csv_value}' == ''
+                    ${escaped_value}=    Set Variable    NULL
+                # Handle boolean values (Python True/False)
+                ELSE IF    '${value_type}' == 'bool'
+                    IF    ${csv_value}
+                        ${escaped_value}=    Set Variable    TRUE
+                    ELSE
+                        ${escaped_value}=    Set Variable    FALSE
+                    END
+                # Handle numeric values (int, float)
+                ELSE IF    '${value_type}' == 'int' or '${value_type}' == 'float'
+                    ${escaped_value}=    Set Variable    ${csv_value}
+                # Handle date fields (check if column name contains 'date')
+                ELSE IF    'DATE' in '${table_column_upper}'
+                    # Assume it's a date string, wrap in quotes
+                    ${str_value}=    Convert To String    ${csv_value}
+                    ${escaped_str}=    Replace String    ${str_value}    '    ''
+                    ${escaped_value}=    Set Variable    '${escaped_str}'
+                # Handle all other values as strings
+                ELSE
+                    # Convert to string and escape single quotes
+                    ${str_value}=    Convert To String    ${csv_value}
+                    ${escaped_str}=    Replace String    ${str_value}    '    ''
+                    ${escaped_value}=    Set Variable    '${escaped_str}'
+                END
+                
                 # Use the actual table column name (preserves case from DB)
                 Append To List    ${columns}    ${table_column}
                 Append To List    ${values}    ${escaped_value}
@@ -593,8 +657,14 @@ Build Insert SQL From Dict
         END
     END
 
+    # Check if we have any columns to insert
+    ${column_count}=    Get Length    ${columns}
+    IF    ${column_count} == 0
+        Fail    No matching columns found between data and table. Data columns: ${row_dict.keys()}, Table columns: ${table_columns}
+    END
+
     ${columns_str}=    Evaluate    ', '.join($columns)
-    ${values_str}=    Evaluate    ', '.join($values)
+    ${values_str}=    Evaluate    ', '.join(str(v) for v in $values)
     ${sql}=    Set Variable    INSERT INTO ${table_name} (${columns_str}) VALUES (${values_str})
     
     Log    Generated SQL: ${sql}
