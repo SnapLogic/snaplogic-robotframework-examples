@@ -169,7 +169,7 @@ Verify Expected Results In DB
     # Verify we got all 5 records
     ${row_count}=    Get Length    ${results}
     Should Be Equal As Integers    ${row_count}    5
-    Log    Successfully retrieved ${row_count} records using generic keyword    console=yes
+    Log    Successfully retrieved ${row_count} records using generic keyword
 
     # Select specific records with WHERE clause using generic keyword
     Log    ========== USING GENERIC SELECT WHERE KEYWORD ==========    console=yes

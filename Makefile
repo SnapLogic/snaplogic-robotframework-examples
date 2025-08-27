@@ -25,7 +25,8 @@
         start-services createplex-launch-groundplex \
         salesforce-mock-start salesforce-mock-stop salesforce-mock-status salesforce-mock-restart \
 		rebuild-tools-with-updated-requirements install-requirements-local install-requirements-venv \
-		update-requirements-all clean-install-requirements upload-test-results upload-test-results-cli
+		update-requirements-all clean-install-requirements upload-test-results upload-test-results-cli \
+		email-start email-stop email-restart email-status email-clean
 
 # -----------------------------------------------------------------------------
 # Global Variables
@@ -981,6 +982,92 @@ clean-install-requirements:
 	@pip install --upgrade pip
 	@pip install -r src/tools/requirements.txt
 	@echo "✅ Clean install completed!"
+
+# =============================================================================
+# 📧 Email Server (MailDev) Management
+# =============================================================================
+
+# Docker compose command for email mock
+DOCKER_COMPOSE_EMAIL := docker compose -f docker/docker-compose.email-mock.yml
+
+# =============================================================================
+# 🚀 Start MailDev email testing server
+# =============================================================================
+email-start:
+	@echo "📧 Starting MailDev email testing server..."
+	$(DOCKER_COMPOSE_EMAIL) --profile email-mock up -d maildev
+	@echo "⏳ Waiting for MailDev to initialize..."
+	@sleep 3
+	@echo "✅ MailDev email server started!"
+	@echo ""
+	@echo "🌐 Service endpoints:"
+	@echo "   • SMTP Server: localhost:1025 (no auth required)"
+	@echo "   • Web UI: http://localhost:1080"
+	@echo ""
+	@echo "🔧 SnapLogic Email Snap configuration:"
+	@echo "   • SMTP Host: localhost (or maildev-test from Groundplex)"
+	@echo "   • Port: 1025"
+	@echo "   • Authentication: None"
+	@echo "   • Encryption: None"
+
+# =============================================================================
+# ⛔ Stop MailDev email testing server
+# =============================================================================
+email-stop:
+	@echo "⛔ Stopping MailDev email server..."
+	$(DOCKER_COMPOSE_EMAIL) stop maildev || true
+	@echo "🗑️ Removing MailDev container and volumes..."
+	$(DOCKER_COMPOSE_EMAIL) rm -f -v maildev || true
+	@echo "✅ MailDev email server stopped and cleaned up."
+
+# =============================================================================
+# 🔄 Restart MailDev email testing server
+# =============================================================================
+email-restart:
+	@echo "🔄 Restarting MailDev email server..."
+	@$(MAKE) email-stop
+	@sleep 2
+	@$(MAKE) email-start
+	@echo "✅ MailDev email server restarted successfully!"
+
+# =============================================================================
+# 🔍 Check MailDev email server status
+# =============================================================================
+email-status:
+	@echo "🔍 Checking MailDev email server status..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@container_status=$(docker inspect -f '{{.State.Status}}' maildev-test 2>/dev/null || echo "not found"); \
+	if [ "$container_status" = "running" ]; then \
+		echo "✅ MailDev container is running"; \
+		echo "   Container: maildev-test"; \
+		echo "   SMTP Port: 1025"; \
+		echo "   Web UI Port: 1080"; \
+		echo ""; \
+		echo "🧪 Testing service health..."; \
+		if curl -s -f http://localhost:1080/ >/dev/null 2>&1; then \
+			echo "   ✅ Web UI is accessible at http://localhost:1080"; \
+		else \
+			echo "   ⚠️  Web UI not responding (may still be starting)"; \
+		fi; \
+		echo ""; \
+		echo "📊 Container resource usage:"; \
+		docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}" maildev-test 2>/dev/null || true; \
+	else \
+		echo "❌ MailDev container is not running (status: $container_status)"; \
+		echo "💡 Run 'make email-start' to start the email server"; \
+	fi
+
+# =============================================================================
+# 🧹 Clean all email server data and restart
+# =============================================================================
+email-clean:
+	@echo "🧹 Cleaning and restarting MailDev email server..."
+	@$(MAKE) email-stop
+	@echo "🗑️ Removing any cached email data..."
+	@docker volume prune -f 2>/dev/null || true
+	@sleep 2
+	@$(MAKE) email-start
+	@echo "✅ MailDev email server started with clean state!"
 
 # Send slack notifications for test results
 slack-notify:
