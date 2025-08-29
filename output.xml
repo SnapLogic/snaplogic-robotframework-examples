@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 7.3.2 (Python 3.10.12 on linux)" generated="2025-07-15T12:49:41.967331" rpa="false" schemaversion="5">
+<suite id="s1" name="OTS QLIK DLY" source="/mnt/c/Users/GAC-LP0003.GAC-LP-0003.000/Downloads/Sai_QA_Robo/snaplogic-robotframework-examples/test/suite/pipeline_tests/oracle/OTS_QLIK_DLY.robot">
+<kw name="Initialize Test Environment" type="SETUP">
+<kw name="Load Environment Variables From">
+<msg time="2025-07-15T12:49:42.642648" level="FAIL">No keyword with name 'Load Environment Variables From' found. Did you mean:
+    OperatingSystem.Log Environment Variables</msg>
+<arg>${env_file_path}</arg>
+<status status="FAIL" start="2025-07-15T12:49:42.642577" elapsed="0.000187">No keyword with name 'Load Environment Variables From' found. Did you mean:
+    OperatingSystem.Log Environment Variables</status>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>ORG_NAME=${ORG_NAME}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="NOT RUN" start="2025-07-15T12:49:42.643019" elapsed="0.000068"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>PROJECT_SPACE=${PROJECT_SPACE}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="NOT RUN" start="2025-07-15T12:49:42.643212" elapsed="0.000018"/>
+</kw>
+<kw name="Wait Until Plex Status Is Up" owner="snaplogic_keywords">
+<arg>/${ORG_NAME}/${GROUNDPLEX_LOCATION_PATH}/${GROUNDPLEX_NAME}</arg>
+<doc>Waits until the given Snaplex instance reaches the `up_and_running` or `alert` state.</doc>
+<status status="NOT RUN" start="2025-07-15T12:49:42.643458" elapsed="0.000029"/>
+</kw>
+<kw name="Connect to PostgreSQL Database">
+<arg>${POSTGRES_DBNAME}</arg>
+<arg>${POSTGRES_DBUSER}</arg>
+<arg>${POSTGRES_DBPASS}</arg>
+<arg>${POSTGRES_HOST}</arg>
+<arg>${POSTGRES_DBPORT}</arg>
+<status status="NOT RUN" start="2025-07-15T12:49:42.643600" elapsed="0.000018"/>
+</kw>
+<kw name="Connect to Oracle Database">
+<arg>${ORACLE_DBNAME}</arg>
+<arg>${ORACLE_DBUSER}</arg>
+<arg>${ORACLE_DBPASS}</arg>
+<arg>${ORACLE_HOST}</arg>
+<arg>${ORACLE_DBPORT}</arg>
+<status status="NOT RUN" start="2025-07-15T12:49:42.643702" elapsed="0.000016"/>
+</kw>
+<kw name="Initialize Variables">
+<status status="NOT RUN" start="2025-07-15T12:49:42.643801" elapsed="0.000015"/>
+</kw>
+<doc>Loads environment variables and connects to databases</doc>
+<status status="FAIL" start="2025-07-15T12:49:42.637613" elapsed="0.006317">No keyword with name 'Load Environment Variables From' found. Did you mean:
+    OperatingSystem.Log Environment Variables</status>
+</kw>
+<test id="s1-t1" name="Initialize Suite" line="52">
+<tag>oracle_pipeline</tag>
+<tag>regression</tag>
+<status status="FAIL" start="2025-07-15T12:49:42.644023" elapsed="0.000355">Parent suite setup failed:
+No keyword with name 'Load Environment Variables From' found. Did you mean:
+    OperatingSystem.Log Environment Variables</status>
+</test>
+<test id="s1-t2" name="Create Account" line="56">
+<tag>oracle_pipeline</tag>
+<tag>regression</tag>
+<status status="FAIL" start="2025-07-15T12:49:42.644644" elapsed="0.000234">Parent suite setup failed:
+No keyword with name 'Load Environment Variables From' found. Did you mean:
+    OperatingSystem.Log Environment Variables</status>
+</test>
+<test id="s1-t3" name="Import Pipeline" line="60">
+<tag>oracle_pipeline</tag>
+<tag>regression</tag>
+<status status="FAIL" start="2025-07-15T12:49:42.645125" elapsed="0.000363">Parent suite setup failed:
+No keyword with name 'Load Environment Variables From' found. Did you mean:
+    OperatingSystem.Log Environment Variables</status>
+</test>
+<test id="s1-t4" name="Upload Expression Files" line="64">
+<tag>oracle_pipeline</tag>
+<tag>regression</tag>
+<status status="FAIL" start="2025-07-15T12:49:42.646007" elapsed="0.000303">Parent suite setup failed:
+No keyword with name 'Load Environment Variables From' found. Did you mean:
+    OperatingSystem.Log Environment Variables</status>
+</test>
+<test id="s1-t5" name="Create Triggered Task" line="69">
+<tag>oracle_pipeline</tag>
+<tag>regression</tag>
+<status status="FAIL" start="2025-07-15T12:49:42.646584" elapsed="0.000227">Parent suite setup failed:
+No keyword with name 'Load Environment Variables From' found. Did you mean:
+    OperatingSystem.Log Environment Variables</status>
+</test>
+<test id="s1-t6" name="Run Pipeline and Verify" line="79">
+<tag>oracle_pipeline</tag>
+<tag>regression</tag>
+<status status="FAIL" start="2025-07-15T12:49:42.647121" elapsed="0.000255">Parent suite setup failed:
+No keyword with name 'Load Environment Variables From' found. Did you mean:
+    OperatingSystem.Log Environment Variables</status>
+</test>
+<kw name="Clean Up Test Environment" type="TEARDOWN">
+<kw name="Disconnect From PostgreSQL Database">
+<kw name="Disconnect From Database Using Connection">
+<msg time="2025-07-15T12:49:42.652314" level="FAIL">No keyword with name 'Disconnect From Database Using Connection' found. Did you try using keyword 'DatabaseLibrary.Disconnect From Database' or 'database.Disconnect from Database' and forgot to use enough whitespace between keyword and arguments?</msg>
+<arg>${PG_CONN}</arg>
+<status status="FAIL" start="2025-07-15T12:49:42.652244" elapsed="0.000129">No keyword with name 'Disconnect From Database Using Connection' found. Did you try using keyword 'DatabaseLibrary.Disconnect From Database' or 'database.Disconnect from Database' and forgot to use enough whitespace between keyword and arguments?</status>
+</kw>
+<status status="FAIL" start="2025-07-15T12:49:42.648721" elapsed="0.003804">No keyword with name 'Disconnect From Database Using Connection' found. Did you try using keyword 'DatabaseLibrary.Disconnect From Database' or 'database.Disconnect from Database' and forgot to use enough whitespace between keyword and arguments?</status>
+</kw>
+<kw name="Disconnect From Oracle Database">
+<kw name="Disconnect From Database Using Connection">
+<msg time="2025-07-15T12:49:42.655221" level="FAIL">No keyword with name 'Disconnect From Database Using Connection' found. Did you try using keyword 'DatabaseLibrary.Disconnect From Database' or 'database.Disconnect from Database' and forgot to use enough whitespace between keyword and arguments?</msg>
+<arg>${ORA_CONN}</arg>
+<status status="FAIL" start="2025-07-15T12:49:42.655144" elapsed="0.000148">No keyword with name 'Disconnect From Database Using Connection' found. Did you try using keyword 'DatabaseLibrary.Disconnect From Database' or 'database.Disconnect from Database' and forgot to use enough whitespace between keyword and arguments?</status>
+</kw>
+<status status="FAIL" start="2025-07-15T12:49:42.652677" elapsed="0.002758">No keyword with name 'Disconnect From Database Using Connection' found. Did you try using keyword 'DatabaseLibrary.Disconnect From Database' or 'database.Disconnect from Database' and forgot to use enough whitespace between keyword and arguments?</status>
+</kw>
+<kw name="Truncate Tables In PostgreSQL">
+<kw name="Execute SQL String Using Connection">
+<msg time="2025-07-15T12:49:42.661123" level="FAIL">No keyword with name 'Execute SQL String Using Connection' found. Did you try using keyword 'DatabaseLibrary.Execute Sql String' and forgot to use enough whitespace between keyword and arguments?</msg>
+<arg>${PG_CONN}</arg>
+<arg>TRUNCATE TABLE qlik_ots_daily;</arg>
+<status status="FAIL" start="2025-07-15T12:49:42.660794" elapsed="0.000425">No keyword with name 'Execute SQL String Using Connection' found. Did you try using keyword 'DatabaseLibrary.Execute Sql String' and forgot to use enough whitespace between keyword and arguments?</status>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<msg time="2025-07-15T12:49:42.661885" level="INFO">Truncated 'qlik_ots_daily' table in PostgreSQL</msg>
+<arg>Truncated 'qlik_ots_daily' table in PostgreSQL</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2025-07-15T12:49:42.661641" elapsed="0.000316"/>
+</kw>
+<status status="FAIL" start="2025-07-15T12:49:42.655628" elapsed="0.006526">No keyword with name 'Execute SQL String Using Connection' found. Did you try using keyword 'DatabaseLibrary.Execute Sql String' and forgot to use enough whitespace between keyword and arguments?</status>
+</kw>
+<kw name="Truncate Tables In Oracle">
+<kw name="Execute SQL String Using Connection">
+<msg time="2025-07-15T12:49:42.665942" level="FAIL">No keyword with name 'Execute SQL String Using Connection' found. Did you try using keyword 'DatabaseLibrary.Execute Sql String' and forgot to use enough whitespace between keyword and arguments?</msg>
+<arg>${ORA_CONN}</arg>
+<arg>TRUNCATE TABLE OTS_DAILY;</arg>
+<status status="FAIL" start="2025-07-15T12:49:42.665899" elapsed="0.000088">No keyword with name 'Execute SQL String Using Connection' found. Did you try using keyword 'DatabaseLibrary.Execute Sql String' and forgot to use enough whitespace between keyword and arguments?</status>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<msg time="2025-07-15T12:49:42.666480" level="INFO">Truncated 'OTS_DAILY' table in Oracle</msg>
+<arg>Truncated 'OTS_DAILY' table in Oracle</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2025-07-15T12:49:42.666144" elapsed="0.000434"/>
+</kw>
+<status status="FAIL" start="2025-07-15T12:49:42.663209" elapsed="0.003495">No keyword with name 'Execute SQL String Using Connection' found. Did you try using keyword 'DatabaseLibrary.Execute Sql String' and forgot to use enough whitespace between keyword and arguments?</status>
+</kw>
+<status status="FAIL" start="2025-07-15T12:49:42.648301" elapsed="0.018481">Several failures occurred:
+
+1) No keyword with name 'Disconnect From Database Using Connection' found. Did you try using keyword 'DatabaseLibrary.Disconnect From Database' or 'database.Disconnect from Database' and forgot to use enough whitespace between keyword and arguments?
+
+2) No keyword with name 'Disconnect From Database Using Connection' found. Did you try using keyword 'DatabaseLibrary.Disconnect From Database' or 'database.Disconnect from Database' and forgot to use enough whitespace between keyword and arguments?
+
+3) No keyword with name 'Execute SQL String Using Connection' found. Did you try using keyword 'DatabaseLibrary.Execute Sql String' and forgot to use enough whitespace between keyword and arguments?
+
+4) No keyword with name 'Execute SQL String Using Connection' found. Did you try using keyword 'DatabaseLibrary.Execute Sql String' and forgot to use enough whitespace between keyword and arguments?</status>
+</kw>
+<doc>Test Suite to test SnapLogic pipeline for Oracle &amp; PostgreSQL integration
+This suite validates:
+1. Project space and Snaplex readiness
+2. Account creation in SnapLogic
+3. Pipeline import
+4. Expression library upload
+5. Task creation and execution
+6. Data validation in Oracle DB</doc>
+<status status="FAIL" start="2025-07-15T12:49:41.970019" elapsed="0.696816">Suite setup failed:
+No keyword with name 'Load Environment Variables From' found. Did you mean:
+    OperatingSystem.Log Environment Variables
+
+Also suite teardown failed:
+Several failures occurred:
+
+1) No keyword with name 'Disconnect From Database Using Connection' found. Did you try using keyword 'DatabaseLibrary.Disconnect From Database' or 'database.Disconnect from Database' and forgot to use enough whitespace between keyword and arguments?
+
+2) No keyword with name 'Disconnect From Database Using Connection' found. Did you try using keyword 'DatabaseLibrary.Disconnect From Database' or 'database.Disconnect from Database' and forgot to use enough whitespace between keyword and arguments?
+
+3) No keyword with name 'Execute SQL String Using Connection' found. Did you try using keyword 'DatabaseLibrary.Execute Sql String' and forgot to use enough whitespace between keyword and arguments?
+
+4) No keyword with name 'Execute SQL String Using Connection' found. Did you try using keyword 'DatabaseLibrary.Execute Sql String' and forgot to use enough whitespace between keyword and arguments?</status>
+</suite>
+<statistics>
+<total>
+<stat pass="0" fail="6" skip="0">All Tests</stat>
+</total>
+<tag>
+<stat pass="0" fail="6" skip="0">oracle_pipeline</stat>
+<stat pass="0" fail="6" skip="0">regression</stat>
+</tag>
+<suite>
+<stat name="OTS QLIK DLY" id="s1" pass="0" fail="6" skip="0">OTS QLIK DLY</stat>
+</suite>
+</statistics>
+<errors>
+</errors>
+</robot>
