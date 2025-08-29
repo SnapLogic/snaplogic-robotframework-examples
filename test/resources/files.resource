@@ -18,6 +18,7 @@ Library             Collections
 Resource            general.resource
 Resource            database.resource    # Database operations for file loading
 Resource            minio.resource    # MinIO file operations (if needed)
+Resource            sql_table_operations.resource
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource    # SnapLogic API keywords from installed package
 
 
@@ -457,7 +458,7 @@ Load CSV To Database Table
         IF    ${truncate_table}
             # Try different TRUNCATE syntaxes based on database type
             ${truncate_success}=    Set Variable    ${FALSE}
-            
+
             # Try standard TRUNCATE first (works for most databases including Snowflake)
             TRY
                 Execute SQL String    TRUNCATE TABLE ${table_name}
@@ -482,8 +483,8 @@ Load CSV To Database Table
         ${csv_data}=    Read Csv File To Associative    ${csv_file}
         Log    📊 Read ${csv_data.__len__()} rows from CSV file
 
-        # Get table columns for validation
-        ${table_columns}=    Get Table Columns    ${table_name}
+        # Get table columns for validation (use 'public' schema for PostgreSQL)
+        ${table_columns}=    Get Table Columns    ${table_name}    schema=public
         Log    🗄️ Table columns: ${table_columns}
 
         # Insert each row using associative data
@@ -514,7 +515,7 @@ Load JSON To Database Table
         IF    ${truncate_table}
             # Try different TRUNCATE syntaxes based on database type
             ${truncate_success}=    Set Variable    ${FALSE}
-            
+
             # Try standard TRUNCATE first (works for most databases including Snowflake)
             TRY
                 Execute SQL String    TRUNCATE TABLE ${table_name}
@@ -539,8 +540,8 @@ Load JSON To Database Table
         ${json_data}=    Load Json From File    ${json_file}
         Log    📊 Read ${json_data.__len__()} rows from JSON file
 
-        # Get table columns for validation
-        ${table_columns}=    Get Table Columns    ${table_name}
+        # Get table columns for validation (use 'public' schema for PostgreSQL)
+        ${table_columns}=    Get Table Columns    ${table_name}    schema=public
         Log    🗄️ Table columns: ${table_columns}
 
         # Insert each row using JSON data
@@ -558,118 +559,6 @@ Load JSON To Database Table
     END
 
     RETURN    ${result}
-
-Get Table Columns
-    [Documentation]    Gets column names from database table
-    [Arguments]    ${table_name}
-
-    # For Snowflake, use INFORMATION_SCHEMA.COLUMNS
-    TRY
-        # Try Snowflake/standard SQL first
-        ${query}=    Catenate    SEPARATOR=${SPACE}
-        ...    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-        ...    WHERE TABLE_NAME = UPPER('${table_name}')
-        ...    AND TABLE_SCHEMA = CURRENT_SCHEMA()
-        ...    AND UPPER(COLUMN_NAME) != 'ID'
-        ...    ORDER BY ORDINAL_POSITION
-        ${result}=    Query    ${query}
-    EXCEPT
-        # Fall back to DB2 specific query
-        ${query}=    Set Variable
-        ...    SELECT COLNAME FROM SYSCAT.COLUMNS WHERE TABNAME = UPPER('${table_name}') AND UPPER(COLNAME) != 'ID' ORDER BY COLNO
-        ${result}=    Query    ${query}
-    END
-    
-    ${columns}=    Create List
-    FOR    ${row}    IN    @{result}
-        ${column}=    Get From List    ${row}    0
-        # Keep column names as returned by database
-        Append To List    ${columns}    ${column}
-    END
-
-    # If no columns found, it might mean the table doesn't exist
-    ${column_count}=    Get Length    ${columns}
-    IF    ${column_count} == 0
-        Log    WARNING: No columns found for table ${table_name}. Table might not exist.    level=WARN
-    END
-
-    RETURN    ${columns}
-
-Build Insert SQL From Dict
-    [Documentation]    Builds INSERT SQL statement from dictionary/associative data
-    [Arguments]    ${table_name}    ${row_dict}    ${table_columns}
-
-    ${columns}=    Create List
-    ${values}=    Create List
-    
-    Log    Building INSERT SQL for table: ${table_name}
-    Log    Row data: ${row_dict}
-    Log    Table columns: ${table_columns}
-
-    # Only include columns that exist in both CSV/JSON and table
-    FOR    ${csv_column}    ${csv_value}    IN    &{row_dict}
-        # For case-insensitive comparison
-        ${csv_column_upper}=    Convert To Upper Case    ${csv_column}
-
-        FOR    ${table_column}    IN    @{table_columns}
-            # Compare in uppercase for case-insensitive match
-            ${table_column_upper}=    Convert To Upper Case    ${table_column}
-
-            IF    '${csv_column_upper}' == '${table_column_upper}'
-                # Handle different data types properly
-                ${value_type}=    Evaluate    type($csv_value).__name__
-                
-                # Handle NULL/None values
-                IF    $csv_value is None or '${csv_value}' == 'None'
-                    ${escaped_value}=    Set Variable    NULL
-                # Handle empty strings
-                ELSE IF    '${csv_value}' == '${EMPTY}' or '${csv_value}' == ''
-                    ${escaped_value}=    Set Variable    NULL
-                # Handle boolean values (Python True/False)
-                ELSE IF    '${value_type}' == 'bool'
-                    IF    ${csv_value}
-                        ${escaped_value}=    Set Variable    TRUE
-                    ELSE
-                        ${escaped_value}=    Set Variable    FALSE
-                    END
-                # Handle numeric values (int, float)
-                ELSE IF    '${value_type}' == 'int' or '${value_type}' == 'float'
-                    ${escaped_value}=    Set Variable    ${csv_value}
-                # Handle date fields (check if column name contains 'date')
-                ELSE IF    'DATE' in '${table_column_upper}'
-                    # Assume it's a date string, wrap in quotes
-                    ${str_value}=    Convert To String    ${csv_value}
-                    ${escaped_str}=    Replace String    ${str_value}    '    ''
-                    ${escaped_value}=    Set Variable    '${escaped_str}'
-                # Handle all other values as strings
-                ELSE
-                    # Convert to string and escape single quotes
-                    ${str_value}=    Convert To String    ${csv_value}
-                    ${escaped_str}=    Replace String    ${str_value}    '    ''
-                    ${escaped_value}=    Set Variable    '${escaped_str}'
-                END
-                
-                # Use the actual table column name (preserves case from DB)
-                Append To List    ${columns}    ${table_column}
-                Append To List    ${values}    ${escaped_value}
-                BREAK
-            END
-        END
-    END
-
-    # Check if we have any columns to insert
-    ${column_count}=    Get Length    ${columns}
-    IF    ${column_count} == 0
-        Fail    No matching columns found between data and table. Data columns: ${row_dict.keys()}, Table columns: ${table_columns}
-    END
-
-    ${columns_str}=    Evaluate    ', '.join($columns)
-    ${values_str}=    Evaluate    ', '.join(str(v) for v in $values)
-    ${sql}=    Set Variable    INSERT INTO ${table_name} (${columns_str}) VALUES (${values_str})
-    
-    Log    Generated SQL: ${sql}
-
-    RETURN    ${sql}
 
 ################## SIMPLIFIED AUTO-LOADING KEYWORDS ##################
 

@@ -96,7 +96,7 @@ jobs:
         - export TRAVIS_COMMIT_AUTHOR_NAME="$(git log -1 --pretty=format:'%an' 2>/dev/null || echo 'CI Build')"
         - export TRAVIS_COMMIT_AUTHOR_EMAIL="$(git log -1 --pretty=format:'%ae')"
         - make snaplogic-start-services
-        - make robot-run-all-tests TAGS="oracle sqlserver file_mount postgres_s3 sla" PROJECT_SPACE_SETUP=True
+        - make robot-run-all-tests TAGS="oracle sqlserver file_mount postgres_s3 sla snowflake_intuit" PROJECT_SPACE_SETUP=True
         - make upload-test-results
         - make slack-notify
 

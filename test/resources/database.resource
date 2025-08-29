@@ -74,7 +74,12 @@ Connect to SQL Server Database
     ...    - Database connection parameters
     ...    *Example:*
     ...    | Connect to SQL Server Database | TestDB | sa | password | localhost | 1433 |
-    [Arguments]    ${SQLSERVER_DBNAME}    ${SQLSERVER_DBUSER}    ${SQLSERVER_DBPASS}    ${SQLSERVER_HOST}    ${SQLSERVER_DBPORT}=1433
+    [Arguments]
+    ...    ${SQLSERVER_DBNAME}
+    ...    ${SQLSERVER_DBUSER}
+    ...    ${SQLSERVER_DBPASS}
+    ...    ${SQLSERVER_HOST}
+    ...    ${SQLSERVER_DBPORT}=1433
 
     Connect To Database
     ...    pymssql
@@ -386,32 +391,32 @@ Truncate Table
 
     Log    ✅ Table '${table_name}' truncated successfully
 
-Get Table Columns
-    [Documentation]    Gets column names from database table
-    ...    📋 ASSERTIONS:
-    ...    • Table exists in the database
-    ...    • Column metadata query executes successfully
-    ...    • Returns list of column names
-    ...    • Column information is accurate and current
-    [Arguments]    ${table_name}    ${schema}=public    ${exclude_id}=${TRUE}
+# Get Table Columns
+#    [Documentation]    Gets column names from database table
+#    ...    📋 ASSERTIONS:
+#    ...    • Table exists in the database
+#    ...    • Column metadata query executes successfully
+#    ...    • Returns list of column names
+#    ...    • Column information is accurate and current
+#    [Arguments]    ${table_name}    ${schema}=public    ${exclude_id}=${TRUE}
 
-    Log    🔍 Getting columns for table: ${table_name}
+#    Log    🔍 Getting columns for table: ${table_name}
 
-    ${id_filter}=    Set Variable If    ${exclude_id}    AND column_name != 'id'    ${EMPTY}
+#    ${id_filter}=    Set Variable If    ${exclude_id}    AND column_name != 'id'    ${EMPTY}
 
-    ${query}=    Set Variable
-    ...    SELECT column_name FROM information_schema.columns WHERE table_schema='${schema}' AND table_name='${table_name}' ${id_filter} ORDER BY ordinal_position
+#    ${query}=    Set Variable
+#    ...    SELECT column_name FROM information_schema.columns WHERE table_schema='${schema}' AND table_name='${table_name}' ${id_filter} ORDER BY ordinal_position
 
-    ${result}=    Query    ${query}
+#    ${result}=    Query    ${query}
 
-    ${columns}=    Create List
-    FOR    ${row}    IN    @{result}
-        ${column}=    Get From List    ${row}    0
-        Append To List    ${columns}    ${column}
-    END
+#    ${columns}=    Create List
+#    FOR    ${row}    IN    @{result}
+#    ${column}=    Get From List    ${row}    0
+#    Append To List    ${columns}    ${column}
+#    END
 
-    Log    📊 Table '${table_name}' columns: ${columns}
-    RETURN    ${columns}
+#    Log    📊 Table '${table_name}' columns: ${columns}
+#    RETURN    ${columns}
 
 Get Table Schema Info
     [Documentation]    Gets detailed schema information for a table

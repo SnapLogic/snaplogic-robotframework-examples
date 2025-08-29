@@ -98,7 +98,7 @@ Execute Triggered Task With Parameters
     ...    Prereq: Need task_payload,task_snodeid (from Create Triggered_task)
     [Tags]    snowflake_intuit
     [Template]    Run Triggered Task With Parameters From Template
-    ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    snowflake_acct=../shared/snowflake_acct
+    ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    snowflake_acct=../shared/snowflake_acct    table_name=""INTUIT"."LIFEEVENTSDATA2""
 
 Create Table For DB Operations
     [Documentation]    Creates the employees table structure in Snowflake database
@@ -201,6 +201,47 @@ Verify Expected Results In DB
     Drop Table    ${table_name}    if_exists=${TRUE}
     Log    Table ${table_name} dropped successfully    console=yes
 
+# End to End Verification Of Data Loaded Via Snowflake Pipeline
+#    [Documentation]    Verifies data loaded into Snowflake from JSON file
+#    ...    using Snowflake-specific keywords from snowflake_keywords.resource
+#    [Tags]    snowflake_intuit4
+
+#    ${table_sf}=    Set Variable    LIFEEVENTSDATA2
+#    Drop Table    ${table_sf}
+
+#    Create Account From Template    ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
+
+#    Upload File Using File Protocol Template
+#    ...    file:///opt/snaplogic/test_data/actual_expected_data/expression_libraries/snowflake/snowflake_library.expr
+#    ...    ${expression_library_file_path}
+
+#    Import Pipelines From Template    ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${pipeline_slp}
+#    Create Triggered Task From Template
+#    ...    ${unique_id}
+#    ...    ${project_path}
+#    ...    ${pipeline_name}
+#    ...    ${task1}
+#    ...    ${task_params_set1}
+#    ...    ${task_notifications}
+
+#    Run Triggered Task With Parameters From Template
+#    ...    ${unique_id}
+#    ...    ${project_path}
+#    ...    ${pipeline_name}
+#    ...    ${task1}
+#    ...    snowflake_acct=../shared/snowflake_acct
+#    ...    table_name=""INTUIT"."${table_sf}""
+
+#    ${results}=    Select All From Table    ${table_sf}
+#    # Verify one record exists
+#    ${row_count}=    Get Length    ${results}
+#    Should Be Equal As Integers    ${row_count}    2
+#    Log    Successfully retrieved ${row_count} records
+
+#    # Get column values using generic keyword
+#    @{names}=    Get Column Values    ${table_name}    name
+#    Log    All names in table: ${names}    console=yes
+
 Compare Actual vs Expected CSV Output
     [Documentation]    Validates data integrity by comparing MySQL export against expected output
     ...    Ensures data processed through MySQL pipeline matches expectations
@@ -217,6 +258,57 @@ Compare Actual vs Expected CSV Output
 
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status
     ${ACTUAL_DATA_DIR}/table1.csv    ${EXPECTED_OUTPUT_DIR}/table1.csv    ${FALSE}    ${TRUE}    IDENTICAL
+
+End to End Verification Of Data Loaded Via Snowflake Pipeline
+    [Documentation]    Verifies data loaded into Snowflake from JSON file
+    ...    using Snowflake-specific keywords from snowflake_keywords.resource
+    ...    Includes comprehensive column structure verification
+    [Tags]    snowflake_intuit
+
+    ${table_sf}=    Set Variable    LIFEEVENTSDATA2
+
+    # Ensure clean state by dropping table if it exists
+    Drop Table    ${table_sf}    if_exists=${TRUE}
+
+    # Setup pipeline infrastructure
+    Create Account From Template    ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
+
+    Upload File Using File Protocol Template
+    ...    file:///opt/snaplogic/test_data/actual_expected_data/expression_libraries/snowflake/snowflake_library.expr
+    ...    ${expression_library_file_path}
+
+    Import Pipelines From Template    ${unique_id}_2    ${pipeline_file_path}    ${pipeline_name}    ${pipeline_slp}
+
+    Create Triggered Task From Template
+    ...    ${unique_id}_2
+    ...    ${project_path}
+    ...    ${pipeline_name}
+    ...    ${task1}
+    ...    ${task_params_set1}
+    ...    ${task_notifications}
+
+    # Execute pipeline to load data
+    Run Triggered Task With Parameters From Template
+    ...    ${unique_id}_2
+    ...    ${project_path}
+    ...    ${pipeline_name}
+    ...    ${task1}
+    ...    snowflake_acct=../shared/snowflake_acct
+    ...    table_name=""INTUIT"."${table_sf}""
+
+    # Compare entire table with expected CSV file
+    ${expected_csv_path}=    Set Variable    ${EXPECTED_OUTPUT_DIR}/db_table.csv
+
+    # IMPORTANT: Setting ignore_order=TRUE since the rows might be in different order
+    Verify Table Matches CSV
+    ...    INTUIT.${table_sf}    # Table name
+    ...    ${expected_csv_path}    # Expected CSV file
+    ...    ignore_order=${TRUE}    # CHANGED: Ignore row order since data might be in different sequence
+    ...    order_by=DCEVENTHEADERS_USERID    # Order by user ID for consistent comparison
+
+    Log
+    ...    \n✅✅✅ ALL VALIDATIONS PASSED! Data pipeline executed successfully and data matches expectations! ✅✅✅
+    ...    console=yes
 
 
 *** Keywords ***

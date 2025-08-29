@@ -36,6 +36,7 @@ Library             CSVLibrary
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource    # SnapLogic API keywords
 Resource            ../../test_data/queries/postgres_queries.resource
 Resource            ../../../resources/files.resource    # CSV/JSON file operations
+Resource            ../../../resources/sql_table_operations.resource
 
 Suite Setup         Initialize Test Environment
 # Suite Teardown    Drop Tables in Postgres DB
@@ -242,6 +243,10 @@ Initialize Test Environment
     Set Suite Variable    ${unique_id}    ${unique_id}
     Wait Until Plex Status Is Up    /${ORG_NAME}/${GROUNDPLEX_LOCATION_PATH}/${GROUNDPLEX_NAME}
     Connect to Postgres Database    ${POSTGRES_DBNAME}    ${POSTGRES_DBUSER}    ${POSTGRES_DBPASS}    ${POSTGRES_HOST}
+
+    # Set the search_path to ensure we're using public schema
+    Execute SQL String    SET search_path TO public
+    Log    Set PostgreSQL search_path to 'public'
 
     # Create actual_output directory if it doesn't exist
     Create Directory    ${ACTUAL_DATA_DIR}
