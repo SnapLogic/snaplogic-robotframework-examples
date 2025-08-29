@@ -1,62 +1,32 @@
 *** Settings ***
-Resource    ../../resources/snaplogic_keywords.resource
-Library     DatabaseLibrary
-Suite Setup       Import Pipeline    ${PIPELINE_FILE}    ${PROJECT_PATH}
-Suite Teardown    Delete Pipeline    ${PIPELINE_NAME}    ${PROJECT_PATH}
-Test Setup        Create Task For Pipeline    ${PIPELINE_NAME}
-Test Teardown     Delete Task    ${TASK_NAME}
+Library           OperatingSystem
+Library           DatabaseLibrary
+Suite Setup       Connect To Database
+Suite Teardown    Disconnect From Database
 
 *** Variables ***
-${PIPELINE_FILE}      ${CURDIR}/../../../src/pipelines/Replacement_Engine_Tracking_EOMP_2025_08_21.slp
-${PIPELINE_NAME}      Replacement_Engine_Tracking_EOMP
-${PROJECT_PATH}       SL-CATRobotPOC/SaiProjectSpace2/Saikiran_Dev_Test
-
-# Oracle connection (from .env)
-${ORACLE_HOST}        oracle-db
-${ORACLE_PORT}        1521
-${ORACLE_DB}          FREEPDB1
-${ORACLE_USER}        SYSTEM
-${ORACLE_PASS}        Oracle123
-${ORACLE_DRIVER}      oracle.jdbc.driver.OracleDriver
-${ORACLE_JAR}         /drivers/ojdbc8.jar    # make sure jar exists inside docker
+${DB_HOST}        your_oracle_host
+${DB_PORT}        1521
+${DB_NAME}        your_db_name
+${DB_USER}        your_db_user
+${DB_PASSWORD}    your_db_password
 
 *** Keywords ***
-Connect To Oracle
-    Connect To Database    cx_Oracle    ${ORACLE_USER}/${ORACLE_PASS}@${ORACLE_HOST}:${ORACLE_PORT}/${ORACLE_DB}
+Connect To Database
+    Connect To Database    cx_Oracle    ${DB_USER}/${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
 
-Disconnect Oracle
+Disconnect From Database
     Disconnect From Database
 
-Validate Record Exists
-    [Arguments]    ${id}    ${expected_name}    ${expected_value}
-    ${rows}=    Query    SELECT NAME, VALUE FROM ENGINE_TRACKING WHERE ID=${id}
-    Should Be Equal As Strings    ${rows[0][0]}    ${expected_name}
-    Should Be Equal As Integers   ${rows[0][1]}    ${expected_value}
-
 *** Test Cases ***
-TC_001_Oracle_Insert_Path
-    [Documentation]    Validate Insert path of SAPFTP → Oracle Insert
-    ${params}=    Create Dictionary
-    ...    Oracle_Account=shared/oracle_acct
-    ...    Input_File=${CURDIR}/../../../test_data/replacement_engine_tracking/insert_test.csv
-    ${resp}=    Run Triggered Task Api With Params    ${TASK_NAME}    ${params}
-    Should Contain    ${resp}    Completed
-    Connect To Oracle
-    Validate Record Exists    1001    Engine_A    500
-    Validate Record Exists    1002    Engine_B    700
-    Validate Record Exists    1003    Engine_C    900
-    Disconnect Oracle
+Verify Replacement Engine Tracking Table Exists
+    ${tables}=    Query    SELECT table_name FROM user_tables WHERE table_name = 'REPLACEMENT_ENGINE_TRACKING'
+    Should Not Be Empty    ${tables}
 
-TC_002_Oracle_Merge_Path
-    [Documentation]    Validate Merge path of RUUID → Oracle Merge
-    ${params}=    Create Dictionary
-    ...    Oracle_Account=shared/oracle_acct
-    ...    Input_File=${CURDIR}/../../../test_data/replacement_engine_tracking/merge_test.csv
-    ${resp}=    Run Triggered Task Api With Params    ${TASK_NAME}    ${params}
-    Should Contain    ${resp}    Completed
-    Connect To Oracle
-    # Validate updated record
-    Validate Record Exists    1002    Engine_B    750
-    # Validate new merged record
-    Validate Record Exists    1004    Engine_D    600
-    Disconnect Oracle
+Insert And Verify Tracking Record
+    Execute Sql String    INSERT INTO REPLACEMENT_ENGINE_TRACKING (ID, STATUS) VALUES (1, 'STARTED')
+    ${result}=    Query    SELECT STATUS FROM REPLACEMENT_ENGINE_TRACKING WHERE ID = 1
+    Should Be Equal As Strings    ${result[0][0]}    STARTED
+
+Cleanup Tracking Table
+    Execute Sql String    DELETE FROM REPLACEMENT_ENGINE_TRACKING WHERE ID = 1

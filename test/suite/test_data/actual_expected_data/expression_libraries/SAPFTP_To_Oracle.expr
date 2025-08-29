@@ -1,18 +1,11 @@
-// SAPFTP_To_Oracle.expr
-// Example helper expressions for Mapper_Insert and Mapper_Merge
-function normalize_status(status) {
-  if (status == null) return "NEW";
-  const s = status.toString().toUpperCase().trim();
-  if (["N","NEW"].includes(s)) return "NEW";
-  if (["U","UPDATED","UPD"].includes(s)) return "UPDATED";
-  return s;
-}
-
-function to_int(v) {
-  if (v == null) return 0;
-  try {
-    return parseInt(v);
-  } catch (e) {
-    return 0;
+{
+  "SAPCONFIG": {
+    "filePath": "SL-CATRobotPOC/SaiProjectSpace2/Saikiran_Dev_Test/",
+    "backupFolder": "SL-CATRobotPOC/SaiProjectSpace2/Saikiran_Dev_Test/archive"
+  },
+  "functions": {
+    "getOrgName": "function() { return pipe.projectPath.split('/')[1].toUpperCase(); }",
+    "getEnv": "function() { return pipe.projectPath.split('/')[1].split('_')[1]; }",
+    "getEnvValue": "function(key) { return this[key][this.getEnv()]; }"
   }
 }

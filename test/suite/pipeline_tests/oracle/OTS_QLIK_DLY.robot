@@ -58,7 +58,7 @@ TC_Validate_Delete_Before_Insert
     Create Task For OTS Pipeline    TC_Validate_Delete_Before_Insert
     Run OTS Pipeline Task
     Wait Until Keyword Succeeds    10 times    1 second    Table Should Exist    SYSTEM    OTS_DAILY
-    Connect to Oracle Database    ${ORACLE_DBNAME}    ${ORACLE_DBUSER}    ${ORACLE_DBPASS}    ${ORACLE_HOST}    ${ORACLE_DBPORT}
+     to Oracle Database    ${ORACLE_DBNAME}    ${ORACLE_DBUSER}    ${ORACLE_DBPASS}    ${ORACLE_HOST}    ${ORACLE_DBPORT}
     ${count_legacy_after}=    DatabaseLibrary.Query    SELECT COUNT(*) FROM "SYSTEM"."OTS_DAILY" WHERE ID=99999
     Should Be Equal As Integers    ${count_legacy_after[0][0]}    0    msg=Legacy data should be deleted
     ${etl_row_count}=    Get Oracle OTS_DAILY Count
@@ -110,7 +110,7 @@ Run OTS Pipeline Task
     ...    ${unique_id}    ${project_path}    ${pipeline_name}    ${task_name}    M_CURR_DATE=${CURRENT_DATE}
 
 Prepare Environment
-    Check Connections
+    Check ConnectionsConnect
     Initialize Variables
 
 Check Connections
