@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-snaplogic}
       POSTGRES_DB: ${POSTGRES_DB:-snaplogic}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-5432}:5435"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     profiles: [ postgres-dev ]
