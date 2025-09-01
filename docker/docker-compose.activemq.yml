@@ -3,8 +3,8 @@ services:
     image: apache/activemq-artemis:latest  
     container_name: snaplogic-activemq
     environment:
-      ARTEMIS_USER: admin
-      ARTEMIS_PASSWORD: admin
+      ARTEMIS_USER: ${ACTIVEMQ_USER:-admin}
+      ARTEMIS_PASSWORD: ${ACTIVEMQ_PASSWORD:-admin}
       ANONYMOUS_LOGIN: false
       ARTEMIS_DEFAULT_ADDRESS_ROUTING_TYPE: BOTH
       ARTEMIS_DEFAULT_QUEUE_ROUTING_TYPE: ANYCAST
@@ -18,10 +18,10 @@ services:
     volumes:
       - activemq-temp-data:/var/lib/artemis-instance
     ports:
-      - "8161:8161"  # Web Console
-      - "61617:61616"  # JMS Port (changed to avoid conflicts)
-      - "61614:61613"  # STOMP Port (changed to avoid conflicts)
-      - "5673:5672"   # AMQP Port (changed to avoid conflicts)
+      - "${ACTIVEMQ_WEB_PORT:-8161}:8161"  # Web Console
+      - "${ACTIVEMQ_JMS_PORT:-61617}:61616"  # JMS Port
+      - "${ACTIVEMQ_STOMP_PORT:-61614}:61613"  # STOMP Port
+      - "${ACTIVEMQ_AMQP_PORT:-5673}:5672"   # AMQP Port
     profiles: [ activemq, activemq-dev ]
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://localhost:8161/console/ || exit 1" ]

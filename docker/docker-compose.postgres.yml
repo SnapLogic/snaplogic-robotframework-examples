@@ -3,11 +3,11 @@ services:
     image: postgres:15
     container_name: postgres-db
     environment:
-      POSTGRES_USER: snaplogic
-      POSTGRES_PASSWORD: snaplogic
-      POSTGRES_DB: snaplogic
+      POSTGRES_USER: ${POSTGRES_USER:-snaplogic}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-snaplogic}
+      POSTGRES_DB: ${POSTGRES_DB:-snaplogic}
     ports:
-      - "5435:5432"  # Updated to avoid any potential conflicts
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     profiles: [ postgres-dev ]

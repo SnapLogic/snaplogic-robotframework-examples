@@ -6,8 +6,8 @@ services:
     container_name: maildev-test
     restart: unless-stopped
     ports:
-      - "1025:1025"  # SMTP server
-      - "1080:1080"  # Web UI for viewing emails
+      - "${MAILDEV_SMTP_PORT:-1025}:1025"  # SMTP server
+      - "${MAILDEV_WEB_PORT:-1080}:1080"  # Web UI for viewing emails
     environment:
       MAILDEV_SMTP_PORT: 1025
       MAILDEV_WEB_PORT: 1080

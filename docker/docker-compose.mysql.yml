@@ -3,17 +3,17 @@ services:
     image: mysql:8.0
     container_name: mysql-db
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT:-3306}:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: "snaplogic"
-      MYSQL_DATABASE: "TEST"
-      MYSQL_USER: "testuser"
-      MYSQL_PASSWORD: "snaplogic"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-snaplogic}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-TEST}"
+      MYSQL_USER: "${MYSQL_USER:-testuser}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:-snaplogic}"
     volumes:
       - mysql_data:/var/lib/mysql
       - ../mysql-init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-psnaplogic"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-snaplogic}"]
       interval: 10s
       timeout: 10s
       retries: 10

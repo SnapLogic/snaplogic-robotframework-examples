@@ -27,7 +27,7 @@ The documentation covers:
 - **Keywords** - Custom keywords and operations
 - **Variables & Data** - Configuration and test data
 - **Execution Flow** - Complete test execution workflow
-- **Requirements Needed from Intuit** - Gathered requirements and analysis
+- **Requirements Needed from DEMO** - Gathered requirements and analysis
 - **Prerecorded Demo** - Video demonstration of the test suite
 
 ## 🛠️ Technology Stack

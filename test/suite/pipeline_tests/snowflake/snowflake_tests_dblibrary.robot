@@ -33,8 +33,8 @@ ${task1}                            snowflake_Task
 &{task_params_set1}
 ...                                 snowflake_acct=../shared/snowflake_acct
 ...                                 actual_output=file:///opt/snaplogic/test_data/actual_expected_data/actual_output/snowflake/table1.csv
-...                                 schema_name="INTUIT"
-...                                 table_name=""INTUIT"."LIFEEVENTSDATA""
+...                                 schema_name="DEMO"
+...                                 table_name=""DEMO"."LIFEEVENTSDATA""
 
 ${ACCOUNT_PAYLOAD_FILE}             acc_snowflake_s3_db.json
 
@@ -59,13 +59,13 @@ ${EXPECTED_OUTPUT_DIR}              ${CURDIR}/../../test_data/actual_expected_da
 *** Test Cases ***
 Create Account
     [Documentation]    Creates an account in the project space using the provided payload file.
-    [Tags]    snowflake_intuit
+    [Tags]    snowflake_demo
     [Template]    Create Account From Template
     ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
 
 Upload Expression Library
     [Documentation]    Uploads the expression library to project level shared folder
-    [Tags]    snowflake_intuit    upload_expression_library
+    [Tags]    snowflake_demo    upload_expression_library
     [Template]    Upload File Using File Protocol Template
     file:///opt/snaplogic/test_data/actual_expected_data/expression_libraries/snowflake/snowflake_library.expr    ${expression_library_file_path}
 
@@ -78,7 +78,7 @@ Import Pipeline
     ...    • Unique pipeline ID is generated and returned
     ...    • Pipeline contains file reader and writer snaps configured for mounts
     ...    • Pipeline is successfully deployed to the project space
-    [Tags]    snowflake_intuit
+    [Tags]    snowflake_demo
     [Template]    Import Pipelines From Template
     ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${pipeline_slp}
 
@@ -89,16 +89,16 @@ Create Triggered_task
     ...    Returns:
     ...    task_payload --> which is used to update the task params
     ...    task_snodeid --> which is used to update the task params
-    [Tags]    snowflake_intuit    regression
+    [Tags]    snowflake_demo    regression
     [Template]    Create Triggered Task From Template
     ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    ${task_params_set1}    ${task_notifications}
 
 Execute Triggered Task With Parameters
     [Documentation]    Updates the task parameters and runs the task
     ...    Prereq: Need task_payload,task_snodeid (from Create Triggered_task)
-    [Tags]    snowflake_intuit
+    [Tags]    snowflake_demo
     [Template]    Run Triggered Task With Parameters From Template
-    ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    snowflake_acct=../shared/snowflake_acct    table_name=""INTUIT"."LIFEEVENTSDATA2""
+    ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    snowflake_acct=../shared/snowflake_acct    table_name=""DEMO"."LIFEEVENTSDATA2""
 
 Create Table For DB Operations
     [Documentation]    Creates the employees table structure in Snowflake database
@@ -108,7 +108,7 @@ Create Table For DB Operations
     ...    • Database connection is established and functional
     ...    • No SQL syntax or permission errors occur
     ...    • Snowflake-specific features (AUTOINCREMENT, NUMBER types) work correctly
-    [Tags]    snowflake_intuit
+    [Tags]    snowflake_demo
     [Template]    Execute SQL String
     ${DROP_TABLE_EMPLOYEES}
     ${CREATE_TABLE_EMPLOYEES}
@@ -117,7 +117,7 @@ Create Table For DB Operations
 
 Setup JSON Table For Snowflake
     [Documentation]    Creates the table needed for JSON data loading
-    [Tags]    snowflake_intuit
+    [Tags]    snowflake_demo
 
     # Connect to Snowflake
     Connect To Snowflake Via DatabaseLibrary
@@ -134,7 +134,7 @@ Load JSON Data To Snowflake
     [Documentation]    Loads JSON employee data into Snowflake using the SAME template as MySQL
     ...    This proves the template is database-agnostic and works with Snowflake too!
     ...    NOTE: Run 'Setup JSON Table For Snowflake' test first to create the table
-    [Tags]    snowflake_intuit
+    [Tags]    snowflake_demo
     [Template]    Load JSON Data Template
     # JSON File    table_name    Truncate Table
     ${JSON_DATA_FILE}    ${TABLE_NAME1}    ${TRUE}    # Truncate before loading
@@ -142,7 +142,7 @@ Load JSON Data To Snowflake
 Verify Expected Results In DB
     [Documentation]    Test connection using generic SQL operations keywords
     ...    Demonstrates use of database-agnostic keywords that work with any database
-    [Tags]    snowflake_intuit
+    [Tags]    snowflake_demo
 
     # Connect using the Snowflake-specific keyword for connection
     Connect To Snowflake Via DatabaseLibrary
@@ -204,7 +204,7 @@ Verify Expected Results In DB
 # End to End Verification Of Data Loaded Via Snowflake Pipeline
 #    [Documentation]    Verifies data loaded into Snowflake from JSON file
 #    ...    using Snowflake-specific keywords from snowflake_keywords.resource
-#    [Tags]    snowflake_intuit4
+#    [Tags]    snowflake_demo4
 
 #    ${table_sf}=    Set Variable    LIFEEVENTSDATA2
 #    Drop Table    ${table_sf}
@@ -230,7 +230,7 @@ Verify Expected Results In DB
 #    ...    ${pipeline_name}
 #    ...    ${task1}
 #    ...    snowflake_acct=../shared/snowflake_acct
-#    ...    table_name=""INTUIT"."${table_sf}""
+#    ...    table_name=""DEMO"."${table_sf}""
 
 #    ${results}=    Select All From Table    ${table_sf}
 #    # Verify one record exists
@@ -253,7 +253,7 @@ Compare Actual vs Expected CSV Output
     ...    • All field values match exactly (no data corruption)
     ...    • No extra or missing rows (complete data processing)
     ...    • CSV formatting is preserved through pipeline
-    [Tags]    snowflake_intuit
+    [Tags]    snowflake_demo
     [Template]    Compare CSV Files Template
 
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status
@@ -263,7 +263,7 @@ End to End Verification Of Data Loaded Via Snowflake Pipeline
     [Documentation]    Verifies data loaded into Snowflake from JSON file
     ...    using Snowflake-specific keywords from snowflake_keywords.resource
     ...    Includes comprehensive column structure verification
-    [Tags]    snowflake_intuit
+    [Tags]    snowflake_demo
 
     ${table_sf}=    Set Variable    LIFEEVENTSDATA2
 
@@ -294,14 +294,14 @@ End to End Verification Of Data Loaded Via Snowflake Pipeline
     ...    ${pipeline_name}
     ...    ${task1}
     ...    snowflake_acct=../shared/snowflake_acct
-    ...    table_name=""INTUIT"."${table_sf}""
+    ...    table_name=""DEMO"."${table_sf}""
 
     # Compare entire table with expected CSV file
     ${expected_csv_path}=    Set Variable    ${EXPECTED_OUTPUT_DIR}/db_table.csv
 
     # IMPORTANT: Setting ignore_order=TRUE since the rows might be in different order
     Verify Table Matches CSV
-    ...    INTUIT.${table_sf}    # Table name
+    ...    DEMO.${table_sf}    # Table name
     ...    ${expected_csv_path}    # Expected CSV file
     ...    ignore_order=${TRUE}    # CHANGED: Ignore row order since data might be in different sequence
     ...    order_by=DCEVENTHEADERS_USERID    # Order by user ID for consistent comparison

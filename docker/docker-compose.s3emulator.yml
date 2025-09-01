@@ -4,16 +4,16 @@ services:
     container_name: snaplogic-minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
       # Remove or comment out these as they can cause issues
       # MINIO_BROWSER_REDIRECT_URL: http://localhost:9011
       # MINIO_SERVER_URL: http://localhost:9010
     volumes:
       - minio_data:/data
     ports:
-      - "9010:9000"  # Changed from 9000 to 9010 to avoid conflict
-      - "9011:9001"  # Changed from 9001 to 9011 for consistency
+      - "${MINIO_API_PORT:-9010}:9000"  # MinIO API port
+      - "${MINIO_CONSOLE_PORT:-9011}:9001"  # MinIO Console port
     profiles: [ minio , minio-dev ]
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]

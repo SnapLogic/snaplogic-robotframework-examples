@@ -92,7 +92,7 @@ docker exec snaplogic-test-example-tools-container pip show snowflake-connector-
 ### Running Tests
 ```bash
 # Run tests using the tools container
-make robot-run-tests TAGS="snowflake_intuit"
+make robot-run-tests TAGS="snowflake_demo"
 ```
 
 ## Benefits of This Architecture

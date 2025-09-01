@@ -123,7 +123,7 @@ End to End Pipeline Workflow
     [Tags]    end_to_end_workflow    import_pipeline    oracle2    regression
 
     # Step 1: Create Account
-    Create Account From Template    ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}    ${env_file_path}
+    Create Account From Template    ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
 
     # Step 2: Import Pipelines
     Import Pipelines From Template    ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${pipeline_name_slp}

@@ -69,6 +69,22 @@ env:
     - JMS_PROVIDER_URL="tcp://activemq:61616"
     - JMS_QUEUE_NAME="demo.queue"
 
+    # Snowflake Database Configuration
+    - SNOWFLAKE_ACCOUNT_NAME="snowflake_acct"
+    - SNOWFLAKE_ACCOUNT="snaplogic"
+    - SNOWFLAKE_HOSTNAME="snaplogic.snowflakecomputing.com"
+    - SNOWFLAKE_PORT="443"
+    - SNOWFLAKE_DATABASE="FDLDB"
+    - SNOWFLAKE_SCHEMA="DEMO"
+    - SNOWFLAKE_WAREHOUSE="ELT_XS_WH"
+    - SNOWFLAKE_USERNAME="Bigdatasnaplogic"
+    - SNOWFLAKE_PASSWORD="Snaplogic2018"
+    - SNOWFLAKE_ROLE="SYSADMIN"
+    - SNOWFLAKE_S3_BUCKET=""
+    - SNOWFLAKE_S3_FOLDER=""
+    - SNOWFLAKE_S3_ACCESS_KEY=""
+    - SNOWFLAKE_S3_SECRET_KEY=""
+
 # ===== BUILD ENVIRONMENT =====
 dist: jammy
 group: stable
@@ -96,7 +112,7 @@ jobs:
         - export TRAVIS_COMMIT_AUTHOR_NAME="$(git log -1 --pretty=format:'%an' 2>/dev/null || echo 'CI Build')"
         - export TRAVIS_COMMIT_AUTHOR_EMAIL="$(git log -1 --pretty=format:'%ae')"
         - make snaplogic-start-services
-        - make robot-run-all-tests TAGS="oracle sqlserver file_mount postgres_s3 sla snowflake_intuit" PROJECT_SPACE_SETUP=True
+        - make robot-run-all-tests TAGS="oracle sqlserver file_mount postgres_s3 sla snowflake_demo" PROJECT_SPACE_SETUP=True
         - make upload-test-results
         - make slack-notify
 

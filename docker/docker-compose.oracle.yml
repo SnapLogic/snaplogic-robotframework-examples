@@ -3,9 +3,9 @@ services:
     image: container-registry.oracle.com/database/free:23.7.0.0-lite
     container_name: oracle-db
     ports:
-      - "1521:1521"
+      - "${ORACLE_PORT:-1521}:1521"
     environment:
-      ORACLE_PWD: Oracle123
+      ORACLE_PWD: ${ORACLE_PASSWORD:-Oracle123}
     volumes:
       - oracle_data:/opt/oracle/oradata
       - ../oracle-init:/opt/oracle/scripts/startup
