@@ -48,6 +48,9 @@ ${JSON_DATA_FILE}                   ${CURDIR}/../../test_data/actual_expected_da
 ${ACTUAL_DATA_DIR}                  /app/test/suite/test_data/actual_expected_data/actual_output/snowflake
 ${EXPECTED_OUTPUT_DIR}              ${CURDIR}/../../test_data/actual_expected_data/expected_output/snowflake    # Expected output files for comparison
 
+# Control variable to keep actual CSV files even when tests pass (for debugging)
+${KEEP_ACTUAL_FILES}                ${TRUE}    # Set to FALSE to auto-delete on successful comparison
+
 # All data rows as a list of values
 @{ALL_DATA}                         1, 'John', 1000.50
 ...                                 2, 'Jane', 2000.75
@@ -267,8 +270,12 @@ End to End Verification Of Data Loaded Via Snowflake Pipeline
 
     ${table_sf}=    Set Variable    LIFEEVENTSDATA2
 
-    # Ensure clean state by dropping table if it exists
-    Drop Table    ${table_sf}    if_exists=${TRUE}
+    # Drop Table keyword with schema parameter
+    Drop Table    ${table_sf}    if_exists=${TRUE}    schema=DEMO
+    # Or alternatively use fully qualified name:
+    # Drop Table    DEMO.${table_sf}    if_exists=${TRUE}
+
+    Log    Table DEMO.${table_sf} cleaned up successfully    console=yes
 
     # Setup pipeline infrastructure
     Create Account From Template    ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
@@ -300,11 +307,13 @@ End to End Verification Of Data Loaded Via Snowflake Pipeline
     ${expected_csv_path}=    Set Variable    ${EXPECTED_OUTPUT_DIR}/db_table.csv
 
     # IMPORTANT: Setting ignore_order=TRUE since the rows might be in different order
+    # Store actual results in the designated actual output directory instead of /tmp
     Verify Table Matches CSV
     ...    DEMO.${table_sf}    # Table name
     ...    ${expected_csv_path}    # Expected CSV file
     ...    ignore_order=${TRUE}    # CHANGED: Ignore row order since data might be in different sequence
     ...    order_by=DCEVENTHEADERS_USERID    # Order by user ID for consistent comparison
+    ...    temp_dir=${ACTUAL_DATA_DIR}    # Store actual results in actual output directory
 
     Log
     ...    \n✅✅✅ ALL VALIDATIONS PASSED! Data pipeline executed successfully and data matches expectations! ✅✅✅
