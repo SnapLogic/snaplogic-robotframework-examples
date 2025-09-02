@@ -8,7 +8,7 @@ services:
       ORACLE_PWD: ${ORACLE_PASSWORD:-Oracle123}
     volumes:
       - oracle_data:/opt/oracle/oradata
-      - ../oracle-init:/opt/oracle/scripts/startup
+
     healthcheck:
       test: [ "CMD", "bash", "-c", "echo 'select 1 from dual;' | sqlplus -s system/Oracle123@localhost/FREEPDB1" ]
       interval: 10s
