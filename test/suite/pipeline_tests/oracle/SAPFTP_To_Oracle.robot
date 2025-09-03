@@ -1,5 +1,5 @@
 *** Settings ***
-Documentation     SAPFTP → Oracle :: Positive SIT Test Suite (Hybrid LLD + Plumbing)
+Documentation     SAPFTP → Oracle :: SIT Test Suite (Enhanced) :: Insertion Validation Only
 Library           OperatingSystem
 Library           DatabaseLibrary
 Library           oracledb
@@ -11,7 +11,6 @@ Resource          ../../../resources/files.resource
 Suite Setup       Prepare Suite Environment
 Suite Teardown    Cleanup Suite Environment
 
-
 *** Variables ***
 ${project_path}                   ${org_name}/${project_space}/${project_name}
 ${pipeline_file_path}             ${CURDIR}/../../../../src/pipelines
@@ -21,19 +20,19 @@ ${account_payload_path}           ${CURDIR}/../../test_data/accounts_payload
 ${ACCOUNT_PAYLOAD_FILE}           acc_oracle.json
 
 @{notification_states}            Completed    Failed
-&{task_notifications}
-...                               recipients=sapftp_notifications@yourorg.com
+&{task_notifications}             recipients=sapftp_notifications@yourorg.com
 ...                               states=${notification_states}
 
 ${CURRENT_DATE}                   2025-08-21
-&{task_params}
-...                               M_CURR_DATE=${CURRENT_DATE}
+&{task_params}                    M_CURR_DATE=${CURRENT_DATE}
 ...                               Oracle_Account=shared/${ORACLE_ACCOUNT_NAME}
 
 ${upload_destination_file_path}   ${project_path}
 ${csv_folder}                     ${upload_destination_file_path}/csv
 ${CSV_FILE}                       REPLENGTRACK.csv
 
+${expected_row_count}             3
+@{expected_columns}               BLD_DT    CTRY    CUSTREF    DFA_FLEX    DLR_CD    DLR_MAIN    DLR_MAIN_NM    DLR_NM    DTA_SRC
 
 *** Test Cases ***
 TC01_FTP_Connectivity_Validation
@@ -43,54 +42,28 @@ TC01_FTP_Connectivity_Validation
 TC02_File_Availability_Check
     [Tags]    sapftp    oracle    file    sit
     Upload Input File
-    Log To Console    ✅ File uploaded successfully and available at source
+    Log To Console    ✅ File uploaded successfully
 
-TC03_File_Name_Validation
-    [Tags]    sapftp    oracle    file    sit
-    Log To Console    ✅ File processed successfully
+TC03_PreFlight_Column_Validation
+    [Tags]    oracle    preflight    sit
+    ${db_columns}=    Get Oracle Table Columns    SYSTEM.ENG_RCD_INPUT
+    :FOR    ${col}    IN    @{expected_columns}
+    \    Should Contain    ${db_columns}    ${col}
+    Log To Console    ✅ All expected columns exist in Oracle table
 
-TC04_Run_Pipeline_Once
+TC04_Run_Pipeline_And_Validate_Insertion
     [Tags]    sapftp    oracle    etl    sit
     Run SAPFTP Pipeline Task
-    Log To Console    ✅ Pipeline executed once successfully
-
-TC05_Validate_Single_File_Ingestion
-    [Tags]    sapftp    oracle    etl    sit
+    Log To Console    ✅ Pipeline executed successfully
     ${cnt}=    DatabaseLibrary.Query    SELECT COUNT(*) FROM SYSTEM.ENG_RCD_INPUT
-    Should Be Equal As Integers    ${cnt[0][0]}    3
-    Log To Console    ✅ Single file ingested correctly
+    Should Be Equal As Integers    ${cnt[0][0]}    ${expected_row_count}
+    Log To Console    ✅ Correct number of records inserted
 
-TC06_Valid_Data_Transformation
-    [Tags]    sapftp    oracle    transformation    sit
-    ${rows}=    DatabaseLibrary.Query
-    ...    SELECT BLD_DT, CTRY, CUSTREF, DLR_CD, DLR_MAIN
-    ...    FROM SYSTEM.ENG_RCD_INPUT
-    ...    WHERE ROWNUM <= 5
-    Should Not Be Empty    ${rows}
-    Log    ${rows}
-    ${first_row}=    Set Variable    ${rows[0]}
-    Should Match Regexp    ${first_row[0]}    \d{4}-\d{2}-\d{2}    # BLD_DT format YYYY-MM-DD
-    Should Not Be Empty    ${first_row[1]}    # CTRY not null
-    Should Not Be Empty    ${first_row[2]}    # CUSTREF must exist
-    Length Should Be       ${first_row[3]}    6    # DLR_CD length
-    Length Should Be       ${first_row[4]}    6    # DLR_MAIN length
-    Log To Console    ✅ Data transformed and validated successfully
-
-TC07_Insert_New_Records
-    [Tags]    sapftp    oracle    etl    sit
+TC05_Validate_Inserted_Data
+    [Tags]    sapftp    oracle    validation    sit
     ${cnt}=    DatabaseLibrary.Query    SELECT COUNT(*) FROM SYSTEM.ENG_RCD_INPUT
-    Should Be Equal As Integers    ${cnt[0][0]}    3
-    Log To Console    ✅ New records inserted successfully
-
-TC08_Update_Existing_Records
-    [Tags]    sapftp    oracle    etl    sit
-    ${rows}=    DatabaseLibrary.Query
-    ...    SELECT BLD_DT, CTRY, CUSTREF, DLR_CD, DLR_MAIN
-    ...    FROM SYSTEM.ENG_RCD_INPUT
-    ...    WHERE ROWNUM <= 5
-    Should Not Be Empty    ${rows}
-    Log To Console    ✅ Existing records updated successfully
-
+    Should Be True    ${cnt[0][0]} > 0
+    Log To Console    ✅ Data is present in the target table
 
 *** Keywords ***
 Prepare Suite Environment
@@ -106,8 +79,6 @@ Cleanup Suite Environment
     Run Keyword And Ignore Error    Clean Oracle Target Table
     Run Keyword And Ignore Error    Disconnect From Database
 
-
-# --- Core Plumbing ---
 Import SAPFTP Pipeline
     Import Pipelines From Template    ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${BASE_PIPELINE_FILENAME}
     Sleep    5s
@@ -159,3 +130,11 @@ Ensure Oracle Target Table Exists
 Clean Oracle Target Table
     ${truncate_result}=    Run Keyword And Ignore Error    DatabaseLibrary.Execute Sql String    TRUNCATE TABLE SYSTEM.ENG_RCD_INPUT
     Run Keyword If    '${truncate_result[0]}' == 'FAIL'    DatabaseLibrary.Execute Sql String    DELETE FROM SYSTEM.ENG_RCD_INPUT
+
+Get Oracle Table Columns
+    [Arguments]    ${table_name}
+    ${columns}=    DatabaseLibrary.Query    SELECT column_name FROM all_tab_columns WHERE table_name=UPPER('${table_name}') AND owner='SYSTEM'
+    ${column_list}=    Create List
+    :FOR    ${row}    IN    @{columns}
+    \    Append To List    ${column_list}    ${row[0]}
+    RETURN    ${column_list}

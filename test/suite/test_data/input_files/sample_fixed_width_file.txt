@@ -1,0 +1,3 @@
+PN12345678A01EC001FC01CF01RS01NS01BR1NL01Narration text line one goes here and continues                  
+PN87654321B02EC002FD02CF02RS02NS02BR2NL02Another narration line with more description                     
+PN11112222C03EC003FE03CF03RS03NS03BR3NL03Sample narration field with some data inside                     

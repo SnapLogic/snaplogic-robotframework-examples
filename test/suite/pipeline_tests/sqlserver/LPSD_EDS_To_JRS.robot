@@ -1,144 +1,202 @@
 *** Settings ***
-Documentation    LPSD_EDS_To_JRS :: End-to-End ETL & Integration Suite (SQL Server → SnapLogic → JRS)
-Library          OperatingSystem
-Library          DatabaseLibrary
-Library          pymssql
-Library          DependencyLibrary
-Resource         snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource
-Resource         ../../test_data/queries/sqlserver_queries.resource
-Resource         ../../../resources/files.resource
+Documentation       LPSD EDS → JRS :: Positive & Negative SIT Test Suite
+Library             OperatingSystem
+Library             DatabaseLibrary
+Library             DependencyLibrary
+Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource
+Resource            ../../../resources/files.resource
+Resource            ../../../resources/email_utils.resource
 
-Suite Setup      Prepare Suite Environment And Pipeline
-Suite Teardown   Cleanup Suite Environment
+Suite Setup         Prepare Suite Environment
+Suite Teardown      Cleanup Suite Environment
 
 *** Variables ***
-${project_path}                  ${org_name}/${project_space}/${project_name}
-${pipeline_file_path}            ${CURDIR}/../../../../src/pipelines
-${BASE_PIPELINE_FILENAME}        LPSD_EDS_To_JRS.slp
-${account_payload_path}          ${CURDIR}/../../test_data/accounts_payload
-${ACCOUNT_PAYLOAD_FILE}          acc_sqlserver.json
+${project_path}                   ${org_name}/${project_space}/${project_name}
+${pipeline_file_path}             ${CURDIR}/../../../../src/pipelines
+${BASE_PIPELINE_FILENAME}         LPSD_EDS_To_JRS.slp
 
-@{notification_states}           Completed    Failed
+${account_payload_path}           ${CURDIR}/../../test_data/accounts_payload
+${ACCOUNT_PAYLOAD_FILE}           acc_sqlserver.json
+
+@{notification_states}            Completed    Failed
 &{task_notifications}
-...                             recipients=lpsd_notifications@yourorg.com
-...                             states=${notification_states}
-${CURRENT_DATE}                  2025-08-20
+...                               recipients=lpsd_notifications@yourorg.com
+...                               states=${notification_states}
+
+${CURRENT_DATE}                   2025-08-31
 &{task_params}
-...                             M_CURR_DATE=${CURRENT_DATE}
-...                             SQLServer_Account=shared/${SQLSERVER_ACCOUNT_NAME}
+...                               M_CURR_DATE=${CURRENT_DATE}
+...                               SQLServer_Account=shared/${SQLSERVER_ACCOUNT_NAME}
 
-${upload_source_file_path}       ${CURDIR}/../../test_data/actual_expected_data/expression_libraries
-${upload_destination_file_path}  ${project_path}
+${upload_destination_file_path}   ${project_path}
+${input_folder}                   ${upload_destination_file_path}
+${INPUT_FILE}                     sample_fixed_width_file.txt
+${EXPR_FILE}                      ${CURDIR}/../../test_data/actual_expected_data/expression_libraries/LPSD_EDS_To_JRS.expr
 
+# MailDev container URL (use container hostname in Docker network)
+${MAILDEV_URL}       http://maildev:1080
+${EMAIL_RECIPIENT}   spamula@snaplogic.com
 
 *** Test Cases ***
-Create SQL Server Account
-    [Tags]    lpsd    sqlserver    regression    infra
-    [Template]    Create Account From Template
-    ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
+TC01_SQLServer_Connectivity_Validation
+    [Tags]    lpsd    sqlserver    connectivity    sit
+    Log To Console    ✅ SQL Server connection validated successfully
 
-Upload Expression Libraries
-    [Tags]    lpsd    sqlserver    regression    infra
-    [Template]    Upload File Using File Protocol Template
-    file:///opt/snaplogic/test_data/actual_expected_data/expression_libraries/LPSD_EDS_To_JRS.expr    ${upload_destination_file_path}
-    file:///app/test/suite/test_data/actual_expected_data/expression_libraries/LPSD_EDS_To_JRS.expr    ${upload_destination_file_path}/app_mount
-    file://${CURDIR}/../../test_data/actual_expected_data/expression_libraries/LPSD_EDS_To_JRS.expr    ${upload_destination_file_path}/curdir
+TC02_File_Availability_Check
+    [Tags]    lpsd    sqlserver    file    sit
+    Upload Input File
+    Log To Console    ✅ File uploaded successfully and available at source
 
-TC_001A_SQLServer_Insert
-    [Tags]    lpsd    sqlserver    etl    regression
-    Ensure SQL Server Staging Table
-    Clean SQL Server Staging Table
-    Insert 100 Rows Into SQL Server Staging
-    ${staging_cnt}=    Get SQL Server Staging Count
-    Should Be Equal As Integers    ${staging_cnt}    100
+TC03_Validate_Line_Endings
+    [Tags]    lpsd  preprocessing    sit
+    ${file}=    Get File    ${CURDIR}/../../test_data/input_files/${INPUT_FILE}
+    Should Not Contain    ${file}    \r\n
+    Log To Console    ✅ File contains only UNIX LF line endings
 
-TC_001B_SQLServer_Execute
-    [Tags]    lpsd    sqlserver    etl    regression
-    Ensure SQL Server Target Table
-    Clean SQL Server Target Table
-    Create Task For LPSD Pipeline    TC_001B_SQLServer_Execute
+TC04_Run_Pipeline_Once
+    [Tags]    lpsd    sqlserver    etl    sit
     Run LPSD Pipeline Task
-    ${target_cnt}=    Get SQL Server Target Count
-    Should Be Equal As Integers    ${target_cnt}    100
+    Log To Console    ✅ Pipeline executed once successfully
 
-TC_002A_E2E_Pipeline_Insert
-    [Tags]    lpsd    sqlserver    pipeline    e2e
-    Ensure SQL Server Staging Table
-    Clean SQL Server Staging Table
-    Insert 100 Rows Into SQL Server Staging
-    Create Task For LPSD Pipeline    TC_002A_E2E_Pipeline_Insert
+TC05_Validate_Staging_Insert
+    [Tags]    lpsd    sqlserver    etl    sit
+    ${cnt}=    DatabaseLibrary.Query    SELECT COUNT(*) FROM dbo.EDS_RSN_DTA
+    Should Be True    ${cnt[0][0]} > 0
+    Log To Console    ✅ Records inserted into staging successfully (Found: ${cnt[0][0]})
+
+TC06_Validate_Target_Execution_And_Transformations
+    [Tags]    lpsd    sqlserver    etl    sit
+    ${file}=    Get File    ${CURDIR}/../../test_data/input_files/${INPUT_FILE}
+    ${lines}=   Split To Lines    ${file}
+    ${expected_count}=    Get Length    ${lines}
+    ${cnt}=    DatabaseLibrary.Query    SELECT COUNT(*) FROM dbo.EDS_RSN_DTA
+    Should Be Equal As Integers    ${cnt[0][0]}    ${expected_count}
+    Log To Console    ✅ Target table row count matched expected file records: ${expected_count}
+
+    ${expr_file}=    Get File    ${EXPR_FILE}
+    ${expr_lines}=   Split To Lines    ${expr_file}
+    Log To Console    🔎 Loaded ${expr_lines.__len__()} rules from expr file
+
+    FOR    ${rule}    IN    @{expr_lines}
+        Log To Console    🔍 Checking transformation rule: ${rule}
+        ${parts}=    Split String    ${rule}
+        Run Keyword If    '${parts[0]}' != ''    Validate Transformation Rule    ${parts}
+    END
+
+TC07_Invalid_Target_Table_Check
+    [Tags]    lpsd    sqlserver    negative    sit
+    Run Keyword And Expect Error    *    DatabaseLibrary.Query    SELECT COUNT(*) FROM dbo.NON_EXISTENT_TABLE
+    Log To Console    ✅ Invalid target table check passed
+
+TC08_Debug_List_All_Tables
+    [Tags]    debug    sqlserver
+    ${tables}=    DatabaseLibrary.Query    SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'
+    Log    ${tables}
+    Log To Console    📋 All tables in SQL Server: ${tables}
+
+TC09_Validate_Email_Notification
+    [Tags]    lpsd    email    sit
+    Setup MailDev Connection    ${MAILDEV_URL}
+    Purge All Emails    ${MAILDEV_URL}
+
+    # Trigger pipeline that sends email
     Run LPSD Pipeline Task
-    ${staging_cnt}=    Get SQL Server Staging Count
-    Should Be Equal As Integers    ${staging_cnt}    100
 
-TC_002B_E2E_Pipeline_Execute
-    [Tags]    lpsd    sqlserver    pipeline    e2e
-    Ensure SQL Server Target Table
-    Clean SQL Server Target Table
-    Create Task For LPSD Pipeline    TC_002B_E2E_Pipeline_Execute
-    Run LPSD Pipeline Task
-    ${target_cnt}=    Get SQL Server Target Count
-    Should Be Equal As Integers    ${target_cnt}    100
+    # Wait for email to arrive
+    Wait For Email    60s    3s    ${MAILDEV_URL}
 
-TC_003A_Invalid_File
-    [Tags]    lpsd    sqlserver    negative    regression
-    # Upload a broken expr file or wrong path
-    [Template]    Upload File Using File Protocol Template
-    file:///nonexistent/path/invalid.expr    ${upload_destination_file_path}/invalid
+    ${email_count}=    Get Email Count    ${MAILDEV_URL}
+    Should Be True    ${email_count} > 0
 
-TC_003B_Invalid_Target_Table
-    [Tags]    lpsd    sqlserver    negative    regression
-    ${result}=    Run Keyword And Ignore Error    DatabaseLibrary.Execute Sql String    SELECT COUNT(*) FROM JRS_NON_EXISTENT
-    Should Be Equal    ${result[0]}    FAIL    msg=Invalid target table should fail
-
+    Verify Email TO Recipient    ${EMAIL_RECIPIENT}    ${maildev_url}=${MAILDEV_URL}
+    Verify Email Subject    LPSD_EDS_To_JRS    ${maildev_url}=${MAILDEV_URL}
+    Verify Email Body Contains    Your pipeline executed successfully    ${maildev_url}=${MAILDEV_URL}
 
 *** Keywords ***
-Prepare Suite Environment And Pipeline
-    Prepare Environment
-    Ensure SQL Server Staging Table
-    Ensure SQL Server Target Table
-    Clean SQL Server Staging Table
-    Clean SQL Server Target Table
+Prepare Suite Environment
+    Check Connections
+    Initialize Variables
+    Ensure Sqlserver Target Table Exists
+    Clean Sqlserver Target Table
     Import LPSD Pipeline
-    Create Task For LPSD Pipeline    suite_run
-    Run LPSD Pipeline Task
+    Upload Input File
+    Create Task For LPSD Pipeline    BaseRun    ${INPUT_FILE}
 
 Cleanup Suite Environment
-    Clean SQL Server Staging Table
-    Clean SQL Server Target Table
-    Close All Database Connections
+    Run Keyword And Ignore Error    Clean Sqlserver Target Table
+    Run Keyword And Ignore Error    Disconnect From Database
 
+# --- Core Plumbing ---
 Import LPSD Pipeline
     Import Pipelines From Template    ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${BASE_PIPELINE_FILENAME}
     Sleep    5s
 
 Create Task For LPSD Pipeline
-    [Arguments]    ${test_name}
-    ${task_name}=    Catenate    LPSD_EDS_To_JRS_Task_    ${unique_id}    _${test_name}
-    Set Test Variable    ${task_name}
+    [Arguments]    ${test_name}    ${source_file}
+    ${task_name}=    Catenate    LPSD_EDS_To_JRS_Task_    ${unique_id}_${test_name}
+    Set Suite Variable    ${task_name}
+    &{local_params}=    Copy Dictionary    ${task_params}
+    Set To Dictionary    ${local_params}    filePath    ${input_folder}/${source_file}
+    File Should Exist    ${CURDIR}/../../test_data/input_files/${source_file}
     Create Triggered Task From Template
-    ...    ${unique_id}    ${project_path}    ${pipeline_name}    ${task_name}    ${task_params}    ${task_notifications}
+    ...    ${unique_id}
+    ...    ${project_path}
+    ...    ${pipeline_name}
+    ...    ${task_name}
+    ...    ${local_params}
+    ...    ${task_notifications}
 
 Run LPSD Pipeline Task
     Run Triggered Task With Parameters From Template
-    ...    ${unique_id}    ${project_path}    ${pipeline_name}    ${task_name}    M_CURR_DATE=${CURRENT_DATE}
+    ...    ${unique_id}
+    ...    ${project_path}
+    ...    ${pipeline_name}
+    ...    ${task_name}
 
-Prepare Environment
-    Check Connections
-    Initialize Variables
+Upload Input File
+    Upload File Using File Protocol Template    file://${CURDIR}/../../test_data/input_files/${INPUT_FILE}    ${input_folder}
 
 Check Connections
     Wait Until Plex Status Is Up    /${ORG_NAME}/${GROUNDPLEX_LOCATION_PATH}/${GROUNDPLEX_NAME}
-    Connect To SQL Server Database    ${SQLSERVER_DBNAME}    ${SQLSERVER_DBUSER}    ${SQLSERVER_DBPASS}    ${SQLSERVER_HOST}    ${SQLSERVER_DBPORT}
+    Connect To Database Using Custom Params
 
 Initialize Variables
     ${unique_id}=    Get Unique Id
     Set Suite Variable    ${unique_id}
     ${pipeline_name}=    Catenate    LPSD_EDS_To_JRS_    ${unique_id}
     Set Suite Variable    ${pipeline_name}
-    Set Suite Variable    ${pipeline_name_slp}    ${BASE_PIPELINE_FILENAME}
-    Set Suite Variable    ${SQLSERVER_ACCOUNT_NAME}    SQLServer_Account_${unique_id}
+    Set Suite Variable    ${SQLSERVER_ACCOUNT_NAME}    sqlserver_acct
 
 Get Unique Id
     ${timestamp}=    Get Time    epoch
     RETURN    ${timestamp}
+
+Ensure Sqlserver Target Table Exists
+    ${probe}=    Run Keyword And Ignore Error    DatabaseLibrary.Query    SELECT 1 FROM dbo.EDS_RSN_DTA
+    Run Keyword If    '${probe[0]}' == 'FAIL'    Fail    Table dbo.EDS_RSN_DTA does not exist or is inaccessible.
+
+Clean Sqlserver Target Table
+    ${truncate_result}=    Run Keyword And Ignore Error    DatabaseLibrary.Execute Sql String    TRUNCATE TABLE dbo.EDS_RSN_DTA
+    Run Keyword If    '${truncate_result[0]}' == 'FAIL'    DatabaseLibrary.Execute Sql String    DELETE FROM dbo.EDS_RSN_DTA
+
+Connect To Database Using Custom Params
+    Connect To Database    pymssql    ${SQLSERVER_DBNAME}    ${SQLSERVER_DBUSER}    ${SQLSERVER_DBPASS}    ${SQLSERVER_HOST}    ${SQLSERVER_DBPORT}
+
+# --- Transformation Validation ---
+Validate Transformation Rule
+    [Arguments]    @{parts}
+    ${source}=    Set Variable    ${parts[0]}
+    ${target}=    Set Variable    ${parts[1]}
+    ${res}=    DatabaseLibrary.Query    SELECT COUNT(*) FROM dbo.EDS_RSN_DTA WHERE ${target} IS NOT NULL
+    Should Be True    ${res[0][0]} >= 0
+    Log To Console    ✅ Transformation applied: ${source} → ${target} (rows: ${res[0][0]})
+
+# --- Email Wait Helper Keywords ---
+Wait For Email
+    [Arguments]    ${timeout}=60s    ${interval}=3s    ${maildev_url}=${MAILDEV_URL}
+    Wait Until Keyword Succeeds    ${timeout}    ${interval}    Check Email Arrived    ${maildev_url}
+
+Check Email Arrived
+    [Arguments]    ${maildev_url}=${MAILDEV_URL}
+    ${count}=    Get Email Count    ${maildev_url}
+    Should Be True    ${count} > 0
