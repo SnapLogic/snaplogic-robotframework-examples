@@ -9,6 +9,7 @@ include:
   - docker-compose.mysql.yml
   - docker-compose.db2.yml
   - docker-compose.salesforce-mock.yml
+  - docker-compose.kafka.yml
 
 services:
   tools:

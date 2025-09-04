@@ -22,6 +22,8 @@
         setup-groundplex-cert launch-groundplex-with-cert groundplex-check-cert groundplex-remove-cert \
         start-s3-emulator stop-s3-emulator run-s3-demo ensure-config-dir \
         activemq-start activemq-stop activemq-status activemq-setup run-jms-demo \
+        kafka-start kafka-dev-start kafka-stop kafka-restart kafka-status kafka-create-topic \
+        kafka-list-topics kafka-clean kafka-test kafka-send-test-messages kafka-cleanup-topics \
         start-services createplex-launch-groundplex \
         salesforce-mock-start salesforce-mock-stop salesforce-mock-status salesforce-mock-restart \
 		rebuild-tools-with-updated-requirements install-requirements-local install-requirements-venv \
@@ -641,6 +643,178 @@ run-s3-demo:
 		--access-key minioadmin \
 		--secret-key minioadmin \
 		--bucket demo-bucket2
+
+# =============================================================================
+# ☕ Kafka Message Broker Management
+# =============================================================================
+
+# =============================================================================
+# 🚀 Start Kafka in KRaft mode (no Zookeeper), with Kafka UI and setup
+# =============================================================================
+kafka-start:
+	@echo "🚀 Starting Apache Kafka in KRaft mode with UI..."
+	$(DOCKER_COMPOSE) --profile kafka up -d
+	@echo "⏳ Waiting for Kafka stack to fully initialize..."
+	@sleep 30
+	@echo "✅ Kafka started successfully!"
+	@echo ""
+	@echo "🌐 Service Endpoints:"
+	@echo "   • Kafka Broker: localhost:9092"
+	@echo "   • Kafka Controller: localhost:9093"
+	@echo "   • Kafka UI: http://localhost:8080"
+	@echo ""
+	@echo "📋 Created Topics:"
+	@echo "   • snaplogic-events (3 partitions)"
+	@echo "   • snaplogic-logs (2 partitions)"
+	@echo "   • snaplogic-metrics (1 partition)"
+
+# =============================================================================
+# 🚀 Start Kafka for development (without setup container)
+# =============================================================================
+kafka-dev-start:
+	@echo "🚀 Starting Apache Kafka in development mode..."
+	$(DOCKER_COMPOSE) --profile kafka-dev up -d
+	@echo "⏳ Waiting for Kafka to initialize..."
+	@sleep 20
+	@echo "✅ Kafka started in dev mode (no automatic topic creation)."
+	@echo "💡 Create topics manually if needed using 'make kafka-create-topic'"
+
+# =============================================================================
+# ⛔ Stop Kafka and all related services
+# =============================================================================
+kafka-stop:
+	@echo "⛔ Stopping Kafka services..."
+	$(DOCKER_COMPOSE) stop kafka kafka-ui kafka-setup 2>/dev/null || true
+	@echo "🗑️ Removing Kafka containers..."
+	$(DOCKER_COMPOSE) rm -f kafka kafka-ui kafka-setup 2>/dev/null || true
+	@echo "✅ Kafka services stopped."
+
+# =============================================================================
+# 🔄 Restart Kafka services
+# =============================================================================
+kafka-restart:
+	@echo "🔄 Restarting Kafka services..."
+	@$(MAKE) kafka-stop
+	@sleep 5
+	@$(MAKE) kafka-start
+	@echo "✅ Kafka services restarted successfully!"
+
+# =============================================================================
+# 🔍 Check Kafka services status
+# =============================================================================
+kafka-status:
+	@echo "🔍 Checking Kafka services status..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@kafka_status=$$(docker inspect -f '{{.State.Status}}' snaplogic-kafka-kraft 2>/dev/null || echo "not found"); \
+	ui_status=$$(docker inspect -f '{{.State.Status}}' snaplogic-kafka-ui 2>/dev/null || echo "not found"); \
+	if [ "$$kafka_status" = "running" ]; then \
+		echo "✅ Kafka broker (KRaft mode) is running"; \
+		echo "   📡 Broker port: 9092"; \
+		echo "   🎛️ Controller port: 9093"; \
+		echo "🧪 Testing broker connection..."; \
+		docker exec snaplogic-kafka-kraft kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1 && \
+			echo "   ✅ Broker is responding" || \
+			echo "   ⚠️  Broker not yet ready"; \
+	else \
+		echo "❌ Kafka broker is not running (status: $$kafka_status)"; \
+	fi; \
+	if [ "$$ui_status" = "running" ]; then \
+		echo "✅ Kafka UI is running"; \
+		echo "   🌐 Web UI: http://localhost:8080"; \
+	else \
+		echo "❌ Kafka UI is not running (status: $$ui_status)"; \
+	fi; \
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+	if [ "$$kafka_status" = "running" ]; then \
+		echo "📋 Available topics:"; \
+		docker exec snaplogic-kafka-kraft kafka-topics.sh --bootstrap-server localhost:9092 --list 2>/dev/null | sed 's/^/   • /' || \
+			echo "   ⚠️  Could not list topics"; \
+	else \
+		echo "💡 Run 'make kafka-start' to start Kafka services"; \
+	fi
+# =============================================================================
+# 🏷️ Create a Kafka topic
+# Usage: make kafka-create-topic TOPIC=my-topic PARTITIONS=3
+# =============================================================================
+kafka-create-topic:
+	@if [ -z "$(TOPIC)" ]; then \
+		echo "❌ Please specify a topic name: make kafka-create-topic TOPIC=my-topic"; \
+		exit 1; \
+	fi
+	@partitions=${PARTITIONS:-1}; \
+	echo "📝 Creating Kafka topic '$(TOPIC)' with $partitions partition(s)..."; \
+	docker exec snaplogic-kafka-kraft kafka-topics.sh \
+		--bootstrap-server localhost:9092 \
+		--create --if-not-exists \
+		--topic $(TOPIC) \
+		--partitions $partitions \
+		--replication-factor 1 && \
+	echo "✅ Topic '$(TOPIC)' created successfully!" || \
+	echo "❌ Failed to create topic '$(TOPIC)'"
+
+# =============================================================================
+# 📋 List all Kafka topics
+# =============================================================================
+kafka-list-topics:
+	@echo "📋 Listing all Kafka topics..."
+	@docker exec snaplogic-kafka-kraft kafka-topics.sh \
+		--bootstrap-server localhost:9092 --list || \
+		echo "❌ Could not list topics. Is Kafka running?"
+
+# =============================================================================
+# 🧹 Clean Kafka data (removes all data volumes)
+# =============================================================================
+kafka-clean:
+	@echo "🧹 Cleaning Kafka data and volumes..."
+	@$(MAKE) kafka-stop
+	@echo "🗑️ Removing Kafka volumes..."
+	@docker volume rm docker_kafka-kraft-data docker_kafka-kraft-logs 2>/dev/null || true
+	@echo "✅ Kafka cleaned. All data removed."
+
+# =============================================================================
+# 🧪 Test Kafka connectivity and produce/consume messages
+# =============================================================================
+kafka-test:
+	@echo "🧪 Testing Kafka setup..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "1️⃣ Creating test topic..."
+	@docker exec snaplogic-kafka-kraft kafka-topics.sh \
+		--bootstrap-server localhost:9092 \
+		--create --if-not-exists \
+		--topic test-topic \
+		--partitions 1 \
+		--replication-factor 1 >/dev/null 2>&1 || true
+	@echo "2️⃣ Producing test message..."
+	@echo "Hello Kafka from SnapLogic!" | docker exec -i snaplogic-kafka-kraft \
+		kafka-console-producer.sh \
+		--bootstrap-server localhost:9092 \
+		--topic test-topic
+	@echo "3️⃣ Consuming test message..."
+	@timeout 5 docker exec snaplogic-kafka-kraft \
+		kafka-console-consumer.sh \
+		--bootstrap-server localhost:9092 \
+		--topic test-topic \
+		--from-beginning \
+		--max-messages 1 2>/dev/null || true
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "✅ Kafka test completed!"
+
+# =============================================================================
+# 📤 Send test messages to Kafka topics
+# =============================================================================
+kafka-send-test-messages:
+	@echo "📤 Sending test messages to Kafka topics..."
+	$(DOCKER_COMPOSE) --profile kafka-test up kafka-test-producer
+	@echo "✅ Test messages sent successfully!"
+
+# =============================================================================
+# 🧹 Clean up Kafka topics (removes all non-system topics)
+# =============================================================================
+kafka-cleanup-topics:
+	@echo "🧹 Cleaning up Kafka topics..."
+	@echo "⚠️  This will delete all non-system topics!"
+	$(DOCKER_COMPOSE) --profile kafka-cleanup up kafka-cleanup
+	@echo "✅ Kafka topics cleaned up!"
 
 # =============================================================================
 # 📡 ActiveMQ JMS Server Management

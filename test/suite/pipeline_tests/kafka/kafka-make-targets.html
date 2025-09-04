@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kafka Makefile Targets Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 50px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(255, 255, 255, 0.05) 10px,
+                rgba(255, 255, 255, 0.05) 20px
+            );
+            animation: slide 20s linear infinite;
+        }
+        
+        @keyframes slide {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+        
+        h1 {
+            font-size: 3em;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .subtitle {
+            font-size: 1.3em;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .content {
+            padding: 50px;
+        }
+        
+        .targets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+        
+        .target-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .target-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+        
+        .target-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .target-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+        
+        .target-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .target-icon {
+            font-size: 2em;
+            margin-right: 15px;
+        }
+        
+        .target-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
+        
+        .target-description {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.8;
+        }
+        
+        .command-box {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+            position: relative;
+            overflow-x: auto;
+        }
+        
+        .command-box::before {
+            content: '$';
+            color: #66d9ef;
+            margin-right: 10px;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: background 0.3s ease;
+        }
+        
+        .copy-btn:hover {
+            background: #764ba2;
+        }
+        
+        .category-section {
+            margin: 50px 0;
+        }
+        
+        .category-title {
+            font-size: 2em;
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            display: flex;
+            align-items: center;
+        }
+        
+        .category-icon {
+            margin-right: 15px;
+            font-size: 1.2em;
+        }
+        
+        .usage-example {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .usage-example h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .parameters {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        .parameters h4 {
+            color: #2c5282;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+        
+        .parameter-item {
+            display: flex;
+            margin: 8px 0;
+            font-size: 0.9em;
+        }
+        
+        .parameter-name {
+            font-weight: bold;
+            color: #2c5282;
+            min-width: 120px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
+        
+        .parameter-desc {
+            color: #666;
+        }
+        
+        .workflow-diagram {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .workflow-steps {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        
+        .workflow-step {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            margin: 10px;
+            position: relative;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .workflow-arrow {
+            font-size: 2em;
+            color: #667eea;
+            margin: 0 10px;
+        }
+        
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .alert-info {
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+            border-left: 4px solid #667eea;
+        }
+        
+        .alert-warning {
+            background: linear-gradient(135deg, #ffd89b20 0%, #19547b20 100%);
+            border-left: 4px solid #ffd89b;
+        }
+        
+        .alert-success {
+            background: linear-gradient(135deg, #84fab020 0%, #8fd3f420 100%);
+            border-left: 4px solid #84fab0;
+        }
+        
+        .alert-icon {
+            font-size: 1.5em;
+            margin-right: 15px;
+        }
+        
+        .quick-nav {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 30px 0;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 20px;
+        }
+        
+        .quick-nav h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        .quick-nav ul {
+            list-style: none;
+        }
+        
+        .quick-nav li {
+            margin: 8px 0;
+        }
+        
+        .quick-nav a {
+            color: #666;
+            text-decoration: none;
+            transition: color 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+        
+        .quick-nav a:hover {
+            color: #667eea;
+        }
+        
+        .quick-nav-icon {
+            margin-right: 10px;
+            width: 20px;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin: 20px 0;
+        }
+        
+        .comparison-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+        }
+        
+        .comparison-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .comparison-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin: 0 5px;
+        }
+        
+        .badge-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .badge-success {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            color: white;
+        }
+        
+        .badge-warning {
+            background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+            color: white;
+        }
+        
+        .badge-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                border-radius: 0;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .targets-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .workflow-steps {
+                flex-direction: column;
+            }
+            
+            .workflow-arrow {
+                transform: rotate(90deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>☕ Kafka Makefile Targets</h1>
+            <p class="subtitle">Complete reference for Apache Kafka management commands in SnapLogic Robot Framework</p>
+        </header>
+        
+        <div class="content">
+            <!-- Quick Navigation -->
+            <div class="alert alert-info">
+                <span class="alert-icon">ℹ️</span>
+                <div>
+                    <strong>Quick Start:</strong> Run <code>make kafka-start</code> to launch the complete Kafka stack with Zookeeper, Kafka broker, UI, and sample topics.
+                </div>
+            </div>
+            
+            <!-- Workflow Diagram -->
+            <div class="workflow-diagram">
+                <h3>🔄 Typical Kafka Workflow</h3>
+                <div class="workflow-steps">
+                    <div class="workflow-step">kafka-start</div>
+                    <span class="workflow-arrow">→</span>
+                    <div class="workflow-step">kafka-status</div>
+                    <span class="workflow-arrow">→</span>
+                    <div class="workflow-step">kafka-test</div>
+                    <span class="workflow-arrow">→</span>
+                    <div class="workflow-step">kafka-create-topic</div>
+                    <span class="workflow-arrow">→</span>
+                    <div class="workflow-step">kafka-stop</div>
+                </div>
+            </div>
+            
+            <!-- Basic Operations -->
+            <div class="category-section">
+                <h2 class="category-title">
+                    <span class="category-icon">🚀</span>
+                    Basic Operations
+                </h2>
+                
+                <div class="targets-grid">
+                    <!-- kafka-start -->
+                    <div class="target-card">
+                        <div class="target-header">
+                            <span class="target-icon">▶️</span>
+                            <span class="target-name">kafka-start</span>
+                        </div>
+                        <div class="target-description">
+                            Starts the complete Kafka stack with all services and automatic topic creation.
+                        </div>
+                        <div class="command-box">
+                            make kafka-start
+                            <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                        </div>
+                        <div class="parameters">
+                            <h4>What it starts:</h4>
+                            <div class="parameter-item">
+                                <span class="parameter-name">Zookeeper</span>
+                                <span class="parameter-desc">Coordination service on port 2181</span>
+                            </div>
+                            <div class="parameter-item">
+                                <span class="parameter-name">Kafka Broker</span>
+                                <span class="parameter-desc">Message broker on port 9092</span>
+                            </div>
+                            <div class="parameter-item">
+                                <span class="parameter-name">Kafka UI</span>
+                                <span class="parameter-desc">Web interface on port 8080</span>
+                            </div>
+                            <div class="parameter-item">
+                                <span class="parameter-name">Setup Container</span>
+                                <span class="parameter-desc">Creates 3 sample topics automatically</span>
+                            </div>
+                        </div>
+                        <div class="usage-example">
+                            <h4>Auto-created topics:</h4>
+                            <ul>
+                                <li><code>snaplogic-events</code> (3 partitions)</li>
+                                <li><code>snaplogic-logs</code> (2 partitions)</li>
+                                <li><code>snaplogic-metrics</code> (1 partition)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- kafka-stop -->
+                    <div class="target-card">
+                        <div class="target-header">
+                            <span class="target-icon">⏹️</span>
+                            <span class="target-name">kafka-stop</span>
+                        </div>
+                        <div class="target-description">
+                            Stops all Kafka services and removes containers. Data volumes are preserved.
+                        </div>
+                        <div class="command-box">
+                            make kafka-stop
+                            <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                        </div>
+                        <div class="parameters">
+                            <h4>What it does:</h4>
+                            <div class="parameter-item">
+                                <span class="parameter-desc">✓ Stops Kafka broker, Zookeeper, and UI</span>
+                            </div>
+                            <div class="parameter-item">
+                                <span class="parameter-desc">✓ Removes containers (but keeps volumes)</span>
+                            </div>
+                            <div class="parameter-item">
+                                <span class="parameter-desc">✓ Topics and messages are preserved</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- kafka-restart -->
+                    <div class="target-card">
+                        <div class="target-header">
+                            <span class="target-icon">🔄</span>
+                            <span class="target-name">kafka-restart</span>
+                        </div>
+                        <div class="target-description">
+                            Performs a full restart of all Kafka services. Useful for applying configuration changes.
+                        </div>
+                        <div class="command-box">
+                            make kafka-restart
+                            <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                        </div>
+                        <div class="parameters">
+                            <h4>Sequence:</h4>
+                            <div class="parameter-item">
+                                <span class="parameter-desc">1. Stops all services</span>
+                            </div>
+                            <div class="parameter-item">
+                                <span class="parameter-desc">2. Waits 5 seconds</span>
+                            </div>
+                            <div class="parameter-item">
+                                <span class="parameter-desc">3. Starts all services again</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Development Mode -->
+            <div class="category-section">
+                <h2 class="category-title">
+                    <span class="category-icon">💻</span>
+                    Development Mode
+                </h2>
+                
+                <div class="targets-grid">
+                    <!-- kafka-dev-start -->
+                    <div class="target-card">
+                        <div class="target-header">
+                            <span class="target-icon">🛠️</span>
+                            <span class="target-name">kafka-dev-start</span>
+                        </div>
+                        <div class="target-description">
+                            Starts Kafka in development mode without automatic topic creation. Perfect for testing topic creation workflows.
+                        </div>
+                        <div class="command-box">
+                            make kafka-dev-start
+                            <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                        </div>
+                        <div class="parameters">
+                            <h4>Difference from kafka-start:</h4>
+                            <div class="parameter-item">
+                                <span class="parameter-desc">✓ No setup container runs</span>
+                            </div>
+                            <div class="parameter-item">
+                                <span class="parameter-desc">✓ No automatic topic creation</span>
+                            </div>
+                            <div class="parameter-item">
+                                <span class="parameter-desc">✓ Clean slate for development</span>
+                            </div>
+                        </div>
+                        <div class="usage-example">
+                            <h4>Use case:</h4>
+                            <p>Testing SnapLogic pipelines that create their own topics, or when you want complete control over the topic configuration.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Monitoring & Testing -->
+            <div class="category-section">
+                <h2 class="category-title">
+                    <span class="category-icon">🔍</span>
+                    Monitoring & Testing
+                </h2>
+                
+                <div class="targets-grid">
+                    <!-- kafka-status -->
+                    <div class="target-card">
+                        <div class="target-header">
+                            <span class="target-icon">📊</span>
+                            <span class="target-name">kafka-status</span>
+                        </div>
+                        <div class="target-description">
+                            Comprehensive status check of all Kafka services including health tests and topic listing.
+                        </div>
+                        <div class="command-box">
+                            make kafka-status
+                            <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                        </div>
+                        <div class="parameters">
+                            <h4>Information provided:</h4>
+                            <div class="parameter-item">
+                                <span class="parameter-desc">✓ Container status for each service</span>
+                            </div>
+                            <div class="parameter-item">
+                                <span class="parameter-desc">✓ Broker connectivity test</span>
+                            </div>
+                            <div class="parameter-item">
+                                <span class="parameter-desc">✓ List of existing topics</span>
+                            </div>
+                            <div class="parameter-item">
+                                <span class="parameter-desc">✓ Service URLs and ports</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- kafka-test -->
+                    <div class="target-card">
+                        <div class="target-header">
+                            <span class="target-icon">🧪</span>
+                            <span class="target-name">kafka-test</span>
+                        </div>
+                        <div class="target-description">
+                            End-to-end test that creates a topic, produces a message, and consumes it to verify Kafka is working correctly.
+                        </div>
+                        <div class="command-box">
+                            make kafka-test
+                            <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                        </div>
+                        <div class="parameters">
+                            <h4>Test sequence:</h4>
+                            <div class="parameter-item">
+                                <span class="parameter-name">Step 1</span>
+                                <span class="parameter-desc">Creates 'test-topic'</span>
+                            </div>
+                            <div class="parameter-item">
+                                <span class="parameter-name">Step 2</span>
+                                <span class="parameter-desc">Produces "Hello Kafka from SnapLogic!"</span>
+                            </div>
+                            <div class="parameter-item">
+                                <span class="parameter-name">Step 3</span>
+                                <span class="parameter-desc">Consumes and displays the message</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Topic Management -->
+            <div class="category-section">
+                <h2 class="category-title">
+                    <span class="category-icon">📋</span>
+                    Topic Management
+                </h2>
+                
+                <div class="targets-grid">
+                    <!-- kafka-create-topic -->
+                    <div class="target-card">
+                        <div class="target-header">
+                            <span class="target-icon">➕</span>
+                            <span class="target-name">kafka-create-topic</span>
+                        </div>
+                        <div class="target-description">
+                            Creates a new Kafka topic with specified name and partition count.
+                        </div>
+                        <div class="command-box">
+                            make kafka-create-topic TOPIC=my-events PARTITIONS=5
+                            <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                        </div>
+                        <div class="parameters">
+                            <h4>Parameters:</h4>
+                            <div class="parameter-item">
+                                <span class="parameter-name">TOPIC</span>
+                                <span class="parameter-desc">(Required) Name of the topic to create</span>
+                            </div>
+                            <div class="parameter-item">
+                                <span class="parameter-name">PARTITIONS</span>
+                                <span class="parameter-desc">(Optional) Number of partitions (default: 1)</span>
+                            </div>
+                        </div>
+                        <div class="usage-example">
+                            <h4>Examples:</h4>
+                            <div class="command-box">make kafka-create-topic TOPIC=user-events</div>
+                            <div class="command-box">make kafka-create-topic TOPIC=logs PARTITIONS=10</div>
+                        </div>
+                    </div>
+                    
+                    <!-- kafka-list-topics -->
+                    <div class="target-card">
+                        <div class="target-header">
+                            <span class="target-icon">📝</span>
+                            <span class="target-name">kafka-list-topics</span>
+                        </div>
+                        <div class="target-description">
+                            Lists all existing topics in the Kafka cluster.
+                        </div>
+                        <div class="command-box">
+                            make kafka-list-topics
+                            <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                        </div>
+                        <div class="parameters">
+                            <h4>Output shows:</h4>
+                            <div class="parameter-item">
+                                <span class="parameter-desc">✓ All topic names</span>
+                            </div>
+                            <div class="parameter-item">
+                                <span class="parameter-desc">✓ Both system and user topics</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Cleanup -->
+            <div class="category-section">
+                <h2 class="category-title">
+                    <span class="category-icon">🧹</span>
+                    Cleanup
+                </h2>
+                
+                <div class="targets-grid">
+                    <!-- kafka-clean -->
+                    <div class="target-card">
+                        <div class="target-header">
+                            <span class="target-icon">🗑️</span>
+                            <span class="target-name">kafka-clean</span>
+                        </div>
+                        <div class="target-description">
+                            Complete cleanup - stops services and removes all data volumes. Use this for a fresh start.
+                        </div>
+                        <div class="command-box">
+                            make kafka-clean
+                            <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                        </div>
+                        <div class="alert alert-warning">
+                            <span class="alert-icon">⚠️</span>
+                            <div>
+                                <strong>Warning:</strong> This removes all Kafka data including topics and messages. Use with caution!
+                            </div>
+                        </div>
+                        <div class="parameters">
+                            <h4>What gets removed:</h4>
+                            <div class="parameter-item">
+                                <span class="parameter-desc">✓ All containers</span>
+                            </div>
+                            <div class="parameter-item">
+                                <span class="parameter-desc">✓ kafka-temp-data volume</span>
+                            </div>
+                            <div class="parameter-item">
+                                <span class="parameter-desc">✓ zookeeper-temp-data volume</span>
+                            </div>
+                            <div class="parameter-item">
+                                <span class="parameter-desc">✓ zookeeper-temp-logs volume</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Comparison Table -->
+            <div class="category-section">
+                <h2 class="category-title">
+                    <span class="category-icon">📊</span>
+                    Mode Comparison
+                </h2>
+                
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>kafka-start</th>
+                            <th>kafka-dev-start</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Docker Profile</strong></td>
+                            <td><span class="badge badge-primary">kafka</span></td>
+                            <td><span class="badge badge-warning">kafka-dev</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Setup Container</strong></td>
+                            <td><span class="badge badge-success">Yes</span></td>
+                            <td><span class="badge badge-danger">No</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Auto-create Topics</strong></td>
+                            <td>3 sample topics</td>
+                            <td>None</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Startup Time</strong></td>
+                            <td>~30 seconds</td>
+                            <td>~20 seconds</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Use Case</strong></td>
+                            <td>Quick demos, testing, production-like</td>
+                            <td>Development, clean slate, custom setup</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Best For</strong></td>
+                            <td>Ready-to-use environment</td>
+                            <td>Testing topic creation workflows</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Common Workflows -->
+            <div class="category-section">
+                <h2 class="category-title">
+                    <span class="category-icon">🎯</span>
+                    Common Workflows
+                </h2>
+                
+                <div class="usage-example">
+                    <h4>1. Quick Demo Setup</h4>
+                    <div class="command-box">make kafka-start</div>
+                    <div class="command-box">make kafka-status</div>
+                    <div class="command-box">make kafka-test</div>
+                    <p>Perfect for demonstrations or quick testing with pre-configured topics.</p>
+                </div>
+                
+                <div class="usage-example">
+                    <h4>2. Custom Development Setup</h4>
+                    <div class="command-box">make kafka-dev-start</div>
+                    <div class="command-box">make kafka-create-topic TOPIC=my-app-events PARTITIONS=10</div>
+                    <div class="command-box">make kafka-create-topic TOPIC=my-app-commands PARTITIONS=5</div>
+                    <div class="command-box">make kafka-list-topics</div>
+                    <p>Ideal for development when you need specific topics with custom configurations.</p>
+                </div>
+                
+                <div class="usage-example">
+                    <h4>3. Complete Reset</h4>
+                    <div class="command-box">make kafka-clean</div>
+                    <div class="command-box">make kafka-start</div>
+                    <p>Removes all data and starts fresh. Useful when you need a clean environment.</p>
+                </div>
+                
+                <div class="usage-example">
+                    <h4>4. Troubleshooting</h4>
+                    <div class="command-box">make kafka-status</div>
+                    <div class="command-box">make kafka-restart</div>
+                    <div class="command-box">make kafka-test</div>
+                    <p>Check status, restart services, and run tests to diagnose issues.</p>
+                </div>
+            </div>
+            
+            <!-- Service Endpoints -->
+            <div class="category-section">
+                <h2 class="category-title">
+                    <span class="category-icon">🌐</span>
+                    Service Endpoints
+                </h2>
+                
+                <div class="alert alert-success">
+                    <span class="alert-icon">✅</span>
+                    <div>
+                        <strong>All services are accessible after running <code>make kafka-start</code></strong>
+                    </div>
+                </div>
+                
+                <div class="targets-grid">
+                    <div class="target-card">
+                        <div class="target-header">
+                            <span class="target-icon">📡</span>
+                            <span class="target-name">Kafka Broker</span>
+                        </div>
+                        <div class="command-box">localhost:9092</div>
+                        <p>Connect producers and consumers to this endpoint</p>
+                    </div>
+                    
+                    <div class="target-card">
+                        <div class="target-header">
+                            <span class="target-icon">🖥️</span>
+                            <span class="target-name">Kafka UI</span>
+                        </div>
+                        <div class="command-box">http://localhost:8080</div>
+                        <p>Web interface for managing and monitoring Kafka</p>
+                    </div>
+                    
+                    <div class="target-card">
+                        <div class="target-header">
+                            <span class="target-icon">🎯</span>
+                            <span class="target-name">Zookeeper</span>
+                        </div>
+                        <div class="command-box">localhost:2181</div>
+                        <p>Coordination service (usually internal use only)</p>
+                    </div>
+                    
+                    <div class="target-card">
+                        <div class="target-header">
+                            <span class="target-icon">📊</span>
+                            <span class="target-name">JMX Monitoring</span>
+                        </div>
+                        <div class="command-box">localhost:9101</div>
+                        <p>JMX metrics endpoint for monitoring tools</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Troubleshooting -->
+            <div class="category-section">
+                <h2 class="category-title">
+                    <span class="category-icon">🔧</span>
+                    Troubleshooting Guide
+                </h2>
+                
+                <div class="alert alert-info">
+                    <span class="alert-icon">💡</span>
+                    <div>
+                        <strong>Tip:</strong> Always run <code>make kafka-status</code> first to diagnose issues.
+                    </div>
+                </div>
+                
+                <div class="usage-example">
+                    <h4>Port Already in Use</h4>
+                    <p><strong>Error:</strong> "bind: address already in use"</p>
+                    <p><strong>Solution:</strong> Check if another service is using the ports:</p>
+                    <div class="command-box">lsof -i :9092  # Check Kafka port</div>
+                    <div class="command-box">lsof -i :8080  # Check UI port</div>
+                    <p>Or modify ports in your <code>.env</code> file:</p>
+                    <div class="command-box">KAFKA_PORT=9093</div>
+                    <div class="command-box">KAFKA_UI_PORT=8085</div>
+                </div>
+                
+                <div class="usage-example">
+                    <h4>Kafka Not Starting</h4>
+                    <p><strong>Symptoms:</strong> Services appear running but broker doesn't respond</p>
+                    <p><strong>Solution:</strong></p>
+                    <div class="command-box">make kafka-clean  # Complete cleanup</div>
+                    <div class="command-box">make kafka-start  # Fresh start</div>
+                </div>
+                
+                <div class="usage-example">
+                    <h4>Cannot Create Topics</h4>
+                    <p><strong>Error:</strong> "Error while executing topic command"</p>
+                    <p><strong>Possible causes:</strong></p>
+                    <ul>
+                        <li>Kafka broker not fully started (wait 30 seconds)</li>
+                        <li>Zookeeper connection issues</li>
+                        <li>Topic already exists</li>
+                    </ul>
+                    <p><strong>Solution:</strong></p>
+                    <div class="command-box">make kafka-status  # Check service health</div>
+                    <div class="command-box">make kafka-list-topics  # Check existing topics</div>
+                </div>
+            </div>
+            
+            <!-- Integration with SnapLogic -->
+            <div class="category-section">
+                <h2 class="category-title">
+                    <span class="category-icon">🔗</span>
+                    SnapLogic Integration
+                </h2>
+                
+                <div class="alert alert-success">
+                    <span class="alert-icon">🎯</span>
+                    <div>
+                        <strong>SnapLogic Kafka Account Configuration:</strong>
+                    </div>
+                </div>
+                
+                <div class="usage-example">
+                    <h4>Kafka Consumer/Producer Snap Settings</h4>
+                    <div class="parameters">
+                        <div class="parameter-item">
+                            <span class="parameter-name">Broker List:</span>
+                            <span class="parameter-desc">localhost:9092 (from host) or kafka:29092 (from Groundplex)</span>
+                        </div>
+                        <div class="parameter-item">
+                            <span class="parameter-name">Topic:</span>
+                            <span class="parameter-desc">snaplogic-events (or your custom topic)</span>
+                        </div>
+                        <div class="parameter-item">
+                            <span class="parameter-name">Key Serializer:</span>
+                            <span class="parameter-desc">org.apache.kafka.common.serialization.StringSerializer</span>
+                        </div>
+                        <div class="parameter-item">
+                            <span class="parameter-name">Value Serializer:</span>
+                            <span class="parameter-desc">org.apache.kafka.common.serialization.StringSerializer</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="usage-example">
+                    <h4>Testing SnapLogic Pipeline</h4>
+                    <ol>
+                        <li>Start Kafka: <code>make kafka-start</code></li>
+                        <li>Verify services: <code>make kafka-status</code></li>
+                        <li>Create custom topic if needed: <code>make kafka-create-topic TOPIC=pipeline-test</code></li>
+                        <li>Configure Kafka Account in SnapLogic Manager</li>
+                        <li>Run your pipeline</li>
+                        <li>Monitor messages in Kafka UI: <code>http://localhost:8080</code></li>
+                    </ol>
+                </div>
+            </div>
+            
+            <!-- Best Practices -->
+            <div class="category-section">
+                <h2 class="category-title">
+                    <span class="category-icon">✨</span>
+                    Best Practices
+                </h2>
+                
+                <div class="alert alert-info">
+                    <span class="alert-icon">📚</span>
+                    <div>
+                        <strong>Recommendations for optimal Kafka usage:</strong>
+                    </div>
+                </div>
+                
+                <div class="usage-example">
+                    <h4>1. Topic Naming Convention</h4>
+                    <ul>
+                        <li>Use descriptive names: <code>user-registration-events</code></li>
+                        <li>Include environment: <code>dev-payment-transactions</code></li>
+                        <li>Use hyphens, not underscores</li>
+                        <li>Keep names lowercase</li>
+                    </ul>
+                </div>
+                
+                <div class="usage-example">
+                    <h4>2. Partition Strategy</h4>
+                    <ul>
+                        <li>Start with fewer partitions (1-3) for development</li>
+                        <li>Increase partitions for high-throughput topics</li>
+                        <li>Consider key-based partitioning for ordering</li>
+                        <li>Monitor partition lag in Kafka UI</li>
+                    </ul>
+                </div>
+                
+                <div class="usage-example">
+                    <h4>3. Development vs Production</h4>
+                    <ul>
+                        <li><strong>Dev:</strong> Use <code>kafka-dev-start</code> for clean environment</li>
+                        <li><strong>Testing:</strong> Use <code>kafka-start</code> for pre-configured setup</li>
+                        <li><strong>CI/CD:</strong> Always run <code>kafka-clean</code> before tests</li>
+                        <li><strong>Production:</strong> Never use single-broker setup</li>
+                    </ul>
+                </div>
+                
+                <div class="usage-example">
+                    <h4>4. Monitoring</h4>
+                    <ul>
+                        <li>Regularly check <code>make kafka-status</code></li>
+                        <li>Monitor consumer lag in Kafka UI</li>
+                        <li>Use JMX metrics for detailed monitoring</li>
+                        <li>Set up alerts for broker availability</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function copyCommand(button) {
+            const commandBox = button.parentElement;
+            const command = commandBox.textContent
+                .replace('Copy', '')
+                .replace('$', '')
+                .trim();
+            
+            navigator.clipboard.writeText(command).then(() => {
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.style.background = '#4caf50';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#667eea';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                button.textContent = 'Failed';
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                }, 2000);
+            });
+        }
+        
+        // Add smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+        
+        // Add animation on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+        
+        document.querySelectorAll('.target-card, .usage-example').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            observer.observe(el);
+        });
+        
+        // Add hover effect for command boxes
+        document.querySelectorAll('.command-box').forEach(box => {
+            box.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.02)';
+            });
+            box.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body>
+</html>

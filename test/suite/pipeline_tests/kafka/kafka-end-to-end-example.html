@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kafka End-to-End Workflow Example</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 50px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(255, 255, 255, 0.05) 10px,
+                rgba(255, 255, 255, 0.05) 20px
+            );
+            animation: slide 20s linear infinite;
+        }
+        
+        @keyframes slide {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+        
+        h1 {
+            font-size: 3em;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .subtitle {
+            font-size: 1.3em;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .content {
+            padding: 50px;
+        }
+        
+        .concept-section {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+        }
+        
+        .concept-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 15px 0;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .concept-title {
+            font-size: 1.8em;
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .concept-icon {
+            margin-right: 15px;
+            font-size: 1.2em;
+        }
+        
+        .visual-diagram {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .topic-visual {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .topic-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 10px;
+            min-width: 150px;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .partition-container {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .partition {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            padding: 15px;
+            border-radius: 8px;
+            min-width: 100px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .message {
+            background: #ffd89b;
+            padding: 8px 15px;
+            border-radius: 5px;
+            margin: 5px;
+            display: inline-block;
+            font-size: 0.9em;
+        }
+        
+        .workflow-step {
+            background: white;
+            padding: 25px;
+            border-left: 4px solid #667eea;
+            margin: 20px 0;
+            border-radius: 0 10px 10px 0;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .workflow-step:hover {
+            transform: translateX(10px);
+        }
+        
+        .step-number {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        
+        .command-box {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            position: relative;
+            overflow-x: auto;
+        }
+        
+        .command-box::before {
+            content: '$';
+            color: #66d9ef;
+            margin-right: 10px;
+        }
+        
+        .output-box {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: background 0.3s ease;
+        }
+        
+        .copy-btn:hover {
+            background: #764ba2;
+        }
+        
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .alert-info {
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+            border-left: 4px solid #667eea;
+        }
+        
+        .alert-success {
+            background: linear-gradient(135deg, #84fab020 0%, #8fd3f420 100%);
+            border-left: 4px solid #84fab0;
+        }
+        
+        .alert-icon {
+            font-size: 1.5em;
+            margin-right: 15px;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin: 20px 0;
+        }
+        
+        .comparison-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+        
+        .comparison-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .comparison-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .use-case-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 25px;
+            border-radius: 15px;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .use-case-title {
+            font-size: 1.4em;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin: 0 5px;
+        }
+        
+        .badge-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .badge-success {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            color: white;
+        }
+        
+        .producer-consumer-diagram {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        
+        .actor-box {
+            background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            min-width: 150px;
+            margin: 10px;
+        }
+        
+        .arrow {
+            font-size: 2em;
+            color: #667eea;
+            margin: 0 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                border-radius: 0;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .producer-consumer-diagram {
+                flex-direction: column;
+            }
+            
+            .arrow {
+                transform: rotate(90deg);
+                margin: 20px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Kafka End-to-End Workflow</h1>
+            <p class="subtitle">Complete example with Topics, Partitions, and Real-World Scenarios</p>
+        </header>
+        
+        <div class="content">
+            <!-- Core Concepts -->
+            <div class="concept-section">
+                <h2 class="concept-title">
+                    <span class="concept-icon">📚</span>
+                    Understanding Kafka Core Concepts
+                </h2>
+                
+                <div class="concept-card">
+                    <h3>🎯 What is a Topic?</h3>
+                    <p>A <strong>topic</strong> is like a <strong>category or folder</strong> where messages are stored. Think of it as:</p>
+                    <ul>
+                        <li>📁 A folder in a file system</li>
+                        <li>📊 A table in a database</li>
+                        <li>📬 A mailbox for specific types of messages</li>
+                    </ul>
+                    <div class="visual-diagram">
+                        <h4>Topics in an E-commerce System</h4>
+                        <div class="topic-visual">
+                            <div class="topic-box">
+                                <strong>user-signups</strong>
+                                <p>New user registrations</p>
+                            </div>
+                            <div class="topic-box">
+                                <strong>order-events</strong>
+                                <p>Order placed/canceled</p>
+                            </div>
+                            <div class="topic-box">
+                                <strong>payment-transactions</strong>
+                                <p>Payment processing</p>
+                            </div>
+                            <div class="topic-box">
+                                <strong>inventory-updates</strong>
+                                <p>Stock changes</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="concept-card">
+                    <h3>🔀 What are Partitions?</h3>
+                    <p>A <strong>partition</strong> is a <strong>sub-division of a topic</strong>. Think of partitions as:</p>
+                    <ul>
+                        <li>📑 Different sections in a filing cabinet</li>
+                        <li>🚦 Multiple lanes on a highway</li>
+                        <li>🏪 Different checkout counters in a store</li>
+                    </ul>
+                    
+                    <div class="visual-diagram">
+                        <h4>Topic with 3 Partitions</h4>
+                        <div class="topic-box" style="width: 100%; max-width: 600px;">
+                            <strong>order-events (Topic)</strong>
+                            <div class="partition-container">
+                                <div class="partition">
+                                    <strong>Partition 0</strong>
+                                    <div class="message">Order #101</div>
+                                    <div class="message">Order #104</div>
+                                    <div class="message">Order #107</div>
+                                </div>
+                                <div class="partition">
+                                    <strong>Partition 1</strong>
+                                    <div class="message">Order #102</div>
+                                    <div class="message">Order #105</div>
+                                    <div class="message">Order #108</div>
+                                </div>
+                                <div class="partition">
+                                    <strong>Partition 2</strong>
+                                    <div class="message">Order #103</div>
+                                    <div class="message">Order #106</div>
+                                    <div class="message">Order #109</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <span class="alert-icon">💡</span>
+                        <div>
+                            <strong>Why Partitions?</strong>
+                            <ul>
+                                <li>⚡ <strong>Parallelism:</strong> Multiple consumers can read different partitions simultaneously</li>
+                                <li>📈 <strong>Scalability:</strong> Distribute load across multiple brokers</li>
+                                <li>🎯 <strong>Ordering:</strong> Messages in same partition maintain order</li>
+                                <li>🔄 <strong>Redundancy:</strong> Partitions can be replicated for fault tolerance</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="concept-card">
+                    <h3>📤 Producers & 📥 Consumers</h3>
+                    <div class="producer-consumer-diagram">
+                        <div class="actor-box">
+                            <strong>Producer</strong>
+                            <p>Sends messages</p>
+                        </div>
+                        <span class="arrow">→</span>
+                        <div class="topic-box">
+                            <strong>Kafka Topic</strong>
+                            <p>Stores messages</p>
+                        </div>
+                        <span class="arrow">→</span>
+                        <div class="actor-box">
+                            <strong>Consumer</strong>
+                            <p>Reads messages</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Complete End-to-End Example -->
+            <div class="concept-section">
+                <h2 class="concept-title">
+                    <span class="concept-icon">🎬</span>
+                    Complete End-to-End Example: E-Commerce Order Processing
+                </h2>
+                
+                <div class="alert alert-success">
+                    <span class="alert-icon">🎯</span>
+                    <div>
+                        <strong>Scenario:</strong> Building an order processing system that tracks orders, payments, and shipping notifications.
+                    </div>
+                </div>
+                
+                <!-- Step 1 -->
+                <div class="workflow-step">
+                    <h3><span class="step-number">1</span>Start Kafka Environment</h3>
+                    <p>First, let's start our Kafka environment with all necessary services.</p>
+                    <div class="command-box">
+                        make kafka-start
+                        <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                    </div>
+                    <div class="output-box">
+                        🚀 Starting Apache Kafka with Zookeeper and UI...<br>
+                        ⏳ Waiting for Kafka stack to fully initialize...<br>
+                        ✅ Kafka started successfully!<br><br>
+                        🌐 Service Endpoints:<br>
+                        &nbsp;&nbsp;&nbsp;• Kafka Broker: localhost:9092<br>
+                        &nbsp;&nbsp;&nbsp;• Kafka UI: http://localhost:8080<br>
+                        &nbsp;&nbsp;&nbsp;• Zookeeper: localhost:2181
+                    </div>
+                </div>
+                
+                <!-- Step 2 -->
+                <div class="workflow-step">
+                    <h3><span class="step-number">2</span>Check Status</h3>
+                    <p>Verify that all services are running properly.</p>
+                    <div class="command-box">
+                        make kafka-status
+                        <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                    </div>
+                    <div class="output-box">
+                        🔍 Checking Kafka services status...<br>
+                        ━━━━━━━━━━━━━━━━━━━━━━━━━━━<br>
+                        ✅ Zookeeper is running (port 2181)<br>
+                        ✅ Kafka broker is running (port 9092)<br>
+                        ✅ Kafka UI is running<br>
+                        &nbsp;&nbsp;&nbsp;🌐 Web UI: http://localhost:8080<br>
+                        ━━━━━━━━━━━━━━━━━━━━━━━━━━━<br>
+                        📋 Available topics:<br>
+                        &nbsp;&nbsp;&nbsp;• snaplogic-events<br>
+                        &nbsp;&nbsp;&nbsp;• snaplogic-logs<br>
+                        &nbsp;&nbsp;&nbsp;• snaplogic-metrics
+                    </div>
+                </div>
+                
+                <!-- Step 3 -->
+                <div class="workflow-step">
+                    <h3><span class="step-number">3</span>Create Topics for E-Commerce System</h3>
+                    <p>Create specific topics for different aspects of order processing.</p>
+                    
+                    <h4>Topic 1: Order Events (High Volume - 5 Partitions)</h4>
+                    <div class="command-box">
+                        make kafka-create-topic TOPIC=order-events PARTITIONS=5
+                        <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                    </div>
+                    <div class="output-box">
+                        📝 Creating Kafka topic 'order-events' with 5 partition(s)...<br>
+                        ✅ Topic 'order-events' created successfully!
+                    </div>
+                    
+                    <h4>Topic 2: Payment Transactions (Medium Volume - 3 Partitions)</h4>
+                    <div class="command-box">
+                        make kafka-create-topic TOPIC=payment-transactions PARTITIONS=3
+                        <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                    </div>
+                    
+                    <h4>Topic 3: Shipping Notifications (Low Volume - 1 Partition)</h4>
+                    <div class="command-box">
+                        make kafka-create-topic TOPIC=shipping-notifications PARTITIONS=1
+                        <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                    </div>
+                    
+                    <h4>Topic 4: Customer Analytics (For Data Team - 10 Partitions)</h4>
+                    <div class="command-box">
+                        make kafka-create-topic TOPIC=customer-analytics PARTITIONS=10
+                        <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                    </div>
+                </div>
+                
+                <!-- Step 4 -->
+                <div class="workflow-step">
+                    <h3><span class="step-number">4</span>List All Topics</h3>
+                    <p>Verify all topics were created successfully.</p>
+                    <div class="command-box">
+                        make kafka-list-topics
+                        <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                    </div>
+                    <div class="output-box">
+                        📋 Listing all Kafka topics...<br>
+                        customer-analytics<br>
+                        order-events<br>
+                        payment-transactions<br>
+                        shipping-notifications<br>
+                        snaplogic-events<br>
+                        snaplogic-logs<br>
+                        snaplogic-metrics
+                    </div>
+                </div>
+                
+                <!-- Step 5 -->
+                <div class="workflow-step">
+                    <h3><span class="step-number">5</span>Produce Messages (Simulate Order Flow)</h3>
+                    <p>Send sample messages to simulate real order processing.</p>
+                    
+                    <h4>Produce an Order Event</h4>
+                    <div class="command-box">
+                        echo '{"orderId":"ORD-12345","customerId":"CUST-789","amount":299.99,"items":3,"timestamp":"2024-01-15T10:30:00Z"}' | docker exec -i snaplogic-kafka kafka-console-producer --bootstrap-server localhost:9092 --topic order-events
+                        <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                    </div>
+                    
+                    <h4>Produce a Payment Transaction</h4>
+                    <div class="command-box">
+                        echo '{"orderId":"ORD-12345","paymentId":"PAY-98765","method":"credit_card","amount":299.99,"status":"approved"}' | docker exec -i snaplogic-kafka kafka-console-producer --bootstrap-server localhost:9092 --topic payment-transactions
+                        <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                    </div>
+                    
+                    <h4>Produce a Shipping Notification</h4>
+                    <div class="command-box">
+                        echo '{"orderId":"ORD-12345","trackingNumber":"TRACK-456789","carrier":"FedEx","estimatedDelivery":"2024-01-17"}' | docker exec -i snaplogic-kafka kafka-console-producer --bootstrap-server localhost:9092 --topic shipping-notifications
+                        <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                    </div>
+                </div>
+                
+                <!-- Step 6 -->
+                <div class="workflow-step">
+                    <h3><span class="step-number">6</span>Consume Messages (Read Order Data)</h3>
+                    <p>Read messages from topics to process orders.</p>
+                    
+                    <h4>Consume Order Events</h4>
+                    <div class="command-box">
+                        docker exec snaplogic-kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic order-events --from-beginning --max-messages 1
+                        <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                    </div>
+                    <div class="output-box">
+                        {"orderId":"ORD-12345","customerId":"CUST-789","amount":299.99,"items":3,"timestamp":"2024-01-15T10:30:00Z"}<br>
+                        Processed a total of 1 messages
+                    </div>
+                </div>
+                
+                <!-- Step 7 -->
+                <div class="workflow-step">
+                    <h3><span class="step-number">7</span>Monitor in Kafka UI</h3>
+                    <p>Use the web interface to monitor topics and messages.</p>
+                    <div class="command-box">
+                        open http://localhost:8080
+                        <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                    </div>
+                    <p>In the Kafka UI, you can:</p>
+                    <ul>
+                        <li>📊 View all topics and their partition counts</li>
+                        <li>📈 Monitor message throughput</li>
+                        <li>👥 Check consumer group lag</li>
+                        <li>🔍 Browse messages in each topic</li>
+                        <li>⚙️ View broker configurations</li>
+                    </ul>
+                </div>
+                
+                <!-- Step 8 -->
+                <div class="workflow-step">
+                    <h3><span class="step-number">8</span>Test Complete Flow</h3>
+                    <p>Run the built-in test to verify everything works.</p>
+                    <div class="command-box">
+                        make kafka-test
+                        <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                    </div>
+                    <div class="output-box">
+                        🧪 Testing Kafka setup...<br>
+                        ━━━━━━━━━━━━━━━━━━━━━━━━━━━<br>
+                        1️⃣ Creating test topic...<br>
+                        2️⃣ Producing test message...<br>
+                        3️⃣ Consuming test message...<br>
+                        Hello Kafka from SnapLogic!<br>
+                        ━━━━━━━━━━━━━━━━━━━━━━━━━━━<br>
+                        ✅ Kafka test completed!
+                    </div>
+                </div>
+                
+                <!-- Step 9 -->
+                <div class="workflow-step">
+                    <h3><span class="step-number">9</span>Clean Shutdown</h3>
+                    <p>Stop Kafka when done (keeps data) or clean everything.</p>
+                    
+                    <h4>Option A: Stop (Preserves Data)</h4>
+                    <div class="command-box">
+                        make kafka-stop
+                        <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                    </div>
+                    
+                    <h4>Option B: Clean (Removes Everything)</h4>
+                    <div class="command-box">
+                        make kafka-clean
+                        <button class="copy-btn" onclick="copyCommand(this)">Copy</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Real-World Use Cases -->
+            <div class="concept-section">
+                <h2 class="concept-title">
+                    <span class="concept-icon">🌍</span>
+                    Real-World Use Cases
+                </h2>
+                
+                <div class="use-case-card">
+                    <div class="use-case-title">🛒 E-Commerce Platform</div>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Topic</th>
+                                <th>Partitions</th>
+                                <th>Purpose</th>
+                                <th>Message Example</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>order-events</strong></td>
+                                <td><span class="badge badge-primary">5-10</span></td>
+                                <td>High-volume order processing</td>
+                                <td>Order placed, canceled, modified</td>
+                            </tr>
+                            <tr>
+                                <td><strong>inventory-updates</strong></td>
+                                <td><span class="badge badge-primary">3-5</span></td>
+                                <td>Stock level changes</td>
+                                <td>Item restocked, out of stock</td>
+                            </tr>
+                            <tr>
+                                <td><strong>user-activity</strong></td>
+                                <td><span class="badge badge-success">10-20</span></td>
+                                <td>Clickstream and behavior</td>
+                                <td>Page views, cart actions</td>
+                            </tr>
+                            <tr>
+                                <td><strong>payment-events</strong></td>
+                                <td><span class="badge badge-primary">3-5</span></td>
+                                <td>Payment processing</td>
+                                <td>Payment success, failure, refund</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="use-case-card">
+                    <div class="use-case-title">🏦 Banking System</div>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Topic</th>
+                                <th>Partitions</th>
+                                <th>Purpose</th>
+                                <th>Message Example</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>transactions</strong></td>
+                                <td><span class="badge badge-success">20-50</span></td>
+                                <td>All financial transactions</td>
+                                <td>Deposits, withdrawals, transfers</td>
+                            </tr>
+                            <tr>
+                                <td><strong>fraud-alerts</strong></td>
+                                <td><span class="badge badge-primary">5-10</span></td>
+                                <td>Suspicious activity</td>
+                                <td>Unusual transaction patterns</td>
+                            </tr>
+                            <tr>
+                                <td><strong>audit-trail</strong></td>
+                                <td><span class="badge badge-primary">1-3</span></td>
+                                <td>Compliance logging</td>
+                                <td>All system actions for audit</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="use-case-card">
+                    <div class="use-case-title">📊 IoT Data Pipeline</div>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Topic</th>
+                                <th>Partitions</th>
+                                <th>Purpose</th>
+                                <th>Message Example</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>sensor-readings</strong></td>
+                                <td><span class="badge badge-success">50-100</span></td>
+                                <td>Raw sensor data</td>
+                                <td>Temperature, humidity, pressure</td>
+                            </tr>
+                            <tr>
+                                <td><strong>device-status</strong></td>
+                                <td><span class="badge badge-primary">10-20</span></td>
+                                <td>Device health</td>
+                                <td>Online/offline, battery level</td>
+                            </tr>
+                            <tr>
+                                <td><strong>alerts</strong></td>
+                                <td><span class="badge badge-primary">5-10</span></td>
+                                <td>Critical notifications</td>
+                                <td>Threshold exceeded, device failure</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Partition Strategy Guide -->
+            <div class="concept-section">
+                <h2 class="concept-title">
+                    <span class="concept-icon">🎯</span>
+                    How to Choose Partition Count
+                </h2>
+                
+                <div class="alert alert-info">
+                    <span class="alert-icon">💡</span>
+                    <div>
+                        <strong>Partition Guidelines:</strong>
+                        <ul>
+                            <li><strong>1 Partition:</strong> Low volume, strict ordering required (< 1MB/sec)</li>
+                            <li><strong>3-5 Partitions:</strong> Medium volume, some parallelism (1-10 MB/sec)</li>
+                            <li><strong>10-20 Partitions:</strong> High volume, multiple consumers (10-100 MB/sec)</li>
+                            <li><strong>50+ Partitions:</strong> Very high volume, many consumers (> 100 MB/sec)</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="concept-card">
+                    <h3>Factors to Consider</h3>
+                    <ol>
+                        <li><strong>Throughput Requirements:</strong> More partitions = higher throughput</li>
+                        <li><strong>Number of Consumers:</strong> At least as many partitions as consumers</li>
+                        <li><strong>Message Ordering:</strong> Messages in same partition maintain order</li>
+                        <li><strong>Future Growth:</strong> Plan for 2-3x expected load</li>
+                        <li><strong>Resource Limits:</strong> Each partition uses memory and file handles</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <!-- SnapLogic Integration -->
+            <div class="concept-section">
+                <h2 class="concept-title">
+                    <span class="concept-icon">🔗</span>
+                    SnapLogic Integration Example
+                </h2>
+                
+                <div class="workflow-step">
+                    <h3>Configure SnapLogic Kafka Account</h3>
+                    <ol>
+                        <li>Create Kafka Account in SnapLogic Manager</li>
+                        <li>Set Broker List: <code>localhost:9092</code> (or <code>kafka:29092</code> from Groundplex)</li>
+                        <li>Configure Producer/Consumer properties</li>
+                    </ol>
+                </div>
+                
+                <div class="workflow-step">
+                    <h3>Sample Pipeline Configuration</h3>
+                    <div class="visual-diagram">
+                        <strong>Order Processing Pipeline</strong>
+                        <div style="margin: 20px 0;">
+                            <span class="badge badge-primary">File Reader</span>
+                            →
+                            <span class="badge badge-primary">JSON Parser</span>
+                            →
+                            <span class="badge badge-success">Kafka Producer</span>
+                            <br><br>
+                            Topic: <code>order-events</code>
+                            <br>
+                            Partitions: <code>5</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Summary -->
+            <div class="alert alert-success">
+                <span class="alert-icon">✅</span>
+                <div>
+                    <strong>Summary - You've learned:</strong>
+                    <ul>
+                        <li>✓ What Kafka topics and partitions are</li>
+                        <li>✓ How to start and manage Kafka using Make targets</li>
+                        <li>✓ How to create topics with appropriate partition counts</li>
+                        <li>✓ How to produce and consume messages</li>
+                        <li>✓ Real-world use cases and partition strategies</li>
+                        <li>✓ Integration with SnapLogic pipelines</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function copyCommand(button) {
+            const commandBox = button.parentElement;
+            let command = commandBox.textContent
+                .replace('Copy', '')
+                .replace('$', '')
+                .trim();
+            
+            // Split multi-line commands and take the first line for simple copying
+            command = command.split('\n')[0];
+            
+            navigator.clipboard.writeText(command).then(() => {
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.style.background = '#4caf50';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#667eea';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+        }
+        
+        // Add animation on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+        
+        document.querySelectorAll('.workflow-step, .concept-card, .use-case-card').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>
