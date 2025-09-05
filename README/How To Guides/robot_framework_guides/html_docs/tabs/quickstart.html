@@ -1,72 +1,76 @@
 <h1>🚀 Pipeline Execution: 5-Step Quick Start</h1>
 
+<p><strong>Reference links for high level demo video of 5 step quick guide:</strong> <a
+        href="https://drive.google.com/file/d/1U6qwYORCmGwJ_H9owsMpl3DDsgV9uwwP/view?usp=drive_link">Quick start- 5
+        steps</a></p>
 
 
-                <div class="toc">
-                    <h3>Table of Contents</h3>
-                    <ul>
-                        <li><a href="#qs-step1">⚡ Step 1: Install Docker Desktop</a></li>
-                        <li><a href="#qs-step2">📥 Step 2: Clone the Repository</a></li>
-                        <li><a href="#qs-step3">💻 Step 3: Open Project (Either in IDE or Terminal)</a></li>
-                        <li><a href="#qs-step4">⚙️ Step 4: Configure Environment</a></li>
-                        <li><a href="#qs-step5">🏗️ Step 5: Build and Execute</a>
-                            <ul style="margin-left: 20px; list-style: circle;">
-                                <li><a href="#qs-robot-commands">📖 Understanding Robot Framework Commands</a></li>
-                            </ul>
-                        </li>
-                        <li><a href="#qs-after-execution">What Happens After Execution</a>
-                            <ul style="margin-left: 20px; list-style: circle;">
-                                <li><a href="#qs-services-started">🚀 Services Started</a></li>
-                                <li><a href="#qs-tests-executed">🚀 Tests Are Executed</a></li>
-                            </ul>
-                        </li>
-                        <li><a href="#qs-troubleshooting">Troubleshooting</a></li>
-                        <li><a href="#qs-help">Need Help?</a></li>
-                        <li><a href="#qs-explore">📚 Explore More Documentation</a></li>
-                    </ul>
-                </div>
 
-                <hr>
+<div class="toc">
+    <h3>Table of Contents</h3>
+    <ul>
+        <li><a href="#qs-step1">⚡ Step 1: Install Docker Desktop</a></li>
+        <li><a href="#qs-step2">📥 Step 2: Clone the Repository</a></li>
+        <li><a href="#qs-step3">💻 Step 3: Open Project (Either in IDE or Terminal)</a></li>
+        <li><a href="#qs-step4">⚙️ Step 4: Configure Environment</a></li>
+        <li><a href="#qs-step5">🏗️ Step 5: Build and Execute</a>
+            <ul style="margin-left: 20px; list-style: circle;">
+                <li><a href="#qs-robot-commands">📖 Understanding Robot Framework Commands</a></li>
+            </ul>
+        </li>
+        <li><a href="#qs-after-execution">What Happens After Execution</a>
+            <ul style="margin-left: 20px; list-style: circle;">
+                <li><a href="#qs-services-started">🚀 Services Started</a></li>
+                <li><a href="#qs-tests-executed">🚀 Tests Are Executed</a></li>
+            </ul>
+        </li>
+        <li><a href="#qs-troubleshooting">Troubleshooting</a></li>
+        <li><a href="#qs-help">Need Help?</a></li>
+        <li><a href="#qs-explore">📚 Explore More Documentation</a></li>
+    </ul>
+</div>
 
-                <h2 id="qs-step1">⚡ Step 1: Install Docker Desktop</h2>
-                <p>Download and install Docker Desktop for your OS, start it, and verify installation with
-                    <code>docker --version</code>
-                </p>
+<hr>
 
-                <p><strong>For Windows users:</strong> Follow these additional instructions for running Docker
-                    commands:
-                </p>
-                <ul>
-                    <li><strong><a href="../How%20To%20Guides/infra_setup_guides/windows_wsl_vscode_setup.md">Windows
-                                WSL VS Code Setup Guide</a></strong> - Essential setup for WSL, Ubuntu, make
-                        commands,
-                        and VS Code integration on Windows</li>
-                </ul>
+<h2 id="qs-step1">⚡ Step 1: Install Docker Desktop</h2>
+<p>Download and install Docker Desktop for your OS, start it, and verify installation with
+    <code>docker --version</code>
+</p>
 
-                <h2 id="qs-step2">📥 Step 2: Clone the Repository</h2>
-                <p>Create a working directory and clone the GitHub repository:</p>
-                <pre>git clone https://github.com/SnapLogic/snaplogic-robotframework-examples</pre>
+<p><strong>For Windows users:</strong> Follow these additional instructions for running Docker
+    commands:
+</p>
+<ul>
+    <li><strong><a href="../How%20To%20Guides/infra_setup_guides/windows_wsl_vscode_setup.md">Windows
+                WSL VS Code Setup Guide</a></strong> - Essential setup for WSL, Ubuntu, make
+        commands,
+        and VS Code integration on Windows</li>
+</ul>
 
-                <h2 id="qs-step3">💻 Step 3: Open Project (Either in IDE or Terminal)</h2>
-                <p>Download VS Code (or any preferred IDE) and open the project folder, or work directly from
-                    terminal
-                </p>
+<h2 id="qs-step2">📥 Step 2: Clone the Repository</h2>
+<p>Create a working directory and clone the GitHub repository:</p>
+<pre>git clone https://github.com/SnapLogic/snaplogic-robotframework-examples</pre>
 
-                <h2 id="qs-step4">⚙️ Step 4: Configure Environment</h2>
-                <p>Create New file <code>.env</code> at project root level. Copy the contents of
-                    <code>.env.example</code> to newly created file <code>.env</code> and update env values as per
-                    project requirements. <strong>Make sure to delete all inline comments in .env file during
-                        copying of
-                        .env.example</strong>
-                </p>
-                <pre>cp .env.example .env</pre>
-                <p>Then edit the <code>.env</code> file with your actual SnapLogic credentials, organization
-                    details,
-                    and project settings</p>
+<h2 id="qs-step3">💻 Step 3: Open Project (Either in IDE or Terminal)</h2>
+<p>Download VS Code (or any preferred IDE) and open the project folder, or work directly from
+    terminal
+</p>
 
-                <h2 id="qs-step5">🏗️ Step 5: Build and Execute</h2>
-                <p>Build your test environment using make commands:</p>
-                <pre>make start-services # Build the Docker containers that will run your tests:
+<h2 id="qs-step4">⚙️ Step 4: Configure Environment</h2>
+<p>Create New file <code>.env</code> at project root level. Copy the contents of
+    <code>.env.example</code> to newly created file <code>.env</code> and update env values as per
+    project requirements. <strong>Make sure to delete all inline comments in .env file during
+        copying of
+        .env.example</strong>
+</p>
+<pre>cp .env.example .env</pre>
+<p>Then edit the <code>.env</code> file with your actual SnapLogic credentials, organization
+    details,
+    and project settings</p>
+
+<h2 id="qs-step5">🏗️ Step 5: Build and Execute</h2>
+<p>Build your test environment using make commands:</p>
+<pre>make start-services # Build the Docker containers that will run your tests:
 
 # oracle tests
 make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True # Create projectspace,launch ground plex and Runs Robot tests with the "oracle" tag 
@@ -74,101 +78,99 @@ make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True # Create project
 # - For Later executions If you already have project space set up ready ignore the argument PROJECT_SPACE_SETUP=True
 make robot-run-all-tests TAGS="postgres_s3" # run postgres to s3 tests (No need to have project_space_setup=false)</pre>
 
-                <div style="background: #f0f8ff; border-left: 4px solid #667eea; padding: 15px; margin: 15px 0;">
-                    <p><strong>⏱️ Note:</strong> This creates a containerized environment with Robot Framework and
-                        all
-                        testing dependencies. The build process takes about 2-3 minutes.</p>
-                </div>
+<div style="background: #f0f8ff; border-left: 4px solid #667eea; padding: 15px; margin: 15px 0;">
+    <p><strong>⏱️ Note:</strong> This creates a containerized environment with Robot Framework and
+        all
+        testing dependencies. The build process takes about 2-3 minutes.</p>
+</div>
 
-                <h3 id="qs-robot-commands">📖 Understanding Robot Framework Commands</h3>
-                <p>For a deeper understanding of the Robot Framework testing process and available commands:</p>
-                <ul>
-                    <li><strong>📋 <a
-                                href="../How%20To%20Guides/robot_framework_guides/robot_framework_test_execution_flow.md">Robot
-                                Framework Test Execution Flow</a></strong> - Learn how Robot Framework tests are
-                        structured and executed in our testing pipeline</li>
-                    <li><strong>⚙️ <a
-                                href="../How%20To%20Guides/robot_framework_guides/robot_tests_make_commands.md">Robot
-                                Framework Make Commands Guide</a></strong> - Comprehensive reference for all
-                        available
-                        make commands, parameters, and usage examples</li>
-                    <li><strong>📚 <a
-                                href="../How%20To%20Guides/robot_framework_guides/snaplogic_common_robot_library_guide.md">SnapLogic
-                                Common Robot Library Guide</a></strong> - Explore the SnapLogic-specific Robot
-                        Framework
-                        library with reusable keywords and comprehensive documentation</li>
-                </ul>
-                <p>These guides will help you understand what happens behind the scenes when you run the commands
-                    above
-                    and how to customize your test execution for different scenarios.</p>
+<h3 id="qs-robot-commands">📖 Understanding Robot Framework Commands</h3>
+<p>For a deeper understanding of the Robot Framework testing process and available commands:</p>
+<ul>
+    <li><strong>📋 <a href="../How%20To%20Guides/robot_framework_guides/robot_framework_test_execution_flow.md">Robot
+                Framework Test Execution Flow</a></strong> - Learn how Robot Framework tests are
+        structured and executed in our testing pipeline</li>
+    <li><strong>⚙️ <a href="../How%20To%20Guides/robot_framework_guides/robot_tests_make_commands.md">Robot
+                Framework Make Commands Guide</a></strong> - Comprehensive reference for all
+        available
+        make commands, parameters, and usage examples</li>
+    <li><strong>📚 <a
+                href="../How%20To%20Guides/robot_framework_guides/snaplogic_common_robot_library_guide.md">SnapLogic
+                Common Robot Library Guide</a></strong> - Explore the SnapLogic-specific Robot
+        Framework
+        library with reusable keywords and comprehensive documentation</li>
+</ul>
+<p>These guides will help you understand what happens behind the scenes when you run the commands
+    above
+    and how to customize your test execution for different scenarios.</p>
 
-                <hr>
+<hr>
 
-                <p><strong>✅ You're all set!</strong> Your SnapLogic Robot Framework testing environment is ready to
-                    go.
-                </p>
+<p><strong>✅ You're all set!</strong> Your SnapLogic Robot Framework testing environment is ready to
+    go.
+</p>
 
-                <h2 id="qs-after-execution">What Happens After Execution</h2>
-                <p>After executing the above commands, the following services will be launched automatically:</p>
+<h2 id="qs-after-execution">What Happens After Execution</h2>
+<p>After executing the above commands, the following services will be launched automatically:</p>
 
-                <h3 id="qs-services-started">🚀 Services Started</h3>
-                <ul>
-                    <li><strong>Groundplex</strong> is launched for SnapLogic pipeline execution.</li>
-                    <li><strong>Oracle Database</strong> is started.</li>
-                    <li><strong>PostgreSQL Database</strong> is started.</li>
-                    <li><strong>MinIO</strong> (S3-compatible object store) is started and pre-configured.</li>
-                </ul>
+<h3 id="qs-services-started">🚀 Services Started</h3>
+<ul>
+    <li><strong>Groundplex</strong> is launched for SnapLogic pipeline execution.</li>
+    <li><strong>Oracle Database</strong> is started.</li>
+    <li><strong>PostgreSQL Database</strong> is started.</li>
+    <li><strong>MinIO</strong> (S3-compatible object store) is started and pre-configured.</li>
+</ul>
 
-                <h3 id="qs-tests-executed">🚀 Tests Are Executed</h3>
-                <ul>
-                    <li><strong>RobotFramework Tests</strong> You'll see Robot Framework reports under the folder
-                        test/suite/robot_output showing each step.
-                        Look
-                        for green "PASS" messages.</li>
-                </ul>
-                <p><strong>In SnapLogic Org:</strong> (Based on the values given in .env file)</p>
-                <ul>
-                    <li>Accounts are created</li>
-                    <li>ProjectSpace is Created (If there is existing project space with the same name it will be
-                        deleted)</li>
-                    <li>Project is Created</li>
-                    <li>Pipeline is imported</li>
-                    <li>Triggered task is created and Executed</li>
-                </ul>
+<h3 id="qs-tests-executed">🚀 Tests Are Executed</h3>
+<ul>
+    <li><strong>RobotFramework Tests</strong> You'll see Robot Framework reports under the folder
+        test/suite/robot_output showing each step.
+        Look
+        for green "PASS" messages.</li>
+</ul>
+<p><strong>In SnapLogic Org:</strong> (Based on the values given in .env file)</p>
+<ul>
+    <li>Accounts are created</li>
+    <li>ProjectSpace is Created (If there is existing project space with the same name it will be
+        deleted)</li>
+    <li>Project is Created</li>
+    <li>Pipeline is imported</li>
+    <li>Triggered task is created and Executed</li>
+</ul>
 
-                <hr>
+<hr>
 
-                <h2 id="qs-troubleshooting">Troubleshooting</h2>
-                <ul>
-                    <li>✅ <strong>Ensure Docker Desktop is running</strong> before executing <code>make</code>
-                        commands.
-                    </li>
-                    <li>✅ <strong>Verify <code>.env</code> values</strong>: Double-check that required environment
-                        variables are correctly set.</li>
-                    <li>✅ <strong>Permissions</strong>: Ensure you have access to the repo and aren't blocked by
-                        firewalls or policies.</li>
-                    <li>✅ <strong>Check logs</strong>: If something fails, check terminal output or container logs
-                        using
-                        <code>docker compose logs</code>.
-                    </li>
-                </ul>
+<h2 id="qs-troubleshooting">Troubleshooting</h2>
+<ul>
+    <li>✅ <strong>Ensure Docker Desktop is running</strong> before executing <code>make</code>
+        commands.
+    </li>
+    <li>✅ <strong>Verify <code>.env</code> values</strong>: Double-check that required environment
+        variables are correctly set.</li>
+    <li>✅ <strong>Permissions</strong>: Ensure you have access to the repo and aren't blocked by
+        firewalls or policies.</li>
+    <li>✅ <strong>Check logs</strong>: If something fails, check terminal output or container logs
+        using
+        <code>docker compose logs</code>.
+    </li>
+</ul>
 
-                <hr>
+<hr>
 
-                <h2 id="qs-help">Need Help?</h2>
-                <p>If you encounter issues, please:</p>
-                <ul>
-                    <li>Contact a team member on Slack.</li>
-                    <li>Open a GitHub issue if you suspect a bug.</li>
-                    <li>Reach out via email if onboarding support is needed.</li>
-                </ul>
-                <p>We're here to help you get started smoothly 🚀</p>
+<h2 id="qs-help">Need Help?</h2>
+<p>If you encounter issues, please:</p>
+<ul>
+    <li>Contact a team member on Slack.</li>
+    <li>Open a GitHub issue if you suspect a bug.</li>
+    <li>Reach out via email if onboarding support is needed.</li>
+</ul>
+<p>We're here to help you get started smoothly 🚀</p>
 
-                <hr>
+<hr>
 
-                <h2 id="qs-explore">📚 Explore More Documentation</h2>
-                <p>💡 <strong>Need help finding other guides?</strong> Check out our <strong><a
-                            href="../reference.md">📖 Complete Documentation Reference</a></strong> for a
-                    comprehensive
-                    overview of all available tutorials, how-to guides, and quick start paths. It's your one-stop
-                    navigation hub for the entire SnapLogic Test Framework documentation!</p>
+<h2 id="qs-explore">📚 Explore More Documentation</h2>
+<p>💡 <strong>Need help finding other guides?</strong> Check out our <strong><a href="../reference.md">📖 Complete
+            Documentation Reference</a></strong> for a
+    comprehensive
+    overview of all available tutorials, how-to guides, and quick start paths. It's your one-stop
+    navigation hub for the entire SnapLogic Test Framework documentation!</p>
