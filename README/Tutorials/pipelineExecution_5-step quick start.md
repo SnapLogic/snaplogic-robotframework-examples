@@ -1,6 +1,6 @@
 # 🚀 Pipeline Execution: 5-Step Quick Start
 
-[**🚀 Reference link for Robot Framework complete documentation in HTML Format**](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/tree/main/README/How%20To%20Guides/robot_framework_guides/html_docs/robotframework_kickstart.html)
+[**🚀 Reference link for Robot Framework complete documentation in HTML Format**](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/robot_framework_guides/html_docs/robotframework_kickstart.html)
 
 ## ⚡ Step 1: Install Docker Desktop
 Download and install Docker Desktop for your OS, start it, and verify installation with `docker --version`
