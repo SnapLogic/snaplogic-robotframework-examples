@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SnapLogic Robot Framework Documentation</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 SnapLogic Robot Framework Documentation</h1>
+            <p>Complete guide for getting started with Robot Framework automation</p>
+        </header>
+
+        <div class="tab-container">
+            <button class="tab-button active" onclick="openTab(event, 'prereqs')">
+                📋 Prerequisites
+            </button>
+            <button class="tab-button" onclick="openTab(event, 'quickstart')">
+                🚀 Quick Start
+            </button>
+            <button class="tab-button" onclick="openTab(event, 'gettingstarted')">
+                📖 Getting Started
+            </button>
+            <button class="tab-button" onclick="openTab(event, 'initfile')">
+                ⚙️ Init File
+            </button>
+            <button class="tab-button" onclick="openTab(event, 'docker')">
+                🐳 Docker Architecture
+            </button>
+            <button class="tab-button" onclick="openTab(event, 'makefile')">
+                🛠️ Makefile Docs
+            </button>
+            <button class="tab-button" onclick="openTab(event, 'robottests')">
+                🤖 Robot Tests Make Command
+            </button>
+            <button class="tab-button" onclick="openTab(event, 'reports')">
+                📊 Reports & Logs
+            </button>
+        </div>
+
+        <div class="content-container">
+            <div id="content-loader" style="display:none; padding: 20px; text-align: center;">
+                <p>Loading content...</p>
+            </div>
+            <div id="prereqs" class="tab-content active"></div>
+            <div id="quickstart" class="tab-content"></div>
+            <div id="gettingstarted" class="tab-content"></div>
+            <div id="initfile" class="tab-content"></div>
+            <div id="docker" class="tab-content"></div>
+            <div id="makefile" class="tab-content"></div>
+            <div id="robottests" class="tab-content"></div>
+            <div id="reports" class="tab-content"></div>
+        </div>
+    </div>
+
+    <script>
+        // Track loaded tabs to avoid reloading
+        const loadedTabs = new Set();
+        
+        // Function to load tab content
+        async function loadTabContent(tabId) {
+            if (loadedTabs.has(tabId)) {
+                return; // Already loaded
+            }
+            
+            const contentDiv = document.getElementById(tabId);
+            const loader = document.getElementById('content-loader');
+            
+            try {
+                loader.style.display = 'block';
+                const response = await fetch(`tabs/${tabId}.html`);
+                if (response.ok) {
+                    const content = await response.text();
+                    contentDiv.innerHTML = content;
+                    loadedTabs.add(tabId);
+                } else {
+                    contentDiv.innerHTML = '<p>Content not found. Please ensure the tab HTML file exists.</p>';
+                }
+            } catch (error) {
+                contentDiv.innerHTML = '<p>Error loading content. Please check your connection.</p>';
+                console.error('Error loading tab content:', error);
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+        
+        // Function to switch tabs
+        async function openTab(evt, tabName) {
+            // Hide all tab contents
+            const tabContents = document.getElementsByClassName('tab-content');
+            for (let i = 0; i < tabContents.length; i++) {
+                tabContents[i].classList.remove('active');
+                tabContents[i].style.display = 'none';
+            }
+            
+            // Remove active class from all buttons
+            const tabButtons = document.getElementsByClassName('tab-button');
+            for (let i = 0; i < tabButtons.length; i++) {
+                tabButtons[i].classList.remove('active');
+            }
+            
+            // Load content if needed
+            await loadTabContent(tabName);
+            
+            // Show the selected tab and mark button as active
+            document.getElementById(tabName).style.display = 'block';
+            document.getElementById(tabName).classList.add('active');
+            evt.currentTarget.classList.add('active');
+        }
+        
+        // Load initial tab on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadTabContent('prereqs');
+        });
+    </script>
+</body>
+
+</html>

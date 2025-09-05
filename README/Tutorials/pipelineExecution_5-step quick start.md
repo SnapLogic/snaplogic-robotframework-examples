@@ -1,5 +1,7 @@
 # 🚀 Pipeline Execution: 5-Step Quick Start
 
+[**🚀 Reference link for Robot Framework complete documentation in HTML Format**](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/tree/main/README/How%20To%20Guides/robot_framework_guides/html_docs/robotframework_kickstart.html)
+
 ## ⚡ Step 1: Install Docker Desktop
 Download and install Docker Desktop for your OS, start it, and verify installation with `docker --version`
 
@@ -18,6 +20,7 @@ Download VS Code (or any preferred IDE) and open the project folder, or work dir
 ## ⚙️ Step 4: Configure Environment
 Create New file `.env` at project root level
 Copy the contents of `.env.example` to  newly created file `.env` and update env values as per project requirements:
+make sure to delete all inline commenst in .env file during copying of .env.example
 ```bash
 cp .env.example .env
 ```

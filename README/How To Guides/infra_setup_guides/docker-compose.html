@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docker Compose Architecture Flow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Helvetica Neue', sans-serif;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            color: white;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+            color: white;
+        }
+
+        /* Tab Navigation */
+        .tab-container {
+            background: #f8f9fa;
+            border-bottom: 3px solid #e9ecef;
+            display: flex;
+            padding: 0;
+            overflow-x: auto;
+        }
+
+        .tab-button {
+            flex: 0 0 auto;
+            padding: 15px 25px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #495057;
+            transition: all 0.3s ease;
+            position: relative;
+            white-space: nowrap;
+            min-width: 120px;
+        }
+
+        .tab-button:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+
+        .tab-button.active {
+            color: #667eea;
+            background: white;
+            border-bottom: 3px solid #667eea;
+            margin-bottom: -3px;
+        }
+
+        /* Tab Content */
+        .content-container {
+            padding: 40px;
+            background: white;
+            min-height: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h2 {
+            color: #667eea;
+            font-size: 2rem;
+            margin: 30px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #f0f0f0;
+        }
+
+        h3 {
+            color: #764ba2;
+            font-size: 1.5rem;
+            margin: 25px 0 12px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f5f5f5;
+        }
+
+        h4 {
+            color: #495057;
+            font-size: 1.2rem;
+            margin: 20px 0 10px 0;
+        }
+
+        p {
+            margin: 12px 0;
+            line-height: 1.6;
+        }
+
+        ul,
+        ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #e83e8c;
+        }
+
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            border-radius: 8px;
+            padding: 20px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-size: 14px;
+            line-height: 1.5;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
+
+        .flow-diagram {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 30px 0;
+            display: flex;
+            justify-content: center;
+            overflow-x: auto;
+        }
+
+        .flow-diagram pre {
+            background: transparent;
+            color: #333;
+            font-size: 13px;
+            border: none;
+            padding: 0;
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .benefit-card {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .benefit-card strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .command-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .command-block::before {
+            content: '$ ';
+            color: #4ec9b0;
+        }
+
+        .section-highlight {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .file-path {
+            color: #667eea;
+            font-family: monospace;
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .library-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .library-category {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .library-category h5 {
+            color: #764ba2;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .library-category ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .library-category li {
+            background: white;
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+        }
+
+        .library-category li code {
+            color: #495057;
+            background: transparent;
+            padding: 0;
+        }
+
+        .troubleshooting-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .troubleshooting-table th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .troubleshooting-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .troubleshooting-table tr:hover {
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐳 Docker Compose Architecture Flow</h1>
+            <p>Understanding the Robot Framework Testing Environment Setup</p>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-container">
+            <button class="tab-button active" onclick="openTab(event, 'overview')">
+                📋 Overview
+            </button>
+            <button class="tab-button" onclick="openTab(event, 'architecture')">
+                🏗️ Architecture
+            </button>
+            <button class="tab-button" onclick="openTab(event, 'setup')">
+                ⚙️ Setup Steps
+            </button>
+            <button class="tab-button" onclick="openTab(event, 'usage')">
+                🚀 Usage
+            </button>
+            <button class="tab-button" onclick="openTab(event, 'benefits')">
+                ✨ Benefits
+            </button>
+            <button class="tab-button" onclick="openTab(event, 'troubleshooting')">
+                🔧 Troubleshooting
+            </button>
+            <button class="tab-button" onclick="openTab(event, 'reference')">
+                📚 Reference
+            </button>
+        </div>
+
+        <div class="content-container">
+            <!-- Overview Tab -->
+            <div id="overview" class="tab-content active">
+                <h2>Overview</h2>
+                <p>This document explains how the Docker Compose setup works for the Robot Framework testing environment.
+                    The architecture provides a consistent, isolated, and reproducible testing environment for all team
+                    members.</p>
+
+                <h3>What This Documentation Covers</h3>
+                <ul>
+                    <li>Complete Docker Compose architecture for Robot Framework testing</li>
+                    <li>Container build process and dependencies</li>
+                    <li>How to set up and run the testing environment</li>
+                    <li>Common usage patterns and best practices</li>
+                    <li>Troubleshooting guide for common issues</li>
+                </ul>
+
+                <h3>Key Components</h3>
+                <p>The Docker Compose setup consists of:</p>
+                <ul>
+                    <li><strong>Tools Container</strong> - Main container with Robot Framework and all test libraries</li>
+                    <li><strong>Database Services</strong> - Oracle, PostgreSQL, MySQL, SQL Server, and more</li>
+                    <li><strong>Groundplex Container</strong> - SnapLogic runtime environment</li>
+                    <li><strong>Supporting Services</strong> - MinIO (S3), Kafka, ActiveMQ, etc.</li>
+                </ul>
+
+                <h3>Prerequisites</h3>
+                <p>Before getting started, ensure you have:</p>
+                <ul>
+                    <li>Docker Desktop installed and running</li>
+                    <li>Access to the project repository</li>
+                    <li>A configured <code>.env</code> file with necessary credentials</li>
+                    <li>Basic understanding of Docker and Docker Compose</li>
+                </ul>
+            </div>
+
+            <!-- Architecture Tab -->
+            <div id="architecture" class="tab-content">
+                <h2>Container Build Flow</h2>
+                <div class="flow-diagram">
+                    <pre>
+┌─────────────────────┐
+│ docker-compose.yml  │
+│  (tools container)  │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│  robot/Dockerfile   │ ──► Builds tools container
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│  requirements.txt   │ ──► Installs all libraries
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│   Tools Container   │ ──► Ready for testing!
+│  (All libs ready)   │
+└─────────────────────┘
+                    </pre>
+                </div>
+
+                <h3>Architecture Components</h3>
+                <p>The Docker Compose architecture is modular and scalable:</p>
+
+                <h4>Main Orchestration File</h4>
+                <div class="section-highlight">
+                    <p><strong>docker-compose.yml</strong> - Central configuration that includes:</p>
+                    <ul>
+                        <li>Service definitions for all containers</li>
+                        <li>Network configuration (snaplogicnet)</li>
+                        <li>Volume mappings for code and test data</li>
+                        <li>Environment variable management</li>
+                    </ul>
+                </div>
+
+                <h4>Service Containers</h4>
+                <div class="section-highlight">
+                    <p>Multiple specialized containers for different services:</p>
+                    <ul>
+                        <li><strong>Tools Container</strong> - Robot Framework test execution environment</li>
+                        <li><strong>Groundplex</strong> - SnapLogic runtime for pipeline execution</li>
+                        <li><strong>Databases</strong> - Oracle, PostgreSQL, MySQL, SQL Server, DB2, Teradata</li>
+                        <li><strong>Message Queues</strong> - Kafka, ActiveMQ</li>
+                        <li><strong>Storage</strong> - MinIO (S3-compatible)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Setup Steps Tab -->
+            <div id="setup" class="tab-content">
+                <h2>Detailed Setup Steps</h2>
+
+                <h3>1. Docker Compose Configuration</h3>
+                <div class="section-highlight">
+                    <h4>File: <span class="file-path">docker-compose.yml</span></h4>
+                    <ul>
+                        <li>Defines all service containers (tools, groundplex, databases)</li>
+                        <li>Specifies build context and Dockerfile location for the tools container</li>
+                        <li>Sets up networking between containers</li>
+                        <li>Manages environment variables from <code>.env</code> file</li>
+                    </ul>
+                </div>
+
+                <h3>2. Dockerfile Build</h3>
+                <div class="section-highlight">
+                    <h4>File: <span class="file-path">robot/Dockerfile</span></h4>
+                    <ul>
+                        <li>Base image setup with Python</li>
+                        <li>System dependencies installation</li>
+                        <li>Working directory configuration</li>
+                        <li>Copies the requirements file</li>
+                        <li>Triggers pip install process</li>
+                    </ul>
+                </div>
+
+                <h3>3. Requirements Installation</h3>
+                <div class="section-highlight">
+                    <h4>File: <span class="file-path">requirements.txt</span></h4>
+                    <div class="library-list">
+                        <div class="library-category">
+                            <h5>🤖 Robot Framework Libraries</h5>
+                            <ul>
+                                <li><code>robotframework-pabot</code> - Parallel test execution</li>
+                                <li><code>snaplogic-common-robot</code> - SnapLogic API interactions</li>
+                            </ul>
+                        </div>
+                        <div class="library-category">
+                            <h5>🗄️ Database Connectors</h5>
+                            <ul>
+                                <li><code>snowflake-connector-python</code> - Snowflake</li>
+                                <li><code>pymysql</code> - MySQL</li>
+                                <li><code>psycopg2-binary</code> - PostgreSQL</li>
+                                <li><code>pymssql</code> - SQL Server</li>
+                                <li><code>oracledb</code> - Oracle</li>
+                                <li><code>ibm_db</code> - IBM DB2</li>
+                                <li><code>teradatasql</code> - Teradata</li>
+                            </ul>
+                        </div>
+                        <div class="library-category">
+                            <h5>🔧 Other Dependencies</h5>
+                            <ul>
+                                <li><code>minio</code> - S3-compatible storage</li>
+                                <li><code>stomp.py</code> - JMS testing</li>
+                                <li><code>requests</code> - HTTP client</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>4. Tools Container Ready</h3>
+                <p>Once the build process completes:</p>
+                <ul>
+                    <li>✅ All Robot Framework libraries are installed</li>
+                    <li>✅ All database connectors are configured</li>
+                    <li>✅ Container is ready to execute tests</li>
+                    <li>✅ Shared volumes allow access to test files and results</li>
+                </ul>
+            </div>
+
+            <!-- Usage Tab -->
+            <div id="usage" class="tab-content">
+                <h2>Usage Guide</h2>
+
+                <h3>Starting the Services</h3>
+                <p>Bring up the tools container and other services:</p>
+                <div class="command-block">make start-services</div>
+
+                <p>Or using docker-compose directly:</p>
+                <div class="command-block">docker compose --env-file .env -f docker/docker-compose.yml up -d tools</div>
+
+                <h3>Verifying Installation</h3>
+                <p>Check installed libraries:</p>
+                <div class="command-block">docker exec snaplogic-test-example-tools-container pip list</div>
+
+                <p>Verify specific library:</p>
+                <div class="command-block">docker exec snaplogic-test-example-tools-container pip show
+                    snowflake-connector-python</div>
+
+                <h3>Running Tests</h3>
+                <p>Run tests using the tools container:</p>
+                <div class="command-block">make robot-run-tests TAGS="snowflake_demo"</div>
+
+                <h3>Common Commands</h3>
+                <table class="troubleshooting-table">
+                    <thead>
+                        <tr>
+                            <th>Command</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>make start-services</code></td>
+                            <td>Start all configured services</td>
+                        </tr>
+                        <tr>
+                            <td><code>make snaplogic-build-tools</code></td>
+                            <td>Build/rebuild the tools container</td>
+                        </tr>
+                        <tr>
+                            <td><code>make robot-run-all-tests</code></td>
+                            <td>Run complete test suite</td>
+                        </tr>
+                        <tr>
+                            <td><code>make snaplogic-stop</code></td>
+                            <td>Stop all containers and cleanup</td>
+                        </tr>
+                        <tr>
+                            <td><code>docker ps</code></td>
+                            <td>View running containers</td>
+                        </tr>
+                        <tr>
+                            <td><code>docker logs [container-name]</code></td>
+                            <td>View container logs</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Benefits Tab -->
+            <div id="benefits" class="tab-content">
+                <h2>Benefits of This Architecture</h2>
+                <div class="benefits-grid">
+                    <div class="benefit-card">
+                        <strong>1. Consistency</strong>
+                        Everyone uses the exact same environment
+                    </div>
+                    <div class="benefit-card">
+                        <strong>2. Isolation</strong>
+                        No conflicts with local Python installations
+                    </div>
+                    <div class="benefit-card">
+                        <strong>3. Reproducibility</strong>
+                        Easy to recreate the environment anywhere
+                    </div>
+                    <div class="benefit-card">
+                        <strong>4. Version Control</strong>
+                        All dependencies are tracked in requirements.txt
+                    </div>
+                    <div class="benefit-card">
+                        <strong>5. Easy Updates</strong>
+                        Simply rebuild the container for updates
+                    </div>
+                    <div class="benefit-card">
+                        <strong>6. No Local Setup</strong>
+                        Developers only need Docker installed
+                    </div>
+                    <div class="benefit-card">
+                        <strong>7. Scalability</strong>
+                        Easy to add new services or scale existing ones
+                    </div>
+                    <div class="benefit-card">
+                        <strong>8. Platform Independence</strong>
+                        Works on Windows, Mac, and Linux
+                    </div>
+                    <div class="benefit-card">
+                        <strong>9. Fast Onboarding</strong>
+                        New team members productive in minutes
+                    </div>
+                </div>
+
+                <h3>Why Docker Compose?</h3>
+                <p>Docker Compose provides several advantages for test automation:</p>
+                <ul>
+                    <li><strong>Service Orchestration</strong> - Manage multiple containers with a single command</li>
+                    <li><strong>Environment Variables</strong> - Centralized configuration through .env files</li>
+                    <li><strong>Networking</strong> - Automatic network creation and service discovery</li>
+                    <li><strong>Volume Management</strong> - Easy data persistence and sharing between containers</li>
+                    <li><strong>Development Workflow</strong> - Quick iterations with container rebuilds</li>
+                </ul>
+
+                <h3>Cost Savings</h3>
+                <p>This architecture reduces costs by:</p>
+                <ul>
+                    <li>Eliminating environment-related debugging time</li>
+                    <li>Reducing onboarding time for new developers</li>
+                    <li>Preventing "works on my machine" issues</li>
+                    <li>Enabling parallel test execution</li>
+                    <li>Minimizing infrastructure requirements</li>
+                </ul>
+            </div>
+
+            <!-- Troubleshooting Tab -->
+            <div id="troubleshooting" class="tab-content">
+                <h2>Troubleshooting Guide</h2>
+
+                <h3>Common Issues and Solutions</h3>
+                <table class="troubleshooting-table">
+                    <thead>
+                        <tr>
+                            <th>Issue</th>
+                            <th>Possible Cause</th>
+                            <th>Solution</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Container fails to build</td>
+                            <td>Missing requirements.txt or Dockerfile</td>
+                            <td>Verify all required files exist in the correct locations</td>
+                        </tr>
+                        <tr>
+                            <td>Tests fail to connect to database</td>
+                            <td>Database container not running</td>
+                            <td>Check docker ps and ensure database containers are up</td>
+                        </tr>
+                        <tr>
+                            <td>Permission denied errors</td>
+                            <td>Volume mount permissions</td>
+                            <td>Check file permissions and Docker Desktop file sharing settings</td>
+                        </tr>
+                        <tr>
+                            <td>Out of memory errors</td>
+                            <td>Docker memory limit too low</td>
+                            <td>Increase Docker Desktop memory allocation in settings</td>
+                        </tr>
+                        <tr>
+                            <td>Port already in use</td>
+                            <td>Another service using the same port</td>
+                            <td>Stop conflicting service or change port in docker-compose.yml</td>
+                        </tr>
+                        <tr>
+                            <td>Container exits immediately</td>
+                            <td>Command or entrypoint issue</td>
+                            <td>Check docker logs [container-name] for error messages</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Rebuilding the Container</h3>
+                <p>If you need to update dependencies or fix issues:</p>
+
+                <p>Force rebuild without cache:</p>
+                <div class="command-block">make snaplogic-build-tools</div>
+
+                <p>Or rebuild with updated requirements:</p>
+                <div class="command-block">make rebuild-tools</div>
+
+                <h3>Checking Container Status</h3>
+                <p>View running containers:</p>
+                <div class="command-block">docker ps | grep tools</div>
+
+                <p>Check container logs:</p>
+                <div class="command-block">docker logs snaplogic-test-example-tools-container</div>
+
+                <h3>Debugging Tips</h3>
+                <ul>
+                    <li><strong>Enter the container:</strong> <code>docker exec -it [container-name] bash</code></li>
+                    <li><strong>Check environment variables:</strong> <code>docker exec [container-name] env</code></li>
+                    <li><strong>Inspect container details:</strong> <code>docker inspect [container-name]</code></li>
+                    <li><strong>View network details:</strong> <code>docker network inspect snaplogicnet</code></li>
+                    <li><strong>Check disk usage:</strong> <code>docker system df</code></li>
+                    <li><strong>Clean up unused resources:</strong> <code>docker system prune -a</code></li>
+                </ul>
+
+                <h3>Getting Help</h3>
+                <p>If you encounter issues not covered here:</p>
+                <ol>
+                    <li>Check the container logs for specific error messages</li>
+                    <li>Verify your .env file has all required variables</li>
+                    <li>Ensure Docker Desktop is running with sufficient resources</li>
+                    <li>Consult the project README for additional documentation</li>
+                    <li>Contact the team via Slack or open a GitHub issue</li>
+                </ol>
+            </div>
+
+            <!-- Reference Tab -->
+            <div id="reference" class="tab-content">
+                <h2>Related Files Reference</h2>
+                <table class="troubleshooting-table">
+                    <thead>
+                        <tr>
+                            <th>File Path</th>
+                            <th>Description</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>/docker/docker-compose.yml</code></td>
+                            <td>Main compose configuration</td>
+                            <td>Defines all services, networks, and volumes</td>
+                        </tr>
+                        <tr>
+                            <td><code>/docker/robot.Dockerfile</code></td>
+                            <td>Tools container build instructions</td>
+                            <td>Specifies how to build the test execution container</td>
+                        </tr>
+                        <tr>
+                            <td><code>/src/tools/requirements.txt</code></td>
+                            <td>Python dependencies</td>
+                            <td>Lists all Python packages needed for testing</td>
+                        </tr>
+                        <tr>
+                            <td><code>/Makefile</code></td>
+                            <td>Convenient commands for container management</td>
+                            <td>Provides easy-to-use targets for common operations</td>
+                        </tr>
+                        <tr>
+                            <td><code>/.env</code></td>
+                            <td>Environment configuration</td>
+                            <td>Contains credentials and environment-specific settings</td>
+                        </tr>
+                        <tr>
+                            <td><code>/.env.example</code></td>
+                            <td>Environment template</td>
+                            <td>Template showing required environment variables</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Environment Variables</h3>
+                <p>Key environment variables used by the containers:</p>
+                <table class="troubleshooting-table">
+                    <thead>
+                        <tr>
+                            <th>Variable</th>
+                            <th>Description</th>
+                            <th>Example</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>URL</code></td>
+                            <td>SnapLogic instance URL</td>
+                            <td>https://elastic.snaplogic.com/</td>
+                        </tr>
+                        <tr>
+                            <td><code>ORG_ADMIN_USER</code></td>
+                            <td>SnapLogic admin username</td>
+                            <td>admin@example.com</td>
+                        </tr>
+                        <tr>
+                            <td><code>ORG_ADMIN_PASSWORD</code></td>
+                            <td>SnapLogic admin password</td>
+                            <td>[encrypted]</td>
+                        </tr>
+                        <tr>
+                            <td><code>PROJECT_SPACE</code></td>
+                            <td>SnapLogic project space name</td>
+                            <td>automation-tests</td>
+                        </tr>
+                        <tr>
+                            <td><code>PROJECT_NAME</code></td>
+                            <td>SnapLogic project name</td>
+                            <td>test-project</td>
+                        </tr>
+                        <tr>
+                            <td><code>COMPOSE_PROFILES</code></td>
+                            <td>Docker Compose profiles to activate</td>
+                            <td>tools,oracle-dev,postgres-dev</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Docker Compose Profiles</h3>
+                <p>Available profiles for selective service startup:</p>
+                <ul>
+                    <li><code>tools</code> - Robot Framework test execution container</li>
+                    <li><code>groundplex</code> - SnapLogic Groundplex runtime</li>
+                    <li><code>oracle-dev</code> - Oracle database service</li>
+                    <li><code>postgres-dev</code> - PostgreSQL database service</li>
+                    <li><code>mysql-dev</code> - MySQL database service</li>
+                    <li><code>kafka-dev</code> - Kafka messaging service</li>
+                    <li><code>minio-dev</code> - MinIO S3-compatible storage</li>
+                </ul>
+
+                <h3>Useful Docker Commands</h3>
+                <pre>
+# View all containers (including stopped)
+docker ps -a
+
+# Remove all stopped containers
+docker container prune
+
+# View Docker disk usage
+docker system df
+
+# Clean up everything (containers, images, networks)
+docker system prune -a --volumes
+
+# Follow container logs in real-time
+docker logs -f [container-name]
+
+# Copy files from container
+docker cp [container-name]:/path/to/file ./local/path
+
+# Execute command in running container
+docker exec [container-name] [command]
+                </pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openTab(evt, tabName) {
+            // Hide all tab contents
+            var tabcontents = document.querySelectorAll('.tab-content');
+            tabcontents.forEach(function(tab) {
+                tab.classList.remove('active');
+            });
+
+            // Remove active class from all tab buttons
+            var tabbuttons = document.querySelectorAll('.tab-button');
+            tabbuttons.forEach(function(button) {
+                button.classList.remove('active');
+            });
+
+            // Show the selected tab content
+            document.getElementById(tabName).classList.add('active');
+
+            // Add active class to the clicked button
+            evt.currentTarget.classList.add('active');
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,416 @@
+<h1>Robot Framework Test Automation - Getting Started Guide</h1>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#introduction">Introduction</a></li>
+                        <li><a href="#think-like-manual-testing-first">Think Like Manual Testing First</a></li>
+                        <li><a href="#pre-automation-setup">Pre-Automation Setup</a></li>
+                        <li><a href="#environment-configuration">Environment Configuration (.env)</a></li>
+                        <li><a href="#account-configuration">Account Configuration</a></li>
+                        <li><a href="#automation-workflow">Automation Workflow</a></li>
+                        <li><a href="#writing-your-first-test">Writing Your First Test</a></li>
+                        <li><a href="#important-notes">Important Notes</a></li>
+                    </ul>
+                </div>
+
+                <h2 id="introduction">Introduction</h2>
+                <p>Before diving into test automation with Robot Framework for SnapLogic, it's crucial to understand
+                    the
+                    manual process first. This guide will walk you through the necessary preparation steps and
+                    explain
+                    how the automation framework mirrors manual testing workflows.</p>
+
+                <h2 id="think-like-manual-testing-first">Think Like Manual Testing First</h2>
+
+                <h3>What Would You Do Manually?</h3>
+                <p>When testing SnapLogic manually, you would typically:</p>
+                <ol>
+                    <li><strong>Create a Project Space</strong> - The top-level container for organizing projects
+                    </li>
+                    <li><strong>Create a Project</strong> - A workspace within the project space</li>
+                    <li><strong>Create Accounts</strong> - Database/service connections needed for pipelines</li>
+                    <li><strong>Upload Required Files</strong> - Any supporting files, schemas, or configurations
+                    </li>
+                    <li><strong>Create a Pipeline</strong> - Build and configure your data integration pipeline</li>
+                    <li><strong>Test the Pipeline</strong> - Execute and validate the pipeline behavior</li>
+                </ol>
+
+                <p>The automation framework follows this exact same flow, but programmatically.</p>
+
+                <h2 id="pre-automation-setup">Pre-Automation Setup</h2>
+
+                <h3>Step 1: Create and Validate Your Pipeline Manually</h3>
+                <p>Before automation begins, you need to:</p>
+                <ol>
+                    <li><strong>Create a valid pipeline</strong> in SnapLogic UI</li>
+                    <li><strong>Test it manually</strong> to ensure it works correctly</li>
+                    <li><strong>Download the pipeline</strong> as a <code>.slp</code> file</li>
+                </ol>
+
+                <h3>Follow the below guidelines while creating slp file</h3>
+                <p>To make your pipelines reusable with different accounts, use <strong>Pipeline
+                        Parameters</strong>:
+                </p>
+
+                <h4>Create Pipeline Parameter in Your .slp File</h4>
+                <p>When designing your pipeline in SnapLogic:</p>
+                <ol>
+                    <li><strong>Create a Pipeline Parameter</strong> for the account name
+                        <ul>
+                            <li>Parameter name: <code>account_name</code> (or any descriptive name)</li>
+                            <li>Default value: <code>../shared/snowflake_acct</code> (path to your account)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Use the Pipeline Parameter</strong> when selecting accounts in your pipeline
+                        <ul>
+                            <li>Instead of hardcoding the account, reference the pipeline parameter</li>
+                            <li>This makes your pipeline flexible and reusable</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <h4>Override at Runtime via Triggered Task</h4>
+                <p>Since pipelines are executed using <strong>Triggered Tasks</strong>, you can pass different
+                    account
+                    names as parameters:</p>
+
+                <pre>*** Test Cases ***
+Execute Pipeline With Custom Account
+    # Create a different account
+    Create Snowflake Account
+    ...    account_name=snowflake_test_acct    # Different name
+    ...    url=${SNOWFLAKE_URL}
+    ...    username=${SNOWFLAKE_USERNAME}
+    ...    password=${SNOWFLAKE_PASSWORD}
+    
+    # Execute pipeline with custom account parameter
+    ${execution_id}=    Execute Pipeline Via Triggered Task
+    ...    pipeline_name=snowflake
+    ...    project_path=${PROJECT_SPACE}/${PROJECT_NAME}
+    ...    parameters={"account_name": "../shared/snowflake_test_acct"}
+    
+    # Validate results
+    Wait For Pipeline Completion    ${execution_id}
+    Validate Pipeline Results    ${execution_id}</pre>
+
+                <h4>Example: Pipeline Parameter Configuration</h4>
+
+                <p><strong>In SnapLogic UI:</strong></p>
+                <pre>Pipeline Parameters:
+├── account_name (String)
+│   └── Default: ../shared/snowflake_acct
+└── Other parameters...</pre>
+
+                <p><strong>In Pipeline (e.g., in a Snap):</strong></p>
+                <pre>Account: _account_name (references the pipeline parameter)</pre>
+
+                <p><strong>In Robot Test:</strong></p>
+                <pre>parameters = {
+    "account_name": "../shared/custom_account_name",
+    "other_param": "value"
+}</pre>
+
+                <p>This approach provides maximum flexibility:</p>
+                <ul>
+                    <li>✅ No need to modify .slp files</li>
+                    <li>✅ Same pipeline can work with different accounts</li>
+                    <li>✅ Easy to test with multiple account configurations</li>
+                    <li>✅ Follows SnapLogic best practices for parameterization</li>
+                </ul>
+
+                <h3>Step 3: Save Pipeline File</h3>
+                <p>Save your validated <code>.slp</code> file in the correct location:</p>
+                <pre>src/
+└── pipelines/
+    └── snowflake.slp</pre>
+
+                <h2 id="environment-configuration">Environment Configuration (.env)</h2>
+                <p>The <code>.env</code> file is the heart of your test configuration. You must understand each
+                    parameter thoroughly.</p>
+
+                <h3>Basic Configuration Structure</h3>
+                <pre># ============================================================
+# MANUAL CONFIGURATION SECTION
+# These values must be provided by the user
+# ============================================================
+
+# SnapLogic Instance Configuration
+URL=https://example.com/
+ORG_ADMIN_USER=your_username
+ORG_ADMIN_PASSWORD=your_password
+ORG_NAME=org_name   # Example: ml-legacy-migration
+
+# ============================================================
+# AUTOMATED CREATION SECTION
+# Everything below will be created by the automation scripts
+# ============================================================
+
+# Project Configuration
+PROJECT_SPACE=project_space        # Example: sl-automation-ps
+PROJECT_NAME=project_name          # Example: sl_project
+
+# Groundplex Configuration
+GROUNDPLEX_NAME=groundplex_name    # Example: sl-groundplex-automation
+GROUNDPLEX_ENV=groundplex_environment_name    # Example: slgroundplexautomationdev
+GROUNDPLEX_LOCATION_PATH=your_groundplex_location_path    # Example: project_space/project_name/shared
+RELEASE_BUILD_VERSION=build_version    # Example: main-30027
+
+# Account Location Configuration
+ACCOUNT_LOCATION_PATH="account_path"    # Example: project_space/project_name/shared</pre>
+
+                <h3>Configuration Parameters Explained</h3>
+                <table border="1" style="border-collapse: collapse; margin: 15px 0;">
+                    <tr>
+                        <th style="padding: 8px; background: #667eea; color: white;">Parameter</th>
+                        <th style="padding: 8px; background: #667eea; color: white;">Type</th>
+                        <th style="padding: 8px; background: #667eea; color: white;">Description</th>
+                        <th style="padding: 8px; background: #667eea; color: white;">Example</th>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px;"><code>URL</code></td>
+                        <td style="padding: 8px;">Manual</td>
+                        <td style="padding: 8px;">SnapLogic instance URL</td>
+                        <td style="padding: 8px;"><code>https://elastic.snaplogic.com/</code></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px;"><code>ORG_ADMIN_USER</code></td>
+                        <td style="padding: 8px;">Manual</td>
+                        <td style="padding: 8px;">Your SnapLogic username</td>
+                        <td style="padding: 8px;"><code>admin@company.com</code></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px;"><code>ORG_ADMIN_PASSWORD</code></td>
+                        <td style="padding: 8px;">Manual</td>
+                        <td style="padding: 8px;">Your SnapLogic password</td>
+                        <td style="padding: 8px;"><code>SecurePassword123</code></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px;"><code>ORG_NAME</code></td>
+                        <td style="padding: 8px;">Manual</td>
+                        <td style="padding: 8px;">Organization name in SnapLogic</td>
+                        <td style="padding: 8px;"><code>my-organization</code></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px;"><code>PROJECT_SPACE</code></td>
+                        <td style="padding: 8px;">Auto</td>
+                        <td style="padding: 8px;">Project space to be created</td>
+                        <td style="padding: 8px;"><code>automation-tests</code></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px;"><code>PROJECT_NAME</code></td>
+                        <td style="padding: 8px;">Auto</td>
+                        <td style="padding: 8px;">Project name to be created</td>
+                        <td style="padding: 8px;"><code>test-project</code></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px;"><code>GROUNDPLEX_NAME</code></td>
+                        <td style="padding: 8px;">Auto</td>
+                        <td style="padding: 8px;">Name for the Groundplex</td>
+                        <td style="padding: 8px;"><code>test-groundplex</code></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px;"><code>GROUNDPLEX_ENV</code></td>
+                        <td style="padding: 8px;">Auto</td>
+                        <td style="padding: 8px;">Groundplex environment</td>
+                        <td style="padding: 8px;"><code>development</code></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px;"><code>GROUNDPLEX_LOCATION_PATH</code></td>
+                        <td style="padding: 8px;">Auto</td>
+                        <td style="padding: 8px;">Where to create Groundplex</td>
+                        <td style="padding: 8px;"><code>automation-tests/test-project/shared</code></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px;"><code>RELEASE_BUILD_VERSION</code></td>
+                        <td style="padding: 8px;">Auto</td>
+                        <td style="padding: 8px;">SnapLogic version</td>
+                        <td style="padding: 8px;"><code>main-30027</code></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px;"><code>ACCOUNT_LOCATION_PATH</code></td>
+                        <td style="padding: 8px;">Auto</td>
+                        <td style="padding: 8px;">Where to create accounts</td>
+                        <td style="padding: 8px;"><code>automation-tests/test-project/shared</code></td>
+                    </tr>
+                </table>
+
+                <h2 id="account-configuration">Account Configuration</h2>
+                <p>After the basic configuration, add account details for each service you'll connect to.</p>
+
+                <h3>Example: Oracle Database Account</h3>
+                <pre># Oracle Database Account Configuration
+ORACLE_ACCOUNT_NAME=oracle_acct        # Must match name in .slp file!
+ORACLE_HOST=oracle-db                  # Database hostname
+ORACLE_DBNAME=FREEPDB1                 # Database name
+ORACLE_DBUSER=SYSTEM                   # Database username
+ORACLE_DBPASS=Oracle123                # Database password</pre>
+
+                <h3>Example: Snowflake Account</h3>
+                <pre># Snowflake Account Configuration
+SNOWFLAKE_ACCOUNT_NAME=snowflake_acct  # Must match name in .slp file!
+SNOWFLAKE_URL=mycompany.snowflakecomputing.com
+SNOWFLAKE_USERNAME=sf_user
+SNOWFLAKE_PASSWORD=sf_password
+SNOWFLAKE_WAREHOUSE=COMPUTE_WH
+SNOWFLAKE_DATABASE=TEST_DB
+SNOWFLAKE_SCHEMA=PUBLIC</pre>
+
+                <h3>Example: MySQL Account</h3>
+                <pre># MySQL Account Configuration
+MYSQL_ACCOUNT_NAME=mysql_acct          # Must match name in .slp file!
+MYSQL_HOST=mysql-server
+MYSQL_PORT=3306
+MYSQL_DATABASE=testdb
+MYSQL_USERNAME=root
+MYSQL_PASSWORD=mysql123</pre>
+
+                <h2 id="automation-workflow">Automation Workflow</h2>
+
+                <h3>How the Automation Mirrors Manual Process</h3>
+
+                <pre>Start Automation → __init__.robot Executes
+    ↓
+Load .env Configuration → Validate Environment Variables
+    ↓
+Create Project Space → Create Project
+    ↓
+Create Accounts from .env → Run Test Cases
+    ↓
+Test Case: Create Specific Account → Test Case: Upload Pipeline
+    ↓
+Test Case: Execute Pipeline → Test Case: Validate Results</pre>
+
+                <h3>What Happens in __init__.robot</h3>
+                <p>The <code>__init__.robot</code> file handles common setup tasks that would be repetitive across
+                    all
+                    tests:</p>
+                <ol>
+                    <li><strong>Deletes existing project space</strong> (cleanup from previous runs)</li>
+                    <li><strong>Creates new project space</strong></li>
+                    <li><strong>Creates new project</strong></li>
+                    <li><strong>Sets up basic accounts</strong> defined in <code>.env</code></li>
+                </ol>
+                <p>This ensures a clean, consistent environment for every test run.</p>
+
+                <h2 id="writing-your-first-test">Writing Your First Test</h2>
+
+                <h3>Step 1: Account Creation</h3>
+                <p>Your test should first create the account that matches what's used in your <code>.slp</code>
+                    file:
+                </p>
+
+                <pre>*** Test Cases ***
+Setup Snowflake Pipeline Test
+    [Documentation]    Test snowflake pipeline execution
+    
+    # Create account with EXACT name used in snowflake.slp
+    Create Snowflake Account
+    ...    account_name=snowflake_acct    # MUST match .slp file
+    ...    url=${SNOWFLAKE_URL}
+    ...    username=${SNOWFLAKE_USERNAME}
+    ...    password=${SNOWFLAKE_PASSWORD}</pre>
+
+                <h3>Step 2: Upload and Execute Pipeline</h3>
+
+                <pre>    # Upload the pipeline
+    Upload Pipeline
+    ...    pipeline_path=${CURDIR}/../../src/pipelines/snowflake.slp
+    ...    target_location=${PROJECT_SPACE}/${PROJECT_NAME}
+    
+    # Execute the pipeline
+    ${execution_id}=    Execute Pipeline
+    ...    pipeline_name=snowflake
+    ...    project_path=${PROJECT_SPACE}/${PROJECT_NAME}
+    
+    # Validate results
+    Wait For Pipeline Completion    ${execution_id}
+    Validate Pipeline Results    ${execution_id}</pre>
+
+                <h2 id="important-notes">Important Notes</h2>
+
+                <h3>Account Name Matching</h3>
+
+                <div style="background: #fff3cd; border-left: 4px solid #ff0000; padding: 15px; margin: 15px 0;">
+                    <p>🔴 <strong>CRITICAL</strong>: When using pipeline parameters, ensure the account path you
+                        pass
+                        matches the actual account location!</p>
+                </div>
+
+                <p>If you've configured your pipeline with parameters (as shown in Step 2), you have flexibility:
+                </p>
+                <ul>
+                    <li>Use the default account name from the pipeline parameter</li>
+                    <li>OR pass a different account path when executing via Triggered Task</li>
+                    <li>The account must exist at the specified path before pipeline execution</li>
+                </ul>
+
+                <h3>Best Practices</h3>
+                <ol>
+                    <li><strong>Always test manually first</strong> - Ensure your pipeline works before automating
+                    </li>
+                    <li><strong>Keep .env file secure</strong> - Never commit passwords to version control</li>
+                    <li><strong>Use descriptive names</strong> - Make project spaces, projects, and accounts easily
+                        identifiable</li>
+                    <li><strong>Document dependencies</strong> - Note any special requirements for your pipelines
+                    </li>
+                    <li><strong>Clean up resources</strong> - Ensure tests clean up after themselves</li>
+                </ol>
+
+                <h3>Common Pitfalls to Avoid</h3>
+                <table border="1" style="border-collapse: collapse; margin: 15px 0;">
+                    <tr>
+                        <th style="padding: 8px; background: #667eea; color: white;">Pitfall</th>
+                        <th style="padding: 8px; background: #667eea; color: white;">Solution</th>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px;">Account name mismatch</td>
+                        <td style="padding: 8px;">Double-check account names in .slp match test creation</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px;">Missing environment variables</td>
+                        <td style="padding: 8px;">Validate all required variables are in .env</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px;">Invalid pipeline file</td>
+                        <td style="padding: 8px;">Test pipeline manually before automation</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px;">Incorrect paths</td>
+                        <td style="padding: 8px;">Use relative paths with ${CURDIR}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px;">Credential issues</td>
+                        <td style="padding: 8px;">Verify credentials work in SnapLogic UI first</td>
+                    </tr>
+                </table>
+
+                <h2>Next Steps</h2>
+                <ol>
+                    <li><strong>Configure your .env file</strong> with your SnapLogic instance details</li>
+                    <li><strong>Create and download</strong> a working pipeline (.slp file)</li>
+                    <li><strong>Place the pipeline</strong> in <code>src/pipelines/</code> directory</li>
+                    <li><strong>Add account configurations</strong> to .env for all services</li>
+                    <li><strong>Write your test case</strong> following the examples above</li>
+                    <li><strong>Run the test</strong> and verify results</li>
+                </ol>
+
+                <hr>
+
+                <h2>Quick Reference Checklist</h2>
+                <ul style="list-style: none; padding-left: 0;">
+                    <li>☐ Created and tested pipeline manually</li>
+                    <li>☐ Downloaded .slp file to <code>src/pipelines/</code></li>
+                    <li>☐ Configured <code>.env</code> with instance credentials</li>
+                    <li>☐ Added project space/name configuration</li>
+                    <li>☐ Added account configurations to <code>.env</code></li>
+                    <li>☐ Account names in test match .slp file exactly</li>
+                    <li>☐ Test creates required accounts before pipeline execution</li>
+                    <li>☐ Test validates pipeline execution results</li>
+                </ul>
+
+                <hr>
+
+                <p><em>Remember: Automation should mirror what you would do manually. Think through the manual
+                        process
+                        first, then automate it.</em></p>

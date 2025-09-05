@@ -1,0 +1,554 @@
+<h1>Docker Compose Architecture Documentation</h1>
+
+<p><strong>Reference links for Docker compose architecture in details:</strong> <a
+        href="https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/infra_setup_guides/docker-compose.html">Docker
+        Compose details</a></p>
+
+<div class="toc">
+    <h3>Table of Contents</h3>
+    <ul>
+        <li><a href="#docker-overview">Overview</a></li>
+        <li><a href="#docker-architecture-diagram">Architecture Diagram</a></li>
+        <li><a href="#docker-main-structure">Main Docker Compose File Structure</a></li>
+        <li><a href="#docker-tools-service">Tools Service Deep Dive</a></li>
+        <li><a href="#docker-dockerfile">Dockerfile Details</a></li>
+        <li><a href="#docker-requirements">Requirements File</a></li>
+        <li><a href="#docker-network">Network Configuration</a></li>
+        <li><a href="#docker-profiles">Service Profiles</a></li>
+        <li><a href="#docker-lifecycle">Container Lifecycle</a></li>
+        <li><a href="#docker-makefile">Integration with Makefile</a></li>
+        <li><a href="#docker-best-practices">Best Practices</a></li>
+        <li><a href="#docker-troubleshooting">Troubleshooting</a></li>
+        <li><a href="#docker-summary">Summary</a></li>
+    </ul>
+</div>
+
+<h2 id="docker-overview">Overview</h2>
+<p>The Docker Compose setup for the SnapLogic Robot Framework testing environment consists of a main
+    orchestration file (<code>docker-compose.yml</code>) that builds and manages multiple services,
+    with
+    the primary <code>tools</code> service serving as the test execution container.</p>
+
+<h2 id="docker-architecture-diagram">Architecture Diagram</h2>
+<pre>┌─────────────────────────────────────────────────────────────┐
+│                     docker-compose.yml                       │
+│                         (Main File)                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Includes Multiple Service Files:                           │
+│  ├── docker-compose.oracle.yml      (Oracle DB)            │
+│  ├── docker-compose.groundplex.yml  (SnapLogic Groundplex) │
+│  ├── docker-compose.s3emulator.yml  (MinIO S3)            │
+│  ├── docker-compose.postgres.yml    (PostgreSQL)          │
+│  ├── docker-compose.activemq.yml    (JMS Server)          │
+│  ├── docker-compose.sqlserver.yml   (SQL Server)          │
+│  ├── docker-compose.mysql.yml       (MySQL)               │
+│  ├── docker-compose.db2.yml         (DB2)                 │
+│  ├── docker-compose.salesforce-mock.yml (Mock API)        │
+│  └── docker-compose.kafka.yml       (Kafka)               │
+│                                                              │
+│  Main Service:                                              │
+│  └── tools (Test Execution Container)                       │
+│      ├── Builds from: docker/robot.Dockerfile              │
+│      ├── Installs: src/tools/requirements.txt             │
+│      └── Runs: Robot Framework Tests                       │
+└─────────────────────────────────────────────────────────────┘</pre>
+
+<h2 id="docker-main-structure">Main Docker Compose File Structure</h2>
+
+<h3>File Location</h3>
+<ul>
+    <li><strong>Path</strong>:
+        <code>/snaplogic-robotframework-examples/docker/docker-compose.yml</code>
+    </li>
+    <li><strong>Purpose</strong>: Central orchestration file that coordinates all services needed
+        for
+        testing</li>
+</ul>
+
+<h3>Key Components</h3>
+
+<h4>1. Include Section</h4>
+<p>The compose file uses Docker Compose's <code>include</code> feature to modularize service
+    definitions:</p>
+<pre>include:
+  - docker-compose.oracle.yml
+  - docker-compose.groundplex.yml
+  - docker-compose.s3emulator.yml
+  # ... other service files</pre>
+
+<p><strong>Benefits</strong>:</p>
+<ul>
+    <li><strong>Modularity</strong>: Each service is defined in its own file</li>
+    <li><strong>Maintainability</strong>: Easy to add/remove services</li>
+    <li><strong>Clarity</strong>: Prevents a single massive compose file</li>
+    <li><strong>Reusability</strong>: Services can be used independently</li>
+</ul>
+
+<h4>2. Tools Service Configuration</h4>
+<p>The <code>tools</code> service is the heart of the testing framework:</p>
+
+<table border="1" style="border-collapse: collapse; margin: 15px 0;">
+    <tr>
+        <th style="padding: 8px; background: #667eea; color: white;">Configuration</th>
+        <th style="padding: 8px; background: #667eea; color: white;">Value/Purpose</th>
+        <th style="padding: 8px; background: #667eea; color: white;">Details</th>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><strong>Service Name</strong></td>
+        <td style="padding: 8px;"><code>tools</code></td>
+        <td style="padding: 8px;">Primary test execution container</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><strong>Container Name</strong></td>
+        <td style="padding: 8px;"><code>snaplogic-test-example-tools-container</code></td>
+        <td style="padding: 8px;">Unique identifier for the container</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><strong>Image</strong></td>
+        <td style="padding: 8px;"><code>snaplogic-test-example:latest</code></td>
+        <td style="padding: 8px;">Tagged image name after build</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><strong>Profile</strong></td>
+        <td style="padding: 8px;"><code>tools</code></td>
+        <td style="padding: 8px;">Allows selective service startup</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><strong>Network</strong></td>
+        <td style="padding: 8px;"><code>snaplogicnet</code></td>
+        <td style="padding: 8px;">Shared network for all services</td>
+    </tr>
+</table>
+
+<h2 id="docker-tools-service">Tools Service Deep Dive</h2>
+
+<h3>Build Configuration</h3>
+<pre>build:
+  context: ../src/tools
+  dockerfile: ../../docker/robot.Dockerfile</pre>
+
+<table border="1" style="border-collapse: collapse; margin: 15px 0;">
+    <tr>
+        <th style="padding: 8px; background: #667eea; color: white;">Aspect</th>
+        <th style="padding: 8px; background: #667eea; color: white;">Description</th>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><strong>Context</strong></td>
+        <td style="padding: 8px;"><code>../src/tools</code> - Directory containing requirements.txt
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><strong>Dockerfile</strong></td>
+        <td style="padding: 8px;"><code>../../docker/robot.Dockerfile</code> - Build instructions
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><strong>Platform</strong></td>
+        <td style="padding: 8px;"><code>linux/amd64</code> - Forces x86_64 for IBM DB2 compatibility
+        </td>
+    </tr>
+</table>
+
+<h3>Environment Variables</h3>
+<p>The tools service inherits environment variables from multiple sources:</p>
+
+<table border="1" style="border-collapse: collapse; margin: 15px 0;">
+    <tr>
+        <th style="padding: 8px; background: #667eea; color: white;">Source</th>
+        <th style="padding: 8px; background: #667eea; color: white;">Purpose</th>
+        <th style="padding: 8px; background: #667eea; color: white;">Examples</th>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><strong><code>.env</code> file</strong></td>
+        <td style="padding: 8px;">User credentials and configuration</td>
+        <td style="padding: 8px;"><code>URL</code>, <code>ORG_ADMIN_USER</code>,
+            <code>PROJECT_SPACE</code>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><strong>Travis CI variables</strong></td>
+        <td style="padding: 8px;">CI/CD integration</td>
+        <td style="padding: 8px;"><code>TRAVIS_BUILD_NUMBER</code>, <code>TRAVIS_BRANCH</code></td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><strong>Runtime variables</strong></td>
+        <td style="padding: 8px;">Dynamic configuration</td>
+        <td style="padding: 8px;">Test tags, execution parameters</td>
+    </tr>
+</table>
+
+<h3>Volume Mounts</h3>
+<p>Critical volume mappings that enable test execution:</p>
+
+<table border="1" style="border-collapse: collapse; margin: 15px 0;">
+    <tr>
+        <th style="padding: 8px; background: #667eea; color: white;">Host Path</th>
+        <th style="padding: 8px; background: #667eea; color: white;">Container Path</th>
+        <th style="padding: 8px; background: #667eea; color: white;">Purpose</th>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><code>../src</code></td>
+        <td style="padding: 8px;"><code>/app/src</code></td>
+        <td style="padding: 8px;">Source code and pipelines</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><code>../test</code></td>
+        <td style="padding: 8px;"><code>/app/test</code></td>
+        <td style="padding: 8px;">Test suites and resources</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><code>../.env</code></td>
+        <td style="padding: 8px;"><code>/app/.env</code></td>
+        <td style="padding: 8px;">Environment configuration</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><code>../setup_env.sh</code></td>
+        <td style="padding: 8px;"><code>/app/setup_env.sh</code></td>
+        <td style="padding: 8px;">Environment setup script</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><code>../test/suite/test_data</code></td>
+        <td style="padding: 8px;"><code>/opt/snaplogic/test_data</code></td>
+        <td style="padding: 8px;">Test data files</td>
+    </tr>
+</table>
+
+<p><strong>Optional Mounts</strong> (commented by default):</p>
+<ul>
+    <li><code>~/Documents:/opt/host-documents:ro</code> - Read-only access to host documents</li>
+    <li><code>~/Downloads:/opt/host-downloads:ro</code> - Read-only access to host downloads</li>
+    <li><code>~/Desktop:/opt/host-desktop:ro</code> - Read-only access to host desktop</li>
+</ul>
+
+<h2 id="docker-dockerfile">Dockerfile Details</h2>
+
+<h3>File Location</h3>
+<ul>
+    <li><strong>Path</strong>:
+        <code>/snaplogic-robotframework-examples/docker/robot.Dockerfile</code>
+    </li>
+    <li><strong>Base Image</strong>: <code>python:3.12.7-slim-bookworm</code></li>
+</ul>
+
+<h3>Build Process Flow</h3>
+<div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 15px 0;">
+    <pre style="background: transparent; color: inherit;">[Base Image: Python 3.12.7]
+         ↓
+[Install System Dependencies]
+         ↓
+[Install Database Drivers]
+         ↓
+[Configure IBM DB2 Environment]
+         ↓
+[Copy requirements.txt]
+         ↓
+[Install Python Packages]
+         ↓
+[Ready for Test Execution]</pre>
+</div>
+
+<h3>System Dependencies Installation</h3>
+
+<table border="1" style="border-collapse: collapse; margin: 15px 0;">
+    <tr>
+        <th style="padding: 8px; background: #667eea; color: white;">Package</th>
+        <th style="padding: 8px; background: #667eea; color: white;">Purpose</th>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><code>gcc</code></td>
+        <td style="padding: 8px;">C compiler for building Python extensions</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><code>g++</code></td>
+        <td style="padding: 8px;">C++ compiler for certain database drivers</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><code>unixodbc-dev</code></td>
+        <td style="padding: 8px;">ODBC driver development files</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><code>wget</code></td>
+        <td style="padding: 8px;">Download IBM DB2 CLI driver</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><code>libxml2</code></td>
+        <td style="padding: 8px;">XML processing library</td>
+    </tr>
+</table>
+
+<h3>Platform-Specific Handling</h3>
+<p>The Dockerfile includes intelligent platform detection:</p>
+<pre>RUN if [ "$(uname -m)" != "aarch64" ]; then \
+    # Install IBM DB2 driver for x86_64 only
+fi</pre>
+
+<ul>
+    <li><strong>x86_64 (Intel/AMD)</strong>: Full installation including IBM DB2</li>
+    <li><strong>ARM64 (Apple Silicon)</strong>: Skips IBM DB2 due to compatibility</li>
+</ul>
+
+<h2 id="docker-requirements">Requirements File</h2>
+
+<h3>Location</h3>
+<ul>
+    <li><strong>Path</strong>:
+        <code>/snaplogic-robotframework-examples/src/tools/requirements.txt</code>
+    </li>
+</ul>
+
+<h3>Key Python Libraries</h3>
+
+<table border="1" style="border-collapse: collapse; margin: 15px 0;">
+    <tr>
+        <th style="padding: 8px; background: #667eea; color: white;">Library</th>
+        <th style="padding: 8px; background: #667eea; color: white;">Purpose</th>
+        <th style="padding: 8px; background: #667eea; color: white;">Used For</th>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><strong>snaplogic-common-robot</strong></td>
+        <td style="padding: 8px;">Core Robot Framework library</td>
+        <td style="padding: 8px;">SnapLogic-specific keywords and APIs</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><strong>robotframework-pabot</strong></td>
+        <td style="padding: 8px;">Parallel test execution</td>
+        <td style="padding: 8px;">Running tests in parallel</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><strong>oracledb</strong></td>
+        <td style="padding: 8px;">Oracle database driver</td>
+        <td style="padding: 8px;">Oracle database testing</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><strong>psycopg2-binary</strong></td>
+        <td style="padding: 8px;">PostgreSQL driver</td>
+        <td style="padding: 8px;">PostgreSQL testing</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><strong>pymssql</strong></td>
+        <td style="padding: 8px;">SQL Server driver</td>
+        <td style="padding: 8px;">Microsoft SQL Server testing</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><strong>pymysql</strong></td>
+        <td style="padding: 8px;">MySQL driver</td>
+        <td style="padding: 8px;">MySQL database testing</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><strong>ibm_db</strong></td>
+        <td style="padding: 8px;">IBM DB2 driver</td>
+        <td style="padding: 8px;">DB2 database testing</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><strong>teradatasql</strong></td>
+        <td style="padding: 8px;">Teradata driver</td>
+        <td style="padding: 8px;">Teradata database testing</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><strong>snowflake-connector-python</strong></td>
+        <td style="padding: 8px;">Snowflake driver</td>
+        <td style="padding: 8px;">Snowflake cloud DB testing</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><strong>minio</strong></td>
+        <td style="padding: 8px;">MinIO client</td>
+        <td style="padding: 8px;">S3-compatible storage testing</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><strong>stomp.py</strong></td>
+        <td style="padding: 8px;">STOMP protocol client</td>
+        <td style="padding: 8px;">JMS/ActiveMQ testing</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><strong>requests</strong></td>
+        <td style="padding: 8px;">HTTP client</td>
+        <td style="padding: 8px;">REST API testing</td>
+    </tr>
+</table>
+
+<h2 id="docker-network">Network Configuration</h2>
+
+<h3>Network Name: <code>snaplogicnet</code></h3>
+<p>All services communicate through a shared bridge network:</p>
+<pre>networks:
+  snaplogicnet:
+    driver: bridge</pre>
+
+<p><strong>Benefits</strong>:</p>
+<ul>
+    <li><strong>Service Discovery</strong>: Services can reach each other by container name</li>
+    <li><strong>Isolation</strong>: Isolated from host network</li>
+    <li><strong>Security</strong>: Only exposed ports are accessible from host</li>
+</ul>
+
+<h2 id="docker-profiles">Service Profiles</h2>
+<p>Profiles allow selective service startup:</p>
+<pre>profiles: [tools]</pre>
+
+<p><strong>Usage Examples</strong>:</p>
+<pre># Start only tools service
+docker-compose --profile tools up
+
+# Start tools with databases
+docker-compose --profile tools --profile oracle-dev up
+
+# Start everything
+COMPOSE_PROFILES=tools,oracle-dev,postgres-dev make start-services</pre>
+
+<h2 id="docker-lifecycle">Container Lifecycle</h2>
+
+<h3>Startup Command</h3>
+<pre>command: ["sh", "-c", "echo 'Tools container started' && tail -f /dev/null"]</pre>
+
+<ul>
+    <li>Prints startup message</li>
+    <li>Keeps container running indefinitely</li>
+    <li>Allows interactive test execution</li>
+</ul>
+
+<h3>Test Execution Flow</h3>
+<ol>
+    <li><strong>Container Start</strong>: Tools container starts and remains running</li>
+    <li><strong>Test Trigger</strong>: Makefile targets execute Robot Framework inside container
+    </li>
+    <li><strong>Test Run</strong>: Tests interact with other services via <code>snaplogicnet</code>
+    </li>
+    <li><strong>Results</strong>: Output saved to mounted volumes</li>
+    <li><strong>Container Persist</strong>: Container stays running for next test run</li>
+</ol>
+
+<h2 id="docker-makefile">Integration with Makefile</h2>
+<p>The Docker Compose setup is primarily controlled through Makefile targets:</p>
+
+<table border="1" style="border-collapse: collapse; margin: 15px 0;">
+    <tr>
+        <th style="padding: 8px; background: #667eea; color: white;">Makefile Target</th>
+        <th style="padding: 8px; background: #667eea; color: white;">Docker Compose Action</th>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><code>snaplogic-build-tools</code></td>
+        <td style="padding: 8px;">Builds tools container image</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><code>start-services</code></td>
+        <td style="padding: 8px;">Starts services with profiles</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><code>robot-run-tests</code></td>
+        <td style="padding: 8px;">Executes tests inside tools container</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;"><code>snaplogic-stop</code></td>
+        <td style="padding: 8px;">Stops all containers and cleanup</td>
+    </tr>
+</table>
+
+<h2 id="docker-best-practices">Best Practices</h2>
+
+<h3>1. Environment Configuration</h3>
+<ul>
+    <li>Keep sensitive data in <code>.env</code> file (never commit)</li>
+    <li>Use environment-specific <code>.env</code> files for different stages</li>
+</ul>
+
+<h3>2. Volume Management</h3>
+<ul>
+    <li>Mount only necessary directories</li>
+    <li>Use read-only mounts where possible</li>
+    <li>Keep test data organized in designated directories</li>
+</ul>
+
+<h3>3. Service Dependencies</h3>
+<ul>
+    <li>Use profiles to control service startup</li>
+    <li>Start only required services for specific tests</li>
+    <li>Clean up resources after test completion</li>
+</ul>
+
+<h3>4. Platform Compatibility</h3>
+<ul>
+    <li>Test on both x86_64 and ARM64 if possible</li>
+    <li>Document platform-specific limitations</li>
+    <li>Provide alternatives for incompatible components</li>
+</ul>
+
+<h2>Troubleshooting</h2>
+
+<h3>Common Issues and Solutions</h3>
+
+<table border="1" style="border-collapse: collapse; margin: 15px 0;">
+    <tr>
+        <th style="padding: 8px; background: #667eea; color: white;">Issue</th>
+        <th style="padding: 8px; background: #667eea; color: white;">Cause</th>
+        <th style="padding: 8px; background: #667eea; color: white;">Solution</th>
+    </tr>
+    <tr>
+        <td style="padding: 8px;">Container fails to build</td>
+        <td style="padding: 8px;">Missing requirements</td>
+        <td style="padding: 8px;">Check <code>requirements.txt</code> exists</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;">IBM DB2 errors on Mac M1</td>
+        <td style="padding: 8px;">ARM64 incompatibility</td>
+        <td style="padding: 8px;">DB2 is auto-skipped on ARM</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;">Services can't communicate</td>
+        <td style="padding: 8px;">Network issues</td>
+        <td style="padding: 8px;">Ensure all use <code>snaplogicnet</code></td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;">Permission denied errors</td>
+        <td style="padding: 8px;">Volume mount permissions</td>
+        <td style="padding: 8px;">Check file permissions on host</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px;">Out of memory</td>
+        <td style="padding: 8px;">Resource limits</td>
+        <td style="padding: 8px;">Increase Docker memory allocation</td>
+    </tr>
+</table>
+
+<h3>Debugging Commands</h3>
+<pre># View container logs
+docker-compose logs tools
+
+# Enter tools container
+docker exec -it snaplogic-test-example-tools-container bash
+
+# Check network connectivity
+docker exec tools ping oracle-db
+
+# Inspect volume mounts
+docker inspect snaplogic-test-example-tools-container
+
+# Check installed packages
+docker exec tools pip list</pre>
+
+<h2>Summary</h2>
+<p>The Docker Compose architecture provides:</p>
+<ol>
+    <li><strong>Centralized orchestration</strong> through the main <code>docker-compose.yml</code>
+    </li>
+    <li><strong>Modular service definitions</strong> via included YAML files</li>
+    <li><strong>Consistent test environment</strong> through the tools container</li>
+    <li><strong>Flexible configuration</strong> using profiles and environment variables</li>
+    <li><strong>Cross-platform compatibility</strong> with intelligent platform detection</li>
+    <li><strong>Comprehensive database support</strong> through installed drivers</li>
+    <li><strong>Isolated networking</strong> for secure service communication</li>
+</ol>
+
+<p>This architecture ensures reproducible, scalable, and maintainable test execution across
+    different
+    environments and platforms.</p>
+
+<hr>
+
+<p><em>Last Updated: 2025<br>
+        File Locations:</em></p>
+<ul>
+    <li>Main Compose: <code>/docker/docker-compose.yml</code></li>
+    <li>Dockerfile: <code>/docker/robot.Dockerfile</code></li>
+    <li>Requirements: <code>/src/tools/requirements.txt</code></li>
+</ul>

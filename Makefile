@@ -72,14 +72,7 @@ check-env:
 		exit 1; \
 	fi
 
-# =============================================================================
-# 🚀 Start services using Docker Compose with selected profiles
-# =============================================================================
-start-services:
-	@echo ":[Phase 2] Starting containers using compose profiles: $(COMPOSE_PROFILES)..."
-	COMPOSE_PROFILES=$(COMPOSE_PROFILES) $(DOCKER_COMPOSE) up -d
-	@echo "⏳ Waiting for services to stabilize..."
-	@sleep 30
+
 
 # =============================================================================
 #  Create project space, Create Plex in Project Space, and launch Groundplex
@@ -152,6 +145,15 @@ robot-run-tests: check-env
 		--variable TAGS:"$(TAGS)" \
 		$(INCLUDES) \
 		--outputdir robot_output suite/
+
+# =============================================================================
+# 🚀 Start services using Docker Compose with selected profiles
+# =============================================================================
+start-services:
+	@echo ":[Phase 2] Starting containers using compose profiles: $(COMPOSE_PROFILES)..."
+	COMPOSE_PROFILES=$(COMPOSE_PROFILES) $(DOCKER_COMPOSE) up -d
+	@echo "⏳ Waiting for services to stabilize..."
+	@sleep 30
 
 # =============================================================================
 # 🔄 Build & Start snaplogic services in compose profile 
