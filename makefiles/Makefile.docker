@@ -1,0 +1,138 @@
+# =============================================================================
+# Docker & Tools Container Management
+# =============================================================================
+# This file contains targets for managing Docker containers, tools, and
+# development environment setup including environment validation
+# =============================================================================
+
+.PHONY: snaplogic-start-services snaplogic-stop snaplogic-build-tools snaplogic-stop-tools \
+        start-services check-env clean-start ensure-config-dir \
+        rebuild-tools quick-update-snaplogic-robot-only
+
+# Include common configuration
+include makefiles/Makefile.common
+
+# =============================================================================
+# 🛠️ SnapLogic Tools Container Lifecycle
+# =============================================================================
+
+# 📦 Build tools container image 
+snaplogic-build-tools: snaplogic-stop-tools
+	@echo "🔨 Building tools container image..."
+	@echo "ℹ️ This may take a few minutes..."
+	$(DOCKER_COMPOSE) build --no-cache tools
+	@echo "✅ Tools container built successfully!"
+
+snaplogic-stop-tools:
+	@echo "🛑 Stopping tools container..."
+	$(DOCKER_COMPOSE) stop tools || true
+	$(DOCKER_COMPOSE) rm -f tools || true
+	@echo "✅ Tools container stopped"
+
+# =============================================================================
+# 🚀 Service Management
+# =============================================================================
+
+# Start services using Docker Compose with selected profiles
+start-services:
+	@echo "🚀 [Phase 2] Starting containers using compose profiles: $(COMPOSE_PROFILES)"
+	COMPOSE_PROFILES=$(COMPOSE_PROFILES) $(DOCKER_COMPOSE) up -d
+	@echo "⏳ Waiting for services to stabilize..."
+	@sleep 30
+	@echo "✅ Services started successfully!"
+
+# Build & Start snaplogic services in compose profile 
+snaplogic-start-services: 
+	@echo "=========================================================================="
+	@echo "🚀 Starting services/containers using COMPOSE_PROFILES..."
+	@echo "=========================================================================="
+	COMPOSE_PROFILES=$(COMPOSE_PROFILES) $(DOCKER_COMPOSE) up -d
+	@echo "⏳ Waiting for services to stabilize..."
+	@sleep 30
+	@echo "✅ All services are up and running!"
+
+# Stop all snaplogic containers and clean up
+snaplogic-stop:
+	@echo "🛑 Stopping SnapLogic App..."
+	@echo "ℹ️ Stopping containers connected to snaplogic-network..."
+	@docker ps -a --filter network=snaplogic-network --format "{{.ID}}" | xargs -r docker stop || true
+	@echo "🧹 Removing stopped containers..."
+	@docker container prune -f || true
+	@echo "ℹ️ Running docker compose down..."
+	$(DOCKER_COMPOSE) down --remove-orphans
+	$(DOCKER_COMPOSE) --profile tools down --volumes --remove-orphans
+	@echo "🧹 Ensuring snaplogic-network is removed..."
+	@docker network rm snaplogic-network 2>/dev/null || true
+	@echo "✅ SnapLogic stopped and cleaned up successfully!"
+
+# =============================================================================
+# ✅ Environment Validation
+# =============================================================================
+
+check-env:
+	@if [ -f ".env" ]; then \
+		echo "✅ Found .env file at: .env"; \
+	else \
+		echo "❌ Error: .env file not found at .env"; \
+		echo "ℹ️ Please ensure .env file exists in project root."; \
+		echo "Current directory: $$(pwd)"; \
+		echo "Files in current directory:"; \
+		ls -la | grep -E '\.env' || true; \
+		exit 1; \
+	fi
+
+ensure-config-dir:
+	@echo "ℹ️ Creating config directory..."
+	@mkdir -p ./test/.config
+	@echo "✅ Config directory ready"
+
+# =============================================================================
+# 🧹 Clean Restart & Workflow Management
+# =============================================================================
+
+# Clean restart of all relevant services and DB
+clean-start: snaplogic-stop snaplogic-start-services createplex-launch-groundplex
+	@echo "✅ Clean start complete!"
+	@echo "🚀 You should be good to go!"
+
+# =============================================================================
+# 🛠️ Tools Container Updates & Rebuilds
+# =============================================================================
+
+# Rebuild tools container with updated requirements
+# This target is useful for development when you need to update the tools container 
+# if there are changes in the requirements.txt file
+rebuild-tools:
+	@echo "🛑 Stopping and removing tools container..."
+	$(DOCKER_COMPOSE) --profile tools down
+	
+	@echo "🧹 Removing old image to force complete rebuild..."
+	@docker rmi snaplogic-test-example:latest || true
+	
+	@echo "🔨 Building tools container without cache..."
+	@echo "ℹ️ This will take several minutes..."
+	$(DOCKER_COMPOSE) build --no-cache tools
+	
+	@echo "🚀 Starting tools container..."
+	$(DOCKER_COMPOSE) --profile tools up -d
+	
+	@echo "⏳ Waiting for container to be ready..."
+	@sleep 5
+	
+	@echo "✅ Verifying snaplogic-common-robot version..."
+	@$(DOCKER_COMPOSE) exec tools pip show snaplogic-common-robot
+	@echo "✅ Rebuild complete!"
+
+# 📦 Update snaplogic-common-robot to absolute latest
+# This target is useful for quick updates without rebuilding the entire tools container
+quick-update-snaplogic-robot-only:
+	@echo "📦 Force updating snaplogic-common-robot to latest version..."
+	@echo "ℹ️ Current version:"
+	@$(DOCKER_COMPOSE) exec -T tools pip show snaplogic-common-robot || echo "⚠️ Not installed"
+	@echo "🧹 Uninstalling current version..."
+	@$(DOCKER_COMPOSE) exec -T tools pip uninstall -y snaplogic-common-robot
+	@echo "📦 Installing latest version from PyPI..."
+	@$(DOCKER_COMPOSE) exec -T tools pip install --no-cache-dir snaplogic-common-robot
+	@echo "✅ New version:"
+	@$(DOCKER_COMPOSE) exec -T tools pip show snaplogic-common-robot
+	@echo "✅ Update complete!"

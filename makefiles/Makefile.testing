@@ -1,0 +1,210 @@
+# =============================================================================
+# Testing & Test Execution Targets
+# =============================================================================
+# This file contains all Robot Framework test execution related targets
+# including single tests, parallel execution, and test reporting
+# =============================================================================
+
+.PHONY: robot-run-tests robot-run-all-tests robot-run-tests-no-gp slack-notify upload-test-results upload-test-results-cli
+
+# Include common configuration
+include makefiles/Makefile.common
+
+# =============================================================================
+# 🧪 Run Robot Framework tests with optional tags
+#   → usage: make robot-run-tests TAGS="oracle,minio" PROJECT_SPACE_SETUP=True
+# =============================================================================
+robot-run-tests: check-env
+	@echo "🧪 Starting Robot Framework tests..."
+	@echo "ℹ️ Tags: $(TAGS)"
+	$(eval INCLUDES=$(foreach arg,$(TAGS),--include $(arg)))
+	$(eval PROJECT_SPACE_SETUP_VAL=$(if $(PROJECT_SPACE_SETUP),$(PROJECT_SPACE_SETUP),False))
+	@$(DOCKER_COMPOSE) exec -w /app/test tools robot \
+		-G $(DATE) \
+		--timestampoutputs \
+		--variable PROJECT_SPACE_SETUP:$(PROJECT_SPACE_SETUP_VAL) \
+		--variable TAGS:"$(TAGS)" \
+		$(INCLUDES) \
+		--outputdir robot_output suite/ && \
+	echo "✅ Tests completed successfully!" || \
+	echo "❌ Some tests failed. Check the logs for details."
+
+# =============================================================================
+# 🧪 End-to-End Robot Test Workflow (including environment setup)
+#  → usage if user want to delete the projectspace(if exists) and create a clean project space add the flag PROJECT_SPACE_SETUP=True
+#.   make robot-run-all-tests TAGS="oracle,minio" PROJECT_SPACE_SETUP=True
+# =============================================================================
+robot-run-all-tests: check-env
+	@PROJECT_SPACE_SETUP_ACTUAL=${PROJECT_SPACE_SETUP:-False}; \
+	echo ":========== [Phase 1] Create project space and create plex inside project space =========="; \
+	if [ "$PROJECT_SPACE_SETUP_ACTUAL" = "True" ]; then \
+		echo ":========= [Phase 1] Running createplex tests ========================================="; \
+		$(MAKE) robot-run-tests TAGS="createplex" PROJECT_SPACE_SETUP=True || { \
+			echo "❌ createplex test failed, checking if error is due to active Snaplex nodes..."; \
+			if ls robot_output/log-*.html 2>/dev/null | head -1 | xargs grep -q "cannot be deleted while it contains active nodes" 2>/dev/null; then \
+				echo "🛑 Active Groundplex nodes detected — killing Groundplex and retrying to create project space and plex..."; \
+				$(MAKE) stop-groundplex; \
+				echo "⏳ Waiting 60 seconds for nodes to deregister from SnapLogic Cloud..."; \
+				sleep 60; \
+				$(MAKE) robot-run-tests TAGS="createplex" PROJECT_SPACE_SETUP=True || exit 1; \
+			else \
+				echo "❌ createplex test failed for a different reason."; \
+				exit 1; \
+			fi; \
+		}; \
+	else \
+		echo "⏩ Skipping createplex setup (PROJECT_SPACE_SETUP is not True)"; \
+		echo ":========== [Phase 1.1] Verifying if project space exists =========="; \
+		$(MAKE) robot-run-tests TAGS="verify_project_space_exists" PROJECT_SPACE_SETUP=False || exit 1; \
+	fi; \
+	\
+	echo ":========== [Phase 2] Computing and starting containers using COMPOSE_PROFILES... =========="; \
+	$(MAKE) launch-groundplex; \
+	\
+	echo ":========== [Phase 2.1] Setting permissions for test data directories (Travis only) =========="; \
+	if [ "$TRAVIS" = "true" ]; then \
+		chmod +x ./scripts/set_travis_permissions.sh; \
+		./scripts/set_travis_permissions.sh || echo "Warning: Could not set all permissions"; \
+	else \
+		echo "ℹ️ Skipping set_travis_permissions (not running on Travis CI)"; \
+	fi; \
+	\
+	echo ":========== [Phase 3] Running user-defined robot tests... =========="; \
+	$(MAKE) robot-run-tests TAGS="$(TAGS)" PROJECT_SPACE_SETUP=False
+
+# =============================================================================
+# 🧪 Robot Test Workflow WITHOUT Groundplex Launch
+#  → Use this when Groundplex is already running or not needed for your tests
+#  → usage: make robot-run-tests-no-gp TAGS="oracle,minio" PROJECT_SPACE_SETUP=True
+# =============================================================================
+robot-run-tests-no-gp: check-env
+	@PROJECT_SPACE_SETUP_ACTUAL=${PROJECT_SPACE_SETUP:-False}; \
+	echo ":========== [Phase 1] Project Space Setup =========="; \
+	if [ "$PROJECT_SPACE_SETUP_ACTUAL" = "True" ]; then \
+		echo ":========= [Phase 1] Running createplex tests (without launching Groundplex) ========================================="; \
+		$(MAKE) robot-run-tests TAGS="createplex" PROJECT_SPACE_SETUP=True || { \
+			echo "❌ createplex test failed, checking if error is due to active Snaplex nodes..."; \
+			if ls robot_output/log-*.html 2>/dev/null | head -1 | xargs grep -q "cannot be deleted while it contains active nodes" 2>/dev/null; then \
+				echo "🛑 Active Groundplex nodes detected — killing Groundplex and retrying to create project space and plex..."; \
+				$(MAKE) stop-groundplex; \
+				echo "⏳ Waiting 60 seconds for nodes to deregister from SnapLogic Cloud..."; \
+				sleep 60; \
+				$(MAKE) robot-run-tests TAGS="createplex" PROJECT_SPACE_SETUP=True || exit 1; \
+			else \
+				echo "❌ createplex test failed for a different reason."; \
+				exit 1; \
+			fi; \
+		}; \
+	else \
+		echo "⏩ Skipping createplex setup (PROJECT_SPACE_SETUP is not True)"; \
+		echo ":========== [Phase 1.1] Verifying if project space exists =========="; \
+		$(MAKE) robot-run-tests TAGS="verify_project_space_exists" PROJECT_SPACE_SETUP=False || exit 1; \
+	fi; \
+	\
+	echo ":========== [Phase 2] ⏩ SKIPPING Groundplex launch (use existing or not required) =========="; \
+	echo "ℹ️  Note: Ensure Groundplex is already running if your tests require it"; \
+	\
+	echo ":========== [Phase 2.1] Setting permissions for test data directories (Travis only) =========="; \
+	if [ "$TRAVIS" = "true" ]; then \
+		chmod +x ./scripts/set_travis_permissions.sh; \
+		./scripts/set_travis_permissions.sh || echo "Warning: Could not set all permissions"; \
+	else \
+		echo "ℹ️ Skipping set_travis_permissions (not running on Travis CI)"; \
+	fi; \
+	\
+	echo ":========== [Phase 3] Running user-defined robot tests... =========="; \
+	$(MAKE) robot-run-tests TAGS="$(TAGS)" PROJECT_SPACE_SETUP=False
+
+# =============================================================================
+# 📢 Send slack notifications for test results
+# =============================================================================
+slack-notify:
+	@echo "📧 Sending Slack notifications for test results..."
+	@docker compose --env-file .env -f docker/docker-compose.yml exec -e SLACK_WEBHOOK_URL -w /app/test tools bash -c 'LATEST_OUTPUT=$$(ls -t robot_output/output-*.xml | head -1) && echo "Processing: $$LATEST_OUTPUT" && python testresults_slack_notifications.py "$$LATEST_OUTPUT"' && \
+	echo "✅ Notifications sent successfully!" || \
+	echo "⚠️ Failed to send notifications"
+
+# =============================================================================
+# 📤 Upload Robot Framework test results to S3
+# Usage:
+#   make upload-test-results                     # Upload all files with zip
+#   CREATE_ZIP=false make upload-test-results    # Upload without zip file
+#   UPLOAD_LATEST_ONLY=true make upload-test-results  # Upload only latest files
+# =============================================================================
+upload-test-results:
+	@echo "☁️ Uploading test results to S3..."
+	@echo "🔍 Checking for AWS credentials..."
+	@if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then \
+		echo "⚠️  AWS credentials not found in environment."; \
+		echo "🔍 Checking .env file for credentials..."; \
+		if [ -f ".env" ] && grep -q "AWS_ACCESS_KEY_ID" .env && grep -q "AWS_SECRET_ACCESS_KEY" .env; then \
+			echo "✅ Found AWS credentials in .env file"; \
+			export $(cat .env | grep -E '^AWS_' | xargs); \
+		else \
+			echo "❌ AWS credentials not found. Please set:"; \
+			echo "   export AWS_ACCESS_KEY_ID=your_access_key"; \
+			echo "   export AWS_SECRET_ACCESS_KEY=your_secret_key"; \
+			echo "   Or add them to your .env file"; \
+			exit 1; \
+		fi; \
+	fi
+	@echo "🚀 Running upload script inside tools container..."
+	$(DOCKER_COMPOSE) exec -w /app/test -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e CREATE_ZIP -e UPLOAD_LATEST_ONLY -e LATEST_COUNT tools python upload_robot_results.py
+
+# =============================================================================
+# 🚀 Upload test results using AWS CLI (alternative to Python script)
+# =============================================================================
+upload-test-results-cli:
+	@echo "📤 Uploading test results to S3 using AWS CLI..."
+	@echo "🔍 Checking for AWS credentials..."
+	@if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then \
+		echo "⚠️  AWS credentials not found in environment."; \
+		echo "🔍 Checking .env file for credentials..."; \
+		if [ -f ".env" ] && grep -q "AWS_ACCESS_KEY_ID" .env && grep -q "AWS_SECRET_ACCESS_KEY" .env; then \
+			echo "✅ Found AWS credentials in .env file"; \
+			source .env && export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; \
+		else \
+			echo "❌ AWS credentials not found. Please set:"; \
+			echo "   export AWS_ACCESS_KEY_ID=your_access_key"; \
+			echo "   export AWS_SECRET_ACCESS_KEY=your_secret_key"; \
+			echo "   Or add them to your .env file"; \
+			exit 1; \
+		fi; \
+	fi
+	@echo "⏰ Creating timestamp..."
+	$(eval TIMESTAMP := $(shell date +'%Y%m%d-%H%M%S'))
+	@echo "📁 Timestamp: $(TIMESTAMP)"
+	@echo "🚀 Uploading files to S3..."
+	@echo "📤 Uploading XML files..."
+	@$(DOCKER_COMPOSE) exec -T -w /app/test \
+		-e AWS_ACCESS_KEY_ID \
+		-e AWS_SECRET_ACCESS_KEY \
+		tools bash -c 'aws s3 cp robot_output/ s3://artifacts.slimdev.snaplogic/RF_CommonTests_Results/$(TIMESTAMP)/ \
+		--recursive --exclude "*" --include "output-*.xml" --no-progress || echo "No XML files to upload"'
+	@echo "📤 Uploading HTML log files..."
+	@$(DOCKER_COMPOSE) exec -T -w /app/test \
+		-e AWS_ACCESS_KEY_ID \
+		-e AWS_SECRET_ACCESS_KEY \
+		tools bash -c 'aws s3 cp robot_output/ s3://artifacts.slimdev.snaplogic/RF_CommonTests_Results/$(TIMESTAMP)/ \
+		--recursive --exclude "*" --include "log-*.html" --no-progress || echo "No log files to upload"'
+	@echo "📤 Uploading HTML report files..."
+	@$(DOCKER_COMPOSE) exec -T -w /app/test \
+		-e AWS_ACCESS_KEY_ID \
+		-e AWS_SECRET_ACCESS_KEY \
+		tools bash -c 'aws s3 cp robot_output/ s3://artifacts.slimdev.snaplogic/RF_CommonTests_Results/$(TIMESTAMP)/ \
+		--recursive --exclude "*" --include "report-*.html" --no-progress || echo "No report files to upload"'
+	@echo "" 
+	@echo "======================================================================"
+	@echo "✅ All uploads completed successfully!"
+	@echo "📍 Complete S3 Location:"
+	@echo "   s3://artifacts.slimdev.snaplogic/RF_CommonTests_Results/$(TIMESTAMP)/"
+	@echo ""
+	@echo "🌐 S3 Console URL:"
+	@echo "   https://s3.console.aws.amazon.com/s3/buckets/artifacts.slimdev.snaplogic?prefix=RF_CommonTests_Results/$(TIMESTAMP)/"
+	@echo ""
+	@echo "📋 AWS CLI command to list uploaded files:"
+	@echo "   aws s3 ls s3://artifacts.slimdev.snaplogic/RF_CommonTests_Results/$(TIMESTAMP)/"
+	@echo ""
+	@echo "📥 AWS CLI command to download all files:"
+	@echo "   aws s3 sync s3://artifacts.slimdev.snaplogic/RF_CommonTests_Results/$(TIMESTAMP)/ ./downloaded_results/"
+	@echo "======================================================================"

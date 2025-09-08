@@ -1,0 +1,53 @@
+# =============================================================================
+# Common Configuration for All Makefiles
+# =============================================================================
+# This file contains shared variables and settings used across all Makefiles
+# Include this at the top of every category Makefile
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Docker Configuration
+# -----------------------------------------------------------------------------
+# Docker compose file location
+DOCKER_COMPOSE_FILE := docker/docker-compose.yml
+DOCKER_COMPOSE := docker compose --env-file .env -f $(DOCKER_COMPOSE_FILE)
+
+# Docker Compose profiles - Define ONCE here, use everywhere
+# Can be overridden via command line: make start-services COMPOSE_PROFILES=kafka,oracle-dev
+COMPOSE_PROFILES ?= tools,oracle-dev,minio,postgres-dev,mysql-dev,sqlserver-dev,activemq,salesforce-mock-start
+
+# -----------------------------------------------------------------------------
+# Common Variables
+# -----------------------------------------------------------------------------
+# Date format for timestamping
+DATE := $(shell date +'%Y-%m-%d-%H-%M')
+
+# Shell to use for commands
+SHELL := /bin/bash
+
+# Project paths
+PROJECT_ROOT := $(shell pwd)
+TEST_DIR := test
+ROBOT_OUTPUT_DIR := robot_output
+
+# -----------------------------------------------------------------------------
+# AWS Configuration (for S3 uploads)
+# -----------------------------------------------------------------------------
+S3_BUCKET := artifacts.slimdev.snaplogic
+S3_PREFIX := RF_CommonTests_Results
+
+# -----------------------------------------------------------------------------
+# Default Settings
+# -----------------------------------------------------------------------------
+# Default number of parallel processes for testing
+DEFAULT_PROCESSES := 5
+
+# Default robot framework settings
+ROBOT_DEFAULT_TIMEOUT := 30s
+
+# -----------------------------------------------------------------------------
+# Export variables for child make processes
+# -----------------------------------------------------------------------------
+export COMPOSE_PROFILES
+export DOCKER_COMPOSE
+export DATE

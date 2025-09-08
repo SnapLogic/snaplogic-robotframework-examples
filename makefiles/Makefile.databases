@@ -1,0 +1,200 @@
+# =============================================================================
+# Database Management Targets
+# =============================================================================
+# This file contains all database related targets for various database systems
+# including Oracle, PostgreSQL, MySQL, SQL Server, Teradata, DB2, and Snowflake
+# =============================================================================
+
+.PHONY: oracle-start oracle-stop postgres-start postgres-stop mysql-start mysql-stop \
+        sqlserver-start sqlserver-stop teradata-start teradata-stop db2-start db2-stop \
+        snowflake-start snowflake-stop snowflake-setup
+
+# Include common configuration
+include makefiles/Makefile.common
+
+# =============================================================================
+# 🛢️ Oracle Database Management
+# =============================================================================
+oracle-start:
+	@echo "Starting Oracle..."
+	$(DOCKER_COMPOSE) --profile oracle-dev up -d oracle-db
+
+oracle-stop:
+	@echo "Stopping Oracle DB container..."
+	$(DOCKER_COMPOSE) stop oracle-db || true
+	@echo "Removing Oracle container and volumes..."
+	$(DOCKER_COMPOSE) rm -f -v oracle-db || true
+	@echo "Cleaning up Oracle volumes..."
+	docker volume rm $(docker volume ls -q | grep oracle) 2>/dev/null || true
+	@echo "✅ Oracle stopped and cleaned up."
+
+# =============================================================================
+# 🛢️ PostgreSQL Database Management
+# =============================================================================
+postgres-start:
+	@echo "Starting Postgres..."
+	$(DOCKER_COMPOSE) --profile postgres-dev up -d postgres-db
+
+postgres-stop:
+	@echo "Stopping Postgres DB container..."
+	$(DOCKER_COMPOSE) stop postgres-db || true
+	@echo "Removing Postgres container and volumes..."
+	$(DOCKER_COMPOSE) rm -f -v postgres-db || true
+	@echo "Cleaning up Postgres volumes..."
+	docker volume rm $(docker volume ls -q | grep postgres) 2>/dev/null || true
+	@echo "✅ Postgres stopped and cleaned up."
+
+# =============================================================================
+# 🛢️ MySQL Database Management
+# =============================================================================
+mysql-start:
+	@echo "Starting MySQL..."
+	$(DOCKER_COMPOSE) --profile mysql-dev up -d mysql-db
+
+mysql-stop:
+	@echo "Stopping MySQL DB container..."
+	$(DOCKER_COMPOSE) stop mysql-db || true
+	@echo "Removing MySQL container and volumes..."
+	$(DOCKER_COMPOSE) rm -f -v mysql-db || true
+	@echo "Cleaning up MySQL volumes..."
+	docker volume rm $(docker volume ls -q | grep mysql) 2>/dev/null || true
+	@echo "✅ MySQL stopped and cleaned up."
+
+# =============================================================================
+# 🛢️ SQL Server Database Management
+# =============================================================================
+sqlserver-start:
+	@echo "Starting SQL Server..."
+	$(DOCKER_COMPOSE) --profile sqlserver-dev up -d sqlserver-db
+
+sqlserver-stop:
+	@echo "Stopping SQL Server DB container..."
+	$(DOCKER_COMPOSE) stop sqlserver-db || true
+	@echo "Removing SQL Server container and volumes..."
+	$(DOCKER_COMPOSE) rm -f -v sqlserver-db || true
+	@echo "Cleaning up SQL Server volumes..."
+	docker volume rm $(docker volume ls -q | grep sqlserver) 2>/dev/null || true
+	@echo "✅ SQL Server stopped and cleaned up."
+
+# =============================================================================
+# 🛢️ Teradata Database Management
+# =============================================================================
+teradata-start:
+	@echo "Starting Teradata..."
+	@echo "⚠️  IMPORTANT: Teradata Docker images are NOT publicly available"
+	@echo "🔐 You need special access from Teradata Corporation to use these images"
+	@echo "👉 See docker/docker-compose.teradata.yml for details on how to get access"
+	@echo ""
+	@echo "⚠️  Note: Teradata requires significant resources (6GB RAM, 2 CPUs)"
+	@echo "📦 Attempting to start Teradata (will fail if images not available)..."
+	$(DOCKER_COMPOSE) --profile teradata-dev up -d teradata-db || { \
+		echo ""; \
+		echo "❌ Failed to start Teradata. This usually means:"; \
+		echo "   1. You don't have access to Teradata Docker images"; \
+		echo "   2. You haven't logged into Teradata's registry"; \
+		echo ""; \
+		echo "💡 Alternatives:"; \
+		echo "   - Use Teradata Vantage Express on VMware (free)"; \
+		echo "   - Use Teradata Vantage Developer cloud (14-day trial)"; \
+		echo "   - Contact Teradata for Docker image access"; \
+		exit 1; \
+	}
+	@echo "⏳ Teradata is starting. This may take 5-10 minutes on first run."
+	@echo "💡 Monitor startup progress with: docker compose -f docker/docker-compose.yml logs -f teradata-db"
+	@echo "🌐 Once started:"
+	@echo "   - Database port: 1025"
+	@echo "   - Viewpoint UI: http://localhost:8020"
+	@echo "   - Username: dbc / Password: dbc"
+
+teradata-stop:
+	@echo "Stopping Teradata DB container..."
+	$(DOCKER_COMPOSE) stop teradata-db || true
+	@echo "Removing Teradata container and volumes..."
+	$(DOCKER_COMPOSE) rm -f -v teradata-db || true
+	@echo "Cleaning up Teradata volumes..."
+	docker volume rm $(docker volume ls -q | grep teradata) 2>/dev/null || true
+	@echo "✅ Teradata stopped and cleaned up."
+
+# =============================================================================
+# 🛢️ DB2 Database Management
+# =============================================================================
+db2-start:
+	@echo "Starting DB2..."
+	@echo "⚠️  Note: DB2 may take 3-5 minutes to initialize on first run"
+	@if [ "$(uname -m)" = "arm64" ]; then \
+		echo "⚠️  Running on Apple Silicon - DB2 will run under x86_64 emulation (slower performance)"; \
+	fi
+	$(DOCKER_COMPOSE) --profile db2-dev up -d db2-db
+	@echo "⏳ DB2 is starting. Monitor progress with: docker compose -f docker/docker-compose.yml logs -f db2-db"
+	@echo "🌐 Once started:"
+	@echo "   - Database port: 50000"
+	@echo "   - Database name: TESTDB"
+	@echo "   - Schema: SNAPTEST"
+	@echo "   - Admin user: db2inst1 / Password: snaplogic"
+	@echo "   - Test user: testuser / Password: snaplogic"
+
+db2-stop:
+	@echo "Stopping DB2 DB container..."
+	$(DOCKER_COMPOSE) stop db2-db || true
+	@echo "Removing DB2 container and volumes..."
+	$(DOCKER_COMPOSE) rm -f -v db2-db || true
+	@echo "Cleaning up DB2 volumes..."
+	docker volume rm $(docker volume ls -q | grep db2) 2>/dev/null || true
+	@echo "✅ DB2 stopped and cleaned up."
+
+# =============================================================================
+# ❄️ Snowflake SQL Client Management
+# =============================================================================
+snowflake-start:
+	@echo "Starting Snowflake SQL client..."
+	@echo "⚠️  IMPORTANT: Snowflake is a cloud-only service and cannot run locally"
+	@echo "👉 This container provides the SnowSQL CLI client to connect to your Snowflake cloud account"
+	@echo ""
+	@if [ ! -f "docker/snowflake-config/config" ]; then \
+		echo "⚠️  No config file found at docker/snowflake-config/config"; \
+		echo "📝 Please edit the config file with your Snowflake account details"; \
+	fi
+	$(DOCKER_COMPOSE) --profile snowflake-dev up -d snowsql-client
+	@echo "⏳ SnowSQL client is starting..."
+	@sleep 5
+	@echo "🌐 SnowSQL client ready!"
+	@echo ""
+	@echo "🔧 Usage examples:"
+	@echo "   - Interactive shell: docker exec -it snowsql-client snowsql"
+	@echo "   - With connection: docker exec -it snowsql-client snowsql -c example"
+	@echo "   - Run query: docker exec -it snowsql-client snowsql -c example -q 'SELECT CURRENT_VERSION()'"
+	@echo ""
+	@echo "📄 Don't forget to configure your connection in docker/snowflake-config/config"
+
+snowflake-stop:
+	@echo "Stopping Snowflake SQL client..."
+	$(DOCKER_COMPOSE) stop snowsql-client || true
+	@echo "Removing Snowflake client container..."
+	$(DOCKER_COMPOSE) rm -f -v snowsql-client || true
+	@echo "✅ Snowflake SQL client stopped and cleaned up."
+
+snowflake-setup:
+	@echo "🔧 Snowflake Test Data Setup"
+	@echo "⚠️  Note: Snowflake runs in the cloud, so you need to:"
+	@echo "   1. Have a Snowflake account (sign up for free trial at https://signup.snowflake.com/)"
+	@echo "   2. Configure your connection in docker/snowflake-config/config"
+	@echo "   3. Ensure the SnowSQL client is running (make snowflake-start)"
+	@echo ""
+	@echo "📄 To set up test data, run ONE of these commands:"
+	@echo ""
+	@echo "Option 1 - Run setup script directly:"
+	@echo "  docker exec -it snowsql-client snowsql -c example -f /scripts/setup_testdb.sql"
+	@echo ""
+	@echo "Option 2 - Interactive session:"
+	@echo "  docker exec -it snowsql-client snowsql -c example"
+	@echo "  Then in SnowSQL: !source /scripts/setup_testdb.sql"
+	@echo ""
+	@echo "Option 3 - Run individual commands:"
+	@echo "  docker exec -it snowsql-client snowsql -c example -q \"CREATE DATABASE IF NOT EXISTS TESTDB\""
+	@echo ""
+	@echo "🧪 Test your setup:"
+	@echo "  docker exec -it snowsql-client snowsql -c example -f /scripts/test_queries.sql"
+	@echo ""
+	@echo "📁 Available SQL scripts:"
+	@echo "  - /scripts/setup_testdb.sql - Creates tables and sample data"
+	@echo "  - /scripts/test_queries.sql - Sample queries to verify setup"

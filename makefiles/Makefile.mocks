@@ -1,0 +1,237 @@
+# =============================================================================
+# Mock Services Management
+# =============================================================================
+# This file contains targets for managing mock services like Salesforce, 
+# MinIO (S3), Email server, and other mock/testing services
+# =============================================================================
+
+.PHONY: start-s3-emulator stop-s3-emulator run-s3-demo \
+        salesforce-mock-start salesforce-mock-stop salesforce-mock-status salesforce-mock-restart \
+        start-jsonserver stop-jsonserver \
+        email-start email-stop email-restart email-status email-clean
+
+# Include common configuration
+include makefiles/Makefile.common
+
+# =============================================================================
+# ☁️ MinIO S3-Compatible Storage Emulator
+# =============================================================================
+start-s3-emulator:
+	@echo "Starting Minio..."
+	$(DOCKER_COMPOSE) --profile minio-dev up -d minio
+
+stop-s3-emulator:
+	@echo "Stopping Minio..."
+	$(DOCKER_COMPOSE) stop minio
+
+run-s3-demo:
+	@echo "Running minio_demo.py script..."
+	python3 test/suite/test_data/python_helper_files/minio_demo.py \
+		--endpoint http://localhost:9010 \
+		--access-key minioadmin \
+		--secret-key minioadmin \
+		--bucket demo-bucket2
+
+# =============================================================================
+# 🔌 Salesforce Mock API Server Management
+# =============================================================================
+
+# 🚀 Start JSON Server for Salesforce persistent CRUD operations
+start-jsonserver:
+	@echo "🚀 Starting Salesforce JSON Server..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	docker compose -f docker/docker-compose.salesforce-mock.yml up -d salesforce-json-server
+	@echo "⏳ Waiting for JSON Server to initialize..."
+	@sleep 3
+	@echo "✅ JSON Server started!"
+	@echo ""
+	@echo "🌐 Available endpoints:"
+	@echo "   • From host machine: http://localhost:8082"
+	@echo "   • From Docker containers: http://salesforce-json-mock"
+	@echo "   • Database file: ./docker/scripts/salesforce/json-db/salesforce-db.json"
+	@echo ""
+	@echo "🧪 Test from your host machine:"
+	@echo "   curl http://localhost:8082/accounts"
+	@echo "   curl http://localhost:8082/contacts"
+	@echo "   curl http://localhost:8082/opportunities"
+	@echo ""
+	@echo "🐳 Test from Docker container (e.g., Groundplex):"
+	@echo "   docker exec snaplogic-groundplex curl http://salesforce-json-mock/accounts"
+	@echo ""
+	@echo "🔧 SnapLogic REST Snap configuration:"
+	@echo "   Service URL: http://salesforce-json-mock"
+	@echo "   Resource Path: /accounts"
+
+# ⛔ Stop JSON Server
+stop-jsonserver:
+	@echo "⛔ Stopping Salesforce JSON Server..."
+	docker compose -f docker/docker-compose.salesforce-mock.yml stop salesforce-json-server || true
+	@echo "🗑️ Removing JSON Server container..."
+	docker compose -f docker/docker-compose.salesforce-mock.yml rm -f salesforce-json-server || true
+	@echo "✅ JSON Server stopped and cleaned up."
+
+# 🚀 Start Salesforce Mock server for API mocking
+salesforce-mock-start:
+	@echo "🚀 Starting Salesforce Mock API server..."
+	$(DOCKER_COMPOSE) --profile salesforce-dev up -d salesforce-mock salesforce-json-server
+	@echo "⏳ Waiting for WireMock to initialize..."
+	@sleep 5
+	@echo "✅ Salesforce mock service started!"
+	@echo ""
+	@echo "🌐 Available endpoints:"
+	@echo "   • Base URL: http://localhost:8089 (will show 403 - this is normal!)"
+	@echo "   • OAuth Token: POST http://localhost:8089/services/oauth2/token"
+	@echo "   • Query API: GET http://localhost:8089/services/data/v59.0/query"
+	@echo "   • CRUD Operations: http://localhost:8089/services/data/v59.0/sobjects/Account"
+	@echo "   • Admin Console: http://localhost:8089/__admin/"
+	@echo "   • View Mappings: http://localhost:8089/__admin/mappings"
+	@echo ""
+	@echo "🔧 Configure SnapLogic Salesforce Account:"
+	@echo "   • Login URL: http://localhost:8089"
+	@echo "   • Username: snap-qa@snaplogic.com (or any value)"
+	@echo "   • Password: any value"
+	@echo ""
+	@echo "🧪 Test the service:"
+	@echo "   curl -X POST http://localhost:8089/services/oauth2/token -d 'grant_type=password'"
+
+# ⛔ Stop Salesforce Mock server and clean up volumes
+salesforce-mock-stop:
+	@echo "⛔ Stopping Salesforce Mock server containers..."
+	$(DOCKER_COMPOSE) stop salesforce-mock salesforce-json-server || true
+	@echo "Removing Salesforce mock containers and volumes..."
+	$(DOCKER_COMPOSE) rm -f -v salesforce-mock salesforce-json-server || true
+	@echo "Cleaning up Salesforce mock volumes..."
+	docker volume rm $(docker volume ls -q | grep salesforce) 2>/dev/null || true
+	@echo "✅ Salesforce mock stopped and cleaned up."
+
+# 🔍 Check Salesforce Mock server status
+salesforce-mock-status:
+	@bash -c '\
+		echo "🔍 Checking Salesforce Mock status..."; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		wiremock_status=$$(docker inspect -f "{{.State.Status}}" salesforce-api-mock 2>/dev/null || echo "not found"); \
+		json_server_status=$$(docker inspect -f "{{.State.Status}}" salesforce-json-mock 2>/dev/null || echo "not found"); \
+		if [ "$$wiremock_status" = "running" ]; then \
+			echo "✅ WireMock container is running"; \
+			echo "   Container: salesforce-api-mock"; \
+			echo "   Port: 8089"; \
+		else \
+			echo "❌ WireMock container is not running (status: $$wiremock_status)"; \
+		fi; \
+		if [ "$$json_server_status" = "running" ]; then \
+			echo "✅ JSON Server container is running"; \
+			echo "   Container: salesforce-json-mock"; \
+			echo "   Port: 8082"; \
+		else \
+			echo "❌ JSON Server container is not running (status: $$json_server_status)"; \
+		fi; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		if [ "$$wiremock_status" = "running" ] && [ "$$json_server_status" = "running" ]; then \
+			echo "🌐 Available endpoints:"; \
+			echo "   • Base URL: http://localhost:8089"; \
+			echo "   • Admin Console: http://localhost:8089/__admin/"; \
+			echo "   • Request Journal: http://localhost:8089/__admin/requests"; \
+			echo "   • JSON Server: http://localhost:8082"; \
+			echo ""; \
+			echo "🧪 Testing service health..."; \
+			if curl -s -f http://localhost:8089/__admin/health >/dev/null 2>&1; then \
+				echo "   ✅ WireMock health check passed"; \
+			else \
+				echo "   ⚠️  WireMock health check failed"; \
+			fi; \
+			if curl -s -f -X POST http://localhost:8089/services/oauth2/token -d "grant_type=password" >/dev/null 2>&1; then \
+				echo "   ✅ OAuth endpoint is accessible"; \
+			else \
+				echo "   ⚠️  OAuth endpoint not responding"; \
+			fi; \
+			if curl -s -f http://localhost:8082/ >/dev/null 2>&1; then \
+				echo "   ✅ JSON Server is accessible"; \
+			else \
+				echo "   ⚠️  JSON Server not responding"; \
+			fi; \
+		elif [ "$$wiremock_status" = "running" ] || [ "$$json_server_status" = "running" ]; then \
+			echo "⚠️  WARNING: Only partial services are running"; \
+			echo "💡 Run '\''make salesforce-mock-restart'\'' to restart all services"; \
+		else \
+			echo "💡 Run '\''make salesforce-mock-start'\'' to start the mock services"; \
+		fi'
+
+# 🔄 Restart Salesforce Mock server
+salesforce-mock-restart:
+	@echo "🔄 Restarting Salesforce Mock server..."
+	@$(MAKE) salesforce-mock-stop
+	@sleep 2
+	@$(MAKE) salesforce-mock-start
+
+# =============================================================================
+# 📧 Email Server (MailDev) Management
+# =============================================================================
+
+# 🚀 Start MailDev email testing server
+email-start:
+	@echo "📧 Starting MailDev email testing server..."
+	$(DOCKER_COMPOSE_EMAIL) --profile email-mock up -d maildev
+	@echo "⏳ Waiting for MailDev to initialize..."
+	@sleep 3
+	@echo "✅ MailDev email server started!"
+	@echo ""
+	@echo "🌐 Service endpoints:"
+	@echo "   • SMTP Server: localhost:1025 (no auth required)"
+	@echo "   • Web UI: http://localhost:1080"
+	@echo ""
+	@echo "🔧 SnapLogic Email Snap configuration:"
+	@echo "   • SMTP Host: localhost (or maildev-test from Groundplex)"
+	@echo "   • Port: 1025"
+	@echo "   • Authentication: None"
+	@echo "   • Encryption: None"
+
+# ⛔ Stop MailDev email testing server
+email-stop:
+	@echo "⛔ Stopping MailDev email server..."
+	$(DOCKER_COMPOSE_EMAIL) stop maildev || true
+	@echo "🗑️ Removing MailDev container and volumes..."
+	$(DOCKER_COMPOSE_EMAIL) rm -f -v maildev || true
+	@echo "✅ MailDev email server stopped and cleaned up."
+
+# 🔄 Restart MailDev email testing server
+email-restart:
+	@echo "🔄 Restarting MailDev email server..."
+	@$(MAKE) email-stop
+	@sleep 2
+	@$(MAKE) email-start
+	@echo "✅ MailDev email server restarted successfully!"
+
+# 🔍 Check MailDev email server status
+email-status:
+	@echo "🔍 Checking MailDev email server status..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@container_status=$(docker inspect -f '{{.State.Status}}' maildev-test 2>/dev/null || echo "not found"); \
+	if [ "$container_status" = "running" ]; then \
+		echo "✅ MailDev container is running"; \
+		echo "   Container: maildev-test"; \
+		echo "   SMTP Port: 1025"; \
+		echo "   Web UI Port: 1080"; \
+		echo ""; \
+		echo "🧪 Testing service health..."; \
+		if curl -s -f http://localhost:1080/ >/dev/null 2>&1; then \
+			echo "   ✅ Web UI is accessible at http://localhost:1080"; \
+		else \
+			echo "   ⚠️  Web UI not responding (may still be starting)"; \
+		fi; \
+		echo ""; \
+		echo "📊 Container resource usage:"; \
+		docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}" maildev-test 2>/dev/null || true; \
+	else \
+		echo "❌ MailDev container is not running (status: $container_status)"; \
+		echo "💡 Run 'make email-start' to start the email server"; \
+	fi
+
+# 🧹 Clean all email server data and restart
+email-clean:
+	@echo "🧹 Cleaning and restarting MailDev email server..."
+	@$(MAKE) email-stop
+	@echo "🗑️ Removing any cached email data..."
+	@docker volume prune -f 2>/dev/null || true
+	@sleep 2
+	@$(MAKE) email-start
+	@echo "✅ MailDev email server started with clean state!"

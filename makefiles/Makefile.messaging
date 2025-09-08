@@ -1,0 +1,243 @@
+# =============================================================================
+# Message Queue & Streaming Services Management
+# =============================================================================
+# This file contains targets for Kafka, ActiveMQ, and other messaging services
+# =============================================================================
+
+.PHONY: kafka-start kafka-dev-start kafka-stop kafka-restart kafka-status kafka-create-topic \
+        kafka-list-topics kafka-clean kafka-test kafka-send-test-messages kafka-cleanup-topics \
+        activemq-start activemq-stop activemq-status activemq-setup run-jms-demo
+
+# Include common configuration
+include makefiles/Makefile.common
+
+# =============================================================================
+# ☕ Kafka Message Broker Management
+# =============================================================================
+
+# 🚀 Start Kafka in KRaft mode (no Zookeeper), with Kafka UI and setup
+kafka-start:
+	@echo "🚀 Starting Apache Kafka in KRaft mode with UI..."
+	$(DOCKER_COMPOSE) --profile kafka up -d
+	@echo "⏳ Waiting for Kafka stack to fully initialize..."
+	@sleep 30
+	@echo "✅ Kafka started successfully!"
+	@echo ""
+	@echo "🌐 Service Endpoints:"
+	@echo "   • Kafka Broker: localhost:9092"
+	@echo "   • Kafka Controller: localhost:9093"
+	@echo "   • Kafka UI: http://localhost:8080"
+	@echo ""
+	@echo "📋 Created Topics:"
+	@echo "   • snaplogic-events (3 partitions)"
+	@echo "   • snaplogic-logs (2 partitions)"
+	@echo "   • snaplogic-metrics (1 partition)"
+
+# 🚀 Start Kafka for development (without setup container)
+kafka-dev-start:
+	@echo "🚀 Starting Apache Kafka in development mode..."
+	$(DOCKER_COMPOSE) --profile kafka-dev up -d
+	@echo "⏳ Waiting for Kafka to initialize..."
+	@sleep 20
+	@echo "✅ Kafka started in dev mode (no automatic topic creation)."
+	@echo "💡 Create topics manually if needed using 'make kafka-create-topic'"
+
+# ⛔ Stop Kafka and all related services
+kafka-stop:
+	@echo "⛔ Stopping Kafka services..."
+	$(DOCKER_COMPOSE) stop kafka kafka-ui kafka-setup 2>/dev/null || true
+	@echo "🗑️ Removing Kafka containers..."
+	$(DOCKER_COMPOSE) rm -f kafka kafka-ui kafka-setup 2>/dev/null || true
+	@echo "✅ Kafka services stopped."
+
+# 🔄 Restart Kafka services
+kafka-restart:
+	@echo "🔄 Restarting Kafka services..."
+	@$(MAKE) kafka-stop
+	@sleep 5
+	@$(MAKE) kafka-start
+	@echo "✅ Kafka services restarted successfully!"
+
+# 🔍 Check Kafka services status
+kafka-status:
+	@echo "🔍 Checking Kafka services status..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@kafka_status=$$(docker inspect -f '{{.State.Status}}' snaplogic-kafka-kraft 2>/dev/null || echo "not found"); \
+	ui_status=$$(docker inspect -f '{{.State.Status}}' snaplogic-kafka-ui 2>/dev/null || echo "not found"); \
+	if [ "$$kafka_status" = "running" ]; then \
+		echo "✅ Kafka broker (KRaft mode) is running"; \
+		echo "   📡 Broker port: 9092"; \
+		echo "   🎛️ Controller port: 9093"; \
+		echo "🧪 Testing broker connection..."; \
+		docker exec snaplogic-kafka-kraft kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1 && \
+			echo "   ✅ Broker is responding" || \
+			echo "   ⚠️  Broker not yet ready"; \
+	else \
+		echo "❌ Kafka broker is not running (status: $$kafka_status)"; \
+	fi; \
+	if [ "$$ui_status" = "running" ]; then \
+		echo "✅ Kafka UI is running"; \
+		echo "   🌐 Web UI: http://localhost:8080"; \
+	else \
+		echo "❌ Kafka UI is not running (status: $$ui_status)"; \
+	fi; \
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+	if [ "$$kafka_status" = "running" ]; then \
+		echo "📋 Available topics:"; \
+		docker exec snaplogic-kafka-kraft kafka-topics.sh --bootstrap-server localhost:9092 --list 2>/dev/null | sed 's/^/   • /' || \
+			echo "   ⚠️  Could not list topics"; \
+	else \
+		echo "💡 Run 'make kafka-start' to start Kafka services"; \
+	fi
+
+# 🏷️ Create a Kafka topic
+# Usage: make kafka-create-topic TOPIC=my-topic PARTITIONS=3
+kafka-create-topic:
+	@if [ -z "$(TOPIC)" ]; then \
+		echo "❌ Please specify a topic name: make kafka-create-topic TOPIC=my-topic"; \
+		exit 1; \
+	fi
+	@partitions=${PARTITIONS:-1}; \
+	echo "📝 Creating Kafka topic '$(TOPIC)' with $partitions partition(s)..."; \
+	docker exec snaplogic-kafka-kraft kafka-topics.sh \
+		--bootstrap-server localhost:9092 \
+		--create --if-not-exists \
+		--topic $(TOPIC) \
+		--partitions $partitions \
+		--replication-factor 1 && \
+	echo "✅ Topic '$(TOPIC)' created successfully!" || \
+	echo "❌ Failed to create topic '$(TOPIC)'"
+
+# 📋 List all Kafka topics
+kafka-list-topics:
+	@echo "📋 Listing all Kafka topics..."
+	@docker exec snaplogic-kafka-kraft kafka-topics.sh \
+		--bootstrap-server localhost:9092 --list || \
+		echo "❌ Could not list topics. Is Kafka running?"
+
+# 🧹 Clean Kafka data (removes all data volumes)
+kafka-clean:
+	@echo "🧹 Cleaning Kafka data and volumes..."
+	@$(MAKE) kafka-stop
+	@echo "🗑️ Removing Kafka volumes..."
+	@docker volume rm docker_kafka-kraft-data docker_kafka-kraft-logs 2>/dev/null || true
+	@echo "✅ Kafka cleaned. All data removed."
+
+# 🧪 Test Kafka connectivity and produce/consume messages
+kafka-test:
+	@echo "🧪 Testing Kafka setup..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "1️⃣ Creating test topic..."
+	@docker exec snaplogic-kafka-kraft kafka-topics.sh \
+		--bootstrap-server localhost:9092 \
+		--create --if-not-exists \
+		--topic test-topic \
+		--partitions 1 \
+		--replication-factor 1 >/dev/null 2>&1 || true
+	@echo "2️⃣ Producing test message..."
+	@echo "Hello Kafka from SnapLogic!" | docker exec -i snaplogic-kafka-kraft \
+		kafka-console-producer.sh \
+		--bootstrap-server localhost:9092 \
+		--topic test-topic
+	@echo "3️⃣ Consuming test message..."
+	@timeout 5 docker exec snaplogic-kafka-kraft \
+		kafka-console-consumer.sh \
+		--bootstrap-server localhost:9092 \
+		--topic test-topic \
+		--from-beginning \
+		--max-messages 1 2>/dev/null || true
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "✅ Kafka test completed!"
+
+# 📤 Send test messages to Kafka topics
+kafka-send-test-messages:
+	@echo "📤 Sending test messages to Kafka topics..."
+	$(DOCKER_COMPOSE) --profile kafka-test up kafka-test-producer
+	@echo "✅ Test messages sent successfully!"
+
+# 🧹 Clean up Kafka topics (removes all non-system topics)
+kafka-cleanup-topics:
+	@echo "🧹 Cleaning up Kafka topics..."
+	@echo "⚠️  This will delete all non-system topics!"
+	$(DOCKER_COMPOSE) --profile kafka-cleanup up kafka-cleanup
+	@echo "✅ Kafka topics cleaned up!"
+
+# =============================================================================
+# 📡 ActiveMQ JMS Server Management
+# =============================================================================
+
+# 🚀 Start ActiveMQ JMS server with setup
+activemq-start:
+	@echo "Starting ActiveMQ JMS server..."
+	$(DOCKER_COMPOSE) --profile activemq up -d activemq activemq-setup
+	@echo "⏳ Waiting for ActiveMQ to fully initialize..."
+	@sleep 15
+	@echo "✅ ActiveMQ started. Web Console: http://localhost:8161/console"
+	@echo "🔑 Credentials: admin/admin"
+
+# 🚀 Start ActiveMQ JMS server for development (no setup)
+activemq-dev-start:
+	@echo "Starting ActiveMQ JMS server (dev mode)..."
+	$(DOCKER_COMPOSE) --profile activemq-dev up -d activemq
+	@echo "⏳ Waiting for ActiveMQ to fully initialize..."
+	@sleep 15
+	@echo "✅ ActiveMQ started in dev mode."
+
+# ⛔ Stop ActiveMQ JMS server
+activemq-stop:
+	@echo "Stopping ActiveMQ JMS server..."
+	$(DOCKER_COMPOSE) stop activemq activemq-setup 2>/dev/null || true
+	@echo "✅ ActiveMQ stopped."
+
+# 🔍 Check ActiveMQ JMS server status and connection
+activemq-status:
+	@echo "🔍 Checking ActiveMQ status..."
+	@container_status=$$(docker inspect -f '{{.State.Status}}' snaplogic-activemq 2>/dev/null || echo "not found"); \
+	if [ "$$container_status" = "running" ]; then \
+		echo "✅ ActiveMQ container is running"; \
+		echo "🌐 Web Console: http://localhost:8161/console"; \
+		echo "📡 JMS URL: tcp://localhost:61616"; \
+		echo "🔑 Credentials: admin/admin"; \
+		echo "🧪 Testing web console connection..."; \
+		if curl -s -f -u admin:admin http://localhost:8161/console/ >/dev/null 2>&1; then \
+			echo "✅ Web console is accessible"; \
+		else \
+			echo "⚠️  Web console not yet ready (may still be starting)"; \
+		fi; \
+	else \
+		echo "❌ ActiveMQ container is not running (status: $$container_status)"; \
+		echo "💡 Run 'make activemq-start' to start ActiveMQ"; \
+	fi
+
+# 🔧 Run ActiveMQ setup and display connection info
+activemq-setup:
+	@echo "🔧 Running ActiveMQ setup and displaying connection info..."
+	@$(MAKE) activemq-status
+	@echo ""
+	@echo "📋 Queue Suggestions for SAP IDOC Integration:"
+	@echo "   • sap.idoc.queue - Main queue for SAP IDOC messages"
+	@echo "   • test.queue - Queue for testing and development"
+	@echo "   • demo.queue - Queue for demonstrations"
+	@echo ""
+	@echo "🛠️  Sample JMS Connection Properties:"
+	@echo "   • Broker URL: tcp://localhost:61616"
+	@echo "   • Username: admin"
+	@echo "   • Password: admin"
+	@echo "   • Connection Factory: ConnectionFactory"
+	@echo ""
+	@echo "💡 Queues are auto-created when first accessed"
+	@echo "💡 Use the web console to monitor queues and messages"
+
+# 🧪 Run JMS demo script (placeholder for future implementation)
+run-jms-demo:
+	@echo "🧪 JMS Demo Script"
+	@echo "📝 This target is ready for your JMS demo implementation"
+	@echo "💡 Consider creating: test/suite/test_data/python_helper_files/jms_demo.py"
+	@echo ""
+	@echo "🔧 Connection details for your demo:"
+	@echo "   • JMS URL: tcp://localhost:61616"
+	@echo "   • Username: admin"
+	@echo "   • Password: admin"
+	@echo "   • Suggested queues: sap.idoc.queue, test.queue, demo.queue"
+	@echo ""
+	@echo "📚 Example libraries: pyjms, stomp.py, or py4j with ActiveMQ client"
