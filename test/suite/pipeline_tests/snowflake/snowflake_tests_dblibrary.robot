@@ -96,6 +96,17 @@ Create Triggered_task
     [Template]    Create Triggered Task From Template
     ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    ${task_params_set1}    ${task_notifications}
 
+Create Triggered_task With Custom Plex Name
+    [Documentation]    Creates triggered task and returns the task name and task snode id
+    ...    which is used to execute the task.
+    ...    Prereq: Need unique_id,pipeline_snodeid (from Import Pipelines)
+    ...    Returns:
+    ...    task_payload --> which is used to update the task params
+    ...    task_snodeid --> which is used to update the task params
+    [Tags]    snowflake_custom_plex    regression
+    [Template]    Create Triggered Task From Template
+    ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    ${task_params_set1}    ${task_notifications}    Cloud
+
 Execute Triggered Task With Parameters
     [Documentation]    Updates the task parameters and runs the task
     ...    Prereq: Need task_payload,task_snodeid (from Create Triggered_task)

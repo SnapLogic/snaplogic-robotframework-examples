@@ -112,7 +112,7 @@ robot-run-all-tests: check-env
 	else \
 		echo "⏩ Skipping createplex setup (PROJECT_SPACE_SETUP is not True)"; \
 		echo ":========== [Phase 1.1] Verifying if project space exists =========="; \
-		$(MAKE) robot-run-tests TAGS="verify_project_space_exists" PROJECT_SPACE_SETUP=False; \
+		$(MAKE) robot-run-tests TAGS="verify_project_space_exists" PROJECT_SPACE_SETUP=False || exit 1; \
 	fi; \
 	\
 	echo ":========== [Phase 2] Computing and starting containers using COMPOSE_PROFILES... =========="; \
@@ -1054,7 +1054,7 @@ salesforce-mock-restart:
 
 # =============================================================================
 # 🔄 Rebuild tools container with updated requirements
-#   → This target is useful for development when you need to update the tools container if there are changes in the requirements.txt file or .env file
+#   → This target is useful for development when you need to update the tools container if there are changes in the requirements.txt file (Updated any ilbraries or added new libraries)
 # =============================================================================
 rebuild-tools:
 	@echo "🛑 Stopping and removing tools container..."
@@ -1123,7 +1123,7 @@ install-requirements-venv:
 	fi
 	@echo "📦 Installing requirements in virtual environment..."
 	@../.venv/bin/pip install --upgrade pip
-	@../.venv/bin/pip install -r src/tools/requirements.txt
+	@../.venv/bin/pip install --upgrade --force-reinstall -r src/tools/requirements.txt
 	@echo "✅ Requirements installed successfully!"
 	@echo "💡 To activate the virtual environment, run:"
 	@echo "   source ../.venv/bin/activate"

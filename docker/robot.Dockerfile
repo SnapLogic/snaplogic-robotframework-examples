@@ -4,13 +4,18 @@ FROM python:3.12.7-slim-bookworm
 WORKDIR /app
 
 # Install system dependencies for database drivers
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    unixodbc-dev \
+# First install essential packages that should always work
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
     wget \
     libxml2 \
-    && rm -rf /var/lib/apt/lists/*
+    unixodbc-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# Try to install gcc/g++ but don't fail if it doesn't work (for Apple Silicon compatibility)
+RUN apt-get update && \
+    (apt-get install -y gcc g++ || echo "Warning: gcc/g++ installation failed, continuing without compilers...") && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install IBM DB2 CLI driver (required for ibm_db) - only for x86_64
 RUN if [ "$(uname -m)" != "aarch64" ]; then \
