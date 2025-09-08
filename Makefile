@@ -117,6 +117,7 @@ help:
 	@echo "  make kafka-create-topic TOPIC=my-topic PARTITIONS=3"
 	@echo "  make clean-start"
 	@echo ""
+	@echo "👉 Note: ENV_FILE can be passed to ANY make command. Default is .env"
 	@echo "💡 For detailed help on specific categories, see makefiles/README.md"
 	@echo "============================================================================="
 

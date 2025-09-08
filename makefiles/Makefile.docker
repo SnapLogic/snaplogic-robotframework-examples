@@ -16,7 +16,11 @@ include makefiles/Makefile.common
 # 🛠️ SnapLogic Tools Container Lifecycle
 # =============================================================================
 
-# 📦 Build tools container image 
+# 📦 Build tools container image
+# Usage:
+#   make snaplogic-build-tools                    # Uses default .env
+#   make snaplogic-build-tools ENV_FILE=.env.qa   # Uses .env.qa for QA environment
+# =============================================================================
 snaplogic-build-tools: snaplogic-stop-tools
 	@echo "🔨 Building tools container image..."
 	@echo "ℹ️ This may take a few minutes..."
@@ -34,6 +38,11 @@ snaplogic-stop-tools:
 # =============================================================================
 
 # Start services using Docker Compose with selected profiles
+# Usage:
+#   make start-services                           # Uses default .env and COMPOSE_PROFILES
+#   make start-services ENV_FILE=.env.staging     # Uses .env.staging configuration
+#   make start-services ENV_FILE=.env.qa COMPOSE_PROFILES=tools,postgres-dev,kafka
+# =============================================================================
 start-services:
 	@echo "🚀 [Phase 2] Starting containers using compose profiles: $(COMPOSE_PROFILES)"
 	COMPOSE_PROFILES=$(COMPOSE_PROFILES) $(DOCKER_COMPOSE) up -d
@@ -41,7 +50,11 @@ start-services:
 	@sleep 30
 	@echo "✅ Services started successfully!"
 
-# Build & Start snaplogic services in compose profile 
+# Build & Start snaplogic services in compose profile
+# Usage:
+#   make snaplogic-start-services                      # Uses default .env
+#   make snaplogic-start-services ENV_FILE=.env.qa     # Uses QA environment
+#   make snaplogic-start-services ENV_FILE=.env.production COMPOSE_PROFILES=minimal
 snaplogic-start-services: 
 	@echo "=========================================================================="
 	@echo "🚀 Starting services/containers using COMPOSE_PROFILES..."
@@ -52,6 +65,9 @@ snaplogic-start-services:
 	@echo "✅ All services are up and running!"
 
 # Stop all snaplogic containers and clean up
+# Usage:
+#   make snaplogic-stop                           # Uses default .env
+#   make snaplogic-stop ENV_FILE=.env.staging     # Stop services using staging config
 snaplogic-stop:
 	@echo "🛑 Stopping SnapLogic App..."
 	@echo "ℹ️ Stopping containers connected to snaplogic-network..."
@@ -69,14 +85,18 @@ snaplogic-stop:
 # ✅ Environment Validation
 # =============================================================================
 
+# Check if environment file exists
+# Usage:
+#   make check-env                                # Checks default .env
+#   make check-env ENV_FILE=.env.qa              # Checks .env.qa exists
 check-env:
-	@if [ -f ".env" ]; then \
-		echo "✅ Found .env file at: .env"; \
+	@if [ -f "$(ENV_FILE)" ]; then \
+		echo "✅ Found environment file: $(ENV_FILE)"; \
 	else \
-		echo "❌ Error: .env file not found at .env"; \
-		echo "ℹ️ Please ensure .env file exists in project root."; \
-		echo "Current directory: $$(pwd)"; \
-		echo "Files in current directory:"; \
+		echo "❌ Error: Environment file not found: $(ENV_FILE)"; \
+		echo "ℹ️ Please ensure $(ENV_FILE) exists in project root."; \
+		echo "Current directory: $(pwd)"; \
+		echo "Available .env files:"; \
 		ls -la | grep -E '\.env' || true; \
 		exit 1; \
 	fi
@@ -91,6 +111,10 @@ ensure-config-dir:
 # =============================================================================
 
 # Clean restart of all relevant services and DB
+# Usage:
+#   make clean-start                              # Uses default .env
+#   make clean-start ENV_FILE=.env.dev            # Clean start with dev environment
+#   make clean-start ENV_FILE=.env.staging        # Clean start with staging environment
 clean-start: snaplogic-stop snaplogic-start-services createplex-launch-groundplex
 	@echo "✅ Clean start complete!"
 	@echo "🚀 You should be good to go!"
@@ -102,6 +126,9 @@ clean-start: snaplogic-stop snaplogic-start-services createplex-launch-groundple
 # Rebuild tools container with updated requirements
 # This target is useful for development when you need to update the tools container 
 # if there are changes in the requirements.txt file
+# Usage:
+#   make rebuild-tools                            # Uses default .env
+#   make rebuild-tools ENV_FILE=.env.qa           # Rebuild with QA configuration
 rebuild-tools:
 	@echo "🛑 Stopping and removing tools container..."
 	$(DOCKER_COMPOSE) --profile tools down
@@ -123,8 +150,14 @@ rebuild-tools:
 	@$(DOCKER_COMPOSE) exec tools pip show snaplogic-common-robot
 	@echo "✅ Rebuild complete!"
 
+
+# =============================================================================
 # 📦 Update snaplogic-common-robot to absolute latest
 # This target is useful for quick updates without rebuilding the entire tools container
+# Usage:
+#   make quick-update-snaplogic-robot-only        # Uses default .env
+#   make quick-update-snaplogic-robot-only ENV_FILE=.env.dev  # Update in dev environment
+# =============================================================================
 quick-update-snaplogic-robot-only:
 	@echo "📦 Force updating snaplogic-common-robot to latest version..."
 	@echo "ℹ️ Current version:"

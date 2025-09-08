@@ -8,9 +8,16 @@
 # -----------------------------------------------------------------------------
 # Docker Configuration
 # -----------------------------------------------------------------------------
+# Allow override of .env file for different environments (stage, production, etc.)
+# Usage: make robot-run-tests ENV_FILE=.env.staging
+# The ?= operator means:
+# - If ENV_FILE is already defined (either as an environment variable or passed via command line), keep that value
+# - If ENV_FILE is not defined, set it to .env
+ENV_FILE ?= .env
+
 # Docker compose file location
 DOCKER_COMPOSE_FILE := docker/docker-compose.yml
-DOCKER_COMPOSE := docker compose --env-file .env -f $(DOCKER_COMPOSE_FILE)
+DOCKER_COMPOSE := docker compose --env-file $(ENV_FILE) -f $(DOCKER_COMPOSE_FILE)
 
 # Docker Compose profiles - Define ONCE here, use everywhere
 # Can be overridden via command line: make start-services COMPOSE_PROFILES=kafka,oracle-dev
