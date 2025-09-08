@@ -32,12 +32,7 @@ services:
       - TRAVIS_COMMIT=${TRAVIS_COMMIT}
       - TRAVIS_DURATION=${TRAVIS_DURATION:-0}
       - TRAVIS_BRANCH=${TRAVIS_BRANCH}
-      # ✅ Explicitly export Gmail-related env vars for Robot
-      - EMAIL_ID=${EMAIL_ID}
-      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
-      - EMAIL_SERVER_DOMAIN=${EMAIL_SERVER_DOMAIN}
-      - EMAIL_PORT=${EMAIL_PORT}
-      - EMAIL_IMAP_PORT=${EMAIL_IMAP_PORT}
+      
     volumes:
       - ../src:/app/src
       - ../test:/app/test
