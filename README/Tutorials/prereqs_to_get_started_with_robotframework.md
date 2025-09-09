@@ -80,7 +80,7 @@ ACCOUNT_LOCATION_PATH=project_space/project_name/shared
 ORACLE_ACCOUNT_NAME=oracle_account_name
 ORACLE_HOST=oracle_oracle-hostname
 ORACLE_DBNAME=dbname
-ORACLE_DBUSER=oracle_username
+ORACLE_USER=oracle_username
 ORACLE_DBPASS=oracle_password
 ```
 

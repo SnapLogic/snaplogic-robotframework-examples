@@ -151,10 +151,10 @@ Check connections
     Wait Until Plex Status Is Up    /${ORG_NAME}/${GROUNDPLEX_LOCATION_PATH}/${GROUNDPLEX_NAME}
     Connect to Oracle Database
     ...    ${ORACLE_DBNAME}
-    ...    ${ORACLE_DBUSER}
+    ...    ${ORACLE_USER}
     ...    ${ORACLE_DBPASS}
     ...    ${ORACLE_HOST}
-    ...    ${ORACLE_DBPORT}
+    ...    ${ORACLE_PORT}
     Initialize Variables
 
 Initialize Variables

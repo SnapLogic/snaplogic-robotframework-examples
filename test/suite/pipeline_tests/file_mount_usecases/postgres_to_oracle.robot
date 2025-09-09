@@ -237,14 +237,14 @@ Initialize Test Environment
 
     # Connect to databases with aliases
     Connect to Postgres Database
-    ...    ${POSTGRES_DBNAME}
-    ...    ${POSTGRES_DBUSER}
-    ...    ${POSTGRES_DBPASS}
+    ...    ${POSTGRES_DATABASE}
+    ...    ${POSTGRES_USER}
+    ...    ${POSTGRES_PASSWORD}
     ...    ${POSTGRES_HOST}
 
     Connect to Oracle Database
     ...    ${ORACLE_DBNAME}
-    ...    ${ORACLE_DBUSER}
+    ...    ${ORACLE_USER}
     ...    ${ORACLE_DBPASS}
     ...    ${ORACLE_HOST}
 
@@ -291,17 +291,17 @@ Export DB Table To CSV
     IF    '${db_type}' == 'oracle'
         Connect to Oracle Database
         ...    ${ORACLE_DBNAME}
-        ...    ${ORACLE_DBUSER}
+        ...    ${ORACLE_USER}
         ...    ${ORACLE_DBPASS}
         ...    ${ORACLE_HOST}
-        ...    ${ORACLE_DBPORT}
+        ...    ${ORACLE_PORT}
     ELSE IF    '${db_type}' == 'postgres'
         Connect to Postgres Database
-        ...    ${POSTGRES_DBNAME}
-        ...    ${POSTGRES_DBUSER}
-        ...    ${POSTGRES_DBPASS}
+        ...    ${POSTGRES_DATABASE}
+        ...    ${POSTGRES_USER}
+        ...    ${POSTGRES_PASSWORD}
         ...    ${POSTGRES_HOST}
-        ...    ${POSTGRES_DBPORT}
+        ...    ${POSTGRES_PORT}
     ELSE
         Fail    Unsupported database type: ${db_type}
     END

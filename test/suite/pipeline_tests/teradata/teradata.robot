@@ -271,8 +271,8 @@ Check connections
     Wait Until Plex Status Is Up    /${ORG_NAME}/${GROUNDPLEX_LOCATION_PATH}/${GROUNDPLEX_NAME}
     Connect to Teradata Database
     ...    ${TERADATA_HOST}
-    ...    ${TERADATA_DBUSER}
-    ...    ${TERADATA_DBPASS}
+    ...    ${TERADATA_USER}
+    ...    ${TERADATA_PASSWORD}
     ...    ${TERADATA_DBNAME}
     Initialize Variables
 

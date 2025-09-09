@@ -25,118 +25,44 @@
 # -----------------------------------------------------------------------------
 .PHONY: help list-categories status docker-networks container-networks network-check
 
+
 # -----------------------------------------------------------------------------
 # Include Common Configuration (MUST BE FIRST)
 # -----------------------------------------------------------------------------
-include makefiles/Makefile.common
+include makefiles/common_services/Makefile.common
 
 # -----------------------------------------------------------------------------
-# Include all category-specific Makefiles
+# Include all general common Services Makefiles
 # -----------------------------------------------------------------------------
-include makefiles/Makefile.testing
-include makefiles/Makefile.groundplex
-include makefiles/Makefile.databases
-include makefiles/Makefile.messaging
-include makefiles/Makefile.mocks
-include makefiles/Makefile.docker
-include makefiles/Makefile.quality
+include makefiles/common_services/Makefile.testing
+include makefiles/common_services/Makefile.groundplex
+include makefiles/common_services/Makefile.docker
+include makefiles/common_services/Makefile.quality
 
 # -----------------------------------------------------------------------------
-# Help System
+# Include all database-specific Makefiles
 # -----------------------------------------------------------------------------
-help:
-	@echo "============================================================================="
-	@echo "       Snaplogic Robot Framework Automation - Available Commands"
-	@echo "============================================================================="
-	@echo ""
-	@echo "🧪 TESTING & TEST EXECUTION"
-	@echo "  robot-run-tests              - Run Robot Framework tests with optional tags"
-	@echo "  robot-run-all-tests          - End-to-end test workflow with environment setup"
-	@echo "  robot-run-tests-no-gp        - Run tests WITHOUT launching Groundplex"
-	@echo "  slack-notify                 - Send test results to Slack"
-	@echo "  upload-test-results          - Upload results to S3"
-	@echo "  upload-test-results-cli      - Upload results using AWS CLI"
-	@echo ""
-	@echo "🚀 GROUNDPLEX MANAGEMENT"
-	@echo "  launch-groundplex            - Launch SnapLogic Groundplex container"
-	@echo "  groundplex-status            - Check Groundplex JCC status"
-	@echo "  stop-groundplex              - Stop Groundplex and cleanup"
-	@echo "  restart-groundplex           - Restart Groundplex"
-	@echo "  setup-groundplex-cert        - Setup HTTPS certificates"
-	@echo "  groundplex-check-cert        - Check certificate status"
-	@echo "  createplex-launch-groundplex - Create project space and launch Groundplex"
-	@echo ""
-	@echo "🛢️ DATABASE SERVICES"
-	@echo "  oracle-start/stop            - Oracle database management"
-	@echo "  postgres-start/stop          - PostgreSQL database management"
-	@echo "  mysql-start/stop             - MySQL database management"
-	@echo "  sqlserver-start/stop         - SQL Server database management"
-	@echo "  teradata-start/stop          - Teradata database management"
-	@echo "  db2-start/stop               - DB2 database management"
-	@echo "  snowflake-start/stop/setup   - Snowflake SQL client management"
-	@echo ""
-	@echo "📡 MESSAGE QUEUES & STREAMING"
-	@echo "  kafka-start/stop/restart     - Kafka broker management"
-	@echo "  kafka-status                 - Check Kafka services status"
-	@echo "  kafka-create-topic           - Create a Kafka topic"
-	@echo "  kafka-list-topics            - List all Kafka topics"
-	@echo "  kafka-test                   - Test Kafka connectivity"
-	@echo "  activemq-start/stop          - ActiveMQ JMS server management"
-	@echo "  activemq-status              - Check ActiveMQ status"
-	@echo ""
-	@echo "🔌 MOCK SERVICES"
-	@echo "  start-s3-emulator            - Start MinIO S3 emulator"
-	@echo "  salesforce-mock-start/stop   - Salesforce API mock management"
-	@echo "  salesforce-mock-status       - Check Salesforce mock status"
-	@echo "  email-start/stop/restart     - MailDev email server management"
-	@echo "  email-status                 - Check email server status"
-	@echo ""
-	@echo "🐳 DOCKER & TOOLS"
-	@echo "  snaplogic-start-services     - Start services with compose profiles"
-	@echo "  snaplogic-stop               - Stop all containers and cleanup"
-	@echo "  snaplogic-build-tools        - Build tools container"
-	@echo "  clean-start                  - Clean restart of all services"
-	@echo "  rebuild-tools                - Rebuild tools with updated requirements"
-	@echo "  check-env                    - Validate environment setup"
-	@echo ""
-	@echo "✨ CODE QUALITY & DEPENDENCIES"
-	@echo "  robotidy                     - Format Robot Framework files"
-	@echo "  robocop                      - Run static analysis on Robot files"
-	@echo "  lint                         - Run both formatter and linter"
-	@echo "  install-requirements-venv    - Setup venv and install requirements"
-	@echo "  update-requirements-all      - Update requirements everywhere"
-	@echo ""
-	@echo "🔍 MONITORING & STATUS"
-	@echo "  status                       - System status with container networks"
-	@echo "  docker-networks              - Show all Docker networks"
-	@echo "  container-networks           - Show containers and their networks"
-	@echo ""
-	@echo "============================================================================="
-	@echo "📚 USAGE EXAMPLES:"
-	@echo "  make robot-run-tests TAGS=\"oracle,minio\" PROJECT_SPACE_SETUP=True"
-	@echo "  make kafka-create-topic TOPIC=my-topic PARTITIONS=3"
-	@echo "  make clean-start"
-	@echo ""
-	@echo "👉 Note: ENV_FILE can be passed to ANY make command. Default is .env"
-	@echo "💡 For detailed help on specific categories, see makefiles/README.md"
-	@echo "============================================================================="
+include makefiles/database_services/Makefile.oracle
+include makefiles/database_services/Makefile.postgres
+include makefiles/database_services/Makefile.mysql
+include makefiles/database_services/Makefile.sqlserver
+include makefiles/database_services/Makefile.teradata
+include makefiles/database_services/Makefile.db2
+include makefiles/database_services/Makefile.snowflake
 
 # -----------------------------------------------------------------------------
-# Category Listing
+# Include all messaging service Makefiles
 # -----------------------------------------------------------------------------
-list-categories:
-	@echo "📁 Available Makefile Categories:"
-	@echo ""
-	@echo "  testing     - Robot Framework test execution and reporting"
-	@echo "  groundplex  - SnapLogic Groundplex management and certificates"
-	@echo "  databases   - Database services (Oracle, PostgreSQL, MySQL, etc.)"
-	@echo "  messaging   - Message queues (Kafka, ActiveMQ)"
-	@echo "  mocks       - Mock services (Salesforce, S3, Email)"
-	@echo "  docker      - Container and tools management"
-	@echo "  quality     - Code formatting and dependency management"
-	@echo ""
-	@echo "Each category is in makefiles/Makefile.<category>"
-	@echo "You can also run targets directly: make -f makefiles/Makefile.testing robot-run-tests"
+include makefiles/messaging_services/Makefile.kafka
+include makefiles/messaging_services/Makefile.activemq
+
+# -----------------------------------------------------------------------------
+# Include all mock service Makefiles
+# -----------------------------------------------------------------------------
+include makefiles/mock_services/Makefile.minio
+include makefiles/mock_services/Makefile.salesforce
+include makefiles/mock_services/Makefile.maildev
+
 
 # -----------------------------------------------------------------------------
 # System Status and Monitoring
@@ -217,4 +143,5 @@ network-check:
 			echo "  $network: $count container(s)"; \
 		fi; \
 	done
+
 

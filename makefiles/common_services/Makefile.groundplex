@@ -10,7 +10,7 @@
         createplex-launch-groundplex
 
 # Include common configuration
-include makefiles/Makefile.common
+include makefiles/common_services/Makefile.common
 
 # =============================================================================
 #  Create project space, Create Plex in Project Space, and launch Groundplex

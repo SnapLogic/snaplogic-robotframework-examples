@@ -210,16 +210,16 @@ Check connections
 
     # Debug: Log the DB2 connection parameters
     Log    DB2 Host: ${DB2_HOST}    console=True
-    Log    DB2 Port: ${DB2_DBPORT}    console=True
-    Log    DB2 Database: ${DB2_DBNAME}    console=True
-    Log    DB2 User: ${DB2_DBUSER}    console=True
+    Log    DB2 Port: ${DB2_PORT}    console=True
+    Log    DB2 Database: ${DB2_DATABASE}    console=True
+    Log    DB2 User: ${DB2_USER}    console=True
 
     Connect to DB2 Database
-    ...    ${DB2_DBNAME}
-    ...    ${DB2_DBUSER}
-    ...    ${DB2_DBPASS}
+    ...    ${DB2_DATABASE}
+    ...    ${DB2_USER}
+    ...    ${DB2_PASSWORD}
     ...    ${DB2_HOST}
-    ...    ${DB2_DBPORT}
+    ...    ${DB2_PORT}
     Initialize Variables
 
 Initialize Variables

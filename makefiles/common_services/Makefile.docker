@@ -10,7 +10,7 @@
         rebuild-tools quick-update-snaplogic-robot-only
 
 # Include common configuration
-include makefiles/Makefile.common
+include makefiles/common_services/Makefile.common
 
 # =============================================================================
 # 🛠️ SnapLogic Tools Container Lifecycle

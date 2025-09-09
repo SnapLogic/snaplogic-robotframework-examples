@@ -42,7 +42,7 @@
                             "expression": false
                         },
                         "username": {
-                            "value": "{{TERADATA_DBUSER}}",
+                            "value": "{{TERADATA_USER}}",
                             "expression": false
                         },
                         "AuthenticationMode": {
@@ -54,7 +54,7 @@
                         },
                         "password": {
                             "expression": false,
-                            "value": "{{TERADATA_DBPASS}}"
+                            "value": "{{TERADATA_PASSWORD}}"
                         },
                         "keystorePassword": {
                             "expression": false

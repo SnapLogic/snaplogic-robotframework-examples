@@ -29,24 +29,24 @@ Connect to Postgres Database
     ...    • Database name exists and is accessible
     ...    • Connection is ready for SQL operations
     [Arguments]
-    ...    ${POSTGRES_DBNAME}
-    ...    ${POSTGRES_DBUSER}
-    ...    ${POSTGRES_DBPASS}
+    ...    ${POSTGRES_DATABASE}
+    ...    ${POSTGRES_USER}
+    ...    ${POSTGRES_PASSWORD}
     ...    ${POSTGRES_HOST}
-    ...    ${POSTGRES_DBPORT}=5432
+    ...    ${POSTGRES_PORT}=5432
 
     Log    🔌 Connecting to PostgreSQL database...
-    Log    📊 Host: ${POSTGRES_HOST}:${POSTGRES_DBPORT}
-    Log    🏛️ Database: ${POSTGRES_DBNAME}
-    Log    👤 User: ${POSTGRES_DBUSER}
+    Log    📊 Host: ${POSTGRES_HOST}:${POSTGRES_PORT}
+    Log    🏛️ Database: ${POSTGRES_DATABASE}
+    Log    👤 User: ${POSTGRES_USER}
 
     Connect To Database
     ...    psycopg2
-    ...    ${POSTGRES_DBNAME}
-    ...    ${POSTGRES_DBUSER}
-    ...    ${POSTGRES_DBPASS}
+    ...    ${POSTGRES_DATABASE}
+    ...    ${POSTGRES_USER}
+    ...    ${POSTGRES_PASSWORD}
     ...    ${POSTGRES_HOST}
-    ...    ${POSTGRES_DBPORT}
+    ...    ${POSTGRES_PORT}
 
     Log    ✅ Successfully connected to PostgreSQL database
 
@@ -56,15 +56,15 @@ Connect to Oracle Database
     ...    - None (uses environment variables for connection)
     ...    *Example:*
     ...    | Connect to Oracle Database |
-    [Arguments]    ${ORACLE_DBNAME}    ${ORACLE_DBUSER}    ${ORACLE_DBPASS}    ${ORACLE_HOST}    ${ORACLE_DBPORT}=1521
+    [Arguments]    ${ORACLE_DBNAME}    ${ORACLE_USER}    ${ORACLE_DBPASS}    ${ORACLE_HOST}    ${ORACLE_PORT}=1521
 
     Connect To Database
     ...    oracledb
     ...    ${ORACLE_DBNAME}
-    ...    ${ORACLE_DBUSER}
+    ...    ${ORACLE_USER}
     ...    ${ORACLE_DBPASS}
     ...    ${ORACLE_HOST}
-    ...    ${ORACLE_DBPORT}
+    ...    ${ORACLE_PORT}
 
     Log    ✅ Successfully connected to Oracle database
 
@@ -75,19 +75,19 @@ Connect to SQL Server Database
     ...    *Example:*
     ...    | Connect to SQL Server Database | TestDB | sa | password | localhost | 1433 |
     [Arguments]
-    ...    ${SQLSERVER_DBNAME}
-    ...    ${SQLSERVER_DBUSER}
-    ...    ${SQLSERVER_DBPASS}
+    ...    ${SQLSERVER_DATABASE}
+    ...    ${SQLSERVER_USER}
+    ...    ${SQLSERVER_PASSWORD}
     ...    ${SQLSERVER_HOST}
-    ...    ${SQLSERVER_DBPORT}=1433
+    ...    ${SQLSERVER_PORT}=1433
 
     Connect To Database
     ...    pymssql
-    ...    ${SQLSERVER_DBNAME}
-    ...    ${SQLSERVER_DBUSER}
-    ...    ${SQLSERVER_DBPASS}
+    ...    ${SQLSERVER_DATABASE}
+    ...    ${SQLSERVER_USER}
+    ...    ${SQLSERVER_PASSWORD}
     ...    ${SQLSERVER_HOST}
-    ...    ${SQLSERVER_DBPORT}
+    ...    ${SQLSERVER_PORT}
 
     Log    ✅ Successfully connected to SQL Server database
 
@@ -713,29 +713,29 @@ Execute SQL On Database
     IF    '${database_type}' == 'postgres'
         # Connect to PostgreSQL
         Connect to Postgres Database
-        ...    ${POSTGRES_DBNAME}
-        ...    ${POSTGRES_DBUSER}
-        ...    ${POSTGRES_DBPASS}
+        ...    ${POSTGRES_DATABASE}
+        ...    ${POSTGRES_USER}
+        ...    ${POSTGRES_PASSWORD}
         ...    ${POSTGRES_HOST}
-        ...    ${POSTGRES_DBPORT}
+        ...    ${POSTGRES_PORT}
         Execute SQL String    ${sql}
     ELSE IF    '${database_type}' == 'oracle'
         # Connect to Oracle
         Connect to Oracle Database
         ...    ${ORACLE_DBNAME}
-        ...    ${ORACLE_DBUSER}
+        ...    ${ORACLE_USER}
         ...    ${ORACLE_DBPASS}
         ...    ${ORACLE_HOST}
-        ...    ${ORACLE_DBPORT}
+        ...    ${ORACLE_PORT}
         Execute SQL String    ${sql}
     ELSE IF    '${database_type}' == 'sqlserver'
         # Connect to SQL Server
         Connect to SQL Server Database
-        ...    ${SQLSERVER_DBNAME}
-        ...    ${SQLSERVER_DBUSER}
-        ...    ${SQLSERVER_DBPASS}
+        ...    ${SQLSERVER_DATABASE}
+        ...    ${SQLSERVER_USER}
+        ...    ${SQLSERVER_PASSWORD}
         ...    ${SQLSERVER_HOST}
-        ...    ${SQLSERVER_DBPORT}
+        ...    ${SQLSERVER_PORT}
         Execute SQL String    ${sql}
     ELSE
         Fail    Unknown database type: ${database_type}. Use 'postgres', 'oracle', or 'sqlserver'

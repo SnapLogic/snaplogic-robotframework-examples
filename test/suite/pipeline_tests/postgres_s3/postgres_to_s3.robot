@@ -242,7 +242,11 @@ Initialize Test Environment
     ${unique_id}=    Get Unique Id
     Set Suite Variable    ${unique_id}    ${unique_id}
     Wait Until Plex Status Is Up    /${ORG_NAME}/${GROUNDPLEX_LOCATION_PATH}/${GROUNDPLEX_NAME}
-    Connect to Postgres Database    ${POSTGRES_DBNAME}    ${POSTGRES_DBUSER}    ${POSTGRES_DBPASS}    ${POSTGRES_HOST}
+    Connect to Postgres Database
+    ...    ${POSTGRES_DATABASE}
+    ...    ${POSTGRES_USER}
+    ...    ${POSTGRES_PASSWORD}
+    ...    ${POSTGRES_HOST}
 
     # Set the search_path to ensure we're using public schema
     Execute SQL String    SET search_path TO public

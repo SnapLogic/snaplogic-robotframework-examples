@@ -221,11 +221,11 @@ Check connections
     [Documentation]    Verifies MySQL database connection and Snaplex availability
     Wait Until Plex Status Is Up    /${ORG_NAME}/${GROUNDPLEX_LOCATION_PATH}/${GROUNDPLEX_NAME}
     Connect to MySQL Database
-    ...    ${MYSQL_DBNAME}
-    ...    ${MYSQL_DBUSER}
-    ...    ${MYSQL_DBPASS}
+    ...    ${MYSQL_DATABASE}
+    ...    ${MYSQL_USER}
+    ...    ${MYSQL_PASSWORD}
     ...    ${MYSQL_HOST}
-    ...    ${MYSQL_DBPORT}
+    ...    ${MYSQL_PORT}
     Initialize Variables
 
 Initialize Variables

@@ -167,11 +167,11 @@ Check connections
     [Documentation]    Verifies SQL Server database connection and Snaplex availability
     Wait Until Plex Status Is Up    /${ORG_NAME}/${GROUNDPLEX_LOCATION_PATH}/${GROUNDPLEX_NAME}
     Connect to SQL Server Database
-    ...    ${SQLSERVER_DBNAME}
-    ...    ${SQLSERVER_DBUSER}
-    ...    ${SQLSERVER_DBPASS}
+    ...    ${SQLSERVER_DATABASE}
+    ...    ${SQLSERVER_USER}
+    ...    ${SQLSERVER_PASSWORD}
     ...    ${SQLSERVER_HOST}
-    ...    ${SQLSERVER_DBPORT}
+    ...    ${SQLSERVER_PORT}
     Initialize Variables
 
 Initialize Variables

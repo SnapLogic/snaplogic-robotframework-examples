@@ -15,7 +15,7 @@
                             "value": null
                         },
                         "databaseName": {
-                            "value": "{{SQLSERVER_DBNAME}}",
+                            "value": "{{SQLSERVER_DATABASE}}",
                             "expression": false
                         },
                         "authMethod": {
@@ -36,7 +36,7 @@
                             "value": "com.microsoft.sqlserver.jdbc.SQLServerDriver"
                         },
                         "username": {
-                            "value": "{{SQLSERVER_DBUSER}}",
+                            "value": "{{SQLSERVER_USER}}",
                             "expression": false
                         },
                         "SSL_CONNECT": {
@@ -44,7 +44,7 @@
                         },
                         "password": {
                             "expression": false,
-                            "value": "{{SQLSERVER_DBPASS}}"
+                            "value": "{{SQLSERVER_PASSWORD}}"
                         },
                         "instanceName": {
                             "value": null,
