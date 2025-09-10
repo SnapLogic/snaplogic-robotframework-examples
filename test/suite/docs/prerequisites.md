@@ -78,9 +78,9 @@ RELEASE_BUILD_VERSION=main-30027
 ACCOUNT_LOCATION_PATH=project_space/project_name/shared
 ORACLE_ACCOUNT_NAME=oracle_account_name
 ORACLE_HOST=oracle_oracle-hostname
-ORACLE_DBNAME=dbname
+ORACLE_DATABASE=dbname
 ORACLE_USER=oracle_username
-ORACLE_DBPASS=oracle_password
+ORACLE_PASSWORD=oracle_password
 ```
 
 ## Step 3: snaplogic package

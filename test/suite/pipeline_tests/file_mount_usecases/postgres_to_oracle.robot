@@ -243,9 +243,9 @@ Initialize Test Environment
     ...    ${POSTGRES_HOST}
 
     Connect to Oracle Database
-    ...    ${ORACLE_DBNAME}
+    ...    ${ORACLE_DATABASE}
     ...    ${ORACLE_USER}
-    ...    ${ORACLE_DBPASS}
+    ...    ${ORACLE_PASSWORD}
     ...    ${ORACLE_HOST}
 
     # Set PostgreSQL as default connection
@@ -290,9 +290,9 @@ Export DB Table To CSV
     # Connect to appropriate database
     IF    '${db_type}' == 'oracle'
         Connect to Oracle Database
-        ...    ${ORACLE_DBNAME}
+        ...    ${ORACLE_DATABASE}
         ...    ${ORACLE_USER}
-        ...    ${ORACLE_DBPASS}
+        ...    ${ORACLE_PASSWORD}
         ...    ${ORACLE_HOST}
         ...    ${ORACLE_PORT}
     ELSE IF    '${db_type}' == 'postgres'

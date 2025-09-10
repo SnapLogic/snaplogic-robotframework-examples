@@ -183,9 +183,9 @@ After the basic configuration, add account details for each service you'll conne
 # Oracle Database Account Configuration
 ORACLE_ACCOUNT_NAME=oracle_acct        # Must match name in .slp file!
 ORACLE_HOST=oracle-db                  # Database hostname
-ORACLE_DBNAME=FREEPDB1                 # Database name
+ORACLE_DATABASE=FREEPDB1                 # Database name
 ORACLE_USER=SYSTEM                   # Database username
-ORACLE_DBPASS=Oracle123                # Database password
+ORACLE_PASSWORD=Oracle123                # Database password
 ```
 
 ### Example: Snowflake Account

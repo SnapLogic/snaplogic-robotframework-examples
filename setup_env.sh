@@ -44,10 +44,10 @@ optional_vars=(
     # Oracle Database Configuration
     "ORACLE_ACCOUNT_NAME"
     "ORACLE_HOST"
-    "ORACLE_DBNAME"
+    "ORACLE_DATABASE"
     "ORACLE_PORT"
     "ORACLE_USER"
-    "ORACLE_DBPASS"
+    "ORACLE_PASSWORD"
     
     # PostgreSQL Database Configuration
     "POSTGRES_ACCOUNT_NAME"

@@ -1,13 +1,5 @@
 # MailDev Mock Email Server - Complete Testing Guide
 
-## 📧 What is This?
-**MailDev is a mock email server (fake SMTP server) designed for testing email functionality without sending real emails.** It acts as a complete email service replacement during development and testing, capturing all emails sent to it in a local environment.
-
-### Key Point: This is NOT a Real Email Service
-- **Mock Server**: MailDev simulates a real email server but doesn't actually send emails anywhere
-- **Testing Only**: All emails are trapped locally for inspection and verification
-- **No Internet Required**: Emails never leave your local/test environment
-- **Perfect for Testing**: Safely test email functionality without risk of sending to real recipients
 
 ## Table of Contents
 1. [Overview](#overview)
@@ -56,26 +48,36 @@ Think of MailDev as a hotel's mail room during a conference:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     Testing Environment                      │
+│                  Docker Network: snaplogicnet                │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
 │  ┌──────────────────┐         ┌──────────────────┐         │
-│  │   SnapLogic      │         │     MailDev      │         │
-│  │   Pipeline       │  SMTP   │    Container     │         │
-│  │  (Email Snap)    │-------->│                  │         │
-│  └──────────────────┘  :1025  │  ┌────────────┐ │         │
-│                                │  │  Inbox     │ │         │
-│  ┌──────────────────┐         │  │  Storage   │ │         │
-│  │  Robot Framework │  API    │  └────────────┘ │         │
-│  │   Test Suite     │-------->│                  │         │
-│  └──────────────────┘  :1080  │  ┌────────────┐ │         │
-│                                │  │  Web UI    │ │         │
-│  ┌──────────────────┐         │  │  Server    │ │         │
-│  │    Developer     │  HTTP   │  └────────────┘ │         │
-│  │    Browser       │-------->│                  │         │
-│  └──────────────────┘  :1080  └──────────────────┘         │
+│  │   Groundplex     │         │     MailDev      │         │
+│  │   Container      │  SMTP   │    Container     │         │
+│  │                  │-------->│                  │         │
+│  │  SnapLogic       │         │                  │         │
+│  │  Pipeline        │         │  ┌────────────┐ │         │
+│  │  (Email Snap)    │         │  │  Inbox     │ │         │
+│  └──────────────────┘         │  │  Storage   │ │         │
+│   Uses: maildev-test:1025     │  └────────────┘ │         │
+│                                │                  │         │
+│  ┌──────────────────┐         │  ┌────────────┐ │         │
+│  │     Tools        │  API    │  │  Web UI    │ │         │
+│  │   Container      │-------->│  │  Server    │ │         │
+│  │                  │         │  └────────────┘ │         │
+│  │  Robot Framework │         │                  │         │
+│  │   Test Suite     │         └──────────────────┘         │
+│  └──────────────────┘                                       │
+│   Uses: maildev-test:1080                                   │
 │                                                              │
-│                     Docker Network: snaplogicnet            │
+└─────────────────────────────────────────────────────────────┤
+│                        Host Machine                          │
+├─────────────────────────────────────────────────────────────┤
+│  ┌──────────────────┐                                       │
+│  │    Developer     │  HTTP                                 │
+│  │    Browser       │-------->  Port mapping:               │
+│  └──────────────────┘          localhost:1080 → maildev:1080│
+│   Uses: localhost:1080         localhost:1025 → maildev:1025│
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -83,11 +85,20 @@ Think of MailDev as a hotel's mail room during a conference:
 - **Port 1025**: SMTP server (receives emails)
 - **Port 1080**: Web UI (view and manage emails)
 
+### Network Access Patterns
+
+| Component | Location | Access MailDev via | Purpose |
+|-----------|----------|-------------------|---------|
+| **SnapLogic Pipeline** | Groundplex container | `maildev-test:1025` | Send emails (SMTP) |
+| **Robot Framework Tests** | Tools container | `maildev-test:1080` | Verify emails (API) |
+| **Developer Browser** | Host machine | `localhost:1080` | View emails (Web UI) |
+| **Make commands** | Host machine | `localhost:1080` | Management/Testing |
+
 ### Network Flow
-1. SnapLogic Email Snap sends email to `maildev-test:1025`
+1. SnapLogic Email Snap (in Groundplex container) sends email to `maildev-test:1025`
 2. MailDev captures the email in memory
-3. Robot Framework tests verify email via API at `maildev-test:1080`
-4. Developers can view emails at `http://localhost:1080`
+3. Robot Framework tests (in Tools container) verify email via API at `maildev-test:1080`
+4. Developers can view emails at `http://localhost:1080` (via Docker port mapping)
 
 ---
 

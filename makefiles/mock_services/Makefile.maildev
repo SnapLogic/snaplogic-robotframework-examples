@@ -64,7 +64,7 @@ email-restart:
 	@echo "✅ MailDev email server restarted successfully!"
 
 # 🔍 Check MailDev email server status
-email-status:
+email-server-status:
 	@echo "🔍 Checking MailDev email server status..."
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@container_status=$$(docker inspect -f '{{.State.Status}}' maildev-test 2>/dev/null || echo "not found"); \

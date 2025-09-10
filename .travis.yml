@@ -10,10 +10,10 @@ env:
     # Oracle Database Configuration
     - ORACLE_ACCOUNT_NAME="oracle_acct"
     - ORACLE_HOST="oracle-db"
-    - ORACLE_DBNAME="FREEPDB1"
+    - ORACLE_DATABASE="FREEPDB1"
     - ORACLE_PORT="1521"
     - ORACLE_USER="SYSTEM"
-    - ORACLE_DBPASS="Oracle123"
+    - ORACLE_PASSWORD="Oracle123"
 
     # PostgreSQL Database Configuration
     - POSTGRES_ACCOUNT_NAME="postgres_acc"

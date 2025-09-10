@@ -11,6 +11,7 @@ Suite Setup     Before Suite
 *** Variables ***
 ${ACCOUNT_PAYLOAD_PATH}     ${CURDIR}/test_data/accounts_payload
 ${ENV_FILE_PATH}            ${CURDIR}/../../.env
+${ENV_FILES_DIR}            ${CURDIR}/../../env_files
 
 
 *** Keywords ***
@@ -70,14 +71,44 @@ Validate Environment Variables
     END
 
 Load Environment Variables
-    [Documentation]    Loads environment variables from a .env file and auto-detects JSON values
-    ${file_exists}=    Run Keyword And Return Status    File Should Exist    ${env_file_path}
-
-    IF    not ${file_exists}
-        Fail    .env file not found at ${env_file_path}. Please create the file with required environment variables.
+    [Documentation]    Loads environment variables from the root .env file and all .env files from env_files directory
+    
+    # First load the root .env file
+    Load Single Env File    ${ENV_FILE_PATH}
+    
+    # Then load all .env files from env_files directory
+    ${env_dir_exists}=    Run Keyword And Return Status    Directory Should Exist    ${ENV_FILES_DIR}
+    
+    IF    ${env_dir_exists}
+        @{env_files}=    List Files In Directory    ${ENV_FILES_DIR}    pattern=.env*
+        ${file_count}=    Get Length    ${env_files}
+        
+        IF    ${file_count} > 0
+            Log To Console    \nLoading ${file_count} environment files from ${ENV_FILES_DIR}:
+            FOR    ${env_file}    IN    @{env_files}
+                ${full_path}=    Join Path    ${ENV_FILES_DIR}    ${env_file}
+                Log To Console      Loading: ${env_file}
+                Load Single Env File    ${full_path}
+            END
+        ELSE
+            Log To Console    \nNo .env files found in ${ENV_FILES_DIR}
+        END
+    ELSE
+        Log To Console    \nEnvironment files directory not found: ${ENV_FILES_DIR}
     END
 
-    ${env_content}=    Get File    ${env_file_path}
+Load Single Env File
+    [Documentation]    Loads environment variables from a single .env file and auto-detects JSON values
+    [Arguments]    ${file_path}
+    
+    ${file_exists}=    Run Keyword And Return Status    File Should Exist    ${file_path}
+
+    IF    not ${file_exists}
+        Log To Console    ⚠️ WARNING: Environment file not found: ${file_path}
+        RETURN
+    END
+
+    ${env_content}=    Get File    ${file_path}
     @{env_lines}=    Split To Lines    ${env_content}
 
     FOR    ${line}    IN    @{env_lines}
@@ -123,4 +154,4 @@ Load Environment Variables
         END
     END
 
-    Log To Console    Loaded environment variables from: ${env_file_path}
+    Log To Console    Loaded environment variables from: ${file_path}

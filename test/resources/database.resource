@@ -56,13 +56,13 @@ Connect to Oracle Database
     ...    - None (uses environment variables for connection)
     ...    *Example:*
     ...    | Connect to Oracle Database |
-    [Arguments]    ${ORACLE_DBNAME}    ${ORACLE_USER}    ${ORACLE_DBPASS}    ${ORACLE_HOST}    ${ORACLE_PORT}=1521
+    [Arguments]    ${ORACLE_DATABASE}    ${ORACLE_USER}    ${ORACLE_PASSWORD}    ${ORACLE_HOST}    ${ORACLE_PORT}=1521
 
     Connect To Database
     ...    oracledb
-    ...    ${ORACLE_DBNAME}
+    ...    ${ORACLE_DATABASE}
     ...    ${ORACLE_USER}
-    ...    ${ORACLE_DBPASS}
+    ...    ${ORACLE_PASSWORD}
     ...    ${ORACLE_HOST}
     ...    ${ORACLE_PORT}
 
@@ -722,9 +722,9 @@ Execute SQL On Database
     ELSE IF    '${database_type}' == 'oracle'
         # Connect to Oracle
         Connect to Oracle Database
-        ...    ${ORACLE_DBNAME}
+        ...    ${ORACLE_DATABASE}
         ...    ${ORACLE_USER}
-        ...    ${ORACLE_DBPASS}
+        ...    ${ORACLE_PASSWORD}
         ...    ${ORACLE_HOST}
         ...    ${ORACLE_PORT}
         Execute SQL String    ${sql}
