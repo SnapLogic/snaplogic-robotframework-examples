@@ -108,21 +108,34 @@ snaplogic-stop:
 # ✅ Environment Validation
 # =============================================================================
 
-# Check if environment file exists
-# NOTE: This check is outdated - the system now requires .env + env_files/
+# Check if environment files exist
 # Usage:
 #   make check-env                                # Checks .env and env_files/
 check-env:
-	@if [ -f "$(ENV_FILE)" ]; then \
-		echo "✅ Found environment file: $(ENV_FILE)"; \
-	else \
-		echo "❌ Error: Environment file not found: $(ENV_FILE)"; \
-		echo "ℹ️ Please ensure $(ENV_FILE) exists in project root."; \
+	@echo "🔍 Checking environment files..."
+	@if [ ! -f "$(ROOT_ENV_FILE)" ]; then \
+		echo "❌ Error: Root environment file not found: $(ROOT_ENV_FILE)"; \
+		echo "ℹ️ Please ensure .env exists in project root."; \
 		echo "Current directory: $(pwd)"; \
 		echo "Available .env files:"; \
 		ls -la | grep -E '\.env' || true; \
 		exit 1; \
 	fi
+	@if [ -z "$(ENV_FILES_FROM_DIR)" ]; then \
+		echo "❌ Error: No .env files found in $(ENV_DIR)/ directory"; \
+		echo "ℹ️ Please ensure env files exist in $(ENV_DIR)/"; \
+		ls -la $(ENV_DIR)/ 2>/dev/null | grep -E '\.env' || echo "Directory not found or empty"; \
+		exit 1; \
+	fi
+	@echo "✅ Found environment files:"
+	@for file in $(ENV_FILES); do \
+		if [ -f "$file" ]; then \
+			echo "   ✓ $file"; \
+		else \
+			echo "   ✗ $file (NOT FOUND)"; \
+		fi; \
+	done
+	@echo "✅ Environment check passed!"
 
 ensure-config-dir:
 	@echo "ℹ️ Creating config directory..."

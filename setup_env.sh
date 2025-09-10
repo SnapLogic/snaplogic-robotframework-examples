@@ -118,6 +118,14 @@ optional_vars=(
     "SNOWFLAKE_S3_FOLDER"
     "SNOWFLAKE_S3_ACCESS_KEY"
     "SNOWFLAKE_S3_SECRET_KEY"
+    
+    # Email/SMTP Configuration (MailDev)
+    "EMAIL_ACCOUNT_NAME"
+    "EMAIL_ID"
+    "EMAIL_PASSWORD"
+    "EMAIL_SERVER_DOMAIN"
+    "EMAIL_PORT"
+    "EMAIL_SECURE_CONNECTION"
 )
 
 # Check for missing required variables

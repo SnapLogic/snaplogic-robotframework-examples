@@ -10,6 +10,7 @@ include:
   - docker-compose.db2.yml
   - docker-compose.salesforce-mock.yml
   - docker-compose.kafka.yml
+  - docker-compose.email-mock.yml
 
 services:
   tools:

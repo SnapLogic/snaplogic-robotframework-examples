@@ -6,7 +6,7 @@
 # =============================================================================
 
 .PHONY: email-start email-stop email-restart email-status email-clean \
-        email-logs email-test email-web
+        email-logs email-test email-web email-purge
 
 # Include common configuration
 include makefiles/common_services/Makefile.common
@@ -18,7 +18,7 @@ include makefiles/common_services/Makefile.common
 # 🚀 Start MailDev email testing server
 email-start:
 	@echo "📧 Starting MailDev email testing server..."
-	$(DOCKER_COMPOSE_EMAIL) --profile email-mock up -d maildev
+	docker compose $(ENV_FILE_FLAGS) -f docker/docker-compose.email-mock.yml --profile email-mock up -d maildev
 	@echo "⏳ Waiting for MailDev to initialize..."
 	@sleep 3
 	@echo "✅ MailDev email server started!"
@@ -50,9 +50,9 @@ email-start:
 # ⛔ Stop MailDev email testing server
 email-stop:
 	@echo "⛔ Stopping MailDev email server..."
-	$(DOCKER_COMPOSE_EMAIL) stop maildev || true
+	docker compose $(ENV_FILE_FLAGS) -f docker/docker-compose.email-mock.yml stop maildev || true
 	@echo "🗑️ Removing MailDev container and volumes..."
-	$(DOCKER_COMPOSE_EMAIL) rm -f -v maildev || true
+	docker compose $(ENV_FILE_FLAGS) -f docker/docker-compose.email-mock.yml rm -f -v maildev || true
 	@echo "✅ MailDev email server stopped and cleaned up."
 
 # 🔄 Restart MailDev email testing server
@@ -91,6 +91,29 @@ email-status:
 	else \
 		echo "❌ MailDev container is not running (status: $$container_status)"; \
 		echo "💡 Run 'make email-start' to start the email server"; \
+	fi
+
+# 🗑️ Purge all emails from MailDev inbox
+email-purge:
+	@echo "🗑️ Purging all emails from MailDev inbox..."
+	@echo "🔍 Checking MailDev accessibility at http://localhost:1080..."
+	@if curl -s -f http://localhost:1080/ >/dev/null 2>&1; then \
+		echo "✅ MailDev is accessible"; \
+		response=$$(curl -s -o /dev/null -w "%{http_code}" -X DELETE http://localhost:1080/email/all); \
+		if [ "$$response" = "200" ]; then \
+			echo "✅ All emails have been purged from MailDev"; \
+			email_count=$$(curl -s http://localhost:1080/email | python3 -c "import sys, json; data=json.load(sys.stdin); print(len(data))" 2>/dev/null || echo "0"); \
+			echo "📬 Inbox is now empty ($$email_count emails)"; \
+		else \
+			echo "⚠️  Failed to purge emails (HTTP status: $$response)"; \
+			echo "💡 Try accessing http://localhost:1080 in your browser"; \
+		fi; \
+	else \
+		echo "❌ Cannot connect to MailDev at http://localhost:1080"; \
+		echo "💡 Checking for MailDev containers..."; \
+		docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -i mail || echo "  No mail-related containers found"; \
+		echo ""; \
+		echo "💡 To start MailDev, run: make email-start"; \
 	fi
 
 # 🧹 Clean all email server data and restart
