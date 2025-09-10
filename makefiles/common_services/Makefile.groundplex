@@ -22,7 +22,6 @@ createplex-launch-groundplex:
 	@echo ":========== [Phase 2] Computing and starting containers using COMPOSE_PROFILES... =========="
 	$(MAKE) launch-groundplex
 
-	${MAKE} groundplex-status
 
 # =============================================================================
 # 🚀 Launch SnapLogic Groundplex container and validate status
@@ -48,11 +47,15 @@ groundplex-status:
 			echo "🪵 Last 5 log lines from snaplogic-groundplex:"; \
 			docker logs --tail 5 snaplogic-groundplex 2>/dev/null || echo "⚠️  Could not fetch logs."; \
 		else \
-			if docker exec snaplogic-groundplex /bin/bash -c "cd /opt/snaplogic/bin && sh jcc.sh status"; then \
+			status_output=$$(docker exec snaplogic-groundplex /bin/bash -c "cd /opt/snaplogic/bin && sh jcc.sh status" 2>&1); \
+			echo "🔍 JCC Status Output: $$status_output"; \
+			if echo "$$status_output" | grep -q "PID file not found"; then \
+				echo "❌ JCC not running (PID file not found). Retrying in 10s..."; \
+			elif echo "$$status_output" | grep -q "is running"; then \
 				echo "✅ JCC is running."; \
 				exit 0; \
 			else \
-				echo "❌ JCC not running inside container. Retrying in 10s..."; \
+				echo "❌ JCC status unclear. Retrying in 10s..."; \
 			fi; \
 		fi; \
 		sleep 10; \

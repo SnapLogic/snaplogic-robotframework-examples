@@ -35,9 +35,9 @@ robot-run-tests: check-env
 #.   make robot-run-all-tests TAGS="oracle,minio" PROJECT_SPACE_SETUP=True
 # =============================================================================
 robot-run-all-tests: check-env
-	@PROJECT_SPACE_SETUP_ACTUAL=${PROJECT_SPACE_SETUP:-False}; \
+	@PROJECT_SPACE_SETUP_ACTUAL=$${PROJECT_SPACE_SETUP:-False}; \
 	echo ":========== [Phase 1] Create project space and create plex inside project space =========="; \
-	if [ "$PROJECT_SPACE_SETUP_ACTUAL" = "True" ]; then \
+	if [ "$$PROJECT_SPACE_SETUP_ACTUAL" = "True" ]; then \
 		echo ":========= [Phase 1] Running createplex tests ========================================="; \
 		$(MAKE) robot-run-tests TAGS="createplex" PROJECT_SPACE_SETUP=True || { \
 			echo "❌ createplex test failed, checking if error is due to active Snaplex nodes..."; \
@@ -62,7 +62,7 @@ robot-run-all-tests: check-env
 	$(MAKE) launch-groundplex; \
 	\
 	echo ":========== [Phase 2.1] Setting permissions for test data directories (Travis only) =========="; \
-	if [ "$TRAVIS" = "true" ]; then \
+	if [ "$$TRAVIS" = "true" ]; then \
 		chmod +x ./scripts/set_travis_permissions.sh; \
 		./scripts/set_travis_permissions.sh || echo "Warning: Could not set all permissions"; \
 	else \
@@ -78,18 +78,18 @@ robot-run-all-tests: check-env
 #  → usage: make robot-run-tests-no-gp TAGS="oracle,minio" PROJECT_SPACE_SETUP=True
 # =============================================================================
 robot-run-tests-no-gp: check-env
-	@PROJECT_SPACE_SETUP_ACTUAL=${PROJECT_SPACE_SETUP:-False}; \
+	@PROJECT_SPACE_SETUP_ACTUAL=$${PROJECT_SPACE_SETUP:-False}; \
 	echo ":========== [Phase 1] Project Space Setup =========="; \
-	if [ "$PROJECT_SPACE_SETUP_ACTUAL" = "True" ]; then \
+	if [ "$$PROJECT_SPACE_SETUP_ACTUAL" = "True" ]; then \
 		echo ":========= [Phase 1] Running createplex tests (without launching Groundplex) ========================================="; \
-		$(MAKE) robot-run-tests TAGS="createplex" PROJECT_SPACE_SETUP=True || { \
+		$$(MAKE) robot-run-tests TAGS="createplex" PROJECT_SPACE_SETUP=True || { \
 			echo "❌ createplex test failed, checking if error is due to active Snaplex nodes..."; \
 			if ls robot_output/log-*.html 2>/dev/null | head -1 | xargs grep -q "cannot be deleted while it contains active nodes" 2>/dev/null; then \
 				echo "🛑 Active Groundplex nodes detected — killing Groundplex and retrying to create project space and plex..."; \
-				$(MAKE) stop-groundplex; \
+				$$(MAKE) stop-groundplex; \
 				echo "⏳ Waiting 60 seconds for nodes to deregister from SnapLogic Cloud..."; \
 				sleep 60; \
-				$(MAKE) robot-run-tests TAGS="createplex" PROJECT_SPACE_SETUP=True || exit 1; \
+				$$(MAKE) robot-run-tests TAGS="createplex" PROJECT_SPACE_SETUP=True || exit 1; \
 			else \
 				echo "❌ createplex test failed for a different reason."; \
 				exit 1; \
@@ -98,14 +98,14 @@ robot-run-tests-no-gp: check-env
 	else \
 		echo "⏩ Skipping createplex setup (PROJECT_SPACE_SETUP is not True)"; \
 		echo ":========== [Phase 1.1] Verifying if project space exists =========="; \
-		$(MAKE) robot-run-tests TAGS="verify_project_space_exists" PROJECT_SPACE_SETUP=False || exit 1; \
+		$$(MAKE) robot-run-tests TAGS="verify_project_space_exists" PROJECT_SPACE_SETUP=False || exit 1; \
 	fi; \
 	\
 	echo ":========== [Phase 2] ⏩ SKIPPING Groundplex launch (use existing or not required) =========="; \
 	echo "ℹ️  Note: Ensure Groundplex is already running if your tests require it"; \
 	\
 	echo ":========== [Phase 2.1] Setting permissions for test data directories (Travis only) =========="; \
-	if [ "$TRAVIS" = "true" ]; then \
+	if [ "$$TRAVIS" = "true" ]; then \
 		chmod +x ./scripts/set_travis_permissions.sh; \
 		./scripts/set_travis_permissions.sh || echo "Warning: Could not set all permissions"; \
 	else \
@@ -113,8 +113,7 @@ robot-run-tests-no-gp: check-env
 	fi; \
 	\
 	echo ":========== [Phase 3] Running user-defined robot tests... =========="; \
-	$(MAKE) robot-run-tests TAGS="$(TAGS)" PROJECT_SPACE_SETUP=False
-
+	$$(MAKE) robot-run-tests TAGS="$(TAGS)" PROJECT_SPACE_SETUP=False
 # =============================================================================
 # 📢 Send slack notifications for test results
 # =============================================================================

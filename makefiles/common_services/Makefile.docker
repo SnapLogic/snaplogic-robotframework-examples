@@ -116,7 +116,7 @@ check-env:
 	@if [ ! -f "$(ROOT_ENV_FILE)" ]; then \
 		echo "❌ Error: Root environment file not found: $(ROOT_ENV_FILE)"; \
 		echo "ℹ️ Please ensure .env exists in project root."; \
-		echo "Current directory: $(pwd)"; \
+		echo "Current directory: $$(pwd)"; \
 		echo "Available .env files:"; \
 		ls -la | grep -E '\.env' || true; \
 		exit 1; \
@@ -124,17 +124,23 @@ check-env:
 	@if [ -z "$(ENV_FILES_FROM_DIR)" ]; then \
 		echo "❌ Error: No .env files found in $(ENV_DIR)/ directory"; \
 		echo "ℹ️ Please ensure env files exist in $(ENV_DIR)/"; \
-		ls -la $(ENV_DIR)/ 2>/dev/null | grep -E '\.env' || echo "Directory not found or empty"; \
+		ls -la "$(ENV_DIR)/" 2>/dev/null | grep -E '\.env' || true; \
 		exit 1; \
 	fi
 	@echo "✅ Found environment files:"
-	@for file in $(ENV_FILES); do \
-		if [ -f "$file" ]; then \
-			echo "   ✓ $file"; \
+	@missing=0; \
+	for file in $(ENV_FILES); do \
+		if [ -f "$$file" ]; then \
+			echo "   ✓ $$file"; \
 		else \
-			echo "   ✗ $file (NOT FOUND)"; \
+			echo "   ✗ $$file (NOT FOUND)"; \
+			missing=1; \
 		fi; \
-	done
+	done; \
+	if [ $$missing -eq 1 ]; then \
+		echo "❌ Some environment files are missing!"; \
+		exit 1; \
+	fi
 	@echo "✅ Environment check passed!"
 
 ensure-config-dir:

@@ -40,8 +40,6 @@
 # - For production, mount custom certificates (see salesforce-mock-custom-cert service example)
 # - When testing with curl, use -k flag to accept self-signed certificates
 
-version: '3.8'
-
 services:
   # WireMock - Salesforce API Mock Server with HTTP and HTTPS
   salesforce-mock:
