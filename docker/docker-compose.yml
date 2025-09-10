@@ -19,8 +19,6 @@ services:
     platform: linux/amd64  # Force x86_64 for ibm_db compatibility
     container_name: snaplogic-test-example-tools-container
     image: snaplogic-test-example:latest
-    env_file:
-      - ../.env
     environment:
       - TRAVIS_EVENT_TYPE=${TRAVIS_EVENT_TYPE}
       - TRAVIS_COMMIT_AUTHOR_NAME=${TRAVIS_COMMIT_AUTHOR_NAME:-"Unknown"}
@@ -37,6 +35,7 @@ services:
       - ../src:/app/src
       - ../test:/app/test
       - ../.env:/app/.env
+      - ../env_files:/app/env_files:ro  # Mount entire env_files directory
       - ../setup_env.sh:/app/setup_env.sh
       - ../.travis.yml:/app/.travis.yml
       - ../test/suite/test_data:/opt/snaplogic/test_data

@@ -5,19 +5,52 @@
 # Include this at the top of every category Makefile
 # =============================================================================
 
+# Guard against multiple inclusion
+ifndef MAKEFILE_COMMON_INCLUDED
+MAKEFILE_COMMON_INCLUDED := 1
+
 # -----------------------------------------------------------------------------
 # Docker Configuration
 # -----------------------------------------------------------------------------
-# Allow override of .env file for different environments (stage, production, etc.)
-# Usage: make robot-run-tests ENV_FILE=.env.staging
-# The ?= operator means:
-# - If ENV_FILE is already defined (either as an environment variable or passed via command line), keep that value
-# - If ENV_FILE is not defined, set it to .env
-ENV_FILE ?= .env
+# Environment Files Configuration
+# Loads both root .env file AND all .env files from the env_files directory
+# Will throw an error if files are not found
+# Can be overridden to use specific files or directories
+# Usage examples:
+#   make robot-run-tests                                    # Uses .env + all files from env_files/
+#   make robot-run-tests ENV_FILES=".env .env.staging"     # Use specific files
+#   make robot-run-tests ENV_DIR="./production-env"        # Use different directory
+
+# Directory containing env files (can be overridden)
+ENV_DIR ?= env_files
+
+# Root .env file is required
+ROOT_ENV_FILE := .env
+
+# Get all env files from the directory (both .env and .env.* patterns)
+ENV_FILES_FROM_DIR := $(wildcard $(ENV_DIR)/.env) $(wildcard $(ENV_DIR)/.env.*) $(wildcard $(ENV_DIR)/*.env)
+
+# Allow manual override of ENV_FILES
+# If ENV_FILES is not set, combine root .env with files from ENV_DIR
+ENV_FILES ?= $(ROOT_ENV_FILE) $(ENV_FILES_FROM_DIR)
+
+# Check if root .env exists - throw error if not found
+ifeq (,$(wildcard $(ROOT_ENV_FILE)))
+    $(error Root .env file not found in project root! Please create a .env file in the project root directory)
+endif
+
+# Check if env files exist in directory - throw error if not found
+ifeq ($(strip $(ENV_FILES_FROM_DIR)),)
+    $(error No .env files found in $(ENV_DIR)/ directory. Please ensure the directory exists and contains .env files)
+endif
+
+# Build --env-file flags for docker compose
+# This creates multiple --env-file flags, one for each file
+ENV_FILE_FLAGS := $(foreach file,$(ENV_FILES),--env-file $(file))
 
 # Docker compose file location
 DOCKER_COMPOSE_FILE := docker/docker-compose.yml
-DOCKER_COMPOSE := docker compose --env-file $(ENV_FILE) -f $(DOCKER_COMPOSE_FILE)
+DOCKER_COMPOSE := docker compose $(ENV_FILE_FLAGS) -f $(DOCKER_COMPOSE_FILE)
 
 # Docker Compose profiles - Define ONCE here, use everywhere
 # Can be overridden via command line: make start-services COMPOSE_PROFILES=kafka,oracle-dev
@@ -58,3 +91,46 @@ ROBOT_DEFAULT_TIMEOUT := 30s
 export COMPOSE_PROFILES
 export DOCKER_COMPOSE
 export DATE
+
+# -----------------------------------------------------------------------------
+# Debug/Info Targets
+# -----------------------------------------------------------------------------
+# Guard against multiple inclusion
+ifndef COMMON_DEBUG_TARGETS_DEFINED
+COMMON_DEBUG_TARGETS_DEFINED := 1
+
+# Show which env files are being loaded
+# Show which env files are being loaded
+show-env-files:
+	@echo "========================================"
+	@echo "Environment Files Configuration:"
+	@echo "========================================"
+	@echo "Root ENV file: $(ROOT_ENV_FILE)"
+	@echo "ENV_DIR: $(ENV_DIR)"
+	@echo ""
+	@echo "ENV_FILES being loaded (in order):"
+
+	@if [ -z "$(ENV_FILES)" ]; then \
+	echo "  (No ENV files configured)"; \
+else \
+	for file in $(ENV_FILES); do \
+		if [ -f "$$file" ]; then \
+			echo "  ✓ $$file (exists)"; \
+		else \
+			echo "  ✗ $$file (NOT FOUND)"; \
+		fi; \
+	done; \
+fi
+
+	@echo "========================================"
+	@echo "Loading Order:"
+	@echo "  1. Root .env loads first (base configuration)"
+	@echo "  2. Files from $(ENV_DIR)/ load next (can override root)"
+	@echo "========================================"
+	@echo "Docker Compose Command:"
+	@echo "$(DOCKER_COMPOSE)"
+	@echo "========================================"
+
+endif # COMMON_DEBUG_TARGETS_DEFINED
+
+endif # MAKEFILE_COMMON_INCLUDED
