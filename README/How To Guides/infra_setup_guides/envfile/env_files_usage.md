@@ -2,7 +2,14 @@
 
 ## Overview
 
-This guide explains how to use and configure environment files in the SnapLogic Robot Framework Examples project. The system **requires** both a root `.env` file AND files from the `env_files/` directory. It loads multiple `.env` files automatically, with later files overriding values from earlier ones.
+This guide explains how to use and configure environment files in the SnapLogic Robot Framework Examples project. The system **requires** a root `.env` file and optionally loads files from the `env_files/` directory (including subdirectories). It loads multiple `.env` files automatically, with later files overriding values from earlier ones.
+
+### New Modular Structure
+
+The environment files have been reorganized into individual service-specific files for better maintainability:
+- Each service (Oracle, PostgreSQL, Kafka, etc.) has its own `.env` file
+- Files can be organized in subdirectories for better structure
+- Automatic recursive discovery of all env files
 
 ## Table of Contents
 
@@ -19,18 +26,20 @@ This guide explains how to use and configure environment files in the SnapLogic 
 
 The Makefile configuration automatically loads:
 1. **Root `.env` file** (required) - Base configuration
-2. **All `.env` files from `env_files/` directory** (required) - Modular configurations
+2. **All `.env` files from `env_files/` directory and subdirectories** (optional) - Modular configurations
 
-Both are mandatory - the system will error if either is missing.
+The root `.env` is mandatory, while files in `env_files/` are optional (will show a warning if missing).
 
 ### Key Features
 
-- **Dual Source Loading**: Always loads root `.env` PLUS files from `env_files/`
-- **Automatic Discovery**: Finds all `.env`, `.env.*`, and `*.env` files in the env_files directory
+- **Recursive Discovery**: Automatically finds all env files in `env_files/` and its subdirectories
+- **Modular Configuration**: Each service has its own dedicated env file
+- **Subdirectory Support**: Organize files in logical folders (databases/, messaging/, etc.)
+- **Automatic Discovery**: Finds all `.env`, `.env.*`, and `*.env` files recursively
 - **Multiple File Support**: Loads multiple env files using Docker Compose's `--env-file` flag
 - **Manual Override**: Can specify exact files to load instead of auto-discovery
-- **Error Detection**: Fails fast with clear error messages if required files are missing
 - **Flexible Configuration**: Can change the directory or specify individual files
+- **WSL2 Compatible**: Works seamlessly on Linux, Mac, and Windows with WSL2
 
 ## Configuration Variables
 
@@ -65,11 +74,22 @@ Load root `.env` AND all files from the `env_files/` directory:
 make robot-run-tests
 ```
 
-This will automatically load (in order):
+This will automatically load (in alphabetical order):
 - `.env` (root file - base configuration)
-- `env_files/.env.accounts` (can override root values)
-- `env_files/.env.ports` (can override previous values)
-- Any other `.env` files in the env_files directory
+- `env_files/.env.accounts` (account credentials - deprecated, split into individual files)
+- `env_files/.env.db2` (DB2 database configuration)
+- `env_files/.env.email` (Email/SMTP configuration)
+- `env_files/.env.jms` (JMS/ActiveMQ configuration)
+- `env_files/.env.kafka` (Kafka configuration)
+- `env_files/.env.mysql` (MySQL database configuration)
+- `env_files/.env.oracle` (Oracle database configuration)
+- `env_files/.env.ports` (Port mappings)
+- `env_files/.env.postgres` (PostgreSQL database configuration)
+- `env_files/.env.s3` (S3/MinIO configuration)
+- `env_files/.env.salesforce` (Salesforce mock configuration)
+- `env_files/.env.sqlserver` (SQL Server configuration)
+- `env_files/.env.teradata` (Teradata configuration)
+- Any files in subdirectories (loaded alphabetically)
 
 ### 2. Manual File Selection
 
@@ -169,18 +189,51 @@ DATABASE_HOST=production.db.com  # From .env.accounts
 DATABASE_PORT=5432                # From .env (not overridden)
 ```
 
-### Recommended Naming Convention
+### Current File Structure
 
-To control loading order, use numbered prefixes:
+The new modular structure organizes files by service:
 
 ```
 env_files/
-├── .env.00-defaults      # Loaded first (base defaults)
-├── .env.10-database      # Database configuration
-├── .env.20-services      # Service configuration
-├── .env.30-ports         # Port configuration
-└── .env.99-overrides     # Loaded last (final overrides)
+├── .env.accounts         # Legacy: All accounts (being phased out)
+├── .env.ports           # Port configurations for all services
+├── .env.oracle          # Oracle database configuration
+├── .env.postgres        # PostgreSQL database configuration
+├── .env.mysql           # MySQL database configuration
+├── .env.sqlserver       # SQL Server configuration
+├── .env.teradata        # Teradata database configuration
+├── .env.db2             # IBM DB2 database configuration
+├── .env.kafka           # Apache Kafka configuration
+├── .env.jms             # JMS/ActiveMQ configuration
+├── .env.s3              # S3/MinIO storage configuration
+├── .env.salesforce      # Salesforce mock configuration
+└── .env.email           # Email/SMTP configuration
 ```
+
+### Organizing with Subdirectories
+
+You can organize files into subdirectories for better structure:
+
+```
+env_files/
+├── databases/
+│   ├── .env.oracle
+│   ├── .env.postgres
+│   ├── .env.mysql
+│   ├── .env.sqlserver
+│   ├── .env.teradata
+│   └── .env.db2
+├── messaging/
+│   ├── .env.kafka
+│   └── .env.jms
+├── cloud/
+│   ├── .env.s3
+│   └── .env.salesforce
+└── communication/
+    └── .env.email
+```
+
+**Note**: Files in subdirectories are discovered automatically and loaded alphabetically by their full path.
 
 ## Error Handling
 
@@ -200,9 +253,10 @@ If no `.env` files are found in the `env_files/` directory:
 
 ```bash
 make robot-run-tests
-# ERROR: No .env files found in env_files/ directory.
-# Please ensure the directory exists and contains .env files
+# Warning: No .env files found in env_files/ directory. Using only root .env file
 ```
+
+**Note**: This is now just a warning, not an error. The system will continue with only the root `.env` file.
 
 ### How to Fix
 
@@ -252,7 +306,7 @@ ENV_FILES being loaded (in order):
 ========================================
 Loading Order:
   1. Root .env loads first (base configuration)
-  2. Files from env_files/ load next (can override root)
+  2. Files from env_files/ and subdirectories load next (sorted alphabetically)
 ========================================
 Docker Compose Command:
 docker compose --env-file .env --env-file env_files/.env.accounts --env-file env_files/.env.ports -f docker/docker-compose.yml
@@ -282,21 +336,43 @@ In env_files/ directory:
 
 ### 1. Organize by Function
 
-Use a two-tier structure:
+Use the new modular structure with individual service files:
 
 ```
 project/
 ├── .env                    # Root: Base/shared configuration
 └── env_files/
-    ├── .env.accounts      # Account credentials
-    ├── .env.ports         # Port configurations
-    ├── .env.database      # Database settings
-    ├── .env.services      # Service endpoints
-    └── .env.features      # Feature flags
+    ├── .env.ports         # Port configurations (shared)
+    ├── .env.oracle        # Oracle-specific settings
+    ├── .env.postgres      # PostgreSQL-specific settings
+    ├── .env.mysql         # MySQL-specific settings
+    ├── .env.kafka         # Kafka configuration
+    ├── .env.jms           # JMS/ActiveMQ settings
+    └── ...                # Other service-specific files
 ```
 
-**Root `.env`**: Common settings, defaults, non-sensitive configs
-**`env_files/`**: Modular, specific configurations
+Or organize with subdirectories:
+
+```
+project/
+├── .env                    # Root: Base configuration
+└── env_files/
+    ├── databases/         # Database configurations
+    │   ├── .env.oracle
+    │   ├── .env.postgres
+    │   └── .env.mysql
+    ├── messaging/         # Message broker configs
+    │   ├── .env.kafka
+    │   └── .env.jms
+    └── cloud/             # Cloud service configs
+        └── .env.s3
+```
+
+**Benefits of modular approach**:
+- Each service configuration is isolated
+- Easy to enable/disable specific services
+- Clear separation of concerns
+- Simpler to maintain and update
 
 ### 2. Use Clear Naming
 
@@ -335,18 +411,6 @@ validate-env:
 
 ## Troubleshooting
 
-### Issue: Changes to env files not taking effect
-
-**Solution**: Restart the tools container to reload environment variables:
-```bash
-# Quick restart (3 seconds)
-make restart-tools
-
-# Or restart all services if needed
-make restart-all
-```
-
-**Note**: Volume mounting makes files available, but environment variables are loaded at container start time.
 
 ### Issue: Variable conflicts between files
 
@@ -390,64 +454,39 @@ else
 endif
 ```
 
-### Multiple Directory Support
 
-```makefile
-# Search multiple directories
-ENV_FILES := $(wildcard env/*.env config/*.env secrets/*.env)
-```
-
-### Environment-Specific Makefiles
-
-Create wrapper scripts:
-
-```bash
-# deploy-production.sh
-#!/bin/bash
-ENV_FILES=".env.production .env.secrets" make deploy
-
-# test-local.sh
-#!/bin/bash
-ENV_FILES=".env.test .env.local" make test
-```
-
-## Examples for CI/CD
-
-### GitHub Actions
-
-```yaml
-- name: Run Tests
-  run: |
-    make robot-run-tests ENV_FILES=".env.ci .env.test"
-```
-
-### Jenkins
-
-```groovy
-sh 'ENV_DIR="./ci-env" make robot-run-tests'
-```
-
-### GitLab CI
-
-```yaml
-test:
-  script:
-    - make robot-run-tests ENV_FILES="${CI_ENV_FILES}"
-```
 
 ## Summary
 
 The environment file system provides flexible configuration management:
 
-- **Required files**: Both root `.env` AND files in `env_files/` must exist
-- **Default behavior**: Loads `.env` + all files from `env_files/`
-- **Loading order**: Root `.env` first, then `env_files/` alphabetically
+- **Required files**: Root `.env` must exist; files in `env_files/` are optional
+- **Modular structure**: Each service has its own dedicated `.env` file
+- **Subdirectory support**: Files can be organized in subdirectories and are discovered recursively
+- **Default behavior**: Loads `.env` + all files from `env_files/` and subdirectories
+- **Loading order**: Root `.env` first, then `env_files/` alphabetically (including subdirectories)
 - **Manual control**: Override with specific files when needed
-- **Error safety**: Fails fast if required files are missing
+- **Cross-platform**: Works on Linux, Mac, and Windows with WSL2
 - **Debugging**: Built-in commands to inspect configuration
 - **Runtime reload**: Use `make restart-tools` after env changes
 
-This approach ensures consistent, maintainable, and secure environment configuration across development, testing, and production environments.
+### New Service-Specific Files
+
+Each service now has its own configuration file:
+- `.env.oracle` - Oracle database settings and credentials
+- `.env.postgres` - PostgreSQL configuration
+- `.env.mysql` - MySQL configuration
+- `.env.sqlserver` - SQL Server settings
+- `.env.teradata` - Teradata configuration
+- `.env.db2` - IBM DB2 settings
+- `.env.kafka` - Kafka broker and related settings
+- `.env.jms` - JMS/ActiveMQ configuration
+- `.env.s3` - S3/MinIO storage settings
+- `.env.salesforce` - Salesforce mock API configuration
+- `.env.email` - Email/SMTP settings
+- `.env.ports` - Port mappings for all services
+
+This modular approach ensures better organization, easier maintenance, and clearer separation of concerns across different services.
 
 ## Overriding Other Variables
 
@@ -470,20 +509,20 @@ make robot-run-tests \
 
 ### Available Variables to Override
 
-| Variable | Default | Example Override | Description |
-|----------|---------|------------------|-------------|
-| ENV_DIR | env_files | `ENV_DIR=./config` | Directory to scan for env files |
-| ENV_FILES | Auto-discovered from ENV_DIR | `ENV_FILES=".env.staging"` | Specific env files to load |
-| COMPOSE_PROFILES | tools,oracle-dev,minio,... | `COMPOSE_PROFILES=minimal` | Docker Compose profiles to activate |
-| DEFAULT_PROCESSES | 5 | `DEFAULT_PROCESSES=10` | Number of parallel test processes |
-| ROBOT_DEFAULT_TIMEOUT | 30s | `ROBOT_DEFAULT_TIMEOUT=60s` | Default timeout for Robot tests |
-| S3_BUCKET | artifacts.slimdev.snaplogic | `S3_BUCKET=my-bucket` | S3 bucket for test results |
-| S3_PREFIX | RF_CommonTests_Results | `S3_PREFIX=Custom_Results` | S3 path prefix for uploads |
-| DATE | $(shell date +'%Y-%m-%d-%H-%M') | `DATE=custom-date` | Timestamp for test runs |
-| DOCKER_COMPOSE_FILE | docker/docker-compose.yml | `DOCKER_COMPOSE_FILE=custom.yml` | Docker Compose file location |
-| PROJECT_ROOT | $(shell pwd) | `PROJECT_ROOT=/custom/path` | Project root directory |
-| TEST_DIR | test | `TEST_DIR=custom_tests` | Test directory location |
-| ROBOT_OUTPUT_DIR | robot_output | `ROBOT_OUTPUT_DIR=results` | Robot Framework output directory |
+| Variable              | Default                         | Example Override                 | Description                         |
+| --------------------- | ------------------------------- | -------------------------------- | ----------------------------------- |
+| ENV_DIR               | env_files                       | `ENV_DIR=./config`               | Directory to scan for env files     |
+| ENV_FILES             | Auto-discovered from ENV_DIR    | `ENV_FILES=".env.staging"`       | Specific env files to load          |
+| COMPOSE_PROFILES      | tools,oracle-dev,minio,...      | `COMPOSE_PROFILES=minimal`       | Docker Compose profiles to activate |
+| DEFAULT_PROCESSES     | 5                               | `DEFAULT_PROCESSES=10`           | Number of parallel test processes   |
+| ROBOT_DEFAULT_TIMEOUT | 30s                             | `ROBOT_DEFAULT_TIMEOUT=60s`      | Default timeout for Robot tests     |
+| S3_BUCKET             | artifacts.slimdev.snaplogic     | `S3_BUCKET=my-bucket`            | S3 bucket for test results          |
+| S3_PREFIX             | RF_CommonTests_Results          | `S3_PREFIX=Custom_Results`       | S3 path prefix for uploads          |
+| DATE                  | $(shell date +'%Y-%m-%d-%H-%M') | `DATE=custom-date`               | Timestamp for test runs             |
+| DOCKER_COMPOSE_FILE   | docker/docker-compose.yml       | `DOCKER_COMPOSE_FILE=custom.yml` | Docker Compose file location        |
+| PROJECT_ROOT          | $(shell pwd)                    | `PROJECT_ROOT=/custom/path`      | Project root directory              |
+| TEST_DIR              | test                            | `TEST_DIR=custom_tests`          | Test directory location             |
+| ROBOT_OUTPUT_DIR      | robot_output                    | `ROBOT_OUTPUT_DIR=results`       | Robot Framework output directory    |
 
 ### Common Override Patterns
 

@@ -27,8 +27,9 @@ ENV_DIR ?= env_files
 # Root .env file is required
 ROOT_ENV_FILE := .env
 
-# Get all env files from the directory (both .env and .env.* patterns)
-ENV_FILES_FROM_DIR := $(wildcard $(ENV_DIR)/.env) $(wildcard $(ENV_DIR)/.env.*) $(wildcard $(ENV_DIR)/*.env)
+# Get all env files from the directory and subdirectories (both .env and .env.* patterns)
+# Using find command for recursive search - works on Linux/Mac/WSL2
+ENV_FILES_FROM_DIR := $(shell find $(ENV_DIR) -type f \( -name '.env' -o -name '.env.*' -o -name '*.env' \) 2>/dev/null | sort)
 
 # Allow manual override of ENV_FILES
 # If ENV_FILES is not set, combine root .env with files from ENV_DIR
@@ -39,9 +40,9 @@ ifeq (,$(wildcard $(ROOT_ENV_FILE)))
     $(error Root .env file not found in project root! Please create a .env file in the project root directory)
 endif
 
-# Check if env files exist in directory - throw error if not found
+# Check if env files exist in directory - just warn if not found
 ifeq ($(strip $(ENV_FILES_FROM_DIR)),)
-    $(error No .env files found in $(ENV_DIR)/ directory. Please ensure the directory exists and contains .env files)
+    $(info Warning: No .env files found in $(ENV_DIR)/ directory. Using only root .env file)
 endif
 
 # Build --env-file flags for docker compose
@@ -125,7 +126,7 @@ fi
 	@echo "========================================"
 	@echo "Loading Order:"
 	@echo "  1. Root .env loads first (base configuration)"
-	@echo "  2. Files from $(ENV_DIR)/ load next (can override root)"
+	@echo "  2. Files from $(ENV_DIR)/ and subdirectories load next (sorted alphabetically)"
 	@echo "========================================"
 	@echo "Docker Compose Command:"
 	@echo "$(DOCKER_COMPOSE)"
