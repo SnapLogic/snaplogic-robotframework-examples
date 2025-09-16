@@ -150,16 +150,20 @@ echo "🔄 Merging configuration from env_files directory..."
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ENV_FILES_DIR="$SCRIPT_DIR/env_files"
 
-if [ ! -d "$ENV_FILES_DIR" ]; then
-    echo "⚠️  Warning: env_files directory not found at $ENV_FILES_DIR"
-    echo "   Continuing with only core required variables..."
-else
-    # Process each category of env files
-    merge_env_files "$ENV_FILES_DIR/database_accounts" "DATABASE ACCOUNTS"
-    merge_env_files "$ENV_FILES_DIR/messaging_service_accounts" "MESSAGING SERVICE ACCOUNTS"
-    merge_env_files "$ENV_FILES_DIR/mock_service_accounts" "MOCK SERVICE ACCOUNTS"
-    merge_env_files "$ENV_FILES_DIR/groundplex" "GROUNDPLEX CONFIGURATION"
-fi
+# Process all subdirectories in env_files
+# The env_files directory is part of the repository and should always exist
+echo ""
+echo "🔄 Processing all configuration directories in env_files..."
+
+for dir in "$ENV_FILES_DIR"/*; do
+    if [ -d "$dir" ]; then
+        dir_name=$(basename "$dir")
+        # Convert directory name to title case for display
+        # e.g., database_accounts -> DATABASE ACCOUNTS
+        display_name=$(echo "$dir_name" | tr '_' ' ' | tr '[:lower:]' '[:upper:]')
+        merge_env_files "$dir" "$display_name"
+    fi
+done
 
 # Add any additional Travis-specific variables that might be set
 echo "" >> .env
@@ -168,25 +172,6 @@ echo "# Additional Travis Environment Variables" >> .env
 echo "# ============================================" >> .env
 echo "# Build metadata" >> .env
 echo "HMD_HOME=${HMD_HOME:-$TRAVIS_BUILD_DIR}" >> .env
-
-# Add Snowflake variables if they exist (these might not be in env_files)
-if [ -n "$SNOWFLAKE_ACCOUNT" ]; then
-    echo "" >> .env
-    echo "# Snowflake Configuration (from Travis)" >> .env
-    echo "SNOWFLAKE_ACCOUNT_NAME=${SNOWFLAKE_ACCOUNT_NAME}" >> .env
-    echo "SNOWFLAKE_ACCOUNT=${SNOWFLAKE_ACCOUNT}" >> .env
-    echo "SNOWFLAKE_HOSTNAME=${SNOWFLAKE_HOSTNAME}" >> .env
-    echo "SNOWFLAKE_DATABASE=${SNOWFLAKE_DATABASE}" >> .env
-    echo "SNOWFLAKE_SCHEMA=${SNOWFLAKE_SCHEMA}" >> .env
-    echo "SNOWFLAKE_WAREHOUSE=${SNOWFLAKE_WAREHOUSE}" >> .env
-    echo "SNOWFLAKE_USERNAME=${SNOWFLAKE_USERNAME}" >> .env
-    echo "SNOWFLAKE_PASSWORD=${SNOWFLAKE_PASSWORD}" >> .env
-    echo "SNOWFLAKE_ROLE=${SNOWFLAKE_ROLE}" >> .env
-    [ -n "$SNOWFLAKE_S3_BUCKET" ] && echo "SNOWFLAKE_S3_BUCKET=${SNOWFLAKE_S3_BUCKET}" >> .env
-    [ -n "$SNOWFLAKE_S3_FOLDER" ] && echo "SNOWFLAKE_S3_FOLDER=${SNOWFLAKE_S3_FOLDER}" >> .env
-    [ -n "$SNOWFLAKE_S3_ACCESS_KEY" ] && echo "SNOWFLAKE_S3_ACCESS_KEY=${SNOWFLAKE_S3_ACCESS_KEY}" >> .env
-    [ -n "$SNOWFLAKE_S3_SECRET_KEY" ] && echo "SNOWFLAKE_S3_SECRET_KEY=${SNOWFLAKE_S3_SECRET_KEY}" >> .env
-fi
 
 echo ""
 echo "✅ Created .env file successfully"
@@ -202,10 +187,14 @@ echo "  - Total variables in .env: $total_vars"
 
 # Show categories processed
 echo "  - Categories processed:"
-[ -d "$ENV_FILES_DIR/database_accounts" ] && echo "    ✓ Database accounts"
-[ -d "$ENV_FILES_DIR/messaging_service_accounts" ] && echo "    ✓ Messaging services"  
-[ -d "$ENV_FILES_DIR/mock_service_accounts" ] && echo "    ✓ Mock services"
-[ -d "$ENV_FILES_DIR/groundplex" ] && echo "    ✓ Groundplex configuration"
+for dir in "$ENV_FILES_DIR"/*; do
+    if [ -d "$dir" ]; then
+        dir_name=$(basename "$dir")
+        # Convert directory name to readable format
+        display_name=$(echo "$dir_name" | tr '_' ' ' | sed 's/\b\(\w\)/\u\1/g')
+        echo "    ✓ $display_name"
+    fi
+done
 
 echo ""
 echo "🚀 Ready to run tests"
