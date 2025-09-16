@@ -72,7 +72,7 @@ Create Kafka Account
     ...    • Security protocol settings
     ...    • Client ID configuration
     ...    "account_payload_path" value as assigned to global variable in __init__.robot file
-    [Tags]    kafkaaccount    kafka3    regression
+    [Tags]    kafkaaccount    kafka    regression
     [Template]    Create Account From Template
     ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
 
@@ -85,7 +85,7 @@ Import Pipeline
     ...    • Unique pipeline ID is generated and returned
     ...    • Pipeline contains file reader and writer snaps configured for mounts
     ...    • Pipeline is successfully deployed to the project space
-    [Tags]    kafka3
+    [Tags]    kafka
     [Template]    Import Pipelines From Template
     ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${pipeline_slp}
 
@@ -96,14 +96,14 @@ Create Triggered_task
     ...    Returns:
     ...    task_payload --> which is used to update the task params
     ...    task_snodeid --> which is used to update the task params
-    [Tags]    kafka3    regression
+    [Tags]    kafka    regression
     [Template]    Create Triggered Task From Template
     ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    ${task_params_set1}    ${task_notifications}
 
 Execute Triggered Task With Parameters
     [Documentation]    Updates the task parameters and runs the task
     ...    Prereq: Need task_payload,task_snodeid (from Create Triggered_task)
-    [Tags]    kafka3    regression
+    [Tags]    kafka    regression
     [Template]    Run Triggered Task With Parameters From Template
     ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}
 
@@ -113,7 +113,7 @@ Verify Pipeline Created Topic And Messages
     ...    • Topic ${KAFKA_TEST_TOPIC} exists (created by pipeline)
     ...    • Messages sent by the pipeline are present in the topic
     ...    • Message content matches expected format from pipeline
-    [Tags]    kafka3    regression    verification
+    [Tags]    kafka    regression    verification
 
     # Call the keyword from kafka_keywords_library.resource
     ${results}=    Verify Pipeline Created Topic And Messages
