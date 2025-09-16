@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kafka Documentation - Compact Reference</title>
+    <style>
+        :root {
+            --primary: #2196F3;
+            --secondary: #4CAF50;
+            --warning: #FF9800;
+            --danger: #F44336;
+            --dark: #212121;
+            --light: #F5F5F5;
+            --border: #E0E0E0;
+            --hover: #E3F2FD;
+            --text: #333333;
+            --text-light: #666666;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
+            line-height: 1.4;
+            color: var(--text);
+            background: var(--light);
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .tabs {
+            display: flex;
+            background: white;
+            border-bottom: 2px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px 15px;
+            background: white;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-light);
+            transition: all 0.2s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab:hover {
+            background: var(--hover);
+            color: var(--text);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background: var(--hover);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        h2 {
+            font-size: 16px;
+            color: var(--primary);
+            margin: 20px 0 15px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h3 {
+            font-size: 14px;
+            color: var(--dark);
+            margin: 15px 0 10px 0;
+            font-weight: 600;
+        }
+
+        .compact-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .compact-table thead {
+            background: var(--light);
+            position: sticky;
+            top: 47px;
+            z-index: 10;
+        }
+
+        .compact-table th {
+            padding: 8px 10px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-light);
+            border-bottom: 2px solid var(--border);
+            background: var(--light);
+        }
+
+        .compact-table td {
+            padding: 6px 10px;
+            border-bottom: 1px solid #F0F0F0;
+            vertical-align: top;
+        }
+
+        .compact-table tr:hover {
+            background: var(--hover);
+        }
+
+        .compact-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Column widths for different tables */
+        .script-table th:nth-child(1) {
+            width: 25%;
+        }
+
+        .script-table th:nth-child(2) {
+            width: 35%;
+        }
+
+        .script-table th:nth-child(3) {
+            width: 40%;
+        }
+
+        .keyword-table th:nth-child(1) {
+            width: 22%;
+        }
+
+        .keyword-table th:nth-child(2) {
+            width: 28%;
+        }
+
+        .keyword-table th:nth-child(3) {
+            width: 35%;
+        }
+
+        .keyword-table th:nth-child(4) {
+            width: 15%;
+        }
+
+        .library-table th:nth-child(1) {
+            width: 20%;
+        }
+
+        .library-table th:nth-child(2) {
+            width: 35%;
+        }
+
+        .library-table th:nth-child(3) {
+            width: 30%;
+        }
+
+        .library-table th:nth-child(4) {
+            width: 15%;
+        }
+
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 11px;
+            background: #F8F8F8;
+            padding: 1px 4px;
+            border-radius: 2px;
+            color: #D81B60;
+        }
+
+        .code-block {
+            background: #263238;
+            color: #AABBC0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 11px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .badge-primary {
+            background: #E3F2FD;
+            color: var(--primary);
+        }
+
+        .badge-success {
+            background: #E8F5E9;
+            color: var(--secondary);
+        }
+
+        .badge-warning {
+            background: #FFF3E0;
+            color: var(--warning);
+        }
+
+        .badge-info {
+            background: #F3E5F5;
+            color: #9C27B0;
+        }
+
+        .alert {
+            padding: 10px 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-size: 12px;
+            border-left: 3px solid;
+        }
+
+        .alert-info {
+            background: #E3F2FD;
+            border-color: var(--primary);
+            color: var(--text);
+        }
+
+        .alert-success {
+            background: #E8F5E9;
+            border-color: var(--secondary);
+            color: var(--text);
+        }
+
+        .location-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .location-box {
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 8px;
+            background: var(--light);
+        }
+
+        .location-title {
+            font-weight: 600;
+            font-size: 12px;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .location-path {
+            font-family: monospace;
+            font-size: 11px;
+            color: var(--text-light);
+        }
+
+        .arg-type {
+            color: #7C4DFF;
+            font-family: monospace;
+            font-size: 11px;
+        }
+
+        .return-type {
+            color: var(--secondary);
+            font-weight: 500;
+            font-size: 11px;
+        }
+
+        .example {
+            background: #FAFAFA;
+            border: 1px solid var(--border);
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 1200px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .compact-table {
+                font-size: 11px;
+            }
+
+            .compact-table th,
+            .compact-table td {
+                padding: 4px 6px;
+            }
+        }
+
+        /* Sticky header adjustment */
+        @media (max-width: 768px) {
+            .compact-table thead {
+                top: 40px;
+            }
+        }
+
+        .section-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 20px 0;
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                font-size: 10px;
+            }
+
+            .tabs {
+                display: none;
+            }
+
+            .tab-content {
+                display: block !important;
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Kafka Scripts & Libraries - Compact Reference</h1>
+            <p class="subtitle">Complete documentation for Docker scripts, custom keywords, and KafkaLibrary</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('docker-scripts')">Docker Scripts</button>
+            <button class="tab" onclick="showTab('custom-keywords')">Custom Keywords</button>
+            <button class="tab" onclick="showTab('kafka-library')">KafkaLibrary API</button>
+        </div>
+
+        <!-- Docker Scripts Tab -->
+        <div id="docker-scripts" class="tab-content active">
+            <div class="alert alert-info">
+                <strong>📦 Pre-installed:</strong> All Kafka scripts come pre-installed in Docker images. No separate
+                installation needed.
+            </div>
+
+            <h2>Script Locations in Docker Images</h2>
+            <div class="location-grid">
+                <div class="location-box">
+                    <div class="location-title">Bitnami Kafka</div>
+                    <div class="location-path">/opt/bitnami/kafka/bin/</div>
+                </div>
+                <div class="location-box">
+                    <div class="location-title">Apache Kafka</div>
+                    <div class="location-path">/opt/kafka/bin/</div>
+                </div>
+                <div class="location-box">
+                    <div class="location-title">Confluent Platform</div>
+                    <div class="location-path">/opt/confluent/bin/</div>
+                </div>
+                <div class="location-box">
+                    <div class="location-title">Strimzi</div>
+                    <div class="location-path">/opt/kafka/bin/</div>
+                </div>
+            </div>
+
+            <h2>Kafka Scripts Reference</h2>
+
+            <h3>Topic Management Scripts</h3>
+            <table class="compact-table script-table">
+                <thead>
+                    <tr>
+                        <th>Script Name</th>
+                        <th>Purpose</th>
+                        <th>Example Usage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>kafka-topics.sh</code></td>
+                        <td>Create, delete, list, describe topics</td>
+                        <td><code>--list --bootstrap-server localhost:9092</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>kafka-configs.sh</code></td>
+                        <td>Modify topic/broker configurations</td>
+                        <td><code>--describe --all --bootstrap-server localhost:9092</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>kafka-reassign-partitions.sh</code></td>
+                        <td>Reassign partitions between brokers</td>
+                        <td><code>--execute --reassignment-json-file reassign.json</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Message Operation Scripts</h3>
+            <table class="compact-table script-table">
+                <thead>
+                    <tr>
+                        <th>Script Name</th>
+                        <th>Purpose</th>
+                        <th>Example Usage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>kafka-console-producer.sh</code></td>
+                        <td>Send messages to topics</td>
+                        <td><code>--topic test --bootstrap-server localhost:9092</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>kafka-console-consumer.sh</code></td>
+                        <td>Read messages from topics</td>
+                        <td><code>--topic test --from-beginning --bootstrap-server localhost:9092</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>kafka-dump-log.sh</code></td>
+                        <td>Examine log segments</td>
+                        <td><code>--files /kafka-logs/topic-0/00000000000000000000.log</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>kafka-verifiable-producer.sh</code></td>
+                        <td>Produce verifiable messages</td>
+                        <td><code>--topic test --max-messages 100 --bootstrap-server localhost:9092</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>kafka-verifiable-consumer.sh</code></td>
+                        <td>Consume and verify messages</td>
+                        <td><code>--topic test --group-id test-group --bootstrap-server localhost:9092</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Consumer Group Scripts</h3>
+            <table class="compact-table script-table">
+                <thead>
+                    <tr>
+                        <th>Script Name</th>
+                        <th>Purpose</th>
+                        <th>Example Usage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>kafka-consumer-groups.sh</code></td>
+                        <td>Manage consumer groups</td>
+                        <td><code>--list --bootstrap-server localhost:9092</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>kafka-consumer-perf-test.sh</code></td>
+                        <td>Consumer performance testing</td>
+                        <td><code>--topic test --messages 1000000 --bootstrap-server localhost:9092</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>kafka-producer-perf-test.sh</code></td>
+                        <td>Producer performance testing</td>
+                        <td><code>--topic test --num-records 1000000 --record-size 1024</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Cluster & KRaft Scripts</h3>
+            <table class="compact-table script-table">
+                <thead>
+                    <tr>
+                        <th>Script Name</th>
+                        <th>Purpose</th>
+                        <th>Example Usage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>kafka-storage.sh</code></td>
+                        <td>Format storage for KRaft mode</td>
+                        <td><code>format -t <cluster-id> -c server.properties</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>kafka-metadata-shell.sh</code></td>
+                        <td>Inspect KRaft metadata</td>
+                        <td><code>--snapshot /kafka-logs/__cluster_metadata-0/00000000000000000000.log</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>kafka-cluster.sh</code></td>
+                        <td>Cluster-wide operations</td>
+                        <td><code>cluster-id --bootstrap-server localhost:9092</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>kafka-broker-api-versions.sh</code></td>
+                        <td>Check API versions</td>
+                        <td><code>--bootstrap-server localhost:9092</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>kafka-log-dirs.sh</code></td>
+                        <td>Check log directory usage</td>
+                        <td><code>--describe --bootstrap-server localhost:9092</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Common Command Examples</h3>
+            <div class="two-column">
+                <div>
+                    <div class="example">
+                        <strong>Create Topic:</strong><br>
+                        <code>kafka-topics.sh --create --topic my-topic --partitions 3 --replication-factor 1</code>
+                    </div>
+                    <div class="example">
+                        <strong>List Topics:</strong><br>
+                        <code>kafka-topics.sh --list --bootstrap-server kafka:9092</code>
+                    </div>
+                    <div class="example">
+                        <strong>Delete Topic:</strong><br>
+                        <code>kafka-topics.sh --delete --topic my-topic --bootstrap-server kafka:9092</code>
+                    </div>
+                </div>
+                <div>
+                    <div class="example">
+                        <strong>Reset Consumer Offset:</strong><br>
+                        <code>kafka-consumer-groups.sh --reset-offsets --group my-group --topic my-topic --to-earliest --execute</code>
+                    </div>
+                    <div class="example">
+                        <strong>Describe Consumer Group:</strong><br>
+                        <code>kafka-consumer-groups.sh --describe --group my-group --bootstrap-server kafka:9092</code>
+                    </div>
+                    <div class="example">
+                        <strong>Docker Execution:</strong><br>
+                        <code>docker exec snaplogic-kafka-kraft kafka-topics.sh --list --bootstrap-server localhost:9092</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Keywords Tab -->
+        <div id="custom-keywords" class="tab-content">
+            <div class="alert alert-success">
+                <strong>📍 Location:</strong> <code>test/resources/kafka/kafka_keywords_library.resource</code>
+            </div>
+
+            <h2>Configuration Variables</h2>
+            <table class="compact-table">
+                <thead>
+                    <tr>
+                        <th>Variable</th>
+                        <th>Default Value</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>${KAFKA_BOOTSTRAP_SERVER}</code></td>
+                        <td>kafka:29092</td>
+                        <td>Kafka broker connection endpoint</td>
+                    </tr>
+                    <tr>
+                        <td><code>${KAFKA_GROUP_ID}</code></td>
+                        <td>test-consumer-group</td>
+                        <td>Default consumer group identifier</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>Custom Keyword Reference</h2>
+            <table class="compact-table keyword-table">
+                <thead>
+                    <tr>
+                        <th>Keyword</th>
+                        <th>Arguments</th>
+                        <th>Description</th>
+                        <th>Returns</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>Connect To Kafka As Producer</code></td>
+                        <td><code>${bootstrap_servers}=${KAFKA_BOOTSTRAP_SERVER}</code></td>
+                        <td>Connects to Kafka as a producer</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><code>Connect To Kafka As Consumer</code></td>
+                        <td><code>${bootstrap_servers}, ${group_id}, ${auto_offset_reset}=earliest</code></td>
+                        <td>Connects to Kafka as a consumer with group ID</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><code>Initialize Kafka Connections</code></td>
+                        <td>-</td>
+                        <td>Initializes both producer and consumer connections</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><code>Cleanup Kafka Connections</code></td>
+                        <td>-</td>
+                        <td>Closes all Kafka connections</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><code>Send Message To Kafka</code></td>
+                        <td><code>${topic_name}, ${message}, ${key}=${None}</code></td>
+                        <td>Sends a message to specified topic</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><code>Consume Messages From Kafka</code></td>
+                        <td><code>${topic_name}, ${max_messages}=1, ${timeout}=10</code></td>
+                        <td>Consumes messages from topic</td>
+                        <td>List of messages</td>
+                    </tr>
+                    <tr>
+                        <td><code>Verify Pipeline Created Topic And Messages</code> <span
+                                class="badge badge-success">Pipeline</span></td>
+                        <td><code>${topic_name}, ${expected_key}, ${expected_value}, ${wait_time}=5s</code></td>
+                        <td>Verifies SnapLogic pipeline Kafka operations</td>
+                        <td>Dictionary with results</td>
+                    </tr>
+                    <tr>
+                        <td><code>Get Available Kafka Topics</code></td>
+                        <td>-</td>
+                        <td>Gets list of all available topics</td>
+                        <td>List of topics</td>
+                    </tr>
+                    <tr>
+                        <td><code>Check If Kafka Topic Exists</code></td>
+                        <td><code>${topic_name}</code></td>
+                        <td>Checks if topic exists</td>
+                        <td>Boolean</td>
+                    </tr>
+                    <tr>
+                        <td><code>Send And Verify Message</code></td>
+                        <td><code>${topic_name}, ${message}</code></td>
+                        <td>Sends message and verifies consumption</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><code>Clear Topic Messages</code></td>
+                        <td><code>${topic_name}</code></td>
+                        <td>Consumes all messages from topic</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><code>Delete Kafka Topic</code> <span class="badge badge-warning">Limited</span></td>
+                        <td><code>@{topic_names}</code></td>
+                        <td>Logs warning (KafkaLibrary doesn't support deletion)</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><code>Connect To Kafka Broker</code></td>
+                        <td><code>${KAFKA_BROKER}</code></td>
+                        <td>Creates producer and consumer connections</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><code>Consume Messages From Kafka Topic</code></td>
+                        <td><code>${topic_name}, ${number_of_messages}=1, ${timeout}=10</code></td>
+                        <td>Alternative consume implementation</td>
+                        <td>List of messages</td>
+                    </tr>
+                    <tr>
+                        <td><code>Disconnect From Kafka</code></td>
+                        <td>-</td>
+                        <td>Closes Kafka connections</td>
+                        <td>-</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>Usage Examples</h2>
+            <div class="two-column">
+                <div>
+                    <h3>Basic Test Case</h3>
+                    <div class="code-block">*** Test Cases ***
+                        Basic Kafka Test
+                        Initialize Kafka Connections
+                        Send Message To Kafka test-topic Hello World
+                        @{messages}= Consume Messages From Kafka test-topic
+                        Cleanup Kafka Connections</div>
+                </div>
+                <div>
+                    <h3>Pipeline Verification</h3>
+                    <div class="code-block">*** Test Cases ***
+                        Verify Pipeline
+                        Initialize Kafka Connections
+                        Run Pipeline kafka.slp
+                        ${results}= Verify Pipeline Created Topic And Messages
+                        ... pipeline-topic MyKey MyValue
+                        Should Be True ${results}[topic_exists]
+                        Cleanup Kafka Connections</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KafkaLibrary Tab -->
+        <div id="kafka-library" class="tab-content">
+            <div class="alert alert-info">
+                <strong>📚 Library:</strong> KafkaLibrary v0.0.3 | <strong>Scope:</strong> GLOBAL |
+                <strong>Base:</strong> kafka-python
+            </div>
+
+            <h2>Connection Keywords</h2>
+            <table class="compact-table library-table">
+                <thead>
+                    <tr>
+                        <th>Keyword</th>
+                        <th>Arguments</th>
+                        <th>Description</th>
+                        <th>Returns</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>Connect Producer</code></td>
+                        <td><code>bootstrap_servers=127.0.0.1:9092, client_id=Robot, **kwargs</code></td>
+                        <td>Creates Kafka producer client</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><code>Connect Consumer</code></td>
+                        <td><code>bootstrap_servers, client_id, group_id, auto_offset_reset, enable_auto_commit</code>
+                        </td>
+                        <td>Creates Kafka consumer with group management</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><code>Connect To Kafka</code></td>
+                        <td><code>bootstrap_servers, auto_offset_reset, client_id, **kwargs</code></td>
+                        <td>Simplified connection for both producer/consumer</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><code>Close</code></td>
+                        <td>-</td>
+                        <td>Closes consumer connection with cleanup</td>
+                        <td>-</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>Message Operations</h2>
+            <table class="compact-table library-table">
+                <thead>
+                    <tr>
+                        <th>Keyword</th>
+                        <th>Arguments</th>
+                        <th>Description</th>
+                        <th>Returns</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>Send</code></td>
+                        <td><code>topic, value, timeout=60, key, partition, timestamp_ms</code></td>
+                        <td>Publishes message to topic</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><code>Poll</code></td>
+                        <td><code>timeout_ms=0, max_records=None</code></td>
+                        <td>Fetches data from assigned topics/partitions</td>
+                        <td>List of messages</td>
+                    </tr>
+                    <tr>
+                        <td><code>Flush</code></td>
+                        <td><code>timeout=None</code></td>
+                        <td>Makes buffered records available to send</td>
+                        <td>-</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>Topic & Partition Management</h2>
+            <table class="compact-table library-table">
+                <thead>
+                    <tr>
+                        <th>Keyword</th>
+                        <th>Arguments</th>
+                        <th>Description</th>
+                        <th>Returns</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>Subscribe Topic</code></td>
+                        <td><code>topics=[], pattern=None</code></td>
+                        <td>Subscribe to topics or pattern</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><code>Get Kafka Topics</code></td>
+                        <td>-</td>
+                        <td>Returns all available topics</td>
+                        <td>List of topics</td>
+                    </tr>
+                    <tr>
+                        <td><code>Get Kafka Partitions For Topic</code></td>
+                        <td><code>topic=None</code></td>
+                        <td>Returns partitions for topic</td>
+                        <td>List of partitions</td>
+                    </tr>
+                    <tr>
+                        <td><code>Create Topicpartition</code></td>
+                        <td><code>topic, partition</code></td>
+                        <td>Creates TopicPartition object</td>
+                        <td>TopicPartition</td>
+                    </tr>
+                    <tr>
+                        <td><code>Get Assigned Partitions</code></td>
+                        <td>-</td>
+                        <td>Returns assigned TopicPartitions</td>
+                        <td>List of TopicPartitions</td>
+                    </tr>
+                    <tr>
+                        <td><code>Assign To Topic Partition</code></td>
+                        <td><code>topic_partition=None</code></td>
+                        <td>Manually assigns TopicPartitions</td>
+                        <td>-</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>Offset Management</h2>
+            <table class="compact-table library-table">
+                <thead>
+                    <tr>
+                        <th>Keyword</th>
+                        <th>Arguments</th>
+                        <th>Description</th>
+                        <th>Returns</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>Commit</code></td>
+                        <td><code>offsets=None</code></td>
+                        <td>Commits offsets to Kafka</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><code>Committed</code></td>
+                        <td><code>topic_partition</code></td>
+                        <td>Returns last committed offset</td>
+                        <td>Offset or None</td>
+                    </tr>
+                    <tr>
+                        <td><code>Seek</code></td>
+                        <td><code>offset, topic_partition=None</code></td>
+                        <td>Manually sets fetch offset</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><code>Seek To Beginning</code></td>
+                        <td><code>topic_partition=None</code></td>
+                        <td>Seeks to oldest offset</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><code>Seek To End</code></td>
+                        <td><code>topic_partition=None</code></td>
+                        <td>Seeks to newest offset</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><code>Get Position</code></td>
+                        <td><code>topic_partition=None</code></td>
+                        <td>Returns next record offset</td>
+                        <td>Offset</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>Metrics & Statistics</h2>
+            <table class="compact-table library-table">
+                <thead>
+                    <tr>
+                        <th>Keyword</th>
+                        <th>Arguments</th>
+                        <th>Description</th>
+                        <th>Returns</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>Get Number Of Messages In Topics</code></td>
+                        <td><code>topics</code></td>
+                        <td>Returns message count in topics</td>
+                        <td>Integer</td>
+                    </tr>
+                    <tr>
+                        <td><code>Get Number Of Messages In Topicpartition</code></td>
+                        <td><code>topic_partition=None</code></td>
+                        <td>Returns message count in partition</td>
+                        <td>Integer</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>Quick Examples</h2>
+            <div class="two-column">
+                <div>
+                    <h3>Producer Example</h3>
+                    <div class="code-block">*** Test Cases ***
+                        Send Messages
+                        Connect Producer kafka:29092
+                        Send test-topic value=Hello key=test-key
+                        Flush
+                        Close</div>
+                </div>
+                <div>
+                    <h3>Consumer Example</h3>
+                    <div class="code-block">*** Test Cases ***
+                        Consume Messages
+                        Connect Consumer kafka:29092 test-group
+                        Subscribe Topic test-topic
+                        ${messages}= Poll max_records=10 timeout=5
+                        Commit
+                        Close</div>
+                </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <h3>Argument Types Reference</h3>
+            <div class="two-column">
+                <div>
+                    <table class="compact-table">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Default</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>bootstrap_servers</td>
+                                <td class="arg-type">String/List</td>
+                                <td>127.0.0.1:9092</td>
+                            </tr>
+                            <tr>
+                                <td>client_id</td>
+                                <td class="arg-type">String</td>
+                                <td>Robot</td>
+                            </tr>
+                            <tr>
+                                <td>group_id</td>
+                                <td class="arg-type">String/None</td>
+                                <td>None</td>
+                            </tr>
+                            <tr>
+                                <td>auto_offset_reset</td>
+                                <td class="arg-type">String</td>
+                                <td>latest</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div>
+                    <table class="compact-table">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Default</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>enable_auto_commit</td>
+                                <td class="arg-type">Boolean</td>
+                                <td>True</td>
+                            </tr>
+                            <tr>
+                                <td>timeout</td>
+                                <td class="arg-type">Integer</td>
+                                <td>60</td>
+                            </tr>
+                            <tr>
+                                <td>max_records</td>
+                                <td class="arg-type">Integer/None</td>
+                                <td>None</td>
+                            </tr>
+                            <tr>
+                                <td>timeout_ms</td>
+                                <td class="arg-type">Integer</td>
+                                <td>0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            // Hide all tab contents
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // Remove active class from all tabs
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
+        // Enable keyboard navigation
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                const tabs = Array.from(document.querySelectorAll('.tab'));
+                const activeIndex = tabs.findIndex(tab => tab.classList.contains('active'));
+                let newIndex = activeIndex;
+
+                if (e.key === 'ArrowLeft' && activeIndex > 0) {
+                    newIndex = activeIndex - 1;
+                } else if (e.key === 'ArrowRight' && activeIndex < tabs.length - 1) {
+                    newIndex = activeIndex + 1;
+                }
+
+                if (newIndex !== activeIndex) {
+                    tabs[newIndex].click();
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

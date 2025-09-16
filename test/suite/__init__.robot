@@ -71,15 +71,16 @@ Validate Environment Variables
     END
 
 Load Environment Variables
-    [Documentation]    Loads environment variables from the root .env file and all .env files from env_files directory
+    [Documentation]    Loads environment variables from the root .env file and all .env files from env_files directory and subdirectories
     
     # First load the root .env file
     Load Single Env File    ${ENV_FILE_PATH}
     
-    # Then load all .env files from env_files directory
+    # Then load all .env files from env_files directory and subdirectories
     ${env_dir_exists}=    Run Keyword And Return Status    Directory Should Exist    ${ENV_FILES_DIR}
     
     IF    ${env_dir_exists}
+        # Load .env files from root env_files directory
         @{env_files}=    List Files In Directory    ${ENV_FILES_DIR}    pattern=.env*
         ${file_count}=    Get Length    ${env_files}
         
@@ -87,11 +88,26 @@ Load Environment Variables
             Log To Console    \nLoading ${file_count} environment files from ${ENV_FILES_DIR}:
             FOR    ${env_file}    IN    @{env_files}
                 ${full_path}=    Join Path    ${ENV_FILES_DIR}    ${env_file}
-                Log To Console      Loading: ${env_file}
+                Log To Console      Loading: ${env_file}
                 Load Single Env File    ${full_path}
             END
-        ELSE
-            Log To Console    \nNo .env files found in ${ENV_FILES_DIR}
+        END
+        
+        # Load .env files from subdirectories
+        @{subdirs}=    List Directories In Directory    ${ENV_FILES_DIR}
+        FOR    ${subdir}    IN    @{subdirs}
+            ${subdir_path}=    Join Path    ${ENV_FILES_DIR}    ${subdir}
+            @{subdir_env_files}=    List Files In Directory    ${subdir_path}    pattern=.env*
+            ${subdir_file_count}=    Get Length    ${subdir_env_files}
+            
+            IF    ${subdir_file_count} > 0
+                Log To Console    \nLoading ${subdir_file_count} environment files from ${subdir_path}:
+                FOR    ${env_file}    IN    @{subdir_env_files}
+                    ${full_path}=    Join Path    ${subdir_path}    ${env_file}
+                    Log To Console      Loading: ${env_file}
+                    Load Single Env File    ${full_path}
+                END
+            END
         END
     ELSE
         Log To Console    \nEnvironment files directory not found: ${ENV_FILES_DIR}

@@ -8,9 +8,20 @@ WORKDIR /app
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     wget \
+    git \
     libxml2 \
-    unixodbc-dev && \
-    rm -rf /var/lib/apt/lists/*
+    unixodbc-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Kafka command-line tools
+RUN wget -q https://archive.apache.org/dist/kafka/3.7.0/kafka_2.13-3.7.0.tgz && \
+    tar -xzf kafka_2.13-3.7.0.tgz && \
+    mv kafka_2.13-3.7.0 /opt/kafka && \
+    rm kafka_2.13-3.7.0.tgz && \
+    ln -s /opt/kafka/bin/kafka-topics.sh /usr/local/bin/kafka-topics.sh && \
+    ln -s /opt/kafka/bin/kafka-console-producer.sh /usr/local/bin/kafka-console-producer.sh && \
+    ln -s /opt/kafka/bin/kafka-console-consumer.sh /usr/local/bin/kafka-console-consumer.sh
 
 # Try to install gcc/g++ but don't fail if it doesn't work (for Apple Silicon compatibility)
 RUN apt-get update && \

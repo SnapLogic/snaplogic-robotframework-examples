@@ -5,7 +5,7 @@ echo "📤 Kafka Test Producer"
 echo "====================="
 
 # Configuration
-BOOTSTRAP_SERVER="${KAFKA_BOOTSTRAP_SERVER:-localhost:9092}"
+BOOTSTRAP_SERVER="${KAFKA_BOOTSTRAP_SERVER:-kafka:29092}"
 TOPIC="${TOPIC:-test-topic}"
 MESSAGE_COUNT="${MESSAGE_COUNT:-10}"
 

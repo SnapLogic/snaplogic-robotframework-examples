@@ -190,8 +190,8 @@ rebuild-tools:
 	@echo "🛑 Stopping and removing tools container..."
 	$(DOCKER_COMPOSE) --profile tools down
 	
-	@echo "🧹 Removing old image to force complete rebuild..."
-	@docker rmi snaplogic-test-example:latest || true
+# 	@echo "🧹 Removing old image to force complete rebuild..."
+# 	@docker rmi snaplogic-test-example:latest || true
 	
 	@echo "🔨 Building tools container without cache..."
 	@echo "ℹ️ This will take several minutes..."

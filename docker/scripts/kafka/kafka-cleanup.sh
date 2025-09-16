@@ -4,7 +4,7 @@
 echo "🧹 Kafka Cleanup Script"
 echo "======================="
 
-BOOTSTRAP_SERVER="${KAFKA_BOOTSTRAP_SERVER:-localhost:9092}"
+BOOTSTRAP_SERVER="${KAFKA_BOOTSTRAP_SERVER:-kafka:29092}"
 
 echo "⚠️  WARNING: This will delete test topics!"
 echo "Press Ctrl+C to cancel, or wait 5 seconds to continue..."

@@ -1,10 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kafka Docker Compose Configuration</title>
+    <title>Kafka Docker Compose Documentation</title>
     <style>
+        :root {
+            --primary-color: #1a73e8;
+            --secondary-color: #34a853;
+            --warning-color: #fbbc04;
+            --danger-color: #ea4335;
+            --dark-bg: #1e1e1e;
+            --light-bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-primary: #202124;
+            --text-secondary: #5f6368;
+            --border-color: #dadce0;
+            --code-bg: #f1f3f4;
+            --hover-bg: #e8f0fe;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,9 +28,9 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
             line-height: 1.6;
-            color: #2c3e50;
+            color: var(--text-primary);
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
@@ -23,13 +39,13 @@
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
             overflow: hidden;
         }
 
-        .header {
+        header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 40px;
@@ -38,1002 +54,875 @@
             overflow: hidden;
         }
 
-        .header::before {
+        header::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            animation: shimmer 3s infinite;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+            animation: drift 20s linear infinite;
         }
 
-        @keyframes shimmer {
-            0% { left: -100%; }
-            100% { left: 100%; }
+        @keyframes drift {
+            0% {
+                transform: translate(0, 0);
+            }
+
+            100% {
+                transform: translate(20px, 20px);
+            }
         }
 
-        .header h1 {
-            font-size: 2.5em;
+        h1 {
+            font-size: 2.5rem;
             margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            position: relative;
+            z-index: 1;
         }
 
-        .header .subtitle {
-            font-size: 1.2em;
+        .subtitle {
+            font-size: 1.1rem;
             opacity: 0.95;
-            font-weight: 300;
+            position: relative;
+            z-index: 1;
         }
 
-        .kafka-logo {
-            width: 60px;
-            height: 60px;
-            display: inline-block;
-            vertical-align: middle;
-            margin-right: 15px;
-            background: white;
-            border-radius: 50%;
-            padding: 10px;
+        nav {
+            background: var(--light-bg);
+            padding: 20px 40px;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .nav-links a {
+            color: var(--text-primary);
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-links a:hover {
+            background: var(--hover-bg);
+            color: var(--primary-color);
+            transform: translateY(-2px);
         }
 
         .content {
             padding: 40px;
         }
 
-        .section {
+        section {
             margin-bottom: 40px;
-            animation: fadeIn 0.6s ease-in;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.6s ease forwards;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        section:nth-child(1) {
+            animation-delay: 0.1s;
         }
 
-        .section-title {
-            color: #667eea;
-            font-size: 1.8em;
+        section:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        section:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        section:nth-child(4) {
+            animation-delay: 0.4s;
+        }
+
+        section:nth-child(5) {
+            animation-delay: 0.5s;
+        }
+
+        section:nth-child(6) {
+            animation-delay: 0.6s;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h2 {
+            color: var(--primary-color);
+            font-size: 1.8rem;
             margin-bottom: 20px;
             padding-bottom: 10px;
-            border-bottom: 3px solid #667eea;
+            border-bottom: 2px solid var(--border-color);
             display: flex;
             align-items: center;
+            gap: 10px;
         }
 
-        .section-icon {
-            width: 35px;
-            height: 35px;
-            margin-right: 15px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 8px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 20px;
+        h2::before {
+            content: '▸';
+            color: var(--secondary-color);
+            font-size: 1.5rem;
         }
 
-        .services-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 25px;
-            margin-top: 25px;
+        h3 {
+            color: var(--text-primary);
+            font-size: 1.3rem;
+            margin: 20px 0 15px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        h3::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 20px;
+            background: var(--secondary-color);
+            border-radius: 2px;
         }
 
         .service-card {
-            background: white;
+            background: var(--light-bg);
             border-radius: 12px;
             padding: 25px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+            border: 1px solid var(--border-color);
             transition: all 0.3s ease;
-            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
         }
 
         .service-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-            border-color: #667eea;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
         }
 
-        .service-card h3 {
-            color: #764ba2;
-            margin-bottom: 15px;
-            font-size: 1.3em;
+        .service-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .service-header {
             display: flex;
             align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
         }
 
-        .service-badge {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 0.7em;
-            margin-left: 10px;
-            text-transform: uppercase;
-            font-weight: bold;
-        }
-
-        .config-list {
-            list-style: none;
-            padding: 0;
-        }
-
-        .config-list li {
-            padding: 10px 0;
-            border-bottom: 1px solid #e0e0e0;
+        .service-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 12px;
             display: flex;
-            align-items: start;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
         }
 
-        .config-list li:last-child {
-            border-bottom: none;
-        }
-
-        .config-list li::before {
-            content: '▸';
-            color: #667eea;
-            font-weight: bold;
-            margin-right: 10px;
-            font-size: 1.2em;
-        }
-
-        .config-key {
+        .service-title {
+            font-size: 1.5rem;
+            color: var(--text-primary);
             font-weight: 600;
-            color: #2c3e50;
-            margin-right: 5px;
         }
 
-        .config-value {
-            color: #555;
-        }
-
-        .feature-grid {
+        .config-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 20px;
             margin-top: 20px;
         }
 
-        .feature-item {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            transition: transform 0.3s ease;
-        }
-
-        .feature-item:hover {
-            transform: scale(1.05);
-        }
-
-        .feature-icon {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-
-        .feature-title {
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 8px;
-        }
-
-        .feature-desc {
-            font-size: 0.9em;
-            color: #555;
-        }
-
-        .profile-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .profile-tag {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 25px;
-            font-size: 0.9em;
-            font-weight: 500;
-            transition: transform 0.2s ease;
-            cursor: default;
-        }
-
-        .profile-tag:hover {
-            transform: scale(1.1);
-        }
-
-        .code-block {
-            background: #2c3e50;
-            color: #f8f8f2;
+        .config-item {
+            background: var(--card-bg);
             padding: 15px;
             border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9em;
-            overflow-x: auto;
-            margin: 10px 0;
+            border-left: 3px solid var(--primary-color);
         }
 
-        .port-info {
-            background: #e8f4f8;
-            border-left: 4px solid #3498db;
-            padding: 15px;
-            margin: 20px 0;
+        .config-key {
+            font-weight: 600;
+            color: var(--primary-color);
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .config-value {
+            color: var(--text-secondary);
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.85rem;
+            background: var(--code-bg);
+            padding: 8px;
             border-radius: 4px;
+            display: block;
+            margin-top: 5px;
+            word-break: break-all;
         }
 
-        .port-info h4 {
-            color: #2980b9;
-            margin-bottom: 10px;
+        .config-desc {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 8px;
+            font-style: italic;
         }
 
-        .port-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 10px;
+        code {
+            background: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+            color: var(--danger-color);
         }
 
-        .port-item {
-            background: white;
-            padding: 10px;
-            border-radius: 6px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        .command-box {
+            background: var(--dark-bg);
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            margin: 15px 0;
+            position: relative;
+            overflow-x: auto;
         }
 
-        .port-item strong {
-            color: #2980b9;
+        .command-box::before {
+            content: '$ ';
+            color: #00ff00;
         }
 
-        .resource-table {
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: background 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            background: var(--secondary-color);
+        }
+
+        .port-table {
             width: 100%;
             border-collapse: collapse;
+            margin: 20px 0;
+            background: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .port-table th {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .port-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .port-table tr:hover {
+            background: var(--hover-bg);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-right: 8px;
+        }
+
+        .badge-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .badge-success {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .badge-warning {
+            background: var(--warning-color);
+            color: var(--text-primary);
+        }
+
+        .badge-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .alert-info {
+            background: #e3f2fd;
+            border-left: 4px solid var(--primary-color);
+            color: var(--text-primary);
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border-left: 4px solid var(--warning-color);
+            color: var(--text-primary);
+        }
+
+        .alert-icon {
+            font-size: 1.5rem;
+        }
+
+        .profile-list {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+
+        .profile-item {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .profile-item::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%) scale(0);
+            border-radius: 50%;
+            transition: transform 0.5s ease;
+        }
+
+        .profile-item:hover::before {
+            transform: translate(-50%, -50%) scale(2);
+        }
+
+        footer {
+            background: var(--light-bg);
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
             margin-top: 15px;
         }
 
-        .resource-table th,
-        .resource-table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        .resource-table th {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            font-weight: 600;
-        }
-
-        .resource-table tr:hover {
-            background: #f5f7fa;
-        }
-
-        .footer {
-            background: #2c3e50;
-            color: white;
-            text-align: center;
-            padding: 20px;
-            margin-top: 40px;
-        }
-
-        .footer a {
-            color: #667eea;
+        .footer-links a {
+            color: var(--primary-color);
             text-decoration: none;
+            transition: color 0.3s ease;
         }
 
-        .footer a:hover {
-            text-decoration: underline;
+        .footer-links a:hover {
+            color: var(--secondary-color);
         }
 
         @media (max-width: 768px) {
-            .header h1 {
-                font-size: 1.8em;
-            }
-            
-            .services-grid {
+            .config-grid {
                 grid-template-columns: 1fr;
             }
-            
-            .content {
-                padding: 20px;
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .nav-links {
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="container">
-        <div class="header">
-            <h1>
-                <span class="kafka-logo">📊</span>
-                Kafka Docker Compose Configuration
-            </h1>
-            <p class="subtitle">Apache Kafka with KRaft Mode - No Zookeeper Required</p>
-        </div>
+        <header>
+            <h1>🚀 Kafka Docker Compose Configuration</h1>
+            <p class="subtitle">Complete documentation for SnapLogic Kafka KRaft deployment</p>
+        </header>
+
+        <nav>
+            <div class="nav-links">
+                <a href="#overview">Overview</a>
+                <a href="#services">Services</a>
+                <a href="#configuration">Configuration</a>
+                <a href="#networking">Networking</a>
+                <a href="#volumes">Volumes</a>
+                <a href="#usage">Usage</a>
+                <a href="#troubleshooting">Troubleshooting</a>
+            </div>
+        </nav>
 
         <div class="content">
-            <!-- Overview Section -->
-            <div class="section">
-                <h2 class="section-title">
-                    <span class="section-icon">🎯</span>
-                    Overview
-                </h2>
-                <p style="font-size: 1.1em; line-height: 1.8; color: #555;">
-                    This Docker Compose configuration provides a complete Apache Kafka setup using KRaft mode (Kafka without Zookeeper), 
-                    optimized for development, testing, and CI/CD environments. The setup includes a Kafka broker, web UI, and various 
-                    utility services for setup, testing, and maintenance.
-                </p>
-            </div>
+            <section id="overview">
+                <h2>Overview</h2>
+                <p>This Docker Compose configuration provides a complete Apache Kafka setup using KRaft mode (Kafka
+                    without Zookeeper). It includes the Kafka broker, a web-based UI for management, and utility
+                    services for setup, testing, and cleanup operations.</p>
 
-            <!-- Services Section -->
-            <div class="section">
-                <h2 class="section-title">
-                    <span class="section-icon">🚀</span>
-                    Services
-                </h2>
-                
-                <div class="services-grid">
-                    <!-- Kafka Broker -->
-                    <div class="service-card">
-                        <h3>
-                            Kafka Broker
-                            <span class="service-badge">Core</span>
-                        </h3>
-                        <ul class="config-list">
-                            <li>
-                                <span class="config-key">Image:</span>
-                                <span class="config-value">bitnami/kafka:3.7</span>
-                            </li>
-                            <li>
-                                <span class="config-key">Mode:</span>
-                                <span class="config-value">KRaft (No Zookeeper)</span>
-                            </li>
-                            <li>
-                                <span class="config-key">Roles:</span>
-                                <span class="config-value">Broker & Controller</span>
-                            </li>
-                            <li>
-                                <span class="config-key">Default Partitions:</span>
-                                <span class="config-value">3</span>
-                            </li>
-                            <li>
-                                <span class="config-key">Log Retention:</span>
-                                <span class="config-value">7 days (168 hours)</span>
-                            </li>
-                            <li>
-                                <span class="config-key">Memory:</span>
-                                <span class="config-value">256-512MB JVM Heap</span>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <!-- Kafka UI -->
-                    <div class="service-card">
-                        <h3>
-                            Kafka UI
-                            <span class="service-badge">Management</span>
-                        </h3>
-                        <ul class="config-list">
-                            <li>
-                                <span class="config-key">Image:</span>
-                                <span class="config-value">provectuslabs/kafka-ui:latest</span>
-                            </li>
-                            <li>
-                                <span class="config-key">Purpose:</span>
-                                <span class="config-value">Web interface for Kafka</span>
-                            </li>
-                            <li>
-                                <span class="config-key">Port:</span>
-                                <span class="config-value">8080 (configurable)</span>
-                            </li>
-                            <li>
-                                <span class="config-key">Memory:</span>
-                                <span class="config-value">128-256MB JVM Heap</span>
-                            </li>
-                            <li>
-                                <span class="config-key">Features:</span>
-                                <span class="config-value">Topic management, monitoring</span>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <!-- Setup Service -->
-                    <div class="service-card">
-                        <h3>
-                            Kafka Setup
-                            <span class="service-badge">Utility</span>
-                        </h3>
-                        <ul class="config-list">
-                            <li>
-                                <span class="config-key">Type:</span>
-                                <span class="config-value">One-time initialization</span>
-                            </li>
-                            <li>
-                                <span class="config-key">Script:</span>
-                                <span class="config-value">kafka-setup.sh</span>
-                            </li>
-                            <li>
-                                <span class="config-key">Profile:</span>
-                                <span class="config-value">kafka</span>
-                            </li>
-                            <li>
-                                <span class="config-key">Restart:</span>
-                                <span class="config-value">No (runs once)</span>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <!-- Test Producer -->
-                    <div class="service-card">
-                        <h3>
-                            Test Producer
-                            <span class="service-badge">Testing</span>
-                        </h3>
-                        <ul class="config-list">
-                            <li>
-                                <span class="config-key">Purpose:</span>
-                                <span class="config-value">Message production testing</span>
-                            </li>
-                            <li>
-                                <span class="config-key">Script:</span>
-                                <span class="config-value">kafka-test-producer.sh</span>
-                            </li>
-                            <li>
-                                <span class="config-key">Profile:</span>
-                                <span class="config-value">kafka-test</span>
-                            </li>
-                            <li>
-                                <span class="config-key">Activation:</span>
-                                <span class="config-value">On-demand</span>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <!-- Cleanup Service -->
-                    <div class="service-card">
-                        <h3>
-                            Cleanup Service
-                            <span class="service-badge">Maintenance</span>
-                        </h3>
-                        <ul class="config-list">
-                            <li>
-                                <span class="config-key">Purpose:</span>
-                                <span class="config-value">Data cleanup operations</span>
-                            </li>
-                            <li>
-                                <span class="config-key">Script:</span>
-                                <span class="config-value">kafka-cleanup.sh</span>
-                            </li>
-                            <li>
-                                <span class="config-key">Profile:</span>
-                                <span class="config-value">kafka-cleanup</span>
-                            </li>
-                            <li>
-                                <span class="config-key">Usage:</span>
-                                <span class="config-value">Manual trigger</span>
-                            </li>
-                        </ul>
+                <div class="alert alert-info">
+                    <span class="alert-icon">ℹ️</span>
+                    <div>
+                        <strong>KRaft Mode:</strong> This configuration uses Kafka's KRaft consensus protocol,
+                        eliminating the need for Apache Zookeeper. This simplifies deployment and reduces resource
+                        overhead.
                     </div>
                 </div>
-            </div>
 
-            <!-- Key Features Section -->
-            <div class="section">
-                <h2 class="section-title">
-                    <span class="section-icon">⭐</span>
-                    Key Features
-                </h2>
-                
-                <div class="feature-grid">
-                    <div class="feature-item">
-                        <div class="feature-icon">🎯</div>
-                        <div class="feature-title">No Zookeeper</div>
-                        <div class="feature-desc">Simplified deployment with KRaft mode</div>
-                    </div>
-                    
-                    <div class="feature-item">
-                        <div class="feature-icon">🔧</div>
-                        <div class="feature-title">Auto Topic Creation</div>
-                        <div class="feature-desc">Topics created automatically on demand</div>
-                    </div>
-                    
-                    <div class="feature-item">
-                        <div class="feature-icon">💾</div>
-                        <div class="feature-title">Persistent Storage</div>
-                        <div class="feature-desc">Docker volumes for data persistence</div>
-                    </div>
-                    
-                    <div class="feature-item">
-                        <div class="feature-icon">🏥</div>
-                        <div class="feature-title">Health Checks</div>
-                        <div class="feature-desc">Built-in health monitoring</div>
-                    </div>
-                    
-                    <div class="feature-item">
-                        <div class="feature-icon">🚦</div>
-                        <div class="feature-title">Resource Limits</div>
-                        <div class="feature-desc">CI-optimized memory and CPU caps</div>
-                    </div>
-                    
-                    <div class="feature-item">
-                        <div class="feature-icon">📜</div>
-                        <div class="feature-title">Custom Scripts</div>
-                        <div class="feature-desc">Mounted scripts for operations</div>
-                    </div>
-                    
-                    <div class="feature-item">
-                        <div class="feature-icon">🔒</div>
-                        <div class="feature-title">Network Isolation</div>
-                        <div class="feature-desc">Custom bridge network</div>
-                    </div>
-                    
-                    <div class="feature-item">
-                        <div class="feature-icon">🎨</div>
-                        <div class="feature-title">Web UI</div>
-                        <div class="feature-desc">Visual management interface</div>
-                    </div>
-                </div>
-            </div>
+                <h3>Key Features</h3>
+                <ul style="margin-left: 40px; line-height: 2;">
+                    <li>✅ KRaft mode (no Zookeeper dependency)</li>
+                    <li>✅ Web-based UI for monitoring and management</li>
+                    <li>✅ Health checks for service reliability</li>
+                    <li>✅ Resource limits for CI/CD stability</li>
+                    <li>✅ Multiple Docker profiles for different scenarios</li>
+                    <li>✅ Auto-topic creation enabled</li>
+                    <li>✅ Configurable ports via environment variables</li>
+                </ul>
+            </section>
 
-            <!-- Deployment Profiles Section -->
-            <div class="section">
-                <h2 class="section-title">
-                    <span class="section-icon">📦</span>
-                    Deployment Profiles
-                </h2>
-                
-                <div class="profile-tags">
-                    <span class="profile-tag">kafka</span>
-                    <span class="profile-tag">kafka-dev</span>
-                    <span class="profile-tag">kafka-test</span>
-                    <span class="profile-tag">kafka-cleanup</span>
-                </div>
-                
-                <div class="code-block">
-# Start Kafka with basic setup
-docker-compose --profile kafka up -d
+            <section id="services">
+                <h2>Services</h2>
 
-# Start Kafka for development (includes UI)
-docker-compose --profile kafka-dev up -d
-
-# Run test producer
-docker-compose --profile kafka-test up
-
-# Clean up Kafka data
-docker-compose --profile kafka-cleanup up
-                </div>
-            </div>
-
-            <!-- Service Endpoints Section -->
-            <div class="section">
-                <h2 class="section-title">
-                    <span class="section-icon">🌐</span>
-                    Service Endpoints
-                </h2>
-                
-                <!-- Endpoint Access Tabs -->
-                <div style="margin-top: 20px;">
-                    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                        <button onclick="showEndpoints('external')" id="external-tab" style="padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: opacity 0.3s;">🖥️ External Access (Host)</button>
-                        <button onclick="showEndpoints('internal')" id="internal-tab" style="padding: 10px 20px; background: #e0e0e0; color: #555; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s;">🐳 Internal Access (Container)</button>
+                <div class="service-card">
+                    <div class="service-header">
+                        <div class="service-icon">📊</div>
+                        <div class="service-title">Kafka Broker</div>
                     </div>
-                    
-                    <!-- External Endpoints -->
-                    <div id="external-endpoints" style="display: block;">
-                        <p style="color: #666; margin-bottom: 20px; font-style: italic;">Use these endpoints when accessing services from your host machine or external applications:</p>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
-                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; color: white; transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
-                                <h3 style="margin-bottom: 10px; font-size: 1.2em;">🔧 Kafka Broker</h3>
-                                <code style="background: rgba(255, 255, 255, 0.2); padding: 8px 12px; border-radius: 6px; display: inline-block; font-size: 1.1em;">localhost:9092</code>
-                                <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.95;">Main endpoint for producing and consuming messages</p>
-                            </div>
-                            
-                            <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 20px; border-radius: 12px; color: white; transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
-                                <h3 style="margin-bottom: 10px; font-size: 1.2em;">🎛️ Kafka Controller</h3>
-                                <code style="background: rgba(255, 255, 255, 0.2); padding: 8px 12px; border-radius: 6px; display: inline-block; font-size: 1.1em;">localhost:9093</code>
-                                <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.95;">KRaft controller endpoint for cluster management</p>
-                            </div>
-                            
-                            <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 20px; border-radius: 12px; color: white; transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
-                                <h3 style="margin-bottom: 10px; font-size: 1.2em;">📊 Kafka UI</h3>
-                                <code style="background: rgba(255, 255, 255, 0.2); padding: 8px 12px; border-radius: 6px; display: inline-block; font-size: 1.1em;">http://localhost:8080</code>
-                                <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.95;">Web interface for monitoring and management</p>
-                            </div>
+                    <p>The main Kafka broker service running in KRaft mode. This is the core message broker that handles
+                        all event streaming operations.</p>
+
+                    <h3>Environment Configuration</h3>
+                    <div class="config-grid">
+                        <div class="config-item">
+                            <span class="config-key">KAFKA_CFG_NODE_ID</span>
+                            <span class="config-value">1</span>
+                            <p class="config-desc">Unique identifier for this Kafka node in the cluster</p>
+                        </div>
+                        <div class="config-item">
+                            <span class="config-key">KAFKA_CFG_PROCESS_ROLES</span>
+                            <span class="config-value">broker,controller</span>
+                            <p class="config-desc">Node acts as both broker and controller in KRaft mode</p>
+                        </div>
+                        <div class="config-item">
+                            <span class="config-key">KAFKA_CFG_LISTENERS</span>
+                            <span class="config-value">PLAINTEXT://:29092, CONTROLLER://:9093,
+                                PLAINTEXT_HOST://:9092</span>
+                            <p class="config-desc">Network listeners for different connection types</p>
+                        </div>
+                        <div class="config-item">
+                            <span class="config-key">KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE</span>
+                            <span class="config-value">true</span>
+                            <p class="config-desc">Automatically create topics when first message is published</p>
+                        </div>
+                        <div class="config-item">
+                            <span class="config-key">KAFKA_CFG_NUM_PARTITIONS</span>
+                            <span class="config-value">3</span>
+                            <p class="config-desc">Default number of partitions for new topics</p>
+                        </div>
+                        <div class="config-item">
+                            <span class="config-key">KAFKA_CFG_LOG_RETENTION_HOURS</span>
+                            <span class="config-value">168 (7 days)</span>
+                            <p class="config-desc">How long to keep messages before deletion</p>
+                        </div>
+                        <div class="config-item">
+                            <span class="config-key">KAFKA_HEAP_OPTS</span>
+                            <span class="config-value">-Xmx512m -Xms256m</span>
+                            <p class="config-desc">JVM heap memory configuration</p>
+                        </div>
+                        <div class="config-item">
+                            <span class="config-key">KAFKA_KRAFT_CLUSTER_ID</span>
+                            <span class="config-value">MkU3OEVBNTcwNTJENDM2Qk</span>
+                            <p class="config-desc">Unique cluster identifier for KRaft mode</p>
                         </div>
                     </div>
-                    
-                    <!-- Internal Endpoints -->
-                    <div id="internal-endpoints" style="display: none;">
-                        <p style="color: #666; margin-bottom: 20px; font-style: italic;">Use these endpoints when accessing services from other containers within the same Docker network (snaplogicnet):</p>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
-                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; color: white; transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
-                                <h3 style="margin-bottom: 10px; font-size: 1.2em;">🔧 Kafka Broker</h3>
-                                <code style="background: rgba(255, 255, 255, 0.2); padding: 8px 12px; border-radius: 6px; display: inline-block; font-size: 1.1em;">kafka:29092</code>
-                                <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.95;">Internal listener for container-to-container communication</p>
-                            </div>
-                            
-                            <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 20px; border-radius: 12px; color: white; transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
-                                <h3 style="margin-bottom: 10px; font-size: 1.2em;">🎛️ Kafka Controller</h3>
-                                <code style="background: rgba(255, 255, 255, 0.2); padding: 8px 12px; border-radius: 6px; display: inline-block; font-size: 1.1em;">kafka:9093</code>
-                                <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.95;">Internal controller endpoint</p>
-                            </div>
-                            
-                            <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 20px; border-radius: 12px; color: white; transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
-                                <h3 style="margin-bottom: 10px; font-size: 1.2em;">📊 Kafka UI</h3>
-                                <code style="background: rgba(255, 255, 255, 0.2); padding: 8px 12px; border-radius: 6px; display: inline-block; font-size: 1.1em;">http://kafka-ui:8080</code>
-                                <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.95;">Internal UI endpoint (Note: UI connects to kafka:29092)</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div style="background: #e8f4f8; border-left: 4px solid #3498db; padding: 15px; margin: 30px 0 0 0; border-radius: 4px;">
-                    <h4 style="color: #2980b9; margin-bottom: 10px;">Quick Connect Examples</h4>
-                    <p style="color: #555; margin-bottom: 10px;">Connection examples for different scenarios:</p>
-                    <div class="code-block" style="margin-top: 10px;">
-# FROM YOUR HOST MACHINE:
-# Connect to Kafka broker
-kafka-console-producer --bootstrap-server localhost:9092 --topic test
 
-# Open Kafka UI in browser
-open http://localhost:8080
-
-# List topics via command line
-kafka-topics --bootstrap-server localhost:9092 --list
-
-# FROM ANOTHER CONTAINER IN THE SAME NETWORK:
-# Connect to Kafka broker (using internal endpoint)
-kafka-console-producer --bootstrap-server kafka:29092 --topic test
-
-# Example from application container
-KAFKA_BOOTSTRAP_SERVERS=kafka:29092</div>
-                </div>
-                
-                <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0 0 0; border-radius: 4px;">
-                    <h4 style="color: #856404; margin-bottom: 10px;">⚠️ Important Note on Container Networking</h4>
-                    <p style="color: #856404;">When configuring applications in other Docker containers to connect to Kafka:</p>
-                    <ul style="color: #856404; margin-top: 10px; padding-left: 20px;">
-                        <li>Use <strong>kafka:29092</strong> (not localhost:9092) as the bootstrap server</li>
-                        <li>Ensure containers are on the same network (<strong>snaplogicnet</strong>)</li>
-                        <li>The container name <strong>kafka</strong> acts as the hostname within the Docker network</li>
-                        <li>External port 9092 is only for host machine access</li>
+                    <h3>Resource Limits</h3>
+                    <ul style="margin-left: 40px;">
+                        <li><strong>Memory:</strong> 768M limit, 256M reservation</li>
+                        <li><strong>CPU:</strong> 1.0 CPU limit, 0.5 CPU reservation</li>
                     </ul>
                 </div>
-            </div>
-            
-            <script>
-            function showEndpoints(type) {
-                // Hide all endpoint divs
-                document.getElementById('external-endpoints').style.display = 'none';
-                document.getElementById('internal-endpoints').style.display = 'none';
-                
-                // Reset all tabs
-                document.getElementById('external-tab').style.background = '#e0e0e0';
-                document.getElementById('external-tab').style.color = '#555';
-                document.getElementById('internal-tab').style.background = '#e0e0e0';
-                document.getElementById('internal-tab').style.color = '#555';
-                
-                // Show selected endpoints and highlight tab
-                if (type === 'external') {
-                    document.getElementById('external-endpoints').style.display = 'block';
-                    document.getElementById('external-tab').style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                    document.getElementById('external-tab').style.color = 'white';
-                } else {
-                    document.getElementById('internal-endpoints').style.display = 'block';
-                    document.getElementById('internal-tab').style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                    document.getElementById('internal-tab').style.color = 'white';
-                }
-            }
-            </script>
 
-            <!-- Port Configuration Section -->
-            <div class="section">
-                <h2 class="section-title">
-                    <span class="section-icon">🔌</span>
-                    Port Configuration
-                </h2>
-                
-                <div class="port-info">
-                    <h4>Available Ports</h4>
-                    <div class="port-list">
-                        <div class="port-item">
-                            <strong>9092:</strong> Kafka external access
+                <div class="service-card">
+                    <div class="service-header">
+                        <div class="service-icon">🖥️</div>
+                        <div class="service-title">Kafka UI</div>
+                    </div>
+                    <p>Web-based user interface for Kafka cluster management and monitoring. Provides visual tools for
+                        topic management, consumer groups, and message browsing.</p>
+
+                    <h3>Configuration</h3>
+                    <div class="config-grid">
+                        <div class="config-item">
+                            <span class="config-key">KAFKA_CLUSTERS_0_NAME</span>
+                            <span class="config-value">snaplogic-kafka-kraft</span>
+                            <p class="config-desc">Display name for the Kafka cluster in UI</p>
                         </div>
-                        <div class="port-item">
-                            <strong>29092:</strong> Kafka internal
+                        <div class="config-item">
+                            <span class="config-key">KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS</span>
+                            <span class="config-value">kafka:29092</span>
+                            <p class="config-desc">Kafka broker connection endpoint</p>
                         </div>
-                        <div class="port-item">
-                            <strong>9093:</strong> Controller port
-                        </div>
-                        <div class="port-item">
-                            <strong>8080:</strong> Kafka UI
+                        <div class="config-item">
+                            <span class="config-key">DYNAMIC_CONFIG_ENABLED</span>
+                            <span class="config-value">true</span>
+                            <p class="config-desc">Allow runtime configuration changes</p>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Resource Allocation Section -->
-            <div class="section">
-                <h2 class="section-title">
-                    <span class="section-icon">💻</span>
-                    Resource Allocation
-                </h2>
-                
-                <table class="resource-table">
+                <div class="service-card">
+                    <div class="service-header">
+                        <div class="service-icon">⚙️</div>
+                        <div class="service-title">Kafka Setup</div>
+                    </div>
+                    <p>One-time setup service that initializes topics and configurations after Kafka starts. Runs the
+                        <code>/scripts/kafka-setup.sh</code> script.</p>
+                    <div class="profile-list">
+                        <span class="badge badge-primary">Profile: kafka</span>
+                    </div>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-header">
+                        <div class="service-icon">📤</div>
+                        <div class="service-title">Kafka Test Producer</div>
+                    </div>
+                    <p>Optional service for testing message production. Useful for validating Kafka connectivity and
+                        topic creation.</p>
+                    <div class="profile-list">
+                        <span class="badge badge-warning">Profile: kafka-test</span>
+                    </div>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-header">
+                        <div class="service-icon">🧹</div>
+                        <div class="service-title">Kafka Cleanup</div>
+                    </div>
+                    <p>Utility service for cleaning up topics and resetting Kafka state. Use with caution as it may
+                        delete data.</p>
+                    <div class="profile-list">
+                        <span class="badge badge-info">Profile: kafka-cleanup</span>
+                    </div>
+                </div>
+            </section>
+
+            <section id="configuration">
+                <h2>Configuration</h2>
+
+                <h3>Port Mappings</h3>
+                <table class="port-table">
                     <thead>
                         <tr>
                             <th>Service</th>
-                            <th>Memory Limit</th>
-                            <th>Memory Reservation</th>
-                            <th>CPU Limit</th>
-                            <th>CPU Reservation</th>
+                            <th>Container Port</th>
+                            <th>Host Port</th>
+                            <th>Environment Variable</th>
+                            <th>Purpose</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td>Kafka Broker</td>
-                            <td>768 MB</td>
-                            <td>256 MB</td>
-                            <td>1.0</td>
-                            <td>0.5</td>
+                            <td>Kafka</td>
+                            <td>9092</td>
+                            <td>9092</td>
+                            <td>KAFKA_PORT</td>
+                            <td>External client connections</td>
+                        </tr>
+                        <tr>
+                            <td>Kafka</td>
+                            <td>9093</td>
+                            <td>9093</td>
+                            <td>KAFKA_CONTROLLER_PORT</td>
+                            <td>KRaft controller communication</td>
                         </tr>
                         <tr>
                             <td>Kafka UI</td>
-                            <td>384 MB</td>
-                            <td>128 MB</td>
-                            <td>0.5</td>
-                            <td>0.25</td>
+                            <td>8080</td>
+                            <td>8080</td>
+                            <td>KAFKA_UI_PORT</td>
+                            <td>Web interface access</td>
                         </tr>
                     </tbody>
                 </table>
-            </div>
 
-            <!-- Environment Variables Section -->
-            <div class="section">
-                <h2 class="section-title">
-                    <span class="section-icon">🔧</span>
-                    Environment Variables Configuration
-                </h2>
-                
-                <p style="color: #555; margin-bottom: 20px;">Complete breakdown of all environment variables used in the Kafka broker configuration:</p>
-                
-                <!-- KRaft Configuration -->
-                <div style="margin-bottom: 30px;">
-                    <h3 style="color: #667eea; margin-bottom: 15px; font-size: 1.3em;">📋 KRaft Configuration (No Zookeeper)</h3>
-                    <table class="resource-table" style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr>
-                                <th style="width: 35%;">Variable</th>
-                                <th style="width: 25%;">Value</th>
-                                <th style="width: 40%;">Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><code style="background: #f4f4f4; padding: 2px 6px; border-radius: 3px;">KAFKA_CFG_NODE_ID</code></td>
-                                <td><strong>1</strong></td>
-                                <td>Unique identifier for this Kafka node in the cluster</td>
-                            </tr>
-                            <tr>
-                                <td><code style="background: #f4f4f4; padding: 2px 6px; border-radius: 3px;">KAFKA_CFG_PROCESS_ROLES</code></td>
-                                <td><strong>broker,controller</strong></td>
-                                <td>Node acts as both broker (handles data) and controller (manages cluster)</td>
-                            </tr>
-                            <tr>
-                                <td><code style="background: #f4f4f4; padding: 2px 6px; border-radius: 3px;">KAFKA_CFG_CONTROLLER_QUORUM_VOTERS</code></td>
-                                <td><strong>1@kafka:9093</strong></td>
-                                <td>Defines controller nodes for consensus (format: nodeId@host:port)</td>
-                            </tr>
-                            <tr>
-                                <td><code style="background: #f4f4f4; padding: 2px 6px; border-radius: 3px;">KAFKA_ENABLE_KRAFT</code></td>
-                                <td><strong>yes</strong></td>
-                                <td>Enables KRaft mode, eliminating Zookeeper dependency</td>
-                            </tr>
-                            <tr>
-                                <td><code style="background: #f4f4f4; padding: 2px 6px; border-radius: 3px;">KAFKA_KRAFT_CLUSTER_ID</code></td>
-                                <td><strong>MkU3OEVBNTcw...</strong></td>
-                                <td>Unique cluster identifier for KRaft mode</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <!-- Listeners Configuration -->
-                <div style="margin-bottom: 30px;">
-                    <h3 style="color: #667eea; margin-bottom: 15px; font-size: 1.3em;">🔊 Listeners Configuration</h3>
-                    <table class="resource-table" style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr>
-                                <th style="width: 35%;">Variable</th>
-                                <th style="width: 25%;">Value</th>
-                                <th style="width: 40%;">Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><code style="background: #f4f4f4; padding: 2px 6px; border-radius: 3px;">KAFKA_CFG_LISTENERS</code></td>
-                                <td style="font-size: 0.9em;"><strong>PLAINTEXT://:29092,<br>CONTROLLER://:9093,<br>PLAINTEXT_HOST://:9092</strong></td>
-                                <td>Defines all network interfaces Kafka listens on</td>
-                            </tr>
-                            <tr>
-                                <td><code style="background: #f4f4f4; padding: 2px 6px; border-radius: 3px;">KAFKA_CFG_ADVERTISED_LISTENERS</code></td>
-                                <td style="font-size: 0.9em;"><strong>PLAINTEXT://kafka:29092,<br>PLAINTEXT_HOST://localhost:9092</strong></td>
-                                <td>Addresses Kafka advertises to clients for connection</td>
-                            </tr>
-                            <tr>
-                                <td><code style="background: #f4f4f4; padding: 2px 6px; border-radius: 3px;">KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP</code></td>
-                                <td style="font-size: 0.9em;"><strong>CONTROLLER:PLAINTEXT,<br>PLAINTEXT:PLAINTEXT,<br>PLAINTEXT_HOST:PLAINTEXT</strong></td>
-                                <td>Maps listener names to security protocols (all using PLAINTEXT)</td>
-                            </tr>
-                            <tr>
-                                <td><code style="background: #f4f4f4; padding: 2px 6px; border-radius: 3px;">KAFKA_CFG_CONTROLLER_LISTENER_NAMES</code></td>
-                                <td><strong>CONTROLLER</strong></td>
-                                <td>Specifies which listener is used for controller communication</td>
-                            </tr>
-                            <tr>
-                                <td><code style="background: #f4f4f4; padding: 2px 6px; border-radius: 3px;">KAFKA_CFG_INTER_BROKER_LISTENER_NAME</code></td>
-                                <td><strong>PLAINTEXT</strong></td>
-                                <td>Listener used for inter-broker communication</td>
-                            </tr>
-                            <tr>
-                                <td><code style="background: #f4f4f4; padding: 2px 6px; border-radius: 3px;">ALLOW_PLAINTEXT_LISTENER</code></td>
-                                <td><strong>yes</strong></td>
-                                <td>Allows unencrypted connections (for development)</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <!-- Topic Configuration -->
-                <div style="margin-bottom: 30px;">
-                    <h3 style="color: #667eea; margin-bottom: 15px; font-size: 1.3em;">📚 Topic Configuration</h3>
-                    <table class="resource-table" style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr>
-                                <th style="width: 35%;">Variable</th>
-                                <th style="width: 25%;">Value</th>
-                                <th style="width: 40%;">Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><code style="background: #f4f4f4; padding: 2px 6px; border-radius: 3px;">KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE</code></td>
-                                <td><strong>true</strong></td>
-                                <td>Automatically creates topics when first referenced</td>
-                            </tr>
-                            <tr>
-                                <td><code style="background: #f4f4f4; padding: 2px 6px; border-radius: 3px;">KAFKA_CFG_NUM_PARTITIONS</code></td>
-                                <td><strong>3</strong></td>
-                                <td>Default number of partitions for auto-created topics</td>
-                            </tr>
-                            <tr>
-                                <td><code style="background: #f4f4f4; padding: 2px 6px; border-radius: 3px;">KAFKA_CFG_DEFAULT_REPLICATION_FACTOR</code></td>
-                                <td><strong>1</strong></td>
-                                <td>Number of replicas for each partition (1 = no replication)</td>
-                            </tr>
-                            <tr>
-                                <td><code style="background: #f4f4f4; padding: 2px 6px; border-radius: 3px;">KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR</code></td>
-                                <td><strong>1</strong></td>
-                                <td>Replication factor for internal offsets topic</td>
-                            </tr>
-                            <tr>
-                                <td><code style="background: #f4f4f4; padding: 2px 6px; border-radius: 3px;">KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR</code></td>
-                                <td><strong>1</strong></td>
-                                <td>Replication factor for transaction state log</td>
-                            </tr>
-                            <tr>
-                                <td><code style="background: #f4f4f4; padding: 2px 6px; border-radius: 3px;">KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR</code></td>
-                                <td><strong>1</strong></td>
-                                <td>Minimum in-sync replicas for transaction log</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <!-- Log Retention Configuration -->
-                <div style="margin-bottom: 30px;">
-                    <h3 style="color: #667eea; margin-bottom: 15px; font-size: 1.3em;">💾 Log Retention & Storage</h3>
-                    <table class="resource-table" style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr>
-                                <th style="width: 35%;">Variable</th>
-                                <th style="width: 25%;">Value</th>
-                                <th style="width: 40%;">Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><code style="background: #f4f4f4; padding: 2px 6px; border-radius: 3px;">KAFKA_CFG_LOG_RETENTION_HOURS</code></td>
-                                <td><strong>168</strong></td>
-                                <td>Keep logs for 168 hours (7 days) before deletion</td>
-                            </tr>
-                            <tr>
-                                <td><code style="background: #f4f4f4; padding: 2px 6px; border-radius: 3px;">KAFKA_CFG_LOG_RETENTION_BYTES</code></td>
-                                <td><strong>1073741824</strong></td>
-                                <td>Maximum size per partition (1GB) before old segments deleted</td>
-                            </tr>
-                            <tr>
-                                <td><code style="background: #f4f4f4; padding: 2px 6px; border-radius: 3px;">KAFKA_CFG_LOG_SEGMENT_BYTES</code></td>
-                                <td><strong>1073741824</strong></td>
-                                <td>Size of each log segment file (1GB)</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <!-- Performance Settings -->
-                <div style="margin-bottom: 30px;">
-                    <h3 style="color: #667eea; margin-bottom: 15px; font-size: 1.3em;">⚡ Performance Settings</h3>
-                    <table class="resource-table" style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr>
-                                <th style="width: 35%;">Variable</th>
-                                <th style="width: 25%;">Value</th>
-                                <th style="width: 40%;">Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><code style="background: #f4f4f4; padding: 2px 6px; border-radius: 3px;">KAFKA_HEAP_OPTS</code></td>
-                                <td><strong>-Xmx512m -Xms256m</strong></td>
-                                <td>JVM heap memory: min 256MB, max 512MB</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <!-- Important Notes -->
-                <div style="background: #e8f5e9; border-left: 4px solid #4caf50; padding: 15px; margin-top: 30px; border-radius: 4px;">
-                    <h4 style="color: #2e7d32; margin-bottom: 10px;">💡 Configuration Notes</h4>
-                    <ul style="color: #2e7d32; margin: 10px 0; padding-left: 20px;">
-                        <li style="margin-bottom: 8px;"><strong>Listener Types Explained:</strong>
-                            <ul style="margin-top: 5px;">
-                                <li><code>PLAINTEXT</code> (port 29092): For internal container communication</li>
-                                <li><code>PLAINTEXT_HOST</code> (port 9092): For external host access</li>
-                                <li><code>CONTROLLER</code> (port 9093): For KRaft controller operations</li>
-                            </ul>
-                        </li>
-                        <li style="margin-bottom: 8px;"><strong>Single Node Setup:</strong> All replication factors are set to 1 since this is a single-node development setup</li>
-                        <li style="margin-bottom: 8px;"><strong>Auto-Topic Creation:</strong> Enabled for convenience in development, but should be disabled in production</li>
-                        <li style="margin-bottom: 8px;"><strong>Memory Settings:</strong> Conservative heap settings suitable for CI/CD environments</li>
-                    </ul>
-                </div>
-            </div>
+                <h3>Docker Profiles</h3>
+                <p>This configuration uses Docker Compose profiles to control which services are started:</p>
 
-            <!-- Configuration Details Section -->
-            <div class="section">
-                <h2 class="section-title">
-                    <span class="section-icon">⚙️</span>
-                    Configuration Summary
-                </h2>
-                
-                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 20px;">
-                    <h3 style="color: #2c3e50; margin-bottom: 15px;">Quick Reference</h3>
-                    <ul style="list-style: none; padding: 0;">
-                        <li style="padding: 8px 0;"><strong>Cluster ID:</strong> MkU3OEVBNTcwNTJENDM2Qk</li>
-                        <li style="padding: 8px 0;"><strong>Node ID:</strong> 1</li>
-                        <li style="padding: 8px 0;"><strong>Replication Factor:</strong> 1 (single node)</li>
-                        <li style="padding: 8px 0;"><strong>Log Segment Size:</strong> 1GB</li>
-                        <li style="padding: 8px 0;"><strong>Log Retention:</strong> 7 days</li>
-                        <li style="padding: 8px 0;"><strong>Default Partitions:</strong> 3</li>
-                        <li style="padding: 8px 0;"><strong>Authentication:</strong> Plaintext (disabled for simplicity)</li>
-                        <li style="padding: 8px 0;"><strong>Network:</strong> snaplogicnet (bridge)</li>
-                        <li style="padding: 8px 0;"><strong>Volume:</strong> kafka-kraft-data</li>
-                    </ul>
+                <div class="profile-list">
+                    <div class="profile-item">kafka</div>
+                    <div class="profile-item">kafka-dev</div>
+                    <div class="profile-item">kafka-test</div>
+                    <div class="profile-item">kafka-cleanup</div>
                 </div>
-            </div>
+
+                <h3>Health Checks</h3>
+                <p>Services include health checks to ensure proper startup and operation:</p>
+                <ul style="margin-left: 40px; line-height: 2;">
+                    <li><strong>Kafka:</strong> Verifies broker availability by listing topics</li>
+                    <li><strong>Kafka UI:</strong> Checks HTTP endpoint availability</li>
+                    <li>Health checks include configurable intervals, timeouts, and retry counts</li>
+                    <li>Start period allows services time to initialize before health checking begins</li>
+                </ul>
+            </section>
+
+            <section id="networking">
+                <h2>Networking</h2>
+                <p>All services are connected through a custom bridge network named <code>snaplogicnet</code>. This
+                    provides:</p>
+                <ul style="margin-left: 40px; line-height: 2;">
+                    <li>Service discovery by container name</li>
+                    <li>Isolated network environment</li>
+                    <li>Internal communication between services</li>
+                    <li>Controlled external access through mapped ports</li>
+                </ul>
+
+                <div class="alert alert-info">
+                    <span class="alert-icon">💡</span>
+                    <div>
+                        <strong>Listener Configuration:</strong> Kafka uses multiple listeners for different connection
+                        types. Internal services connect via <code>kafka:29092</code>, while external clients use
+                        <code>localhost:9092</code>.
+                    </div>
+                </div>
+            </section>
+
+            <section id="volumes">
+                <h2>Volumes</h2>
+
+                <h3>Persistent Storage</h3>
+                <div class="config-item">
+                    <span class="config-key">kafka-kraft-data</span>
+                    <span class="config-value">/bitnami/kafka</span>
+                    <p class="config-desc">Stores Kafka logs, metadata, and KRaft consensus data. Uses local driver for
+                        temporary storage in CI environments.</p>
+                </div>
+
+                <h3>Script Mounts</h3>
+                <div class="config-item">
+                    <span class="config-key">./scripts/kafka</span>
+                    <span class="config-value">/scripts:ro</span>
+                    <p class="config-desc">Read-only mount for utility scripts used by setup, test, and cleanup
+                        services.</p>
+                </div>
+            </section>
+
+            <section id="usage">
+                <h2>Usage</h2>
+
+                <h3>Starting Services</h3>
+
+                <p>Start Kafka with the UI (development mode):</p>
+                <div class="command-box">
+                    docker-compose -f docker-compose.kafka.yml --profile kafka-dev up -d
+                    <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                </div>
+
+                <p>Start Kafka with setup scripts:</p>
+                <div class="command-box">
+                    docker-compose -f docker-compose.kafka.yml --profile kafka up -d
+                    <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                </div>
+
+                <p>Run test producer:</p>
+                <div class="command-box">
+                    docker-compose -f docker-compose.kafka.yml --profile kafka-test up kafka-test-producer
+                    <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                </div>
+
+                <p>Clean up Kafka data:</p>
+                <div class="command-box">
+                    docker-compose -f docker-compose.kafka.yml --profile kafka-cleanup up kafka-cleanup
+                    <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                </div>
+
+                <h3>Accessing Services</h3>
+                <ul style="margin-left: 40px; line-height: 2;">
+                    <li><strong>Kafka UI:</strong> <a href="http://localhost:8080"
+                            target="_blank">http://localhost:8080</a></li>
+                    <li><strong>Kafka Broker:</strong> <code>localhost:9092</code> (for client connections)</li>
+                </ul>
+
+                <h3>Environment Variables</h3>
+                <p>You can customize ports by setting environment variables:</p>
+                <div class="command-box">
+                    export KAFKA_PORT=19092<br>
+                    export KAFKA_UI_PORT=18080<br>
+                    docker-compose -f docker-compose.kafka.yml --profile kafka-dev up -d
+                    <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                </div>
+            </section>
+
+            <section id="troubleshooting">
+                <h2>Troubleshooting</h2>
+
+                <h3>Common Issues</h3>
+
+                <div class="alert alert-warning">
+                    <span class="alert-icon">⚠️</span>
+                    <div>
+                        <strong>Port Already in Use:</strong> If ports 9092 or 8080 are already occupied, set custom
+                        ports using environment variables as shown in the Usage section.
+                    </div>
+                </div>
+
+                <h3>Checking Service Health</h3>
+                <div class="command-box">
+                    docker-compose -f docker-compose.kafka.yml ps
+                    <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                </div>
+
+                <h3>Viewing Logs</h3>
+                <div class="command-box">
+                    docker-compose -f docker-compose.kafka.yml logs -f kafka
+                    <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                </div>
+
+                <h3>Testing Kafka Connection</h3>
+                <div class="command-box">
+                    docker exec snaplogic-kafka-kraft kafka-topics.sh --bootstrap-server localhost:9092 --list
+                    <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                </div>
+
+                <h3>Creating a Test Topic</h3>
+                <div class="command-box">
+                    docker exec snaplogic-kafka-kraft kafka-topics.sh \
+                    --bootstrap-server localhost:9092 \
+                    --create --topic test-topic \
+                    --partitions 3 --replication-factor 1
+                    <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                </div>
+
+                <h3>Resource Issues</h3>
+                <p>If services fail to start due to resource constraints:</p>
+                <ul style="margin-left: 40px; line-height: 2;">
+                    <li>Check available Docker resources: <code>docker system df</code></li>
+                    <li>Clean up unused resources: <code>docker system prune -a</code></li>
+                    <li>Increase Docker Desktop memory allocation if needed</li>
+                    <li>Consider reducing resource limits in the deploy section</li>
+                </ul>
+            </section>
         </div>
 
-        <div class="footer">
-            <p>📚 Kafka Docker Compose Configuration Documentation</p>
-            <p style="margin-top: 10px; font-size: 0.9em;">
-                Built for SnapLogic Robot Framework Examples | 
-                <a href="https://kafka.apache.org/">Apache Kafka</a> | 
-                <a href="https://github.com/provectus/kafka-ui">Kafka UI</a>
-            </p>
-        </div>
+        <footer>
+            <p>&copy; 2024 SnapLogic Kafka Documentation</p>
+            <div class="footer-links">
+                <a href="https://kafka.apache.org/documentation/" target="_blank">Apache Kafka Docs</a>
+                <a href="https://github.com/provectus/kafka-ui" target="_blank">Kafka UI GitHub</a>
+                <a href="https://hub.docker.com/r/bitnami/kafka" target="_blank">Bitnami Kafka Image</a>
+            </div>
+        </footer>
     </div>
+
+    <script>
+        function copyToClipboard(button) {
+            const codeBlock = button.parentElement;
+            const textToCopy = codeBlock.textContent
+                .replace('Copy', '')
+                .replace('$ ', '')
+                .trim();
+
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.style.background = '#34a853';
+
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '';
+                }, 2000);
+            });
+        }
+
+        // Smooth scroll for navigation
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href').substring(1);
+                const targetSection = document.getElementById(targetId);
+                targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+
+        // Add interactive hover effects
+        document.querySelectorAll('.service-card').forEach(card => {
+            card.addEventListener('mouseenter', function () {
+                this.style.transform = 'translateY(-5px)';
+            });
+
+            card.addEventListener('mouseleave', function () {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    </script>
 </body>
+
 </html>
