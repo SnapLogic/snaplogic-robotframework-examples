@@ -14,7 +14,6 @@ Documentation       Advanced Kafka Message Testing Suite
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource
 Resource            ../../../resources/files.resource
 Resource            ../../../resources/kafka/kafka_keywords_library.resource
-Library             KafkaLibrary
 Library             OperatingSystem
 Library             String
 Library             Collections

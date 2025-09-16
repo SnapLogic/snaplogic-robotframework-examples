@@ -1,10 +1,11 @@
 *** Settings ***
-Documentation       Kafka utility keywords for Robot Framework tests using KafkaLibrary
+Documentation       Kafka utility keywords for Robot Framework tests
+...                 Using complete custom KafkaLibrary implementation
 
-Library             KafkaLibrary
 Library             Collections
 Library             String
 Library             BuiltIn
+Library             kafka_library.py
 
 
 *** Variables ***
@@ -14,10 +15,7 @@ ${KAFKA_GROUP_ID}               test-consumer-group
 
 *** Keywords ***
 Delete Kafka Topic
-    [Documentation]    Deletes one or more Kafka topics
-    ...    Note: KafkaLibrary doesn't have a delete topic function,
-    ...    so this keyword logs a warning. Topics need to be deleted
-    ...    through Kafka admin tools or auto-deletion policies.
+    [Documentation]    Deletes one or more Kafka topics using built-in admin operations
     ...
     ...    Example:
     ...    | Delete Kafka Topic | test-topic |    # Single topic
@@ -27,12 +25,9 @@ Delete Kafka Topic
     ${count}=    Get Length    ${topic_names}
     IF    ${count} == 0    Fail    No topic names provided to delete
 
-    # KafkaLibrary doesn't support topic deletion
-    # Log warning and continue (topics will be auto-deleted or cleaned up externally)
-    FOR    ${topic_name}    IN    @{topic_names}
-        Log    WARNING: Cannot delete topic ${topic_name} - KafkaLibrary doesn't support topic deletion
-        Log    Topic ${topic_name} will need to be deleted manually or via auto-deletion policies
-    END
+    # Delete topics using built-in Delete Topics keyword
+    Delete Topics    @{topic_names}
+    Log    Successfully deleted ${count} topic(s)
 
 Connect To Kafka As Producer
     [Documentation]    Connects to Kafka as a producer
@@ -49,7 +44,10 @@ Connect To Kafka As Consumer
     ...    Example:
     ...    | Connect To Kafka As Consumer |
     ...    | Connect To Kafka As Consumer | group_id=my-group |
-    [Arguments]    ${bootstrap_servers}=${KAFKA_BOOTSTRAP_SERVER}    ${group_id}=${KAFKA_GROUP_ID}    ${auto_offset_reset}=earliest
+    [Arguments]
+    ...    ${bootstrap_servers}=${KAFKA_BOOTSTRAP_SERVER}
+    ...    ${group_id}=${KAFKA_GROUP_ID}
+    ...    ${auto_offset_reset}=earliest
     # Connect with earliest offset to read all messages from beginning
     Connect Consumer    ${bootstrap_servers}    ${group_id}    auto_offset_reset=${auto_offset_reset}
     Log    Connected to Kafka as consumer at ${bootstrap_servers} with group ${group_id}, offset=${auto_offset_reset}
@@ -115,10 +113,10 @@ Verify Pipeline Created Topic And Messages
     ...    • Message content matches expected format from pipeline
     ...    • Message key and value are correct
     [Arguments]    ${topic_name}    ${expected_key}=Test_key    ${expected_value}=Test_value    ${wait_time}=5s
-    
+
     # Allow time for pipeline messages to be fully committed
     Sleep    ${wait_time}    Allow time for pipeline messages to be fully committed
-    
+
     # Verify the topic created by pipeline exists
     Log    Verifying topic ${topic_name} created by SnapLogic pipeline...
     ${topics}=    Get Kafka Topics
@@ -126,33 +124,33 @@ Verify Pipeline Created Topic And Messages
     Should Contain    ${topics}    ${topic_name}
     ...    Topic ${topic_name} was not found - pipeline may have failed to create it
     Log    ✓ Topic ${topic_name} exists    console=yes
-    
+
     # Create a unique consumer group to always read from beginning
     ${timestamp}=    Get Time    epoch
     ${unique_group}=    Set Variable    robot-verify-${timestamp}
     Log    Using unique consumer group: ${unique_group}    console=yes
-    
+
     # Connect as consumer with unique group and earliest offset
     Connect Consumer    ${KAFKA_BOOTSTRAP_SERVER}    ${unique_group}    auto_offset_reset=earliest
-    
+
     # Subscribe to the topic
     Log    Subscribing to topic ${topic_name}...
     Subscribe Topic    ${topic_name}
-    
+
     # Poll for messages that the pipeline should have sent
-    # Poll expects: max_records, timeout (in seconds)  
+    # Poll expects: max_records, timeout (in seconds)
     ${max_messages}=    Evaluate    10
-    ${timeout_seconds}=    Evaluate    10  
+    ${timeout_seconds}=    Evaluate    10
     Log    Polling for messages: max=${max_messages}, timeout=${timeout_seconds}s    console=yes
     ${messages}=    Poll    ${max_messages}    ${timeout_seconds}
-    
+
     # Log what we got
     Log    Raw messages received: ${messages}    console=yes
-    
+
     # Verify we got messages from the pipeline
     ${message_count}=    Get Length    ${messages}
     Log    Message count: ${message_count}    console=yes
-    
+
     # If no messages, provide helpful debugging info
     IF    ${message_count} == 0
         Log    WARNING: No messages found. Possible reasons:    WARN
@@ -164,63 +162,59 @@ Verify Pipeline Created Topic And Messages
         Log    Expected key: ${expected_key}    WARN
         Log    Expected value: ${expected_value}    WARN
     END
-    
+
     Should Be True    ${message_count} > 0
     ...    No messages found in topic ${topic_name} - pipeline may not have sent messages
     Log    ✓ Found ${message_count} message(s) in topic ${topic_name}    console=yes
-    
+
     # Verify message content matches what pipeline should have sent
     ${messages_str}=    Convert To String    ${messages}
     Log    Messages from pipeline: ${messages_str}
-    
+
     # Check for expected message value from pipeline
     ${found_expected_value}=    Run Keyword And Return Status
     ...    Should Contain    ${messages_str}    ${expected_value}
-    
+
     # Check for expected message key from pipeline
     ${found_expected_key}=    Run Keyword And Return Status
     ...    Should Contain    ${messages_str}    ${expected_key}
-    
+
     # Log detailed message information
     FOR    ${msg}    IN    @{messages}
         ${msg_details}=    Convert To String    ${msg}
         Log    Message details: ${msg_details}
-        
+
         # Try to extract key and value if present
         ${has_value}=    Run Keyword And Return Status    Should Contain    ${msg_details}    value
-        IF    ${has_value}
-            Log    ✓ Message contains value field
-        END
-        
+        IF    ${has_value}    Log    ✓ Message contains value field
+
         ${has_key}=    Run Keyword And Return Status    Should Contain    ${msg_details}    key
-        IF    ${has_key}
-            Log    ✓ Message contains key field
-        END
+        IF    ${has_key}    Log    ✓ Message contains key field
     END
-    
+
     # Final verification
     IF    ${found_expected_value}
         Log    ✓ Found expected message value '${expected_value}' from pipeline    console=yes
     ELSE
         Log    ⚠ Expected message value '${expected_value}' not found - check pipeline configuration    WARN
     END
-    
+
     IF    ${found_expected_key}
         Log    ✓ Found expected message key '${expected_key}' from pipeline    console=yes
     ELSE
         Log    ⚠ Expected message key '${expected_key}' not found - check pipeline configuration    WARN
     END
-    
+
     # No need to commit since we're just verifying, not processing
     Log    Pipeline Kafka verification completed - Topic: ${topic_name}, Messages: ${message_count}    console=yes
-    
+
     # Return verification results
     ${results}=    Create Dictionary
     ...    topic_exists=${True}
     ...    message_count=${message_count}
     ...    key_found=${found_expected_key}
     ...    value_found=${found_expected_value}
-    
+
     RETURN    ${results}
 
 Get Available Kafka Topics

@@ -48,7 +48,7 @@ jobs:
         - env | grep TRAVIS
         - sudo service postgresql stop # stop any running postgres services for more info see SLIM-437
         - make snaplogic-start-services
-        - make robot-run-all-tests TAGS="oracle sqlserver file_mount postgres_s3 sla snowflake_demo email2" PROJECT_SPACE_SETUP=True
+        - make robot-run-all-tests TAGS="oracle sqlserver file_mount postgres_s3 sla snowflake_demo email2 kafka" PROJECT_SPACE_SETUP=True
         - make upload-test-results
         - make slack-notify
 

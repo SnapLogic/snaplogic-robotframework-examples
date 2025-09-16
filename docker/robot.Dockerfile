@@ -38,8 +38,8 @@ COPY requirements.txt .
 
 # Install dependencies, excluding ibm_db on ARM64
 RUN if [ "$(uname -m)" = "aarch64" ]; then \
-        grep -v "ibm_db" requirements.txt > requirements-filtered.txt && \
-        pip install --no-cache-dir --index-url https://pypi.org/simple -r requirements-filtered.txt; \
+    grep -v "ibm_db" requirements.txt > requirements-filtered.txt && \
+    pip install --no-cache-dir --index-url https://pypi.org/simple -r requirements-filtered.txt; \
     else \
-        pip install --no-cache-dir --index-url https://pypi.org/simple -r requirements.txt; \
+    pip install --no-cache-dir --index-url https://pypi.org/simple -r requirements.txt; \
     fi

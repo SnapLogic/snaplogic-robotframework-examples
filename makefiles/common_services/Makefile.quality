@@ -57,6 +57,8 @@ install-requirements-venv:
 		echo "💡 Creating new virtual environment..."; \
 		python3 -m venv ../.venv; \
 	fi
+	@echo "🧹 Cleaning up old robotframework-kafkalibrary if present..."
+	@../.venv/bin/pip uninstall -y robotframework-kafkalibrary 2>/dev/null || true
 	@echo "📦 Installing requirements in virtual environment..."
 	@../.venv/bin/pip install --upgrade pip
 	@../.venv/bin/pip install --upgrade --force-reinstall -r src/tools/requirements.txt

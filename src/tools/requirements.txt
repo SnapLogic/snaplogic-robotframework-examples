@@ -11,5 +11,5 @@ ibm_db # IBM DB2 database driver
 teradatasql # Teradata database driver
 snowflake-connector-python # Snowflake database driver
 robotframework-pabot==2.18.0
-# Install KafkaLibrary directly from GitHub (latest version)
-git+https://github.com/s4int/robotframework-KafkaLibrary.git@master
+# Install kafka-python directly (no need for robotframework-kafkalibrary)
+kafka-python>=2.0.2
