@@ -1,7 +1,7 @@
 # docker-compose.yml
 include:
   - oracle/docker-compose.oracle.yml
-  - docker-compose.groundplex.yml
+  - groundplex/docker-compose.groundplex.yml
   - minio/docker-compose.s3emulator.yml
   - postgres/docker-compose.postgres.yml
   - sqlserver/docker-compose.sqlserver.yml

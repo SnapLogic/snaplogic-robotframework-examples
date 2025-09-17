@@ -7,10 +7,10 @@ services:
       - "${GROUNDPLEX_API_PORT:-8090}:8090"
       - "${GROUNDPLEX_JCC_PORT:-8081}:8081"
     volumes:
-      - ${SLPROPZ_PATH:-../test/.config/${GROUNDPLEX_NAME}.slpropz}:/opt/snaplogic/etc/${GROUNDPLEX_NAME:-groundplex}.slpropz
+      - ${SLPROPZ_PATH:-../../test/.config/${GROUNDPLEX_NAME}.slpropz}:/opt/snaplogic/etc/${GROUNDPLEX_NAME:-groundplex}.slpropz
       - /var/run.docker.sock:/var/run/docker.sock
       # Mount entire actual_expected_data directory for comprehensive test data access
-      - ../test/suite/test_data:/opt/snaplogic/test_data
+      - ../../test/suite/test_data:/opt/snaplogic/test_data
     profiles: [ gp ]
     networks:
       - snaplogicnet
