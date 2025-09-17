@@ -1,0 +1,108 @@
+services:
+  kafka:
+    image: bitnami/kafka:3.7
+    container_name: snaplogic-kafka-kraft
+    env_file:
+      - ../../env_files/messaging_service_accounts/.env.kafka
+    ports:
+      - "${KAFKA_PORT:-9092}:9092"
+      - "${KAFKA_CONTROLLER_PORT:-9093}:9093"
+      
+    profiles: [ kafka, kafka-dev ]
+    
+    # Mount scripts for potential use inside container
+    volumes:
+      - kafka-kraft-data:/bitnami/kafka
+      - ./scripts:/scripts:ro
+      
+    healthcheck:
+      test: ["CMD-SHELL", "/scripts/kafka-healthcheck.sh || kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      interval: 30s
+      timeout: 15s
+      retries: 10
+      start_period: 60s
+      
+    restart: unless-stopped
+    
+    # Resource limits for CI stability
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.5'
+          
+    networks:
+      - snaplogicnet
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: snaplogic-kafka-ui
+    depends_on:
+      kafka:
+        condition: service_healthy
+    env_file:
+      - ../../env_files/messaging_service_accounts/.env.kafka
+    ports:
+      - "${KAFKA_UI_PORT:-8080}:8080"
+    profiles: [ kafka, kafka-dev ]
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080 || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    # Resource limits for CI stability
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
+    networks:
+      - snaplogicnet
+
+  kafka-setup:
+    image: bitnami/kafka:3.7
+    container_name: snaplogic-kafka-setup
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./scripts:/scripts:ro
+    entrypoint: ["/bin/bash"]
+    command: ["./scripts/kafka-setup.sh"]
+    profiles: [ kafka ]
+    networks:
+      - snaplogicnet
+    restart: "no"
+
+  # Optional: Kafka cleanup service (can be run on demand)
+  kafka-cleanup:
+    image: bitnami/kafka:3.7
+    container_name: snaplogic-kafka-cleanup
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - scripts:/scripts:ro
+    entrypoint: ["/bin/bash"]
+    command: ["/scripts/kafka-cleanup.sh"]
+    profiles: [ kafka-cleanup ]
+    networks:
+      - snaplogicnet
+    restart: "no"
+
+# Temporary volumes for CI environments
+volumes:
+  kafka-kraft-data:
+    driver: local
+
+networks:
+  snaplogicnet:
+    driver: bridge

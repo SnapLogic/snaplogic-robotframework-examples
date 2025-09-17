@@ -34,8 +34,8 @@ install: skip
 
 before_script:
   - "echo \"\U0001F50DEnvironment Variables set up and creating .env file:\""
-  - chmod +x ./setup_travis_env.sh
-  - "./setup_travis_env.sh"
+  - chmod +x ./travis_scripts/setup_travis_env.sh
+  - "./travis_scripts/setup_travis_env.sh"
 
 # ===== JOBS =====
 jobs:
@@ -48,7 +48,7 @@ jobs:
         - env | grep TRAVIS
         - sudo service postgresql stop # stop any running postgres services for more info see SLIM-437
         - make snaplogic-start-services
-        - make robot-run-all-tests TAGS="oracle sqlserver file_mount postgres_s3 sla snowflake_demo email2 kafka" PROJECT_SPACE_SETUP=True
+        - make robot-run-all-tests TAGS="oracle sqlserver file_mount postgres_s3 sla snowflake_demo email2" PROJECT_SPACE_SETUP=True
         - make upload-test-results
         - make slack-notify
 

@@ -1,15 +1,15 @@
 # docker-compose.yml
 include:
-  - docker-compose.oracle.yml
+  - oracle/docker-compose.oracle.yml
   - docker-compose.groundplex.yml
-  - docker-compose.s3emulator.yml
-  - docker-compose.postgres.yml
-  - docker-compose.sqlserver.yml
-  - docker-compose.mysql.yml
-  - docker-compose.db2.yml
-  - docker-compose.salesforce-mock.yml
-  - docker-compose.kafka.yml
-  - docker-compose.email-mock.yml
+  - minio/docker-compose.s3emulator.yml
+  - postgres/docker-compose.postgres.yml
+  - sqlserver/docker-compose.sqlserver.yml
+  - mysql/docker-compose.mysql.yml
+  - db2/docker-compose.db2.yml
+  - salesforce/docker-compose.salesforce-mock.yml
+  - kafka/docker-compose.kafka.yml
+  - email/docker-compose.email-mock.yml
 
 services:
   tools:
@@ -39,7 +39,7 @@ services:
       - ../test:/app/test
       - ../.env:/app/.env
       - ../env_files:/app/env_files:ro  # Mount entire env_files directory
-      - ../setup_travis_env.sh:/app/setup_travis_env.sh
+      - ../travis_scripts/setup_travis_env.sh:/app/travis_scripts/setup_travis_env.sh
       - ../.travis.yml:/app/.travis.yml
       - ../test/suite/test_data:/opt/snaplogic/test_data
       # Optional: Add mounts for common local directories (uncomment as needed)

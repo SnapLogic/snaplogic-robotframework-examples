@@ -1,5 +1,0 @@
-{
-  "/users/*": "/:collection/:id",
-  "/posts/*": "/:collection/:id",
-  "/api/v1/*": "/$1"
-}

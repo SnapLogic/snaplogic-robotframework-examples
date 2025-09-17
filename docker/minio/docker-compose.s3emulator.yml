@@ -1,0 +1,44 @@
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: snaplogic-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      # Remove or comment out these as they can cause issues
+      # MINIO_BROWSER_REDIRECT_URL: http://localhost:9011
+      # MINIO_SERVER_URL: http://localhost:9010
+    volumes:
+      - minio_data:/data
+    ports:
+      - "${MINIO_API_PORT:-9010}:9000"  # MinIO API port
+      - "${MINIO_CONSOLE_PORT:-9011}:9001"  # MinIO Console port
+    profiles: [ minio , minio-dev ]
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - snaplogicnet
+
+  minio-setup:
+    image: minio/mc:latest
+    container_name: snaplogic-minio-setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    volumes:
+      - ./minio-setup.sh:/setup.sh:ro
+    entrypoint: ["/bin/sh", "/setup.sh"]
+    profiles: [ minio ]
+    networks:
+      - snaplogicnet
+
+volumes:
+  minio_data:
+
+networks:
+  snaplogicnet:
+    driver: bridge
