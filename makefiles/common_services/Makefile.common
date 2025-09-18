@@ -50,7 +50,7 @@ endif
 ENV_FILE_FLAGS := $(foreach file,$(ENV_FILES),--env-file $(file))
 
 # Docker compose file location
-DOCKER_COMPOSE_FILE := docker/docker-compose.yml
+DOCKER_COMPOSE_FILE := docker-compose.yml
 DOCKER_COMPOSE := docker compose $(ENV_FILE_FLAGS) -f $(DOCKER_COMPOSE_FILE)
 
 # Docker Compose profiles - Define ONCE here, use everywhere

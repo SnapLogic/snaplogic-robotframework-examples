@@ -1,21 +1,21 @@
 # docker-compose.yml
 include:
-  - oracle/docker-compose.oracle.yml
-  - groundplex/docker-compose.groundplex.yml
-  - minio/docker-compose.s3emulator.yml
-  - postgres/docker-compose.postgres.yml
-  - sqlserver/docker-compose.sqlserver.yml
-  - mysql/docker-compose.mysql.yml
-  - db2/docker-compose.db2.yml
-  - salesforce/docker-compose.salesforce-mock.yml
-  - kafka/docker-compose.kafka.yml
-  - email/docker-compose.email-mock.yml
+  - docker/oracle/docker-compose.oracle.yml
+  - docker/groundplex/docker-compose.groundplex.yml
+  - docker/minio/docker-compose.s3emulator.yml
+  - docker/postgres/docker-compose.postgres.yml
+  - docker/sqlserver/docker-compose.sqlserver.yml
+  - docker/mysql/docker-compose.mysql.yml
+  - docker/db2/docker-compose.db2.yml
+  - docker/salesforce/docker-compose.salesforce-mock.yml
+  - docker/kafka/docker-compose.kafka.yml
+  - docker/email/docker-compose.email-mock.yml
 
 services:
   tools:
     build:
-      context: ../src/tools
-      dockerfile: ../../docker/robot.Dockerfile
+      context: src/tools
+      dockerfile: ../robot.Dockerfile
     platform: linux/amd64  # Force x86_64 for ibm_db compatibility
     container_name: snaplogic-test-example-tools-container
     image: snaplogic-test-example:latest
@@ -35,13 +35,13 @@ services:
       TRAVIS_DURATION: ${TRAVIS_DURATION:-0}
       TRAVIS_BRANCH: ${TRAVIS_BRANCH:-}
     volumes:
-      - ../src:/app/src
-      - ../test:/app/test
-      - ../.env:/app/.env
-      - ../env_files:/app/env_files:ro  # Mount entire env_files directory
-      - ../travis_scripts/setup_travis_env.sh:/app/travis_scripts/setup_travis_env.sh
-      - ../.travis.yml:/app/.travis.yml
-      - ../test/suite/test_data:/opt/snaplogic/test_data
+      - ./src:/app/src
+      - ./test:/app/test
+      - ./.env:/app/.env
+      - ./env_files:/app/env_files:ro  # Mount entire env_files directory
+      - ./travis_scripts/setup_travis_env.sh:/app/travis_scripts/setup_travis_env.sh
+      - ./.travis.yml:/app/.travis.yml
+      - ./test/suite/test_data:/opt/snaplogic/test_data
       # Optional: Add mounts for common local directories (uncomment as needed)
       # - ~/Documents:/opt/host-documents:ro
       # - ~/Downloads:/opt/host-downloads:ro
