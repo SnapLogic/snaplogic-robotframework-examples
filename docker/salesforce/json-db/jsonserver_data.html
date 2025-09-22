@@ -382,13 +382,21 @@
         
         async function fetchData() {
             try {
+                // Add visual feedback
+                document.querySelector('h1').style.opacity = '0.5';
+                
                 const response = await fetch(`${API_BASE}/db`);
                 if (!response.ok) throw new Error('Failed to fetch data');
                 dbData = await response.json();
                 updateUI();
+                
+                // Restore opacity
+                document.querySelector('h1').style.opacity = '1';
             } catch (error) {
                 console.error('Error fetching data:', error);
-                alert('Error: Make sure JSON Server is running on port 8082');
+                // Don't alert on every error with 1-second refresh
+                // alert('Error: Make sure JSON Server is running on port 8082');
+                document.querySelector('h1').style.color = 'red';
             }
         }
         
@@ -539,8 +547,8 @@
             }
         });
         
-        // Auto-refresh every 10 seconds
-        setInterval(fetchData, 10000);
+        // Auto-refresh every 1 second
+        setInterval(fetchData, 1000);
         
         // Initial load
         fetchData();

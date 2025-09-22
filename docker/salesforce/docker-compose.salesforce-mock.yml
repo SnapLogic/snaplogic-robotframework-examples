@@ -46,16 +46,17 @@ services:
     image: wiremock/wiremock:3.3.1
     container_name: salesforce-api-mock
     profiles:
+      - salesforce-mock-start
       - salesforce-dev
     ports:
       - "${SALESFORCE_HTTP_PORT:-8089}:8080"  # HTTP port
       - "${SALESFORCE_HTTPS_PORT:-8443}:8443"  # HTTPS port
     volumes:
       # IMPORTANT: This folder must contain BOTH static AND proxy mappings
-      - wiremock/proxy_mappings:/home/wiremock/mappings:ro
-      - wiremock/__files:/home/wiremock/__files:ro
+      - ./wiremock/mappings:/home/wiremock/mappings:ro
+      - ./wiremock/__files:/home/wiremock/__files:ro
       # Mount custom certificate keystore
-      - wiremock/certs/custom-keystore.p12:/home/wiremock/keystore.p12:ro
+      - ./wiremock/certs/custom-keystore.p12:/home/wiremock/keystore.p12:ro
 
     command: >
       --port=8080
@@ -84,13 +85,15 @@ services:
   # JSON Server - For persistent CRUD operations
   salesforce-json-server:
     image: clue/json-server
+    platform: linux/amd64  # Explicitly set platform for Apple Silicon compatibility
     container_name: salesforce-json-mock
     profiles:
+      - salesforce-json-server
       - salesforce-dev
     ports:
       - "${SALESFORCE_JSON_PORT:-8082}:80"
     volumes:
-      - ./scripts/salesforce/json-db:/data
+      - ./json-db:/data
     command: --watch /data/salesforce-db.json --host 0.0.0.0
     networks:
       - snaplogicnet

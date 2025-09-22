@@ -1,5 +1,6 @@
 {
-  "name": "Create Account",
+  "priority": 1,
+  "name": "Create Account - Valid 18-char ID",
   "request": {
     "method": "POST",
     "urlPathPattern": "/services/data/v[0-9]+\\.[0-9]+/sobjects/Account"
@@ -10,10 +11,9 @@
       "Content-Type": "application/json"
     },
     "jsonBody": {
-      "id": "001{{randomValue type='NUMERIC' length=15}}",
+      "id": "001000000000TEST01",
       "success": true,
       "errors": []
-    },
-    "transformers": ["response-template"]
+    }
   }
 }
