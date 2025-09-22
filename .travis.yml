@@ -47,6 +47,21 @@ jobs:
         - export TRAVIS_COMMIT_AUTHOR_EMAIL="$(git log -1 --pretty=format:'%ae')"
         - env | grep TRAVIS
         - sudo service postgresql stop # stop any running postgres services for more info see SLIM-437
+        # Debug Docker and file structure
+        - echo "===== Docker and Docker Compose Versions ====="
+        - docker --version
+        - docker-compose --version || true
+        - docker compose version || true
+        - echo "===== Current Directory and Contents ====="
+        - pwd
+        - ls -la
+        - echo "===== Source Directory Contents ====="
+        - ls -la src/
+        - ls -la src/tools/ || true
+        - echo "===== Check for Dockerfile ====="
+        - ls -la *.Dockerfile || true
+        - echo "===== Docker Compose Configuration ====="
+        - cat docker-compose.yml | grep -A10 "tools:" || true
         - make snaplogic-start-services
         - make robot-run-all-tests TAGS="oracle sqlserver file_mount postgres_s3 sla snowflake_demo email2" PROJECT_SPACE_SETUP=True
         - make upload-test-results
