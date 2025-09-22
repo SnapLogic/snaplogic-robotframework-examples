@@ -122,9 +122,11 @@ slack-notify:
 	@docker compose --env-file .env -f docker-compose.yml exec \
 		-e SLACK_WEBHOOK_URL \
 		-w /app/test tools \
-		bash -c 'LATEST_OUTPUT=$$(ls -t robot_output/output-*.xml | head -1); \
-		         echo "Processing: $$LATEST_OUTPUT"; \
-		         python testresults_slack_notifications.py "$$LATEST_OUTPUT"' \
+		bash -c 'if [ ! -d "robot_output" ]; then echo "❌ robot_output directory not found"; exit 1; fi; \
+		         LATEST_OUTPUT=$(ls -t robot_output/output-*.xml 2>/dev/null | head -1); \
+		         if [ -z "$LATEST_OUTPUT" ]; then echo "❌ No test output files found in robot_output/"; ls -la robot_output/ 2>/dev/null || echo "Directory is empty or not accessible"; exit 1; fi; \
+		         echo "Processing: $LATEST_OUTPUT"; \
+		         python testresults_slack_notifications.py "$LATEST_OUTPUT"' \
 	&& echo "✅ Notifications sent successfully!" \
 	|| echo "⚠️ Failed to send notifications"
 
