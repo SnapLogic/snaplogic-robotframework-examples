@@ -304,6 +304,7 @@ End to End Verification Of Data Loaded Via Snowflake Pipeline
     ...    ${task1}
     ...    ${task_params_set1}
     ...    ${task_notifications}
+    ...    Cloud
 
     # Execute pipeline to load data
     Run Triggered Task With Parameters From Template
@@ -339,7 +340,7 @@ Check connections
 
     Log    🔧 Initializing test environment for file mount demonstration
     Log    📋 Test ID: ${unique_id}
-    Wait Until Plex Status Is Up    /${ORG_NAME}/${GROUNDPLEX_LOCATION_PATH}/${GROUNDPLEX_NAME}
+    # Wait Until Plex Status Is Up    /${ORG_NAME}/${GROUNDPLEX_LOCATION_PATH}/${GROUNDPLEX_NAME}
     Connect To Snowflake Cloud DB
 
 Connect To Snowflake Cloud DB
