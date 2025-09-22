@@ -111,6 +111,7 @@
                 opacity: 0;
                 transform: translateY(10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -341,7 +342,8 @@
             <!-- Overview Tab -->
             <div id="overview" class="tab-content active">
                 <h2>Overview</h2>
-                <p>This document explains how the Docker Compose setup works for the Robot Framework testing environment.
+                <p>This document explains how the Docker Compose setup works for the Robot Framework testing
+                    environment.
                     The architecture provides a consistent, isolated, and reproducible testing environment for all team
                     members.</p>
 
@@ -357,7 +359,8 @@
                 <h3>Key Components</h3>
                 <p>The Docker Compose setup consists of:</p>
                 <ul>
-                    <li><strong>Tools Container</strong> - Main container with Robot Framework and all test libraries</li>
+                    <li><strong>Tools Container</strong> - Main container with Robot Framework and all test libraries
+                    </li>
                     <li><strong>Database Services</strong> - Oracle, PostgreSQL, MySQL, SQL Server, and more</li>
                     <li><strong>Groundplex Container</strong> - SnapLogic runtime environment</li>
                     <li><strong>Supporting Services</strong> - MinIO (S3), Kafka, ActiveMQ, etc.</li>
@@ -508,7 +511,7 @@
                 <div class="command-block">make start-services</div>
 
                 <p>Or using docker-compose directly:</p>
-                <div class="command-block">docker compose --env-file .env -f docker/docker-compose.yml up -d tools</div>
+                <div class="command-block">docker compose --env-file .env -f docker-compose.yml up -d tools</div>
 
                 <h3>Verifying Installation</h3>
                 <p>Check installed libraries:</p>
@@ -719,7 +722,7 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td><code>/docker/docker-compose.yml</code></td>
+                            <td><code>/docker-compose.yml</code></td>
                             <td>Main compose configuration</td>
                             <td>Defines all services, networks, and volumes</td>
                         </tr>
@@ -838,13 +841,13 @@ docker exec [container-name] [command]
         function openTab(evt, tabName) {
             // Hide all tab contents
             var tabcontents = document.querySelectorAll('.tab-content');
-            tabcontents.forEach(function(tab) {
+            tabcontents.forEach(function (tab) {
                 tab.classList.remove('active');
             });
 
             // Remove active class from all tab buttons
             var tabbuttons = document.querySelectorAll('.tab-button');
-            tabbuttons.forEach(function(button) {
+            tabbuttons.forEach(function (button) {
                 button.classList.remove('active');
             });
 

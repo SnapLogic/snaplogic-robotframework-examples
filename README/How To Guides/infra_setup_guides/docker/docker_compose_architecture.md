@@ -35,7 +35,7 @@ The Docker Compose setup for the SnapLogic Robot Framework testing environment c
 ## Main Docker Compose File Structure
 
 ### File Location
-- **Path**: `/snaplogic-robotframework-examples/docker/docker-compose.yml`
+- **Path**: `/snaplogic-robotframework-examples/docker-compose.yml`
 - **Purpose**: Central orchestration file that coordinates all services needed for testing
 
 ### Key Components
@@ -61,13 +61,13 @@ include:
 
 The `tools` service is the heart of the testing framework:
 
-| Configuration | Value/Purpose | Details |
-|--------------|---------------|---------|
-| **Service Name** | `tools` | Primary test execution container |
+| Configuration      | Value/Purpose                            | Details                             |
+| ------------------ | ---------------------------------------- | ----------------------------------- |
+| **Service Name**   | `tools`                                  | Primary test execution container    |
 | **Container Name** | `snaplogic-test-example-tools-container` | Unique identifier for the container |
-| **Image** | `snaplogic-test-example:latest` | Tagged image name after build |
-| **Profile** | `tools` | Allows selective service startup |
-| **Network** | `snaplogicnet` | Shared network for all services |
+| **Image**          | `snaplogic-test-example:latest`          | Tagged image name after build       |
+| **Profile**        | `tools`                                  | Allows selective service startup    |
+| **Network**        | `snaplogicnet`                           | Shared network for all services     |
 
 ## Tools Service Deep Dive
 
@@ -79,33 +79,33 @@ build:
   dockerfile: ../../docker/robot.Dockerfile
 ```
 
-| Aspect | Description |
-|--------|------------|
-| **Context** | `../src/tools` - Directory containing requirements.txt |
-| **Dockerfile** | `../../docker/robot.Dockerfile` - Build instructions |
-| **Platform** | `linux/amd64` - Forces x86_64 for IBM DB2 compatibility |
+| Aspect         | Description                                             |
+| -------------- | ------------------------------------------------------- |
+| **Context**    | `../src/tools` - Directory containing requirements.txt  |
+| **Dockerfile** | `../../docker/robot.Dockerfile` - Build instructions    |
+| **Platform**   | `linux/amd64` - Forces x86_64 for IBM DB2 compatibility |
 
 ### Environment Variables
 
 The tools service inherits environment variables from multiple sources:
 
-| Source | Purpose | Examples |
-|--------|---------|----------|
-| **`.env` file** | User credentials and configuration | `URL`, `ORG_ADMIN_USER`, `PROJECT_SPACE` |
-| **Travis CI variables** | CI/CD integration | `TRAVIS_BUILD_NUMBER`, `TRAVIS_BRANCH` |
-| **Runtime variables** | Dynamic configuration | Test tags, execution parameters |
+| Source                  | Purpose                            | Examples                                 |
+| ----------------------- | ---------------------------------- | ---------------------------------------- |
+| **`.env` file**         | User credentials and configuration | `URL`, `ORG_ADMIN_USER`, `PROJECT_SPACE` |
+| **Travis CI variables** | CI/CD integration                  | `TRAVIS_BUILD_NUMBER`, `TRAVIS_BRANCH`   |
+| **Runtime variables**   | Dynamic configuration              | Test tags, execution parameters          |
 
 ### Volume Mounts
 
 Critical volume mappings that enable test execution:
 
-| Host Path | Container Path | Purpose |
-|-----------|----------------|---------|
-| `../src` | `/app/src` | Source code and pipelines |
-| `../test` | `/app/test` | Test suites and resources |
-| `../.env` | `/app/.env` | Environment configuration |
-| `../setup_env.sh` | `/app/setup_env.sh` | Environment setup script |
-| `../test/suite/test_data` | `/opt/snaplogic/test_data` | Test data files |
+| Host Path                 | Container Path             | Purpose                   |
+| ------------------------- | -------------------------- | ------------------------- |
+| `../src`                  | `/app/src`                 | Source code and pipelines |
+| `../test`                 | `/app/test`                | Test suites and resources |
+| `../.env`                 | `/app/.env`                | Environment configuration |
+| `../setup_env.sh`         | `/app/setup_env.sh`        | Environment setup script  |
+| `../test/suite/test_data` | `/opt/snaplogic/test_data` | Test data files           |
 
 **Optional Mounts** (commented by default):
 - `~/Documents:/opt/host-documents:ro` - Read-only access to host documents
@@ -132,13 +132,13 @@ graph TD
 
 ### System Dependencies Installation
 
-| Package | Purpose |
-|---------|---------|
-| `gcc` | C compiler for building Python extensions |
-| `g++` | C++ compiler for certain database drivers |
-| `unixodbc-dev` | ODBC driver development files |
-| `wget` | Download IBM DB2 CLI driver |
-| `libxml2` | XML processing library |
+| Package        | Purpose                                   |
+| -------------- | ----------------------------------------- |
+| `gcc`          | C compiler for building Python extensions |
+| `g++`          | C++ compiler for certain database drivers |
+| `unixodbc-dev` | ODBC driver development files             |
+| `wget`         | Download IBM DB2 CLI driver               |
+| `libxml2`      | XML processing library                    |
 
 ### Platform-Specific Handling
 
@@ -160,20 +160,20 @@ fi
 
 ### Key Python Libraries
 
-| Library | Purpose | Used For |
-|---------|---------|----------|
-| **snaplogic-common-robot** | Core Robot Framework library | SnapLogic-specific keywords and APIs |
-| **robotframework-pabot** | Parallel test execution | Running tests in parallel |
-| **oracledb** | Oracle database driver | Oracle database testing |
-| **psycopg2-binary** | PostgreSQL driver | PostgreSQL testing |
-| **pymssql** | SQL Server driver | Microsoft SQL Server testing |
-| **pymysql** | MySQL driver | MySQL database testing |
-| **ibm_db** | IBM DB2 driver | DB2 database testing |
-| **teradatasql** | Teradata driver | Teradata database testing |
-| **snowflake-connector-python** | Snowflake driver | Snowflake cloud DB testing |
-| **minio** | MinIO client | S3-compatible storage testing |
-| **stomp.py** | STOMP protocol client | JMS/ActiveMQ testing |
-| **requests** | HTTP client | REST API testing |
+| Library                        | Purpose                      | Used For                             |
+| ------------------------------ | ---------------------------- | ------------------------------------ |
+| **snaplogic-common-robot**     | Core Robot Framework library | SnapLogic-specific keywords and APIs |
+| **robotframework-pabot**       | Parallel test execution      | Running tests in parallel            |
+| **oracledb**                   | Oracle database driver       | Oracle database testing              |
+| **psycopg2-binary**            | PostgreSQL driver            | PostgreSQL testing                   |
+| **pymssql**                    | SQL Server driver            | Microsoft SQL Server testing         |
+| **pymysql**                    | MySQL driver                 | MySQL database testing               |
+| **ibm_db**                     | IBM DB2 driver               | DB2 database testing                 |
+| **teradatasql**                | Teradata driver              | Teradata database testing            |
+| **snowflake-connector-python** | Snowflake driver             | Snowflake cloud DB testing           |
+| **minio**                      | MinIO client                 | S3-compatible storage testing        |
+| **stomp.py**                   | STOMP protocol client        | JMS/ActiveMQ testing                 |
+| **requests**                   | HTTP client                  | REST API testing                     |
 
 ## Network Configuration
 
@@ -236,12 +236,12 @@ command: ["sh", "-c", "echo 'Tools container started' && tail -f /dev/null"]
 
 The Docker Compose setup is primarily controlled through Makefile targets:
 
-| Makefile Target | Docker Compose Action |
-|-----------------|----------------------|
-| `snaplogic-build-tools` | Builds tools container image |
-| `start-services` | Starts services with profiles |
-| `robot-run-tests` | Executes tests inside tools container |
-| `snaplogic-stop` | Stops all containers and cleanup |
+| Makefile Target         | Docker Compose Action                 |
+| ----------------------- | ------------------------------------- |
+| `snaplogic-build-tools` | Builds tools container image          |
+| `start-services`        | Starts services with profiles         |
+| `robot-run-tests`       | Executes tests inside tools container |
+| `snaplogic-stop`        | Stops all containers and cleanup      |
 
 ## Best Practices
 
@@ -268,13 +268,13 @@ The Docker Compose setup is primarily controlled through Makefile targets:
 
 ### Common Issues and Solutions
 
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| Container fails to build | Missing requirements | Check `requirements.txt` exists |
-| IBM DB2 errors on Mac M1 | ARM64 incompatibility | DB2 is auto-skipped on ARM |
-| Services can't communicate | Network issues | Ensure all use `snaplogicnet` |
-| Permission denied errors | Volume mount permissions | Check file permissions on host |
-| Out of memory | Resource limits | Increase Docker memory allocation |
+| Issue                      | Cause                    | Solution                          |
+| -------------------------- | ------------------------ | --------------------------------- |
+| Container fails to build   | Missing requirements     | Check `requirements.txt` exists   |
+| IBM DB2 errors on Mac M1   | ARM64 incompatibility    | DB2 is auto-skipped on ARM        |
+| Services can't communicate | Network issues           | Ensure all use `snaplogicnet`     |
+| Permission denied errors   | Volume mount permissions | Check file permissions on host    |
+| Out of memory              | Resource limits          | Increase Docker memory allocation |
 
 ### Debugging Commands
 
@@ -313,6 +313,6 @@ This architecture ensures reproducible, scalable, and maintainable test executio
 
 *Last Updated: 2025*
 *File Locations*:
-- Main Compose: `/docker/docker-compose.yml`
+- Main Compose: `/docker-compose.yml`
 - Dockerfile: `/docker/robot.Dockerfile`
 - Requirements: `/src/tools/requirements.txt`

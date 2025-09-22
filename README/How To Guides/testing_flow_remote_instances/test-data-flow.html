@@ -616,7 +616,7 @@
 <span class="yaml-key">start_test_infrastructure</span>:
   <span class="yaml-key">stage</span>: <span class="yaml-value">setup</span>
   <span class="yaml-key">script</span>:
-    - <span class="yaml-value">docker-compose -f docker/docker-compose.yml up -d</span>
+    - <span class="yaml-value">docker-compose -f docker-compose.yml up -d</span>
     - <span class="yaml-value">./scripts/wait-for-groundplex.sh</span>
     - <span class="yaml-value">echo "Test infrastructure ready"</span>
   <span class="yaml-key">artifacts</span>:
@@ -644,7 +644,7 @@
   <span class="yaml-key">stage</span>: <span class="yaml-value">teardown</span>
   <span class="yaml-key">when</span>: <span class="yaml-value">always</span>
   <span class="yaml-key">script</span>:
-    - <span class="yaml-value">docker-compose -f docker/docker-compose.yml down</span>
+    - <span class="yaml-value">docker-compose -f docker-compose.yml down</span>
     - <span class="yaml-value">echo "Test infrastructure cleaned up"</span></code></pre>
             </div>
         </section>

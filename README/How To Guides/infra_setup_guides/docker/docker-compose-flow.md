@@ -77,7 +77,7 @@ Once the build process completes:
 make start-services
 
 # Or using docker-compose directly
-docker compose --env-file .env -f docker/docker-compose.yml up -d tools
+docker compose --env-file .env -f docker-compose.yml up -d tools
 ```
 
 ### Verifying Installation
@@ -126,7 +126,7 @@ docker logs snaplogic-test-example-tools-container
 ```
 
 ## Related Files
-- `/docker/docker-compose.yml` - Main compose configuration
+- `/docker-compose.yml` - Main compose configuration
 - `/robot/Dockerfile` - Tools container build instructions
 - `/src/tools/requirements.txt` - Python dependencies
 - `/Makefile` - Convenient commands for container management
