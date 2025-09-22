@@ -309,7 +309,7 @@ Loading Order:
   2. Files from env_files/ and subdirectories load next (sorted alphabetically)
 ========================================
 Docker Compose Command:
-docker compose --env-file .env --env-file env_files/.env.accounts --env-file env_files/.env.ports -f docker/docker-compose.yml
+docker compose --env-file .env --env-file env_files/.env.accounts --env-file env_files/.env.ports -f docker-compose.yml
 ========================================
 ```
 
@@ -519,7 +519,7 @@ make robot-run-tests \
 | S3_BUCKET             | artifacts.slimdev.snaplogic     | `S3_BUCKET=my-bucket`            | S3 bucket for test results          |
 | S3_PREFIX             | RF_CommonTests_Results          | `S3_PREFIX=Custom_Results`       | S3 path prefix for uploads          |
 | DATE                  | $(shell date +'%Y-%m-%d-%H-%M') | `DATE=custom-date`               | Timestamp for test runs             |
-| DOCKER_COMPOSE_FILE   | docker/docker-compose.yml       | `DOCKER_COMPOSE_FILE=custom.yml` | Docker Compose file location        |
+| DOCKER_COMPOSE_FILE   | docker-compose.yml              | `DOCKER_COMPOSE_FILE=custom.yml` | Docker Compose file location        |
 | PROJECT_ROOT          | $(shell pwd)                    | `PROJECT_ROOT=/custom/path`      | Project root directory              |
 | TEST_DIR              | test                            | `TEST_DIR=custom_tests`          | Test directory location             |
 | ROBOT_OUTPUT_DIR      | robot_output                    | `ROBOT_OUTPUT_DIR=results`       | Robot Framework output directory    |
