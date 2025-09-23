@@ -25,6 +25,49 @@ When WireMock uses `proxyBaseUrl`, it works like this:
 - Path rewriting in WireMock proxy mode is not supported
 - JSON Server's route rewriting doesn't work with the proxy's forwarded requests
 
+**Deep Dive: How WireMock Proxy Path Appending Works**
+
+When WireMock is configured with a `proxyBaseUrl`, it acts as a pass-through proxy that preserves the original request path and adds it to the end of the proxy base URL.
+
+*What You Might Expect (But Doesn't Happen):*
+You might think WireMock could:
+- Receive: `POST /services/data/v52.0/sobjects/Account`
+- Transform to: `POST /accounts` 
+- Forward to: `http://json-server/accounts`
+
+*What Actually Happens:*
+WireMock simply concatenates:
+1. **Original request arrives**: 
+   ```
+   POST /services/data/v52.0/sobjects/Account
+   ```
+
+2. **WireMock takes the proxy base URL**: 
+   ```
+   http://json-server
+   ```
+
+3. **WireMock appends (adds) the full original path**:
+   ```
+   http://json-server + /services/data/v52.0/sobjects/Account
+   = http://json-server/services/data/v52.0/sobjects/Account
+   ```
+
+4. **JSON Server receives**:
+   ```
+   POST http://json-server/services/data/v52.0/sobjects/Account
+   ```
+
+The problem is that JSON Server doesn't understand Salesforce's URL structure. It expects simple endpoints like `/accounts`, `/contacts`, `/opportunities`, but it's receiving the complex Salesforce path `/services/data/v52.0/sobjects/Account`. Since JSON Server doesn't have a route defined for this Salesforce-style path, it returns a **404 Not Found** error.
+
+WireMock's proxy mode is designed for simple forwarding, not path transformation. It:
+- **Cannot** rewrite paths during proxying
+- **Cannot** strip parts of the path
+- **Cannot** map one path structure to another
+- **Only** forwards the exact same path to the target server
+
+This is why using JSON Server as a backend through WireMock's proxy won't work for SnapLogic's Salesforce testing - the path structures are fundamentally incompatible and WireMock's proxy can't translate between them.
+
 ### 2. Response Format Incompatibility
 
 **Salesforce format (what SnapLogic expects):**
@@ -106,6 +149,108 @@ POST /accounts
 ```
 
 **WireMock** is just a messenger - it can forward messages but cannot translate between these languages.
+
+## But Why Does curl Work?
+
+You might have successfully tested with curl commands and wondered why SnapLogic fails with the same setup. Here's the key difference:
+
+### When Using curl (Works ✅)
+
+With curl, you have **full control** over the request format. You can:
+
+1. **Send requests directly to JSON Server** (bypassing WireMock):
+```bash
+# This works - direct to JSON Server
+curl -X POST http://localhost:8082/accounts \
+  -H "Content-Type: application/json" \
+  -d '{"Name": "Test Company"}'
+```
+
+2. **Use WireMock's static mappings** (not proxy):
+```bash
+# This works - WireMock returns static response
+curl -X POST http://localhost:8089/services/data/v52.0/sobjects/Account \
+  -H "Content-Type: application/json" \
+  -d '{"Name": "Test Company"}'
+```
+
+3. **Manually format requests** to match what each service expects
+
+### When Using SnapLogic (Doesn't Work ❌)
+
+SnapLogic's Salesforce connector:
+- **Must use Salesforce API format** - it's hardcoded in the connector
+- **Cannot be configured** to use simple REST paths like `/accounts`
+- **Always sends**: `/services/data/v52.0/sobjects/Account`
+- **Always expects** Salesforce-formatted responses with `success` field
+
+### Why Your curl Tests Might Be Misleading
+
+You might be testing one of these scenarios:
+
+**Scenario 1: Testing Different Endpoints**
+```bash
+# You might be doing this (works):
+curl http://localhost:8082/accounts  # Direct to JSON Server
+
+# While SnapLogic is doing this (fails):
+# http://localhost:8089/services/data/v52.0/sobjects/Account  # Through WireMock proxy
+```
+
+**Scenario 2: Using Static WireMock Responses**
+```bash
+# Your curl might be hitting static mappings that return:
+{
+  "id": "001234567890",
+  "success": true,
+  "errors": []
+}
+# Not actually proxying to JSON Server
+```
+
+**Scenario 3: Different Acceptance Criteria**
+```bash
+# With curl, you might accept this response:
+{"id": "123", "Name": "Test"}  # JSON Server format
+
+# But SnapLogic requires this:
+{"id": "001234567890", "success": true, "errors": []}  # Salesforce format
+```
+
+### The Real Test
+
+To truly replicate what SnapLogic does, your curl command would need to:
+
+```bash
+# This is what SnapLogic actually sends:
+curl -X POST http://localhost:8089/services/data/v52.0/sobjects/Account \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer [token]" \
+  -H "Sforce-Auto-Assign: TRUE" \
+  -d '{"Name": "Test Company", "Type": "Customer"}'
+```
+
+If WireMock is configured to proxy this to JSON Server:
+- WireMock forwards to: `http://json-server/services/data/v52.0/sobjects/Account`
+- JSON Server returns: **404 Not Found**
+
+### The Bottom Line
+
+**curl works** because you can:
+- Choose which endpoint to hit
+- Accept any response format
+- Bypass the proxy if needed
+- Adapt your request to what the server expects
+
+**SnapLogic doesn't work** because it:
+- Must use Salesforce paths
+- Must receive Salesforce responses
+- Cannot be reconfigured for simple REST
+- Is locked into the Salesforce protocol
+
+It's like the difference between:
+- **curl**: You speaking directly in whatever language the server understands
+- **SnapLogic**: A translator that only speaks "Salesforce" trying to talk to someone who only speaks "Simple REST"
 
 ## Why Common Solutions Don't Work
 

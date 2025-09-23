@@ -132,6 +132,37 @@ fi
 	@echo "$(DOCKER_COMPOSE)"
 	@echo "========================================"
 
+# Show snaplogic-common-robot package version and location
+# To run these commands manually in terminal:
+# 1. First ensure container is running:
+#    docker ps | grep snaplogic-test-example-tools-container
+# 2. If not running, start it:
+#    docker-compose --profile tools up -d
+# 3. Check package info:
+#    docker exec snaplogic-test-example-tools-container pip show snaplogic-common-robot | grep -E 'Version:|Location:'
+# 4. Or get into container and check:
+#    docker exec -it snaplogic-test-example-tools-container /bin/bash
+#    pip show snaplogic-common-robot
+#    cd /usr/local/lib/python3.12/site-packages/snaplogic_common_robot
+#    ls -la
+#
+# To see any keyword Eg:Create Triggered Task From Template keyword content:
+# 5. Quick view (50 lines):
+#    docker exec snaplogic-test-example-tools-container bash -c "find /usr/local/lib -name 'snaplogic_keywords.resource' -exec grep -A 50 'Create Triggered Task From Template' {} \;"
+# 6. View more lines (100 lines):
+#    docker exec snaplogic-test-example-tools-container bash -c "find /usr/local/lib -name 'snaplogic_keywords.resource' -exec grep -A 100 'Create Triggered Task From Template' {} \;"
+# 7. View complete keyword definition:
+#    docker exec snaplogic-test-example-tools-container bash -c "find /usr/local/lib -name 'snaplogic_keywords.resource' -exec sed -n '/^Create Triggered Task From Template$/,/^[A-Z][A-Za-z ]* *$/p' {} \;"
+
+show-common-robot:
+	@echo "========================================"
+	@echo "snaplogic-common-robot Package Info"
+	@echo "========================================"
+	@docker exec snaplogic-test-example-tools-container bash -c " \
+		pip show snaplogic-common-robot | grep -E 'Version:|Location:' \
+	" || echo "Container not running. Please run: make tools-start"
+	@echo "========================================"
+
 endif # COMMON_DEBUG_TARGETS_DEFINED
 
 endif # MAKEFILE_COMMON_INCLUDED

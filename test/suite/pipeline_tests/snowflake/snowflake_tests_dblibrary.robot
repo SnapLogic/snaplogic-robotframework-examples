@@ -58,6 +58,8 @@ ${KEEP_ACTUAL_FILES}                ${TRUE}    # Set to FALSE to auto-delete on 
 ...                                 4, 'Alice', 4000.25
 ...                                 5, 'Tom', 5000.50
 
+${CLOUDPLEX}                        Cloud
+
 
 *** Test Cases ***
 Create Account
@@ -85,7 +87,7 @@ Import Pipeline
     [Template]    Import Pipelines From Template
     ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${pipeline_slp}
 
-Create Triggered_task
+Create Triggered_task With Custom Plex Name
     [Documentation]    Creates triggered task and returns the task name and task snode id
     ...    which is used to execute the task.
     ...    Prereq: Need unique_id,pipeline_snodeid (from Import Pipelines)
@@ -94,18 +96,7 @@ Create Triggered_task
     ...    task_snodeid --> which is used to update the task params
     [Tags]    snowflake_demo    regression
     [Template]    Create Triggered Task From Template
-    ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    ${task_params_set1}    ${task_notifications}
-
-Create Triggered_task With Custom Plex Name
-    [Documentation]    Creates triggered task and returns the task name and task snode id
-    ...    which is used to execute the task.
-    ...    Prereq: Need unique_id,pipeline_snodeid (from Import Pipelines)
-    ...    Returns:
-    ...    task_payload --> which is used to update the task params
-    ...    task_snodeid --> which is used to update the task params
-    [Tags]    snowflake_custom_plex    regression
-    [Template]    Create Triggered Task From Template
-    ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    ${task_params_set1}    ${task_notifications}    Cloud
+    ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    ${task_params_set1}    ${task_notifications}    ${CLOUDPLEX}
 
 Execute Triggered Task With Parameters
     [Documentation]    Updates the task parameters and runs the task
@@ -215,47 +206,6 @@ Verify Expected Results In DB
     Drop Table    ${table_name}    if_exists=${TRUE}
     Log    Table ${table_name} dropped successfully    console=yes
 
-# End to End Verification Of Data Loaded Via Snowflake Pipeline
-#    [Documentation]    Verifies data loaded into Snowflake from JSON file
-#    ...    using Snowflake-specific keywords from snowflake_keywords.resource
-#    [Tags]    snowflake_demo4
-
-#    ${table_sf}=    Set Variable    LIFEEVENTSDATA2
-#    Drop Table    ${table_sf}
-
-#    Create Account From Template    ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
-
-#    Upload File Using File Protocol Template
-#    ...    file:///opt/snaplogic/test_data/actual_expected_data/expression_libraries/snowflake/snowflake_library.expr
-#    ...    ${expression_library_file_path}
-
-#    Import Pipelines From Template    ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${pipeline_slp}
-#    Create Triggered Task From Template
-#    ...    ${unique_id}
-#    ...    ${project_path}
-#    ...    ${pipeline_name}
-#    ...    ${task1}
-#    ...    ${task_params_set1}
-#    ...    ${task_notifications}
-
-#    Run Triggered Task With Parameters From Template
-#    ...    ${unique_id}
-#    ...    ${project_path}
-#    ...    ${pipeline_name}
-#    ...    ${task1}
-#    ...    snowflake_acct=../shared/snowflake_acct
-#    ...    table_name=""DEMO"."${table_sf}""
-
-#    ${results}=    Select All From Table    ${table_sf}
-#    # Verify one record exists
-#    ${row_count}=    Get Length    ${results}
-#    Should Be Equal As Integers    ${row_count}    2
-#    Log    Successfully retrieved ${row_count} records
-
-#    # Get column values using generic keyword
-#    @{names}=    Get Column Values    ${table_name}    name
-#    Log    All names in table: ${names}    console=yes
-
 Compare Actual vs Expected CSV Output
     [Documentation]    Validates data integrity by comparing MySQL export against expected output
     ...    Ensures data processed through MySQL pipeline matches expectations
@@ -304,7 +254,7 @@ End to End Verification Of Data Loaded Via Snowflake Pipeline
     ...    ${task1}
     ...    ${task_params_set1}
     ...    ${task_notifications}
-    ...    Cloud
+    ...    ${CLOUDPLEX}
 
     # Execute pipeline to load data
     Run Triggered Task With Parameters From Template
