@@ -1,11 +1,12 @@
 #integration test requirements
 snaplogic-common-robot
+robotframework-databaselibrary
 oracledb  # Oracle database driver
 psycopg2-binary # PostgreSQL database driver
 minio # MinIO client
 stomp.py # STOMP protocol client for JMS testing
 requests # HTTP client for ActiveMQ management API
-pyodbc # Microsoft SQL Server database driver (better support for SQL Server 2022)
+pymssql # Microsoft SQL Server database driver
 pymysql # MySQL database driver
 ibm_db # IBM DB2 database driver
 teradatasql # Teradata database driver
