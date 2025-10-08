@@ -157,7 +157,7 @@ ensure-config-dir:
 #   make clean-start                              # Uses .env + env_files/*.env
 #   make clean-start ENV_FILES=".env.dev"        # Clean start with specific files
 #   make clean-start ENV_DIR="./staging-env"     # Use different env directory
-clean-start: snaplogic-stop snaplogic-start-services createplex-launch-groundplex
+clean-start: snaplogic-stop snaplogic-start-services
 	@echo "✅ Clean start complete!"
 	@echo "🚀 You should be good to go!"
 

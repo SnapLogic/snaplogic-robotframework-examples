@@ -12,6 +12,7 @@ Suite Setup     Before Suite
 ${ACCOUNT_PAYLOAD_PATH}     ${CURDIR}/test_data/accounts_payload
 ${ENV_FILE_PATH}            ${CURDIR}/../../.env
 ${ENV_FILES_DIR}            ${CURDIR}/../../env_files
+${PIPELINE_PAYLOAD_PATH}    /app/src/pipelines
 
 
 *** Keywords ***
@@ -38,7 +39,7 @@ Set Up Global Variables
     # Set Global Variable    ${TASKS_PAYLOAD_PATH}
     Set Global Variable    ${ACCOUNT_PAYLOAD_PATH}
     Set Global Variable    ${ENV_FILE_PATH}
-    Set Global Variable    ${ORG_NAME}
+    Set Global Variable    ${PIPELINE_PAYLOAD_PATH}
 
     Log To Console    env file path(from init_file):${env_file_path}
 
@@ -51,7 +52,6 @@ Validate Environment Variables
     ...    PROJECT_SPACE
     ...    PROJECT_NAME
     ...    GROUNDPLEX_NAME
-    ...    GROUNDPLEX_ENV
     ...    RELEASE_BUILD_VERSION
 
     @{missing_vars}=    Create List
@@ -72,39 +72,39 @@ Validate Environment Variables
 
 Load Environment Variables
     [Documentation]    Loads environment variables from the root .env file and all .env files from env_files directory and subdirectories
-    
+
     # First load the root .env file
     Load Single Env File    ${ENV_FILE_PATH}
-    
+
     # Then load all .env files from env_files directory and subdirectories
     ${env_dir_exists}=    Run Keyword And Return Status    Directory Should Exist    ${ENV_FILES_DIR}
-    
+
     IF    ${env_dir_exists}
         # Load .env files from root env_files directory
         @{env_files}=    List Files In Directory    ${ENV_FILES_DIR}    pattern=.env*
         ${file_count}=    Get Length    ${env_files}
-        
+
         IF    ${file_count} > 0
             Log To Console    \nLoading ${file_count} environment files from ${ENV_FILES_DIR}:
             FOR    ${env_file}    IN    @{env_files}
                 ${full_path}=    Join Path    ${ENV_FILES_DIR}    ${env_file}
-                Log To Console      Loading: ${env_file}
+                Log To Console    Loading: ${env_file}
                 Load Single Env File    ${full_path}
             END
         END
-        
+
         # Load .env files from subdirectories
         @{subdirs}=    List Directories In Directory    ${ENV_FILES_DIR}
         FOR    ${subdir}    IN    @{subdirs}
             ${subdir_path}=    Join Path    ${ENV_FILES_DIR}    ${subdir}
             @{subdir_env_files}=    List Files In Directory    ${subdir_path}    pattern=.env*
             ${subdir_file_count}=    Get Length    ${subdir_env_files}
-            
+
             IF    ${subdir_file_count} > 0
                 Log To Console    \nLoading ${subdir_file_count} environment files from ${subdir_path}:
                 FOR    ${env_file}    IN    @{subdir_env_files}
                     ${full_path}=    Join Path    ${subdir_path}    ${env_file}
-                    Log To Console      Loading: ${env_file}
+                    Log To Console    Loading: ${env_file}
                     Load Single Env File    ${full_path}
                 END
             END
@@ -116,7 +116,7 @@ Load Environment Variables
 Load Single Env File
     [Documentation]    Loads environment variables from a single .env file and auto-detects JSON values
     [Arguments]    ${file_path}
-    
+
     ${file_exists}=    Run Keyword And Return Status    File Should Exist    ${file_path}
 
     IF    not ${file_exists}

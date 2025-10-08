@@ -15,62 +15,61 @@ Suite Setup         Check connections    # Check if the connection to the MySQL 
 
 
 *** Variables ***
-${project_path}                     ${org_name}/${project_space}/${project_name}
-${pipeline_file_path}               /app/src/pipelines
-${expression_library_file_path}     ${org_name}/${project_space}/shared
+${expression_library_file_path}         ${org_name}/${project_space}/shared
 
 # SnowflakePipeline details
-${pipeline_name}                    snowflake
-${pipeline_slp}                     snowflake.slp
-${task1}                            snowflake_Task
+${pipeline_name}                        snowflake
+${pipeline_slp}                         snowflake.slp
+${task1}                                snowflake_Task
 
 # Task notification settings
-@{notification_states}              Completed    Failed
+@{notification_states}                  Completed    Failed
 &{task_notifications}
-...                                 recipients=newemail@gmail.com
-...                                 states=${notification_states}
+...                                     recipients=newemail@gmail.com
+...                                     states=${notification_states}
 
 &{task_params_set1}
-...                                 snowflake_acct=../shared/snowflake_acct
-...                                 actual_output=file:///opt/snaplogic/test_data/actual_expected_data/actual_output/snowflake/table1.csv
-...                                 schema_name="DEMO"
-...                                 table_name=""DEMO"."LIFEEVENTSDATA""
+...                                     snowflake_acct=../shared/snowflake_acct
+...                                     actual_output=file:///opt/snaplogic/test_data/actual_expected_data/actual_output/snowflake/table1.csv
+...                                     schema_name="DEMO"
+...                                     table_name=""DEMO"."LIFEEVENTSDATA""
 
-${ACCOUNT_PAYLOAD_FILE}             acc_snowflake_s3_db.json
+${ACCOUNT_PAYLOAD_FILE}                 acc_snowflake_s3_db.json
+${SQLSERVER_ACCOUNT_PAYLOAD_FILE}       acc_sqlserver.json
 
-${table_name}                       RF_TEST_CREATE_TABLE
-${table_definition}                 (id NUMBER PRIMARY KEY, name VARCHAR(100), amount DECIMAL(10,2))
-${COLUMNS}                          id, name, amount
-${table_name1}                      TEST_SNOWFLAKE_TABLE
+${table_name}                           RF_TEST_CREATE_TABLE
+${table_definition}                     (id NUMBER PRIMARY KEY, name VARCHAR(100), amount DECIMAL(10,2))
+${COLUMNS}                              id, name, amount
+${table_name1}                          TEST_SNOWFLAKE_TABLE
 
-${JSON_DATA_FILE}                   ${CURDIR}/../../test_data/actual_expected_data/input_data/snowflake/employees.json
+${JSON_DATA_FILE}                       ${CURDIR}/../../test_data/actual_expected_data/input_data/snowflake/employees.json
 
-${ACTUAL_DATA_DIR}                  /app/test/suite/test_data/actual_expected_data/actual_output/snowflake
-${EXPECTED_OUTPUT_DIR}              ${CURDIR}/../../test_data/actual_expected_data/expected_output/snowflake    # Expected output files for comparison
+${ACTUAL_DATA_DIR}                      /app/test/suite/test_data/actual_expected_data/actual_output/snowflake
+${EXPECTED_OUTPUT_DIR}                  ${CURDIR}/../../test_data/actual_expected_data/expected_output/snowflake    # Expected output files for comparison
 
 # Control variable to keep actual CSV files even when tests pass (for debugging)
-${KEEP_ACTUAL_FILES}                ${TRUE}    # Set to FALSE to auto-delete on successful comparison
+${KEEP_ACTUAL_FILES}                    ${TRUE}    # Set to FALSE to auto-delete on successful comparison
 
 # All data rows as a list of values
-@{ALL_DATA}                         1, 'John', 1000.50
-...                                 2, 'Jane', 2000.75
-...                                 3, 'Bob', 3000.00
-...                                 4, 'Alice', 4000.25
-...                                 5, 'Tom', 5000.50
+@{ALL_DATA}                             1, 'John', 1000.50
+...                                     2, 'Jane', 2000.75
+...                                     3, 'Bob', 3000.00
+...                                     4, 'Alice', 4000.25
+...                                     5, 'Tom', 5000.50
 
-${CLOUDPLEX}                        Cloud
+# ${CLOUDPLEX}    Cloud
 
 
 *** Test Cases ***
 Create Account
     [Documentation]    Creates an account in the project space using the provided payload file.
-    [Tags]    snowflake_demo
+    [Tags]    snowflake_obsolete
     [Template]    Create Account From Template
-    ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
+    ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE
 
 Upload Expression Library
     [Documentation]    Uploads the expression library to project level shared folder
-    [Tags]    snowflake_demo    upload_expression_library
+    [Tags]    snowflake_obsolete
     [Template]    Upload File Using File Protocol Template
     file:///opt/snaplogic/test_data/actual_expected_data/expression_libraries/snowflake/snowflake_library.expr    ${expression_library_file_path}
 
@@ -83,9 +82,9 @@ Import Pipeline
     ...    • Unique pipeline ID is generated and returned
     ...    • Pipeline contains file reader and writer snaps configured for mounts
     ...    • Pipeline is successfully deployed to the project space
-    [Tags]    snowflake_demo
+    [Tags]    snowflake_obsolete
     [Template]    Import Pipelines From Template
-    ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${pipeline_slp}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${pipeline_slp}
 
 Create Triggered_task With Custom Plex Name
     [Documentation]    Creates triggered task and returns the task name and task snode id
@@ -94,16 +93,16 @@ Create Triggered_task With Custom Plex Name
     ...    Returns:
     ...    task_payload --> which is used to update the task params
     ...    task_snodeid --> which is used to update the task params
-    [Tags]    snowflake_demo    regression
+    [Tags]    snowflake_obsolete
     [Template]    Create Triggered Task From Template
-    ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    ${task_params_set1}    ${task_notifications}    ${CLOUDPLEX}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task1}    ${task_params_set1}    ${task_notifications}    ${GROUNDPLEX_NAME}
 
 Execute Triggered Task With Parameters
     [Documentation]    Updates the task parameters and runs the task
     ...    Prereq: Need task_payload,task_snodeid (from Create Triggered_task)
     [Tags]    snowflake_demo
     [Template]    Run Triggered Task With Parameters From Template
-    ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    snowflake_acct=../shared/snowflake_acct    table_name=""DEMO"."LIFEEVENTSDATA2""
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task1}    snowflake_acct=../shared/snowflake_acct    table_name=""DEMO"."LIFEEVENTSDATA2""
 
 Create Table For DB Operations
     [Documentation]    Creates the employees table structure in Snowflake database
@@ -113,7 +112,7 @@ Create Table For DB Operations
     ...    • Database connection is established and functional
     ...    • No SQL syntax or permission errors occur
     ...    • Snowflake-specific features (AUTOINCREMENT, NUMBER types) work correctly
-    [Tags]    snowflake_demo
+    [Tags]    snowflake_obsolete
     [Template]    Execute SQL String
     ${DROP_TABLE_EMPLOYEES}
     ${CREATE_TABLE_EMPLOYEES}
@@ -122,7 +121,7 @@ Create Table For DB Operations
 
 Setup JSON Table For Snowflake
     [Documentation]    Creates the table needed for JSON data loading
-    [Tags]    snowflake_demo
+    [Tags]    snowflake_obsolete
 
     # Connect to Snowflake
     Connect To Snowflake Via DatabaseLibrary
@@ -139,7 +138,7 @@ Load JSON Data To Snowflake
     [Documentation]    Loads JSON employee data into Snowflake using the SAME template as MySQL
     ...    This proves the template is database-agnostic and works with Snowflake too!
     ...    NOTE: Run 'Setup JSON Table For Snowflake' test first to create the table
-    [Tags]    snowflake_demo
+    [Tags]    snowflake_obsolete
     [Template]    Load JSON Data Template
     # JSON File    table_name    Truncate Table
     ${JSON_DATA_FILE}    ${TABLE_NAME1}    ${TRUE}    # Truncate before loading
@@ -147,7 +146,7 @@ Load JSON Data To Snowflake
 Verify Expected Results In DB
     [Documentation]    Test connection using generic SQL operations keywords
     ...    Demonstrates use of database-agnostic keywords that work with any database
-    [Tags]    snowflake_demo
+    [Tags]    snowflake_obsolete
 
     # Connect using the Snowflake-specific keyword for connection
     Connect To Snowflake Via DatabaseLibrary
@@ -217,7 +216,7 @@ Compare Actual vs Expected CSV Output
     ...    • All field values match exactly (no data corruption)
     ...    • No extra or missing rows (complete data processing)
     ...    • CSV formatting is preserved through pipeline
-    [Tags]    snowflake_demo
+    [Tags]    snowflake_obsolete
     [Template]    Compare CSV Files Template
 
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status
@@ -227,7 +226,7 @@ End to End Verification Of Data Loaded Via Snowflake Pipeline
     [Documentation]    Verifies data loaded into Snowflake from JSON file
     ...    using Snowflake-specific keywords from snowflake_keywords.resource
     ...    Includes comprehensive column structure verification
-    [Tags]    snowflake_demo
+    [Tags]    snowflake_obsolete
 
     ${table_sf}=    Set Variable    LIFEEVENTSDATA2
 
@@ -254,7 +253,7 @@ End to End Verification Of Data Loaded Via Snowflake Pipeline
     ...    ${task1}
     ...    ${task_params_set1}
     ...    ${task_notifications}
-    ...    ${CLOUDPLEX}
+    ...    ${GROUNDPLEX_NAME}
 
     # Execute pipeline to load data
     Run Triggered Task With Parameters From Template

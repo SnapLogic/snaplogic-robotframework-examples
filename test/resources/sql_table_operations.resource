@@ -138,6 +138,54 @@ Truncate Table
     Log    Table ${qualified_name} truncated    console=yes
     RETURN    ${TRUE}
 
+Truncate Table If Exists
+    [Documentation]    Removes all rows from a table but keeps the table structure
+    ...    If table doesn't exist, logs a warning and continues without failing
+    ...    Verifies table is empty after successful truncation
+    ...    
+    ...    Arguments:
+    ...    table_name: Table name (can include schema)
+    ...    schema: Optional schema name (if not included in table_name)
+    ...    verify_empty: Whether to verify table is empty after truncation (default: TRUE)
+    ...    
+    ...    Returns:
+    ...    ${TRUE} if table was truncated successfully
+    ...    ${FALSE} if table doesn't exist or truncate failed
+    ...    
+    ...    Example:
+    ...    ${truncated}=    Truncate Table If Exists    employees    schema=public
+    ...    IF    ${truncated}
+    ...        Log    Table was cleaned
+    ...    ELSE
+    ...        Log    Table doesn't exist yet
+    ...    END
+    [Arguments]    ${table_name}    ${schema}=${EMPTY}    ${verify_empty}=${TRUE}
+
+    ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
+    Log    Attempting to truncate table: ${qualified_name}    console=yes
+
+    TRY
+        Execute Sql String    TRUNCATE TABLE ${qualified_name}
+        Log    ✅ Table ${qualified_name} truncated successfully    console=yes
+        
+        # Verify table is empty after truncation if requested
+        IF    ${verify_empty}
+            Log    🔍 Verifying table is empty after truncation...    console=yes
+            ${count_after_truncate}=    Get Row Count    ${table_name}    schema=${schema}
+            
+            Should Be Equal As Integers    ${count_after_truncate}    0
+            ...    TRUNCATE operation completed but table still has ${count_after_truncate} rows! Expected 0 rows.
+            
+            Log    ✅ Verification passed: Table has 0 rows after truncation    console=yes
+        END
+        
+        RETURN    ${TRUE}
+    EXCEPT    AS    ${error}
+        Log    ⚠️ Could not truncate table ${qualified_name}: ${error}    level=WARN
+        Log    Table may not exist or insufficient permissions    console=yes
+        RETURN    ${FALSE}
+    END
+
 Rename Table
     [Documentation]    Renames a table
     ...    Note: Syntax may vary between databases

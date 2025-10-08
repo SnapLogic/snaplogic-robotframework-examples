@@ -16,11 +16,10 @@ Suite Setup         Check connections    # Check if the connection to the Oracle
 
 *** Variables ***
 # Project Configuration
-${project_path}             ${org_name}/${project_space}/${project_name}
-${pipeline_file_path}       ${CURDIR}/../../../../src/pipelines
-${pipeline_name}            sla_pipeline
-${pipeline_name_slp}        sla_pipeline.slp
-${task1}                    SLA_Task
+
+${pipeline_name}        sla_pipeline
+${pipeline_name_slp}    sla_pipeline.slp
+${task1}                SLA_Task
 
 
 *** Test Cases ***
@@ -39,7 +38,7 @@ Import Pipelines
     ...    - pipeline node ID are generated and available for use
     [Tags]    sla_pipeline    regression
     [Template]    Import Pipelines From Template
-    ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${pipeline_name_slp}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${pipeline_name_slp}
 
 Create Triggered_task
     [Documentation]    Creates a triggered task for the imported SLA pipeline.
@@ -59,7 +58,7 @@ Create Triggered_task
     ...    - Task is ready for execution
     [Tags]    sla_pipeline    regression
     [Template]    Create Triggered Task From Template
-    ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task1}
 
 Execute Trigger Task Within Certain Time
     [Documentation]    Executes the triggered task and validates completion within specified time limits.
@@ -81,7 +80,7 @@ Execute Trigger Task Within Certain Time
     Run Triggered Task In Certain Time
     ...    30 Sec
     ...    5 Sec
-    ...    ${project_path}
+    ...    ${PIPELINES_LOCATION_PATH}
     ...    ${pipeline_name}_${task1}_${unique_id}
 
 

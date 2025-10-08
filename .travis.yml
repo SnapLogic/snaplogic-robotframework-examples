@@ -52,7 +52,7 @@ jobs:
         - ./travis_scripts/debug_docker_build.sh
         # Start services after debugging
         - make snaplogic-start-services
-        - make robot-run-all-tests TAGS="oracle sqlserver file_mount postgres_s3 sla email2" PROJECT_SPACE_SETUP=True
+        - make robot-run-all-tests TAGS="oracle sqlserver file_mount postgres_s3 sla_pipeline email2" PROJECT_SPACE_SETUP=True
         - make upload-test-results
         - make slack-notify
 

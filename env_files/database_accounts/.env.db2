@@ -5,6 +5,9 @@
 # Container: db2-db
 # ============================================
 
+# Account payload file name can be found at this location "../../test/suite/test_data/accounts_payload"
+DB2_ACCOUNT_PAYLOAD_FILE_NAME=acc_db2.json
+
 DB2_ACCOUNT_NAME=db2_acct
 DB2_HOST=db2-db
 DB2_DATABASE=TESTDB

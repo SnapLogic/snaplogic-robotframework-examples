@@ -44,8 +44,6 @@ Suite Setup         Initialize Test Environment
 
 *** Variables ***
 # Project Configuration
-${project_path}                     ${org_name}/${project_space}/${project_name}
-${pipeline_file_path}               ${CURDIR}/../../../../src/pipelines
 
 # Postgres Pipeline and Task Configuration
 # All Other related variables are set in the Initialize Pipeline1 Variables keyword
@@ -94,8 +92,8 @@ Create Account
     ...    • Account payloads are properly formatted and processed
     [Tags]    postgres_s3    minio    regression
     [Template]    Create Account From Template
-    ${account_payload_path}/acc_postgres.json
-    ${account_payload_path}/acc_s3.json
+    ${ACCOUNT_LOCATION_PATH}    ${POSTGRES_ACCOUNT_PAYLOAD_FILE_NAME}    ${POSTGRES_ACCOUNT_NAME}
+    ${ACCOUNT_LOCATION_PATH}    ${S3_ACCOUNT_PAYLOAD_FILE_NAME}    ${S3_ACCOUNT_NAME}
 
 Create table for DB Operations
     [Documentation]    Creates the employees table structure in PostgreSQL database
@@ -152,8 +150,8 @@ Import Pipelines
     ...    • Pipeline is successfully deployed to the project space
     [Tags]    postgres_s3    minio    regression
     [Template]    Import Pipelines From Template
-    ${unique_id}    ${pipeline_file_path}    ${pipeline_name_csv}    ${pipeline_name_csv_slp}
-    ${unique_id}    ${pipeline_file_path}    ${pipeline_name_json}    ${pipeline_name_json_slp}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name_csv}    ${pipeline_name_csv_slp}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name_json}    ${pipeline_name_json_slp}
 
 Create Triggered_task
     [Documentation]    Creates a triggered task for the imported pipeline
@@ -165,8 +163,8 @@ Create Triggered_task
     ...    • Task payload structure is valid
     [Tags]    minio    postgres_s3    regression
     [Template]    Create Triggered Task From Template
-    ${unique_id}    ${project_path}    ${pipeline_name_csv}    ${task_csv}
-    ${unique_id}    ${project_path}    ${pipeline_name_json}    ${task_json}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name_csv}    ${task_csv}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name_json}    ${task_json}
 
 Execute Triggered Task
     [Documentation]    Executes the pipeline task to export data from PostgreSQL to S3
@@ -179,8 +177,8 @@ Execute Triggered Task
     ...    • No pipeline execution errors or timeouts
     [Tags]    postgres_s3    minio    regression
     [Template]    Run Triggered Task With Parameters From Template
-    ${unique_id}    ${project_path}    ${pipeline_name_csv}    ${task_csv}    bucket=demo-bucket    actual_output_file=employees.csv
-    ${unique_id}    ${project_path}    ${pipeline_name_json}    ${task_json}    bucket=demo-bucket    actual_output_file=employees.json
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name_csv}    ${task_csv}    bucket=demo-bucket    actual_output_file=employees.csv
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name_json}    ${task_json}    bucket=demo-bucket    actual_output_file=employees.json
 
 ################## DOWNLOAD ACTUAL RESULT OF PIPELINE EXECUTION    ##################
 

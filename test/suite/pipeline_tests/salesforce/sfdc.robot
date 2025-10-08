@@ -19,12 +19,9 @@ Suite Setup         Check connections    # Check if the connection to the MySQL 
 
 *** Variables ***
 # Project Configuration
-${project_path}                     ${org_name}/${project_space}/${project_name}
-${pipeline_file_path}               ${CURDIR}/../../../../src/pipelines
 
 ${upload_source_file_path}          ${CURDIR}/../../test_data/actual_expected_data/expression_libraries
 ${container_source_file_path}       opt/snaplogic/test_data/actual_expected_data/expression_libraries
-${upload_destination_file_path}     ${org_name}/${project_space}/shared
 
 # MySQL Pipeline and Task Configuration
 ${ACCOUNT_PAYLOAD_FILE}             acc_salesforce.json
@@ -56,7 +53,7 @@ Create Account
     ...    "account_payload_path"    value as assigned to global variable    in __init__.robot file
     [Tags]    sfdc    regression
     [Template]    Create Account From Template
-    ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
+    ${ACCOUNT_LOCATION_PATH}    ${SALESFORCE_ACCOUNT_PAYLOAD_FILE_NAME}    ${SALESFORCE_ACCOUNT_NAME}
 
 ################## DATA SETUP    ##################
 # Test execution order:
@@ -143,7 +140,7 @@ Import Pipelines
     ...    pipeline_snodeid --> which is used to create the tasks
     [Tags]    mysql    regression
     [Template]    Import Pipelines From Template
-    ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${pipeline_name_slp}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${pipeline_name_slp}
 
 Create Triggered_task
     [Documentation]    Creates triggered task and returns the task name and task snode id
@@ -154,14 +151,14 @@ Create Triggered_task
     ...    task_snodeid --> which is used to update the task params
     [Tags]    mysql    regression
     [Template]    Create Triggered Task From Template
-    ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    ${task_params_set1}    ${task_notifications}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task1}    ${GROUNDPLEX_NAME}    ${task_params_set1}    ${task_notifications}
 
 Execute Triggered Task With Parameters
     [Documentation]    Updates the task parameters and runs the task
     ...    Prereq: Need task_payload,task_snodeid (from Create Triggered_task)
     [Tags]    mysql    regression
     [Template]    Run Triggered Task With Parameters From Template
-    ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    M_CURR_DATE=10/12/2024
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task1}    M_CURR_DATE=10/12/2024
 
 # Test Control Date Operations
 #    [Documentation]    Tests control date table operations for pipeline date management

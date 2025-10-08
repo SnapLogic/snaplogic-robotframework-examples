@@ -28,15 +28,34 @@ Then edit the `.env` file with your actual SnapLogic credentials, organization d
 
 ## 🏗️ Step 5: Build and Execute
 Build your test environment using make commands:
+
+### Case 1: Using Framework-Managed Groundplex (Default)
+This option creates and manages a Groundplex for you automatically:
+
 ```bash
-make start-services # Build the Docker containers that will run your tests:
+make snaplogic-start-services # Build the Docker containers that will run your tests:
 
 # oracle tests
 make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True # Create projectspace,launch ground plex and Runs Robot tests with the "oracle" tag 
 
 # - For Later executions If you already have project space set up ready ignore the argument PROJECT_SPACE_SETUP=True
-make robot-run-all-tests TAGS="postgres_s3" # run postgres to s3 tests (No need to have project_space_setup=false)
+make robot-run-all-tests TAGS="oracle" # run postgres to s3 tests (No need to have project_space_setup=false)
 ```
+
+### Case 2: Using Existing Groundplex (No Groundplex Creation)
+If you want to use a different/existing Groundplex and skip the Groundplex creation:
+
+```bash
+make snaplogic-start-services # Build the Docker containers that will run your tests
+
+# oracle tests using existing Groundplex
+make robot-run-tests-no-gp TAGS="oracle" PROJECT_SPACE_SETUP=True
+
+# For later executions with existing project space
+make robot-run-tests-no-gp TAGS="oracle"
+```
+
+**Note:** When using `robot-run-tests-no-gp`, ensure your `.env` file has the correct `GROUNDPLEX_NAME` pointing to your existing Groundplex.
 
 > **⏱️ Note:** This creates a containerized environment with Robot Framework and all testing dependencies. The build process takes about 2-3 minutes.
 

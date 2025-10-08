@@ -1,0 +1,215 @@
+<svg viewBox="0 0 1200 1400" xmlns="http://www.w3.org/2000/svg">
+    <!-- Title -->
+    <text x="600" y="30" font-size="24" font-weight="bold" text-anchor="middle" fill="#1a365d">
+        SnapLogic Robot Framework - Project Structure
+    </text>
+
+    <!-- Root Directory -->
+    <rect x="50" y="60" width="1100" height="1320" fill="#e6f3ff" stroke="#2c5282" stroke-width="2" rx="5" />
+    <text x="60" y="85" font-size="18" font-weight="bold" fill="#1a365d">snaplogic-robotframework-examples/</text>
+
+    <!-- Configuration Files Section -->
+    <g>
+        <rect x="80" y="100" width="520" height="200" fill="#fff" stroke="#4299e1" stroke-width="2" rx="3" />
+        <text x="90" y="125" font-size="16" font-weight="bold" fill="#2d3748">📄 Configuration Files</text>
+
+        <text x="100" y="155" font-size="14" fill="#4a5568">.env</text>
+        <text x="250" y="155" font-size="12" fill="#718096">Environment variables</text>
+
+        <text x="100" y="180" font-size="14" fill="#4a5568">.env.example</text>
+        <text x="250" y="180" font-size="12" fill="#718096">Template for .env</text>
+
+        <text x="100" y="205" font-size="14" fill="#4a5568">Makefile</text>
+        <text x="250" y="205" font-size="12" fill="#718096">Master build automation</text>
+
+        <text x="100" y="230" font-size="14" fill="#4a5568">docker-compose.yml</text>
+        <text x="250" y="230" font-size="12" fill="#718096">Multi-container orchestration</text>
+
+        <text x="100" y="255" font-size="14" fill="#4a5568">robot.Dockerfile</text>
+        <text x="250" y="255" font-size="12" fill="#718096">Robot Framework image</text>
+
+        <text x="100" y="280" font-size="14" fill="#4a5568">.travis.yml</text>
+        <text x="250" y="280" font-size="12" fill="#718096">CI/CD configuration</text>
+    </g>
+
+    <!-- Makefiles Section -->
+    <g>
+        <rect x="620" y="100" width="520" height="200" fill="#fff" stroke="#48bb78" stroke-width="2" rx="3" />
+        <text x="630" y="125" font-size="16" font-weight="bold" fill="#2d3748">🔧 makefiles/</text>
+
+        <text x="640" y="155" font-size="14" fill="#4a5568">common_services/</text>
+        <text x="820" y="155" font-size="12" fill="#718096">Shared operations</text>
+
+        <text x="640" y="180" font-size="14" fill="#4a5568">database_services/</text>
+        <text x="820" y="180" font-size="12" fill="#718096">DB management</text>
+
+        <text x="640" y="205" font-size="14" fill="#4a5568">messaging_services/</text>
+        <text x="820" y="205" font-size="12" fill="#718096">Kafka/messaging setup</text>
+
+        <text x="640" y="230" font-size="14" fill="#4a5568">mock_services/</text>
+        <text x="820" y="230" font-size="12" fill="#718096">Mock containers</text>
+    </g>
+
+    <!-- Docker & Services Section -->
+    <g>
+        <rect x="80" y="320" width="520" height="200" fill="#fff" stroke="#667eea" stroke-width="2" rx="3" />
+        <text x="90" y="345" font-size="16" font-weight="bold" fill="#2d3748">🐳 docker/</text>
+
+        <text x="100" y="375" font-size="14" fill="#4a5568">groundplex/</text>
+        <text x="250" y="375" font-size="12" fill="#718096">Groundplex container config</text>
+
+        <text x="100" y="400" font-size="14" fill="#4a5568">oracle/</text>
+        <text x="250" y="400" font-size="12" fill="#718096">Oracle database container</text>
+
+        <text x="100" y="425" font-size="14" fill="#4a5568">postgres/</text>
+        <text x="250" y="425" font-size="12" fill="#718096">PostgreSQL container</text>
+
+        <text x="100" y="450" font-size="14" fill="#4a5568">kafka/</text>
+        <text x="250" y="450" font-size="12" fill="#718096">Kafka messaging</text>
+
+        <text x="100" y="475" font-size="14" fill="#4a5568">...</text>
+        <text x="250" y="475" font-size="12" fill="#718096">Other service configs</text>
+    </g>
+
+    <!-- Environment & Init Section -->
+    <g>
+        <rect x="620" y="320" width="520" height="200" fill="#fff" stroke="#ed8936" stroke-width="2" rx="3" />
+        <text x="630" y="345" font-size="16" font-weight="bold" fill="#2d3748">⚙️ Environment & Initialization</text>
+
+        <text x="640" y="375" font-size="14" fill="#4a5568">env_files/</text>
+        <text x="820" y="375" font-size="12" fill="#718096">Service-specific env vars</text>
+
+        <text x="640" y="400" font-size="14" fill="#4a5568">oracle-init/</text>
+        <text x="820" y="400" font-size="12" fill="#718096">Oracle DB init scripts</text>
+
+        <text x="640" y="425" font-size="14" fill="#4a5568">mysql-init/</text>
+        <text x="820" y="425" font-size="12" fill="#718096">MySQL setup scripts</text>
+
+        <text x="640" y="450" font-size="14" fill="#4a5568">sqlserver-init/</text>
+        <text x="820" y="450" font-size="12" fill="#718096">SQL Server init</text>
+    </g>
+
+    <!-- Test Suite Section -->
+    <g>
+        <rect x="80" y="540" width="520" height="240" fill="#fff" stroke="#f56565" stroke-width="2" rx="3" />
+        <text x="90" y="565" font-size="16" font-weight="bold" fill="#2d3748">🧪 test/</text>
+
+        <text x="100" y="595" font-size="14" fill="#4a5568">suite/</text>
+        <text x="120" y="620" font-size="13" fill="#4a5568">├── __init__.robot</text>
+        <text x="280" y="620" font-size="12" fill="#718096">Suite initialization</text>
+
+        <text x="120" y="645" font-size="13" fill="#4a5568">└── pipeline_tests/</text>
+        <text x="140" y="670" font-size="12" fill="#4a5568">├── oracle/</text>
+        <text x="310" y="670" font-size="11" fill="#718096">Oracle tests</text>
+
+        <text x="140" y="690" font-size="12" fill="#4a5568">├── postgres_s3/</text>
+        <text x="310" y="690" font-size="11" fill="#718096">PostgreSQL+S3 tests</text>
+
+        <text x="140" y="710" font-size="12" fill="#4a5568">└── kafka/</text>
+        <text x="310" y="710" font-size="11" fill="#718096">Kafka tests</text>
+
+        <text x="100" y="735" font-size="14" fill="#4a5568">test_data/</text>
+        <text x="250" y="735" font-size="12" fill="#718096">Test configurations & data</text>
+    </g>
+
+    <!-- Source & Pipelines Section -->
+    <g>
+        <rect x="620" y="540" width="520" height="240" fill="#fff" stroke="#9f7aea" stroke-width="2" rx="3" />
+        <text x="630" y="565" font-size="16" font-weight="bold" fill="#2d3748">📦 src/</text>
+
+        <text x="640" y="595" font-size="14" fill="#4a5568">pipelines/</text>
+        <text x="820" y="595" font-size="12" fill="#718096">SnapLogic SLP files</text>
+
+        <text x="640" y="620" font-size="14" fill="#4a5568">tools/</text>
+        <text x="820" y="620" font-size="12" fill="#718096">Helper utilities</text>
+
+        <text x="630" y="665" font-size="16" font-weight="bold" fill="#2d3748">📚 Supporting Directories</text>
+
+        <text x="640" y="690" font-size="14" fill="#4a5568">shared-data/</text>
+        <text x="820" y="690" font-size="12" fill="#718096">Common data files</text>
+
+        <text x="640" y="715" font-size="14" fill="#4a5568">activemq-data/</text>
+        <text x="820" y="715" font-size="12" fill="#718096">Message queue data</text>
+
+        <text x="640" y="740" font-size="14" fill="#4a5568">travis_scripts/</text>
+        <text x="820" y="740" font-size="12" fill="#718096">CI/CD scripts</text>
+    </g>
+
+    <!-- Workflow Section -->
+    <g>
+        <rect x="80" y="800" width="1060" height="560" fill="#f7fafc" stroke="#2d3748" stroke-width="2" rx="5" />
+        <text x="90" y="830" font-size="18" font-weight="bold" fill="#1a365d">🔄 Test Execution Workflow</text>
+
+        <!-- Step 1 -->
+        <rect x="120" y="860" width="480" height="100" fill="#bee3f8" stroke="#3182ce" stroke-width="2" rx="3" />
+        <text x="130" y="885" font-size="15" font-weight="bold" fill="#1a365d">1. Configuration Setup</text>
+        <text x="140" y="910" font-size="13" fill="#2d3748">• Configure .env file with credentials</text>
+        <text x="140" y="930" font-size="13" fill="#2d3748">• Set service-specific env_files/</text>
+        <text x="140" y="950" font-size="13" fill="#2d3748">• Review docker-compose.yml settings</text>
+
+        <!-- Arrow -->
+        <path d="M 360 960 L 360 990" stroke="#2d3748" stroke-width="3" fill="none" marker-end="url(#arrowhead)" />
+
+        <!-- Step 2 -->
+        <rect x="120" y="990" width="480" height="100" fill="#c6f6d5" stroke="#38a169" stroke-width="2" rx="3" />
+        <text x="130" y="1015" font-size="15" font-weight="bold" fill="#1a365d">2. Build & Initialize</text>
+        <text x="140" y="1040" font-size="13" fill="#2d3748">• Run Makefile commands to build images</text>
+        <text x="140" y="1060" font-size="13" fill="#2d3748">• Execute *-init/ scripts for databases</text>
+        <text x="140" y="1080" font-size="13" fill="#2d3748">• Docker Compose builds all containers</text>
+
+        <!-- Arrow -->
+        <path d="M 360 1090 L 360 1120" stroke="#2d3748" stroke-width="3" fill="none" marker-end="url(#arrowhead)" />
+
+        <!-- Step 3 -->
+        <rect x="120" y="1120" width="480" height="100" fill="#fed7d7" stroke="#e53e3e" stroke-width="2" rx="3" />
+        <text x="130" y="1145" font-size="15" font-weight="bold" fill="#1a365d">3. Execute Tests</text>
+        <text x="140" y="1170" font-size="13" fill="#2d3748">• Robot Framework runs test/suite/</text>
+        <text x="140" y="1190" font-size="13" fill="#2d3748">• Tests import src/pipelines/ to SnapLogic</text>
+        <text x="140" y="1210" font-size="13" fill="#2d3748">• Validate against live Docker services</text>
+
+        <!-- Arrow -->
+        <path d="M 360 1220 L 360 1250" stroke="#2d3748" stroke-width="3" fill="none" marker-end="url(#arrowhead)" />
+
+        <!-- Step 4 -->
+        <rect x="120" y="1250" width="480" height="100" fill="#fefcbf" stroke="#d69e2e" stroke-width="2" rx="3" />
+        <text x="130" y="1275" font-size="15" font-weight="bold" fill="#1a365d">4. Report & Cleanup</text>
+        <text x="140" y="1300" font-size="13" fill="#2d3748">• Generate HTML/XML test reports</text>
+        <text x="140" y="1320" font-size="13" fill="#2d3748">• Makefile targets for teardown</text>
+        <text x="140" y="1340" font-size="13" fill="#2d3748">• Optional: Travis CI publishes results</text>
+
+        <!-- Right side - Key Features -->
+        <rect x="640" y="860" width="480" height="490" fill="#faf5ff" stroke="#805ad5" stroke-width="2" rx="3" />
+        <text x="650" y="890" font-size="16" font-weight="bold" fill="#1a365d">✨ Key Features</text>
+
+        <text x="660" y="920" font-size="14" font-weight="bold" fill="#553c9a">Automation</text>
+        <text x="670" y="940" font-size="12" fill="#4a5568">• Makefile-driven commands</text>
+        <text x="670" y="960" font-size="12" fill="#4a5568">• Docker Compose orchestration</text>
+
+        <text x="660" y="990" font-size="14" font-weight="bold" fill="#553c9a">Modularity</text>
+        <text x="670" y="1010" font-size="12" fill="#4a5568">• Service-specific makefiles</text>
+        <text x="670" y="1030" font-size="12" fill="#4a5568">• Independent test suites</text>
+
+        <text x="660" y="1060" font-size="14" font-weight="bold" fill="#553c9a">Isolation</text>
+        <text x="670" y="1080" font-size="12" fill="#4a5568">• Containerized environments</text>
+        <text x="670" y="1100" font-size="12" fill="#4a5568">• Separate .env configurations</text>
+
+        <text x="660" y="1130" font-size="14" font-weight="bold" fill="#553c9a">Reproducibility</text>
+        <text x="670" y="1150" font-size="12" fill="#4a5568">• Database init scripts</text>
+        <text x="670" y="1170" font-size="12" fill="#4a5568">• Version-controlled configs</text>
+
+        <text x="660" y="1200" font-size="14" font-weight="bold" fill="#553c9a">CI/CD Ready</text>
+        <text x="670" y="1220" font-size="12" fill="#4a5568">• Travis CI integration</text>
+        <text x="670" y="1240" font-size="12" fill="#4a5568">• Automated test execution</text>
+
+        <text x="660" y="1270" font-size="14" font-weight="bold" fill="#553c9a">Scalability</text>
+        <text x="670" y="1290" font-size="12" fill="#4a5568">• Easy to add new services</text>
+        <text x="670" y="1310" font-size="12" fill="#4a5568">• Modular test organization</text>
+    </g>
+
+    <!-- Arrow marker definition -->
+    <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <polygon points="0 0, 10 3, 0 6" fill="#2d3748" />
+        </marker>
+    </defs>
+</svg>

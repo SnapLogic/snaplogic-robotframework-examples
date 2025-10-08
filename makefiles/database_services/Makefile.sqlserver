@@ -57,7 +57,7 @@ sqlserver-logs:
 # Access SQL Server shell
 sqlserver-shell:
 	@echo "🐚 Accessing SQL Server shell (sqlcmd)..."
-	docker exec -it $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD)
+	docker exec -it $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C
 
 # Check SQL Server status
 sqlserver-status:
@@ -67,7 +67,7 @@ sqlserver-status:
 	@if docker ps --filter name=$(SQLSERVER_CONTAINER_NAME) --format "{{.Names}}" | grep -q $(SQLSERVER_CONTAINER_NAME); then \
 		echo "✅ SQL Server is running"; \
 		echo "🔍 Testing connection..."; \
-		docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -Q "SELECT @@VERSION" 2>/dev/null || echo "⚠️  Connection test failed"; \
+		docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C -Q "SELECT @@VERSION" 2>/dev/null && echo "✅ Connection successful" || echo "⚠️  Connection test failed"; \
 	else \
 		echo "❌ SQL Server is not running"; \
 	fi
@@ -80,7 +80,7 @@ sqlserver-backup:
 	@echo "💾 Backing up SQL Server database..."
 	@mkdir -p backups/sqlserver
 	@echo "Creating backup inside container..."
-	@docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -Q "\
+	@docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C -Q "\
 		BACKUP DATABASE [$(SQLSERVER_DATABASE)] \
 		TO DISK = '/var/opt/mssql/backup/$(SQLSERVER_DATABASE)_$$(date +%Y%m%d_%H%M%S).bak' \
 		WITH FORMAT, INIT, NAME = '$(SQLSERVER_DATABASE) Full Backup', SKIP, STATS = 10"
@@ -95,17 +95,17 @@ sqlserver-restore:
 	@echo ""
 	@echo "To restore a backup:"
 	@echo "  1. Copy backup to container: docker cp backups/sqlserver/[backup_file].bak $(SQLSERVER_CONTAINER_NAME):/var/opt/mssql/backup/"
-	@echo "  2. Restore: docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -Q \"RESTORE DATABASE [$(SQLSERVER_DATABASE)] FROM DISK = '/var/opt/mssql/backup/[backup_file].bak' WITH REPLACE\""
+	@echo "  2. Restore: docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C -Q \"RESTORE DATABASE [$(SQLSERVER_DATABASE)] FROM DISK = '/var/opt/mssql/backup/[backup_file].bak' WITH REPLACE\""
 
 # Create test database and tables
 sqlserver-init:
 	@echo "🔧 Initializing SQL Server test database..."
-	@docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -Q "\
+	@docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C -Q "\
 		IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '$(SQLSERVER_DATABASE)') \
 		BEGIN \
 			CREATE DATABASE [$(SQLSERVER_DATABASE)]; \
 		END"
-	@docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -d $(SQLSERVER_DATABASE) -Q "\
+	@docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C -d $(SQLSERVER_DATABASE) -Q "\
 		IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'snaptest') \
 		BEGIN \
 			EXEC('CREATE SCHEMA snaptest'); \
@@ -144,12 +144,12 @@ sqlserver-init:
 # Show SQL Server databases
 sqlserver-show-dbs:
 	@echo "📂 SQL Server Databases:"
-	@docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -Q "SELECT name FROM sys.databases"
+	@docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C -Q "SELECT name FROM sys.databases"
 
 # Show SQL Server tables
 sqlserver-show-tables:
 	@echo "📋 Tables in $(SQLSERVER_DATABASE):"
-	@docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -d $(SQLSERVER_DATABASE) -Q "\
+	@docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C -d $(SQLSERVER_DATABASE) -Q "\
 		SELECT \
 			s.name AS SchemaName, \
 			t.name AS TableName \
@@ -161,16 +161,16 @@ sqlserver-show-tables:
 sqlserver-query:
 	@echo "Enter your SQL query (or use: make sqlserver-query QUERY='SELECT * FROM snaptest.users')"
 	@if [ -n "$(QUERY)" ]; then \
-		docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -d $(SQLSERVER_DATABASE) -Q "$(QUERY)"; \
+		docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C -d $(SQLSERVER_DATABASE) -Q "$(QUERY)"; \
 	else \
 		read -p "SQL Query: " query; \
-		docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -d $(SQLSERVER_DATABASE) -Q "$$query"; \
+		docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C -d $(SQLSERVER_DATABASE) -Q "$query"; \
 	fi
 
 # Show SQL Server version and edition
 sqlserver-version:
 	@echo "📌 SQL Server Version:"
-	@docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -Q "\
+	@docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C -Q "\
 		SELECT \
 			SERVERPROPERTY('ProductVersion') AS Version, \
 			SERVERPROPERTY('ProductLevel') AS ServicePack, \
@@ -179,7 +179,7 @@ sqlserver-version:
 # Check SQL Server configuration
 sqlserver-config:
 	@echo "⚙️  SQL Server Configuration:"
-	@docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -Q "\
+	@docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C -Q "\
 		SELECT \
 			name, \
 			value, \
