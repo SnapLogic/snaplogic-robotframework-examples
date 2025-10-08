@@ -6,7 +6,7 @@
 
 Before you begin, make sure you have access to the project repository:
 
-**Repository:** https://github.com/SnapLogic/snaplogic-test-example
+**Repository:** https://github.com/SnapLogic/snaplogic-robotframework-examples
 
 ### Connect your GitHub account
 
@@ -17,7 +17,7 @@ If this is a private repository, ensure your GitHub account has been granted acc
 Open your terminal and run:
 
 ```bash
-git clone https://github.com/SnapLogic/snaplogic-test-example.git
+git clone https://github.com/SnapLogic/snaplogic-robotframework-examples.git
 cd snaplogic-test-example
 ```
 
