@@ -58,7 +58,7 @@ DOCKER_COMPOSE := docker compose $(ENV_FILE_FLAGS) -f $(DOCKER_COMPOSE_FILE)
 
 # Docker Compose profiles - Define ONCE here, use everywhere
 # Can be overridden via command line: make start-services COMPOSE_PROFILES=kafka,oracle-dev
-COMPOSE_PROFILES ?= tools,oracle-dev,minio,postgres-dev,mysql-dev,sqlserver-dev,salesforce-mock-start,email-mock,kafka
+COMPOSE_PROFILES ?= tools,oracle-dev,minio,postgres-dev,mysql-dev,sqlserver-dev,salesforce-mock-start,email-mock
 
 # -----------------------------------------------------------------------------
 # Common Variables
