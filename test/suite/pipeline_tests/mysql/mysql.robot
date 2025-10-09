@@ -157,7 +157,7 @@ Import Pipelines
     ...    pipeline_snodeid --> which is used to create the tasks
     [Tags]    mysql    regression
     [Template]    Import Pipelines From Template
-    ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${pipeline_name_slp}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${pipeline_name_slp}
 
 Create Triggered_task
     [Documentation]    Creates triggered task and returns the task name and task snode id
