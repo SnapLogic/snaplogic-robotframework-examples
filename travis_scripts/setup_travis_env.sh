@@ -33,6 +33,7 @@ required_vars=(
     "GROUNDPLEX_LOCATION_PATH"
     "RELEASE_BUILD_VERSION"
     "ACCOUNT_LOCATION_PATH"
+    "PIPELINES_LOCATION_PATH"
 )
 
 # Check for missing required variables
