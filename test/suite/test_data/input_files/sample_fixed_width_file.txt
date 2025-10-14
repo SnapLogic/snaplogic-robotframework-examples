@@ -1,0 +1,7 @@
+PN12345678A01EC001FC01CF01RS01NS01BR1NL01Narration text line one goes here and continues                  
+PN87654321B02EC002FD02CF02RS02NS02BR2NL02Another narration line with more description                     
+PN99999999C99EC999FF99CF99RS99NS99BR9NL99This is a truncated narration because the field only allows 79 chars 
+PN00000000D00EC000GD00CF00RS00NS00BR0NL00All fields filled with zero and default values                       
+          E01EC010HE01CF01RS01NS01BR1NL01Leading spaces in PART_NUMBER (will trim if Trim Column Data is ON)    
+INVALID_RECORD_FORMAT_HERE_TO_CAUSE_PARSING_ERROR_BUT_WONT_BREAK_PIPELINE
+PN11112222F03EC003IF03CF03RS03NS03BR3NL03Final valid record to ensure multiple rows are processed properly    

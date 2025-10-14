@@ -1,0 +1,54 @@
+# docker-compose.yml
+include:
+  - docker-compose.oracle.yml
+  - docker-compose.groundplex.yml
+  - docker-compose.s3emulator.yml
+  - docker-compose.postgres.yml
+  - docker-compose.activemq.yml
+  - docker-compose.sqlserver.yml
+  - docker-compose.mysql.yml
+  - docker-compose.db2.yml
+  - docker-compose.salesforce-mock.yml
+
+services:
+  tools:
+    build:
+      context: ../src/tools
+      dockerfile: ../../docker/robot.Dockerfile
+    platform: linux/amd64  # Force x86_64 for ibm_db compatibility
+    container_name: snaplogic-test-example-tools-container
+    image: snaplogic-test-example:latest
+    env_file:
+      - ../.env
+    environment:
+      - TRAVIS_EVENT_TYPE=${TRAVIS_EVENT_TYPE}
+      - TRAVIS_COMMIT_AUTHOR_NAME=${TRAVIS_COMMIT_AUTHOR_NAME:-"Unknown"}
+      - TRAVIS_REPO_SLUG=${TRAVIS_REPO_SLUG}
+      - TRAVIS_BUILD_WEB_URL=${TRAVIS_BUILD_WEB_URL}
+      - TRAVIS_BUILD_NUMBER=${TRAVIS_BUILD_NUMBER}
+      - TRAVIS_TEST_RESULT=${TRAVIS_TEST_RESULT}
+      - TRAVIS_BUILD_ID=${TRAVIS_BUILD_ID}
+      - TRAVIS_COMMIT_MESSAGE=${TRAVIS_COMMIT_MESSAGE}
+      - TRAVIS_COMMIT=${TRAVIS_COMMIT}
+      - TRAVIS_DURATION=${TRAVIS_DURATION:-0}
+      - TRAVIS_BRANCH=${TRAVIS_BRANCH}
+      
+    volumes:
+      - ../src:/app/src
+      - ../test:/app/test
+      - ../.env:/app/.env
+      - ../setup_env.sh:/app/setup_env.sh
+      - ../.travis.yml:/app/.travis.yml
+      - ../test/suite/test_data:/opt/snaplogic/test_data
+      # Optional: Add mounts for common local directories (uncomment as needed)
+      # - ~/Documents:/opt/host-documents:ro
+      # - ~/Downloads:/opt/host-downloads:ro
+      # - ~/Desktop:/opt/host-desktop:ro
+    command: [ "sh", "-c", "echo 'Tools container started' && tail -f /dev/null" ]
+    profiles: [ tools ]
+    networks:
+      - snaplogicnet
+
+networks:
+  snaplogicnet:
+    driver: bridge
