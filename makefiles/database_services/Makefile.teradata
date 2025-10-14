@@ -1,0 +1,239 @@
+# =============================================================================
+# Teradata Database Management
+# =============================================================================
+# This file contains Teradata database specific targets
+# =============================================================================
+
+.PHONY: teradata-start teradata-stop teradata-logs teradata-shell teradata-status \
+        teradata-restart teradata-help teradata-check-access
+
+# Include common configuration
+include makefiles/common_services/Makefile.common
+
+# =============================================================================
+# 🔷 Teradata Configuration
+# =============================================================================
+TERADATA_CONTAINER_NAME := teradata-db
+TERADATA_PROFILE := teradata-dev
+TERADATA_PORT := 1025
+TERADATA_VIEWPOINT_PORT := 8020
+TERADATA_USER := testuser
+TERADATA_PASSWORD := snaplogic
+
+# =============================================================================
+# ⚠️  Important Notice
+# =============================================================================
+# Teradata Docker images are NOT publicly available.
+# You need special access from Teradata Corporation to use these images.
+# Alternatives:
+#   - Teradata Vantage Express on VMware (free)
+#   - Teradata Vantage Developer cloud (14-day trial)
+#   - Contact Teradata for Docker image access
+# =============================================================================
+
+# =============================================================================
+# 🚀 Teradata Commands
+# =============================================================================
+
+# Check if user has access to Teradata images
+teradata-check-access:
+	@echo "🔍 Checking Teradata Docker image access..."
+	@if docker image ls | grep -q teradata; then \
+		echo "✅ Teradata images found locally"; \
+	else \
+		echo "❌ No Teradata images found"; \
+		echo ""; \
+		echo "⚠️  IMPORTANT: Teradata Docker images are NOT publicly available"; \
+		echo "🔐 You need special access from Teradata Corporation"; \
+		echo ""; \
+		echo "📝 How to get access:"; \
+		echo "   1. Contact Teradata representative"; \
+		echo "   2. Sign up for Teradata Developer Program"; \
+		echo "   3. Request Docker registry access"; \
+		echo ""; \
+		echo "💡 Free Alternatives:"; \
+		echo "   - Teradata Vantage Express on VMware: https://downloads.teradata.com/"; \
+		echo "   - Teradata Vantage Developer (cloud): https://clearscape.teradata.com/"; \
+		echo "   - ClearScape Analytics Experience: 14-day free trial"; \
+	fi
+
+# Start Teradata database
+teradata-start:
+	@echo "🔷 Starting Teradata Database..."
+	@echo "⚠️  IMPORTANT: Teradata Docker images are NOT publicly available"
+	@echo "🔐 You need special access from Teradata Corporation to use these images"
+	@echo "👉 See docker/docker-compose.teradata.yml for details on how to get access"
+	@echo ""
+	@echo "⚠️  Note: Teradata requires significant resources (6GB RAM, 2 CPUs)"
+	@echo "📦 Attempting to start Teradata (will fail if images not available)..."
+	@$(DOCKER_COMPOSE) --profile $(TERADATA_PROFILE) up -d $(TERADATA_CONTAINER_NAME) || { \
+		echo ""; \
+		echo "❌ Failed to start Teradata. This usually means:"; \
+		echo "   1. You don't have access to Teradata Docker images"; \
+		echo "   2. You haven't logged into Teradata's registry"; \
+		echo ""; \
+		echo "💡 Alternatives:"; \
+		echo "   - Use Teradata Vantage Express on VMware (free)"; \
+		echo "   - Use Teradata Vantage Developer cloud (14-day trial)"; \
+		echo "   - Contact Teradata for Docker image access"; \
+		exit 1; \
+	}
+	@echo "⏳ Teradata is starting. This may take 5-10 minutes on first run."
+	@echo "💡 Monitor startup progress with: make teradata-logs"
+	@echo "🌐 Once started:"
+	@echo "   - Database port: $(TERADATA_PORT)"
+	@echo "   - Viewpoint UI: http://localhost:$(TERADATA_VIEWPOINT_PORT)"
+	@echo "   - Username: $(TERADATA_USER)"
+	@echo "   - Password: $(TERADATA_PASSWORD)"
+
+# Stop Teradata database
+teradata-stop:
+	@echo "🛑 Stopping Teradata container..."
+	$(DOCKER_COMPOSE) stop $(TERADATA_CONTAINER_NAME) || true
+	@echo "🧹 Removing Teradata container and volumes..."
+	$(DOCKER_COMPOSE) rm -f -v $(TERADATA_CONTAINER_NAME) || true
+	@echo "🗑️  Cleaning up Teradata volumes..."
+	docker volume rm $$(docker volume ls -q | grep teradata) 2>/dev/null || true
+	@echo "✅ Teradata stopped and cleaned up."
+
+# View Teradata logs
+teradata-logs:
+	@echo "📜 Viewing Teradata logs..."
+	$(DOCKER_COMPOSE) logs -f $(TERADATA_CONTAINER_NAME)
+
+# Access Teradata shell (BTEQ)
+teradata-shell:
+	@echo "🐚 Accessing Teradata BTEQ shell..."
+	@echo "📝 Use .LOGON localhost/$(TERADATA_USER),$(TERADATA_PASSWORD) to connect"
+	@echo "📝 Use .QUIT to exit"
+	docker exec -it $(TERADATA_CONTAINER_NAME) bteq
+
+# Check Teradata status
+teradata-status:
+	@echo "📊 Teradata Database Status:"
+	@docker ps -a --filter name=$(TERADATA_CONTAINER_NAME) --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+	@echo ""
+	@if docker ps --filter name=$(TERADATA_CONTAINER_NAME) --format "{{.Names}}" | grep -q $(TERADATA_CONTAINER_NAME); then \
+		echo "✅ Teradata container is running"; \
+		echo "🔍 Testing connection..."; \
+		echo ".LOGON localhost/$(TERADATA_USER),$(TERADATA_PASSWORD); SELECT * FROM DBC.DBCInfo; .QUIT" | \
+		docker exec -i $(TERADATA_CONTAINER_NAME) bteq 2>/dev/null | grep -q "Teradata" && \
+		echo "✅ Teradata database is accessible" || echo "⚠️  Database is starting up (may take 5-10 minutes)"; \
+	else \
+		echo "❌ Teradata is not running"; \
+	fi
+
+# Restart Teradata database
+teradata-restart: teradata-stop teradata-start
+
+# Initialize Teradata test database
+teradata-init:
+	@echo "🔧 Initializing Teradata test database..."
+	@echo "Creating test database and tables..."
+	@docker exec -i $(TERADATA_CONTAINER_NAME) bteq <<-EOF
+		.LOGON localhost/$(TERADATA_USER),$(TERADATA_PASSWORD)
+		
+		-- Create test database
+		CREATE DATABASE snaptest AS PERM = 100000000;
+		
+		-- Create users table
+		CREATE TABLE snaptest.users (
+			user_id INTEGER NOT NULL,
+			username VARCHAR(100) NOT NULL,
+			email VARCHAR(100),
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (user_id)
+		);
+		
+		-- Create products table
+		CREATE TABLE snaptest.products (
+			product_id INTEGER NOT NULL,
+			name VARCHAR(200) NOT NULL,
+			price DECIMAL(10,2),
+			quantity INTEGER,
+			PRIMARY KEY (product_id)
+		);
+		
+		-- Create orders table
+		CREATE TABLE snaptest.orders (
+			order_id INTEGER NOT NULL,
+			user_id INTEGER,
+			product_id INTEGER,
+			order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (order_id),
+			FOREIGN KEY (user_id) REFERENCES snaptest.users(user_id),
+			FOREIGN KEY (product_id) REFERENCES snaptest.products(product_id)
+		);
+		
+		.QUIT
+	EOF
+	@echo "✅ Test database initialized"
+
+# Show Teradata databases
+teradata-show-dbs:
+	@echo "📂 Teradata Databases:"
+	@docker exec -i $(TERADATA_CONTAINER_NAME) bteq <<-EOF
+		.LOGON localhost/$(TERADATA_USER),$(TERADATA_PASSWORD)
+		SELECT DatabaseName, PermSpace, SpoolSpace 
+		FROM DBC.Databases 
+		WHERE DatabaseName NOT LIKE 'SYS%'
+		ORDER BY DatabaseName;
+		.QUIT
+	EOF
+
+# Show Teradata tables
+teradata-show-tables:
+	@echo "📋 Tables in snaptest database:"
+	@docker exec -i $(TERADATA_CONTAINER_NAME) bteq <<-EOF
+		.LOGON localhost/$(TERADATA_USER),$(TERADATA_PASSWORD)
+		SELECT TableName, TableKind, CreatorName
+		FROM DBC.Tables
+		WHERE DatabaseName = 'snaptest'
+		ORDER BY TableName;
+		.QUIT
+	EOF
+
+# Run Teradata query
+teradata-query:
+	@echo "Enter your SQL query (or use: make teradata-query QUERY='SELECT * FROM snaptest.users')"
+	@if [ -n "$(QUERY)" ]; then \
+		echo ".LOGON localhost/$(TERADATA_USER),$(TERADATA_PASSWORD); $(QUERY); .QUIT" | \
+		docker exec -i $(TERADATA_CONTAINER_NAME) bteq; \
+	else \
+		read -p "SQL Query: " query; \
+		echo ".LOGON localhost/$(TERADATA_USER),$(TERADATA_PASSWORD); $$query; .QUIT" | \
+		docker exec -i $(TERADATA_CONTAINER_NAME) bteq; \
+	fi
+
+# Open Teradata Viewpoint UI
+teradata-viewpoint:
+	@echo "🌐 Opening Teradata Viewpoint..."
+	@echo "URL: http://localhost:$(TERADATA_VIEWPOINT_PORT)"
+	@echo "Username: $(TERADATA_USER)"
+	@echo "Password: $(TERADATA_PASSWORD)"
+	@if command -v open >/dev/null 2>&1; then \
+		open http://localhost:$(TERADATA_VIEWPOINT_PORT); \
+	elif command -v xdg-open >/dev/null 2>&1; then \
+		xdg-open http://localhost:$(TERADATA_VIEWPOINT_PORT); \
+	else \
+		echo "Please open your browser and navigate to: http://localhost:$(TERADATA_VIEWPOINT_PORT)"; \
+	fi
+
+# Help for Teradata commands
+teradata-help:
+	@echo "Teradata Database Management Commands:"
+	@echo "  make teradata-check-access  - Check if you have access to Teradata images"
+	@echo "  make teradata-start         - Start Teradata database"
+	@echo "  make teradata-stop          - Stop and clean up Teradata"
+	@echo "  make teradata-restart       - Restart Teradata database"
+	@echo "  make teradata-logs          - View Teradata logs"
+	@echo "  make teradata-shell         - Access Teradata BTEQ shell"
+	@echo "  make teradata-status        - Check Teradata status"
+	@echo "  make teradata-init          - Initialize test database and tables"
+	@echo "  make teradata-show-dbs      - Show all databases"
+	@echo "  make teradata-show-tables   - Show tables in snaptest database"
+	@echo "  make teradata-query         - Run a SQL query"
+	@echo "  make teradata-viewpoint     - Open Teradata Viewpoint UI"
+	@echo "  make teradata-help          - Show this help message"
+	@echo ""
+	@echo "⚠️  Note: Teradata requires special access. See 'make teradata-check-access' for details."

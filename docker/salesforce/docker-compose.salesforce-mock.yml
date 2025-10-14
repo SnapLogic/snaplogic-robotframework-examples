@@ -1,0 +1,104 @@
+# Salesforce API Mock Service for SnapLogic Testing
+# ==================================================
+#
+# This Docker Compose file provides a Salesforce API mock environment specifically
+# for testing SnapLogic Salesforce Snap integrations with both HTTP and HTTPS support.
+
+#
+# AVAILABLE ENDPOINTS:
+# -------------------
+# Salesforce Mock API (HTTP): http://localhost:8089
+# Salesforce Mock API (HTTPS): https://localhost:8443
+# - OAuth Token: POST http(s)://localhost:8089/services/oauth2/token
+# - REST API: http(s)://localhost:8089/services/data/v59.0/*
+# - Bulk API: http(s)://localhost:8089/services/async/59.0/*
+#
+# SNAPLOGIC CONFIGURATION:
+# -----------------------
+# For Salesforce Account settings in SnapLogic:
+# 
+# HTTP Configuration:
+# - Login URL: http://salesforce-api-mock:8080
+# 
+# HTTPS Configuration:
+# - Login URL: https://salesforce-api-mock:8443
+# 
+# Common Settings:
+# - Username: snap-qa@snaplogic.com (or any value)
+# - Password: any value
+# - Security Token: leave empty (or any value)
+# 
+# Note: Use container name and internal ports (8080/8443) when SnapLogic 
+# is running in Docker on the same network. If SnapLogic is running 
+# on your host machine, use http://localhost:8089 or https://localhost:8443
+#
+# The mock will accept any credentials and return a valid response.
+#
+# HTTPS NOTES:
+# -----------
+# - WireMock uses a self-signed certificate by default
+# - For production, mount custom certificates (see salesforce-mock-custom-cert service example)
+# - When testing with curl, use -k flag to accept self-signed certificates
+
+services:
+  # WireMock - Salesforce API Mock Server with HTTP and HTTPS
+  salesforce-mock:
+    image: wiremock/wiremock:3.3.1
+    container_name: salesforce-api-mock
+    profiles:
+      - salesforce-mock-start
+      - salesforce-dev
+    ports:
+      - "${SALESFORCE_HTTP_PORT:-8089}:8080"  # HTTP port
+      - "${SALESFORCE_HTTPS_PORT:-8443}:8443"  # HTTPS port
+    volumes:
+      # IMPORTANT: This folder must contain BOTH static AND proxy mappings
+      - ./wiremock/mappings:/home/wiremock/mappings:ro
+      - ./wiremock/__files:/home/wiremock/__files:ro
+      # Mount custom certificate keystore
+      - ./wiremock/certs/custom-keystore.p12:/home/wiremock/keystore.p12:ro
+
+    command: >
+      --port=8080
+      --https-port=8443
+      --https-keystore=/home/wiremock/keystore.p12
+      --keystore-password=password
+      --keystore-type=PKCS12
+      --global-response-templating 
+      --verbose 
+      --disable-banner
+      --enable-stub-cors
+      --preserve-host-header
+    networks:
+      - snaplogicnet
+    environment:
+      - WIREMOCK_OPTIONS=--max-request-journal-entries=1000
+      - JAVA_OPTS=-Djava.security.egd=file:/dev/./urandom
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/__admin/health || curl -fk https://localhost:8443/__admin/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+
+  # JSON Server - For persistent CRUD operations
+  salesforce-json-server:
+    image: clue/json-server
+    platform: linux/amd64  # Explicitly set platform for Apple Silicon compatibility
+    container_name: salesforce-json-mock
+    profiles:
+      - salesforce-json-server
+      - salesforce-dev
+    ports:
+      - "${SALESFORCE_JSON_PORT:-8082}:80"
+    volumes:
+      - ./json-db:/data
+    command: --watch /data/salesforce-db.json --host 0.0.0.0
+    networks:
+      - snaplogicnet
+
+networks:
+  snaplogicnet:
+    driver: bridge
+

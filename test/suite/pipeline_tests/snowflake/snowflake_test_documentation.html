@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -36,7 +37,7 @@
             margin: 0 auto;
             background: white;
             border-radius: 10px;
-            box-shadow: 0 0 40px rgba(0,0,0,0.1);
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);
             overflow: hidden;
         }
 
@@ -61,8 +62,13 @@
         }
 
         @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         h1 {
@@ -125,8 +131,15 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .test-section {
@@ -140,7 +153,7 @@
 
         .test-section:hover {
             transform: translateX(5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
 
         .test-header {
@@ -290,7 +303,7 @@
 
         .stat-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
         }
 
         .stat-number {
@@ -367,7 +380,7 @@
             background: white;
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 0 10px rgba(0,0,0,0.05);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
         }
 
         th {
@@ -446,22 +459,23 @@
             .content {
                 padding: 20px;
             }
-            
+
             .nav-tab {
                 font-size: 14px;
                 padding: 12px 15px;
             }
-            
+
             h1 {
                 font-size: 1.8em;
             }
-            
+
             .stats-grid {
                 grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <header>
@@ -483,7 +497,7 @@
             <!-- Overview Tab -->
             <div id="overview" class="tab-content active">
                 <h2>Test Suite Overview</h2>
-                
+
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-number">10</div>
@@ -504,19 +518,27 @@
                 </div>
 
                 <div class="info-box">
-                    <strong>📚 Suite Purpose:</strong> This test suite validates Snowflake database integration with SnapLogic pipelines, 
-                    including table operations, data loading (CSV/JSON), pipeline execution, and data validation. It demonstrates 
+                    <strong>📚 Suite Purpose:</strong> This test suite validates Snowflake database integration with
+                    SnapLogic pipelines,
+                    including table operations, data loading (CSV/JSON), pipeline execution, and data validation. It
+                    demonstrates
                     the use of generic SQL operations that work across different database platforms.
                 </div>
 
                 <h3>Key Features</h3>
                 <ul style="list-style-type: none; padding: 0;">
-                    <li style="padding: 10px 0;">✅ <strong>Database-Agnostic Operations:</strong> Uses generic SQL keywords that work with any database</li>
-                    <li style="padding: 10px 0;">✅ <strong>Snowflake-Specific Features:</strong> Tests unique Snowflake capabilities (Time Travel, Stages, Streams)</li>
-                    <li style="padding: 10px 0;">✅ <strong>SnapLogic Integration:</strong> Creates accounts, imports pipelines, executes tasks</li>
-                    <li style="padding: 10px 0;">✅ <strong>Data Loading:</strong> Supports both CSV and JSON data formats</li>
-                    <li style="padding: 10px 0;">✅ <strong>Comprehensive Cleanup:</strong> Suite and test-level teardown for clean state</li>
-                    <li style="padding: 10px 0;">✅ <strong>Environment Variables:</strong> Secure credential management via .env file</li>
+                    <li style="padding: 10px 0;">✅ <strong>Database-Agnostic Operations:</strong> Uses generic SQL
+                        keywords that work with any database</li>
+                    <li style="padding: 10px 0;">✅ <strong>Snowflake-Specific Features:</strong> Tests unique Snowflake
+                        capabilities (Time Travel, Stages, Streams)</li>
+                    <li style="padding: 10px 0;">✅ <strong>SnapLogic Integration:</strong> Creates accounts, imports
+                        pipelines, executes tasks</li>
+                    <li style="padding: 10px 0;">✅ <strong>Data Loading:</strong> Supports both CSV and JSON data
+                        formats</li>
+                    <li style="padding: 10px 0;">✅ <strong>Comprehensive Cleanup:</strong> Suite and test-level teardown
+                        for clean state</li>
+                    <li style="padding: 10px 0;">✅ <strong>Environment Variables:</strong> Secure credential management
+                        via .env file</li>
                 </ul>
 
                 <h3>Technology Stack</h3>
@@ -571,11 +593,13 @@
                         </div>
                     </div>
                     <div class="test-description">
-                        Creates a Snowflake account in the SnapLogic project space using a predefined payload file (acc_snowflake_s3_db.json).
+                        Creates a Snowflake account in the SnapLogic project space using a predefined payload file
+                        (acc_snowflake_s3_db.json).
                     </div>
                     <div class="code-block">
-<span class="keyword">Template:</span> <span class="string">Create Account From Template</span>
-<span class="keyword">Input:</span> <span class="variable">${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}</span>
+                        <span class="keyword">Template:</span> <span class="string">Create Account From Template</span>
+                        <span class="keyword">Input:</span> <span
+                            class="variable">${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}</span>
                     </div>
                 </div>
 
@@ -587,7 +611,8 @@
                         </div>
                     </div>
                     <div class="test-description">
-                        Uploads the Snowflake expression library to the project-level shared folder for use in pipelines.
+                        Uploads the Snowflake expression library to the project-level shared folder for use in
+                        pipelines.
                     </div>
                     <div class="assertions">
                         <h4>📋 Assertions:</h4>
@@ -607,7 +632,8 @@
                         </div>
                     </div>
                     <div class="test-description">
-                        Imports the Snowflake pipeline (.slp file) that demonstrates reading from and writing to mounted file locations.
+                        Imports the Snowflake pipeline (.slp file) that demonstrates reading from and writing to mounted
+                        file locations.
                     </div>
                     <div class="assertions">
                         <h4>📋 Assertions:</h4>
@@ -653,8 +679,10 @@
                         Updates task parameters and executes the triggered task with the modified configuration.
                     </div>
                     <div class="code-block">
-<span class="keyword">Prerequisites:</span> <span class="comment"># task_payload and task_snodeid from Create Triggered Task</span>
-<span class="keyword">Parameters Updated:</span> <span class="variable">snowflake_acct=../shared/snowflake_acct</span>
+                        <span class="keyword">Prerequisites:</span> <span class="comment"># task_payload and
+                            task_snodeid from Create Triggered Task</span>
+                        <span class="keyword">Parameters Updated:</span> <span
+                            class="variable">snowflake_acct=../shared/snowflake_acct</span>
                     </div>
                 </div>
 
@@ -667,7 +695,8 @@
                         </div>
                     </div>
                     <div class="test-description">
-                        Creates the employees table structure in Snowflake database using Snowflake-specific SQL queries.
+                        Creates the employees table structure in Snowflake database using Snowflake-specific SQL
+                        queries.
                     </div>
                     <div class="assertions">
                         <h4>📋 Assertions:</h4>
@@ -680,9 +709,10 @@
                         </ul>
                     </div>
                     <div class="code-block">
-<span class="keyword">Tables Created:</span>
-  <span class="string">• employees (id NUMBER AUTOINCREMENT, name VARCHAR, role VARCHAR, salary NUMBER)</span>
-  <span class="string">• employees2 (same structure as employees)</span>
+                        <span class="keyword">Tables Created:</span>
+                        <span class="string">• employees (id NUMBER AUTOINCREMENT, name VARCHAR, role VARCHAR, salary
+                            NUMBER)</span>
+                        <span class="string">• employees2 (same structure as employees)</span>
                     </div>
                 </div>
 
@@ -694,15 +724,16 @@
                         </div>
                     </div>
                     <div class="test-description">
-                        Creates a table structure specifically designed for JSON data loading with appropriate column types.
+                        Creates a table structure specifically designed for JSON data loading with appropriate column
+                        types.
                     </div>
                     <div class="code-block">
-<span class="keyword">Table Definition:</span>
-  <span class="string">NAME VARCHAR(100)</span>
-  <span class="string">DEPARTMENT VARCHAR(100)</span>
-  <span class="string">SALARY DECIMAL(10,2)</span>
-  <span class="string">HIRE_DATE DATE</span>
-  <span class="string">IS_ACTIVE BOOLEAN</span>
+                        <span class="keyword">Table Definition:</span>
+                        <span class="string">NAME VARCHAR(100)</span>
+                        <span class="string">DEPARTMENT VARCHAR(100)</span>
+                        <span class="string">SALARY DECIMAL(10,2)</span>
+                        <span class="string">HIRE_DATE DATE</span>
+                        <span class="string">IS_ACTIVE BOOLEAN</span>
                     </div>
                 </div>
 
@@ -715,10 +746,12 @@
                         </div>
                     </div>
                     <div class="test-description">
-                        Loads JSON employee data into Snowflake using the SAME template as MySQL, proving database-agnostic design.
+                        Loads JSON employee data into Snowflake using the SAME template as MySQL, proving
+                        database-agnostic design.
                     </div>
                     <div class="info-box">
-                        <strong>Note:</strong> This test uses the generic <code>Load JSON Data Template</code> which works across all databases.
+                        <strong>Note:</strong> This test uses the generic <code>Load JSON Data Template</code> which
+                        works across all databases.
                         The JSON file path: <code>${CURDIR}/test_data/employees.json</code>
                     </div>
                 </div>
@@ -734,7 +767,8 @@
                         </div>
                     </div>
                     <div class="test-description">
-                        <strong>Layer 1 Validation:</strong> Comprehensive validation directly against Snowflake database using generic SQL operations.
+                        <strong>Layer 1 Validation:</strong> Comprehensive validation directly against Snowflake
+                        database using generic SQL operations.
                         This test verifies that data is correctly stored and retrievable from Snowflake tables.
                     </div>
                     <div class="assertions">
@@ -768,8 +802,10 @@
                         </div>
                     </div>
                     <div class="test-description">
-                        <strong>Layer 2 Validation:</strong> Validates end-to-end data processing by comparing actual SnapLogic pipeline output 
-                        against user-provided expected output files. This ensures data integrity through the entire pipeline workflow.
+                        <strong>Layer 2 Validation:</strong> Validates end-to-end data processing by comparing actual
+                        SnapLogic pipeline output
+                        against user-provided expected output files. This ensures data integrity through the entire
+                        pipeline workflow.
                     </div>
                     <div class="assertions">
                         <h4>📋 Pipeline Output Validations:</h4>
@@ -785,20 +821,24 @@
                         </ul>
                     </div>
                     <div class="warning-box">
-                        <strong>⚠️ Critical Validation:</strong> This test ensures that data flowing through SnapLogic pipeline 
-                        from Snowflake to output files matches exactly what the user expects, validating both the pipeline 
+                        <strong>⚠️ Critical Validation:</strong> This test ensures that data flowing through SnapLogic
+                        pipeline
+                        from Snowflake to output files matches exactly what the user expects, validating both the
+                        pipeline
                         configuration and data transformation logic.
                     </div>
                     <div class="code-block">
-<span class="keyword">Files Compared:</span>
-  <span class="variable">Actual Output:</span> <span class="string">${ACTUAL_DATA_DIR}/table1.csv</span>
-  <span class="comment"># Generated by SnapLogic pipeline from Snowflake data</span>
-  
-  <span class="variable">Expected Output:</span> <span class="string">${EXPECTED_OUTPUT_DIR}/table1.csv</span>
-  <span class="comment"># User-provided expected result file</span>
-  
-  <span class="variable">Validation Result:</span> <span class="string">IDENTICAL</span>
-  <span class="comment"># Files must match exactly for test to pass</span>
+                        <span class="keyword">Files Compared:</span>
+                        <span class="variable">Actual Output:</span> <span
+                            class="string">${ACTUAL_DATA_DIR}/table1.csv</span>
+                        <span class="comment"># Generated by SnapLogic pipeline from Snowflake data</span>
+
+                        <span class="variable">Expected Output:</span> <span
+                            class="string">${EXPECTED_OUTPUT_DIR}/table1.csv</span>
+                        <span class="comment"># User-provided expected result file</span>
+
+                        <span class="variable">Validation Result:</span> <span class="string">IDENTICAL</span>
+                        <span class="comment"># Files must match exactly for test to pass</span>
                     </div>
                     <div class="success-box">
                         <strong>✅ What This Validates:</strong>
@@ -818,7 +858,7 @@
 
                 <div class="flow-diagram">
                     <h3>Test Execution Lifecycle</h3>
-                    
+
                     <div class="flow-step">
                         <div class="step-number">1</div>
                         <div class="step-content">
@@ -884,7 +924,8 @@
                     <tbody>
                         <tr>
                             <td>Tables</td>
-                            <td>employees, employees2, control_date, RF_TEST_CREATE_TABLE, TEST_SNOWFLAKE_TABLE, employees_backup, employees_temp, employees_clone</td>
+                            <td>employees, employees2, control_date, RF_TEST_CREATE_TABLE, TEST_SNOWFLAKE_TABLE,
+                                employees_backup, employees_temp, employees_clone</td>
                             <td>DROP TABLE IF EXISTS</td>
                         </tr>
                         <tr>
@@ -921,8 +962,10 @@
                 </table>
 
                 <div class="warning-box">
-                    <strong>⚠️ Important:</strong> All cleanup operations use <code>Run Keyword And Ignore Error</code> to ensure 
-                    that cleanup continues even if individual operations fail. This prevents test pollution between runs.
+                    <strong>⚠️ Important:</strong> All cleanup operations use <code>Run Keyword And Ignore Error</code>
+                    to ensure
+                    that cleanup continues even if individual operations fail. This prevents test pollution between
+                    runs.
                 </div>
             </div>
 
@@ -1021,25 +1064,26 @@
                 <div class="test-section">
                     <h3>Project Configuration</h3>
                     <div class="code-block">
-<span class="variable">${project_path}</span>               = ${org_name}/${project_space}/${project_name}
-<span class="variable">${pipeline_file_path}</span>        = /app/src/pipelines
-<span class="variable">${expression_library_path}</span>   = ${org_name}/${project_space}/shared
+                        <span class="variable">${project_path}</span> = ${org_name}/${project_space}/${project_name}
+                        <span class="variable">${pipeline_file_path}</span> = /app/src/pipelines
+                        <span class="variable">${expression_library_path}</span> = ${org_name}/${project_space}/shared
                     </div>
                 </div>
 
                 <div class="test-section">
                     <h3>Pipeline & Task Configuration</h3>
                     <div class="code-block">
-<span class="variable">${pipeline_name}</span>    = snowflake
-<span class="variable">${pipeline_slp}</span>     = snowflake.slp
-<span class="variable">${task1}</span>            = snowflake_Task
+                        <span class="variable">${pipeline_name}</span> = snowflake
+                        <span class="variable">${pipeline_slp}</span> = snowflake.slp
+                        <span class="variable">${task1}</span> = snowflake_Task
 
-<span class="comment"># Task Parameters</span>
-<span class="variable">&{task_params_set1}</span>
-    snowflake_acct  = ../shared/snowflake_acct
-    actual_output   = file:///opt/snaplogic/test_data/actual_expected_data/actual_output/snowflake/table1.csv
-    schema_name     = "INTUIT"
-    table_name      = ""INTUIT"."LIFEEVENTSDATA""
+                        <span class="comment"># Task Parameters</span>
+                        <span class="variable">&{task_params_set1}</span>
+                        snowflake_acct = ../shared/snowflake_acct
+                        actual_output =
+                        file:///opt/snaplogic/test_data/actual_expected_data/actual_output/snowflake/table1.csv
+                        schema_name = "DEMO"
+                        table_name = ""DEMO"."LIFEEVENTSDATA""
                     </div>
                 </div>
 
@@ -1074,13 +1118,13 @@
                 <div class="test-section">
                     <h3>Test Data Set</h3>
                     <div class="code-block">
-<span class="comment"># Hard-coded test data used in "Verify Expected Results In DB" test</span>
-<span class="variable">@{ALL_DATA}</span>
-    1, 'John', 1000.50
-    2, 'Jane', 2000.75
-    3, 'Bob', 3000.00
-    4, 'Alice', 4000.25
-    5, 'Tom', 5000.50
+                        <span class="comment"># Hard-coded test data used in "Verify Expected Results In DB" test</span>
+                        <span class="variable">@{ALL_DATA}</span>
+                        1, 'John', 1000.50
+                        2, 'Jane', 2000.75
+                        3, 'Bob', 3000.00
+                        4, 'Alice', 4000.25
+                        5, 'Tom', 5000.50
                     </div>
                 </div>
 
@@ -1118,7 +1162,7 @@
                             <tr>
                                 <td>SNOWFLAKE_SCHEMA</td>
                                 <td>Default schema</td>
-                                <td>INTUIT</td>
+                                <td>DEMO</td>
                             </tr>
                             <tr>
                                 <td>SNOWFLAKE_WAREHOUSE</td>
@@ -1141,7 +1185,7 @@
 
                 <div class="flow-diagram">
                     <h3>Complete Test Suite Flow</h3>
-                    
+
                     <div class="flow-step">
                         <div class="step-number">1</div>
                         <div class="step-content">
@@ -1238,27 +1282,29 @@
 
                 <h3>Execution Commands</h3>
                 <div class="code-block">
-<span class="comment"># Run all tests</span>
-robot snowflake_tests_dblibrary.robot
+                    <span class="comment"># Run all tests</span>
+                    robot snowflake_tests_dblibrary.robot
 
-<span class="comment"># Run specific tags</span>
-robot --include regression snowflake_tests_dblibrary.robot
-robot --include data_setup snowflake_tests_dblibrary.robot
-robot --include generic_sql snowflake_tests_dblibrary.robot
+                    <span class="comment"># Run specific tags</span>
+                    robot --include regression snowflake_tests_dblibrary.robot
+                    robot --include data_setup snowflake_tests_dblibrary.robot
+                    robot --include generic_sql snowflake_tests_dblibrary.robot
 
-<span class="comment"># Run with custom output directory</span>
-robot --outputdir results snowflake_tests_dblibrary.robot
+                    <span class="comment"># Run with custom output directory</span>
+                    robot --outputdir results snowflake_tests_dblibrary.robot
 
-<span class="comment"># Run with variables override</span>
-robot -v SNOWFLAKE_DATABASE:TEST_DB snowflake_tests_dblibrary.robot
+                    <span class="comment"># Run with variables override</span>
+                    robot -v SNOWFLAKE_DATABASE:TEST_DB snowflake_tests_dblibrary.robot
                 </div>
 
                 <h3>Validation Details</h3>
                 <div class="info-box">
                     <strong>🔍 Two-Layer Validation Approach:</strong>
                     <p style="margin-top: 10px;">
-                        <strong>1. Database Layer (Snowflake):</strong> Direct validation against Snowflake database to ensure data is correctly inserted, updated, and queryable.<br><br>
-                        <strong>2. Pipeline Layer (SnapLogic):</strong> Validation of pipeline execution outputs against user-provided expected results to ensure end-to-end data processing accuracy.
+                        <strong>1. Database Layer (Snowflake):</strong> Direct validation against Snowflake database to
+                        ensure data is correctly inserted, updated, and queryable.<br><br>
+                        <strong>2. Pipeline Layer (SnapLogic):</strong> Validation of pipeline execution outputs against
+                        user-provided expected results to ensure end-to-end data processing accuracy.
                     </p>
                 </div>
 
@@ -1363,10 +1409,10 @@ robot -v SNOWFLAKE_DATABASE:TEST_DB snowflake_tests_dblibrary.robot
             <!-- Project Status Tab -->
             <div id="status" class="tab-content">
                 <h2>Project Status & Updates</h2>
-                
+
                 <div class="warning-box" style="background: #e3f2fd; border-left-color: #1976d2; margin-bottom: 30px;">
                     <strong>🎯 Action Item:</strong> Robot Framework Testing - Next Steps from Meeting (8/14)<br>
-                    <strong>Timeline:</strong> Ready for Intuit review by Friday 8/22<br>
+                    <strong>Timeline:</strong> Ready for DEMO review by Friday 8/22<br>
                     <strong>Team:</strong> @bthomas @Swapna @kshaw @riyengar @Dylan Vetter @goutamb
                 </div>
 
@@ -1390,27 +1436,31 @@ robot -v SNOWFLAKE_DATABASE:TEST_DB snowflake_tests_dblibrary.robot
                             </tr>
                             <tr>
                                 <td>2</td>
-                                <td>Define Intuit requirements</td>
+                                <td>Define DEMO requirements</td>
                                 <td>Team</td>
                                 <td><span style="color: #6c757d;">Pending</span></td>
                             </tr>
                             <tr>
                                 <td>3</td>
                                 <td>Build POC: Kafka to Snowflake pipeline<br>
-                                    <em style="font-size: 0.9em; color: #666;">Actual: Developing POC for Dylan's Snowflake pipeline</em></td>
+                                    <em style="font-size: 0.9em; color: #666;">Actual: Developing POC for Dylan's
+                                        Snowflake pipeline</em>
+                                </td>
                                 <td>@Swapna</td>
                                 <td><span style="color: #28a745;">Completed</span></td>
                             </tr>
                             <tr>
                                 <td>4</td>
                                 <td>Schedule Kick-off Call to let Swapna know the details<br>
-                                    <em style="font-size: 0.9em; color: #666;">(Rules of engagement, Operating model)</em></td>
+                                    <em style="font-size: 0.9em; color: #666;">(Rules of engagement, Operating
+                                        model)</em>
+                                </td>
                                 <td>@riyengar @goutamb</td>
                                 <td><span style="color: #6c757d;">Pending</span></td>
                             </tr>
                             <tr>
                                 <td>5</td>
-                                <td>Complete & Review with Intuit</td>
+                                <td>Complete & Review with DEMO</td>
                                 <td>All</td>
                                 <td><span style="color: #ffc107;">Target: 8/22</span></td>
                             </tr>
@@ -1423,11 +1473,14 @@ robot -v SNOWFLAKE_DATABASE:TEST_DB snowflake_tests_dblibrary.robot
                     <div class="success-box">
                         <strong>Implementation Details:</strong>
                         <ul style="margin-top: 10px;">
-                            <li><strong>Pipeline Testing:</strong> Implemented test cases for Dylan's provided pipeline</li>
+                            <li><strong>Pipeline Testing:</strong> Implemented test cases for Dylan's provided pipeline
+                            </li>
                             <li><strong>Database Validation:</strong> Added verification against Snowflake DB</li>
                             <li><strong>Output Verification:</strong> Implemented final output validations</li>
-                            <li><strong>Configuration Management:</strong> User inputs for project space, project name, and accounts handled via .env file</li>
-                            <li><strong>Extensibility:</strong> Framework can be extended to multiple pipelines based on common requirements</li>
+                            <li><strong>Configuration Management:</strong> User inputs for project space, project name,
+                                and accounts handled via .env file</li>
+                            <li><strong>Extensibility:</strong> Framework can be extended to multiple pipelines based on
+                                common requirements</li>
                         </ul>
                     </div>
                 </div>
@@ -1436,17 +1489,19 @@ robot -v SNOWFLAKE_DATABASE:TEST_DB snowflake_tests_dblibrary.robot
                     <h3>📊 Other Customers' Requirements Analysis</h3>
                     <div class="info-box">
                         <strong>What we learned from other customers:</strong>
-                        <p style="margin-top: 10px;">Other customers' teams provided use cases about their verification approach:</p>
+                        <p style="margin-top: 10px;">Other customers' teams provided use cases about their verification
+                            approach:</p>
                         <ul style="margin-top: 10px;">
                             <li><strong>Primary Testing:</strong> Comparing actual results versus expected results</li>
                             <li><strong>Email Notifications:</strong> Verified email notification functionality</li>
-                            <li><strong>Keywords Support:</strong> We provided them with all supported keywords documentation</li>
+                            <li><strong>Keywords Support:</strong> We provided them with all supported keywords
+                                documentation</li>
                         </ul>
                     </div>
                 </div>
 
                 <div class="test-section">
-                    <h3>🔍 Requirements Needed from Intuit</h3>
+                    <h3>🔍 Requirements Needed from DEMO</h3>
                     <table>
                         <thead>
                             <tr>
@@ -1542,7 +1597,7 @@ robot -v SNOWFLAKE_DATABASE:TEST_DB snowflake_tests_dblibrary.robot
                                 <div class="step-title">Next: Extensibility</div>
                                 <div class="step-description">
                                     • Framework ready for multiple pipeline testing<br>
-                                    • Can be customized based on Intuit requirements<br>
+                                    • Can be customized based on DEMO requirements<br>
                                     • Scalable to handle complex validation scenarios
                                 </div>
                             </div>
@@ -1567,7 +1622,7 @@ robot -v SNOWFLAKE_DATABASE:TEST_DB snowflake_tests_dblibrary.robot
                         </div>
                         <div class="stat-card">
                             <div class="stat-number" style="color: #ffc107;">...</div>
-                            <div class="stat-label">Intuit Requirements<br>Gathering</div>
+                            <div class="stat-label">DEMO Requirements<br>Gathering</div>
                         </div>
                     </div>
                 </div>
@@ -1598,7 +1653,7 @@ robot -v SNOWFLAKE_DATABASE:TEST_DB snowflake_tests_dblibrary.robot
                             </tr>
                             <tr>
                                 <td><strong>8/22</strong></td>
-                                <td>Intuit Review</td>
+                                <td>DEMO Review</td>
                                 <td><span style="color: #ffc107;">Pending</span></td>
                                 <td>Present completed framework for review</td>
                             </tr>
@@ -1615,7 +1670,7 @@ robot -v SNOWFLAKE_DATABASE:TEST_DB snowflake_tests_dblibrary.robot
                 <div class="warning-box">
                     <strong>⚠️ Critical Path Items:</strong>
                     <ul style="margin-top: 10px; margin-bottom: 0;">
-                        <li>Gather specific requirements from Intuit team regarding data loading preferences</li>
+                        <li>Gather specific requirements from DEMO team regarding data loading preferences</li>
                         <li>Clarify verification approach (DB vs Output vs Both)</li>
                         <li>Confirm if dummy data usage is acceptable for testing</li>
                         <li>Schedule kick-off call to align on operating model</li>
@@ -1688,4 +1743,5 @@ robot -v SNOWFLAKE_DATABASE:TEST_DB snowflake_tests_dblibrary.robot
         });
     </script>
 </body>
+
 </html>

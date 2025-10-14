@@ -22,7 +22,7 @@
                             "expression": false
                         },
                         "databaseName": {
-                            "value": "{{POSTGRES_DBNAME}}",
+                            "value": "{{POSTGRES_DATABASE}}",
                             "expression": false
                         },
                         "sshPort": {
@@ -48,7 +48,7 @@
                             "value": "org.postgresql.Driver"
                         },
                         "username": {
-                            "value": "{{POSTGRES_DBUSER}}",
+                            "value": "{{POSTGRES_USER}}",
                             "expression": false
                         },
                         "iamProps": {
@@ -94,7 +94,7 @@
                         },
                         "password": {
                             "expression": false,
-                            "value": "{{POSTGRES_DBPASS}}"
+                            "value": "{{POSTGRES_PASSWORD}}"
                         },
                         "PrivateKey": {
                             "expression": false

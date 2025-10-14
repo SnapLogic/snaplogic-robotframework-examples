@@ -57,7 +57,7 @@ SNOWFLAKE_ACCOUNT=snaplogic
 SNOWFLAKE_USERNAME=Bigdatasnaplogic
 SNOWFLAKE_PASSWORD=your_password_here
 SNOWFLAKE_DATABASE=FDLDB
-SNOWFLAKE_SCHEMA=INTUIT
+SNOWFLAKE_SCHEMA=DEMO
 SNOWFLAKE_WAREHOUSE=ELT_XS_WH
 SNOWFLAKE_ROLE=SYSADMIN
 
@@ -113,11 +113,11 @@ make robot-run-all-tests TAGS=snowflake
 - [x] Create comprehensive test documentation
 
 ### 🔄 In Progress
-- [ ] Define Intuit-specific requirements
+- [ ] Define DEMO-specific requirements
 - [ ] Schedule kick-off call (@riyengar @goutamb to inform @Swapna)
-- [ ] Prepare for Intuit review (Target: 8/22)
+- [ ] Prepare for DEMO review (Target: 8/22)
 
-### 📝 Requirements Needed from Intuit
+### 📝 Requirements Needed from DEMO
 - **Data Loading**: Preferred methods and formats
 - **Test Data**: Can dummy data be used? Privacy considerations?
 - **Verification Methods**: Database vs Output validation preference

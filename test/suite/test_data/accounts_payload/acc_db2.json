@@ -46,7 +46,7 @@
                             "expression": false
                         },
                         "username": {
-                            "value": "{{ DB2_DBUSER }}",
+                            "value": "{{ DB2_USER }}",
                             "expression": false
                         },
                         "testQuery": {
@@ -62,7 +62,7 @@
                         },
                         "password": {
                             "expression": false,
-                            "value": "{{ DB2_DBPASS }}"
+                            "value": "{{ DB2_PASSWORD }}"
                         },
                         "PrivateKey": {
                             "expression": false

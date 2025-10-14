@@ -1,5 +1,6 @@
 #integration test requirements
 snaplogic-common-robot
+robotframework-databaselibrary
 oracledb  # Oracle database driver
 psycopg2-binary # PostgreSQL database driver
 minio # MinIO client
@@ -11,3 +12,5 @@ ibm_db # IBM DB2 database driver
 teradatasql # Teradata database driver
 snowflake-connector-python # Snowflake database driver
 robotframework-pabot==2.18.0
+# Install kafka-python directly (no need for robotframework-kafkalibrary)
+kafka-python>=2.0.2

@@ -17,14 +17,13 @@ Suite Setup         Initialize Test Environment
 
 *** Variables ***
 # Project Configuration
-${project_path}                     ${org_name}/${project_space}/${project_name}
-${pipeline_file_path}               /app/src/pipelines
-${upload_destination_file_path}     ${org_name}/shared
+
+${pipeline_file_path}       /app/src/pipelines
 
 # File Mount Pipeline Configuration
-${pipeline_name}                    filereader_filewriter
-${pipeline_slp}                     filereader_writer_mount_files.slp
-${task_name}                        filereader_writer_mount_files_csv_Task
+${pipeline_name}            filereader_filewriter
+${pipeline_slp}             filereader_writer_mount_files.slp
+${task_name}                filereader_writer_mount_files_csv_Task
 
 
 *** Test Cases ***
@@ -53,14 +52,14 @@ Upload Files With File Protocol
     # by SnapLogic, we need to use the path that SnapLogic (groundplex) can access:
 
     # === Using Groundplex mount paths (files are actually at this path in groundplex) ===
-    file:///opt/snaplogic/test_data/actual_expected_data/expression_libraries/mount_poc_source.expr    ${upload_destination_file_path}
-    file:///opt/snaplogic/test_data/actual_expected_data/expression_libraries/mount_poc_target.expr    ${upload_destination_file_path}
+    file:///opt/snaplogic/test_data/actual_expected_data/expression_libraries/mount_poc_source.expr    ${ACCOUNT_LOCATION_PATH}
+    file:///opt/snaplogic/test_data/actual_expected_data/expression_libraries/mount_poc_target.expr    ${ACCOUNT_LOCATION_PATH}
 
     # === From App Mount (always available - entire test directory is mounted) ===
-    # file:///app/test/suite/test_data/actual_expected_data/expression_libraries/test.expr    ${upload_destination_file_path}
+    # file:///app/test/suite/test_data/actual_expected_data/expression_libraries/test.expr    ${ACCOUNT_LOCATION_PATH}
 
     # === Using CURDIR Relative Paths (resolves to mounted paths) ===
-    # file://${CURDIR}/../../test_data/actual_expected_data/expression_libraries/test.expr    ${upload_destination_file_path}
+    # file://${CURDIR}/../../test_data/actual_expected_data/expression_libraries/test.expr    ${ACCOUNT_LOCATION_PATH}
 
 Import Pipelines
     [Documentation]    Imports the file reader/writer pipeline that demonstrates
@@ -73,7 +72,7 @@ Import Pipelines
     ...    • Pipeline is successfully deployed to the project space
     [Tags]    file_mount    regression
     [Template]    Import Pipelines From Template
-    ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${pipeline_slp}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${pipeline_slp}
 
 Create Triggered_task
     [Documentation]    Creates a triggered task for the file mount demonstration pipeline
@@ -86,7 +85,7 @@ Create Triggered_task
     ...    • Task is ready for execution
     [Tags]    file_mount    regression
     [Template]    Create Triggered Task From Template
-    ${unique_id}    ${project_path}    ${pipeline_name}    ${task_name}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}
 
 Execute Triggered Task
     [Documentation]    Executes the file mount pipeline to demonstrate reading from
@@ -100,7 +99,7 @@ Execute Triggered Task
     ...    • No pipeline execution errors or timeouts
     [Tags]    file_mount    regression
     [Template]    Run Triggered Task With Parameters From Template
-    ${unique_id}    ${project_path}    ${pipeline_name}    ${task_name}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}
 
 
 *** Keywords ***

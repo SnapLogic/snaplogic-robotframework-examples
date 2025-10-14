@@ -25,21 +25,20 @@ Suite Teardown      Stop Connection
 
 
 *** Variables ***
-${documents_json}                   ${CURDIR}/../../test_data/actual_expected_data/input_data/documents.json
+${documents_json}           ${CURDIR}/../../test_data/actual_expected_data/input_data/documents.json
 
 # Project Configuration
-${project_path}                     ${org_name}/${project_space}/${project_name}
-${pipeline_file_path}               /app/src/pipelines
-${upload_destination_file_path}     ${org_name}/${project_space}/shared
-${ACTUAL_DATA_DIR}                  ${CURDIR}/../../test_data/actual_expected_data/actual_output    # Base directory for downloaded files from S3
-${EXPECTED_OUTPUT_DIR}              ${CURDIR}/../../test_data/actual_expected_data/expected_output    # Expected output files for comparison
 
-${ACCOUNT_PAYLOAD_FILE}             acc_jms.json
+${pipeline_file_path}       /app/src/pipelines
+${ACTUAL_DATA_DIR}          ${CURDIR}/../../test_data/actual_expected_data/actual_output    # Base directory for downloaded files from S3
+${EXPECTED_OUTPUT_DIR}      ${CURDIR}/../../test_data/actual_expected_data/expected_output    # Expected output files for comparison
+
+${ACCOUNT_PAYLOAD_FILE}     acc_jms.json
 
 # File Mount Pipeline Configuration
-${pipeline_name}                    jmsconsumer
-${pipeline_slp}                     jmsconsumer.slp
-${task_name}                        jmscosumer_Task
+${pipeline_name}            jmsconsumer
+${pipeline_slp}             jmsconsumer.slp
+${task_name}                jmscosumer_Task
 
 
 *** Test Cases ***
@@ -53,14 +52,14 @@ Upload Files With File Protocol
     ...    • Files are accessible in SnapLogic project space
     [Tags]    jmsaccount    jmsjar    jms    regression
     [Template]    Upload File Using File Protocol Template
-    file:///opt/snaplogic/test_data/accounts_jar_files/jms/artemis-jms-client-all-2.6.0.jar    ${upload_destination_file_path}
+    file:///opt/snaplogic/test_data/accounts_jar_files/jms/artemis-jms-client-all-2.6.0.jar    ${ACCOUNT_LOCATION_PATH}
 
 Create Account
     [Documentation]    Creates an account in the project space using the provided payload file.
     ...    "account_payload_path"    value as assigned to global variable    in __init__.robot file
     [Tags]    jmsaccount    jms    regression
     [Template]    Create Account From Template
-    ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
+    ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_FILE_NAME}    ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
 
 Test Send JSON With Three Routing Scenarios
     [Documentation]    Demonstrates all three ActiveMQ Artemis routing configurations in practice
@@ -264,7 +263,7 @@ Create Triggered_task
     ...    • Task metadata correctly configured
     [Tags]    jms    regression
     [Template]    Create Triggered Task From Template
-    ${unique_id}    ${project_path}    ${pipeline_name}    ${task_name}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}
 
 Execute Triggered Task
     [Documentation]    Executes the JMS Consumer pipeline to process messages from ActiveMQ queue
@@ -291,7 +290,7 @@ Execute Triggered Task
     # Execute the pipeline
     [Template]    Run Triggered Task With Parameters From Template
 
-    ${unique_id}    ${project_path}    ${pipeline_name}    ${task_name}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}
 
 
 *** Keywords ***

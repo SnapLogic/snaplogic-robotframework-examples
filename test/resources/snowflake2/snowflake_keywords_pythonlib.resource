@@ -18,7 +18,7 @@ ${SNOWFLAKE_ACCOUNT}                %{SNOWFLAKE_ACCOUNT=snaplogic}
 ${SNOWFLAKE_USER}                   %{SNOWFLAKE_USERNAME=Bigdatasnaplogic}
 ${SNOWFLAKE_PASSWORD}               %{SNOWFLAKE_PASSWORD=Snaplogic2018}
 ${SNOWFLAKE_DATABASE}               %{SNOWFLAKE_DATABASE=FDLDB}
-${SNOWFLAKE_SCHEMA}                 %{SNOWFLAKE_SCHEMA=INTUIT}
+${SNOWFLAKE_SCHEMA}                 %{SNOWFLAKE_SCHEMA=DEMO}
 ${SNOWFLAKE_WAREHOUSE}              %{SNOWFLAKE_WAREHOUSE=ELT_XS_WH}
 ${SNOWFLAKE_ROLE}                   %{SNOWFLAKE_ROLE=SYSADMIN}
 
@@ -396,24 +396,24 @@ Select All Records From Table
     [Arguments]    ${table_name}    ${columns}=*    ${order_by}=${EMPTY}    ${log_results}=${TRUE}
 
     Log    ========== SELECTING RECORDS FROM ${table_name} ==========    console=yes
-    
+
     # Build the query
     ${query}=    Set Variable    SELECT ${columns} FROM ${table_name}
-    
+
     # Add ORDER BY clause if specified
     IF    '${order_by}' != '${EMPTY}'
         ${query}=    Set Variable    ${query} ORDER BY ${order_by}
     END
-    
+
     Log    Executing query: ${query}    console=yes
-    
+
     # Execute the query
     ${results}=    SnowflakeLib.Execute Snowflake Query    ${query}
-    
+
     # Get row count
     ${row_count}=    Get Length    ${results}
     Log    Retrieved ${row_count} records from ${table_name}    console=yes
-    
+
     # Optionally log the results
     IF    ${log_results}
         Log    ========== QUERY RESULTS ==========    console=yes
@@ -424,7 +424,7 @@ Select All Records From Table
         END
         Log    ====================================    console=yes
     END
-    
+
     RETURN    ${results}
 
 Select Records With Where Clause
@@ -433,24 +433,24 @@ Select Records With Where Clause
     [Arguments]    ${table_name}    ${where_clause}    ${columns}=*    ${order_by}=${EMPTY}    ${log_results}=${TRUE}
 
     Log    ========== SELECTING FILTERED RECORDS FROM ${table_name} ==========    console=yes
-    
+
     # Build the query with WHERE clause
     ${query}=    Set Variable    SELECT ${columns} FROM ${table_name} WHERE ${where_clause}
-    
+
     # Add ORDER BY clause if specified
     IF    '${order_by}' != '${EMPTY}'
         ${query}=    Set Variable    ${query} ORDER BY ${order_by}
     END
-    
+
     Log    Executing query: ${query}    console=yes
-    
+
     # Execute the query
     ${results}=    SnowflakeLib.Execute Snowflake Query    ${query}
-    
+
     # Get row count
     ${row_count}=    Get Length    ${results}
     Log    Retrieved ${row_count} records matching condition: ${where_clause}    console=yes
-    
+
     # Optionally log the results
     IF    ${log_results}
         Log    ========== FILTERED RESULTS ==========    console=yes
@@ -461,7 +461,7 @@ Select Records With Where Clause
         END
         Log    ======================================    console=yes
     END
-    
+
     RETURN    ${results}
 
 Get Table Data As Dictionary
@@ -470,7 +470,7 @@ Get Table Data As Dictionary
     [Arguments]    ${table_name}    ${order_by}=${EMPTY}
 
     Log    ========== GETTING TABLE DATA AS DICTIONARY ==========    console=yes
-    
+
     # First get column names
     ${columns_info}=    Get Snowflake Table Columns    ${table_name}
     @{column_names}=    Create List
@@ -478,10 +478,10 @@ Get Table Data As Dictionary
         Append To List    ${column_names}    ${col_info[0]}
     END
     Log    Column names: ${column_names}    console=yes
-    
+
     # Get all records
     ${results}=    Select All Records From Table    ${table_name}    order_by=${order_by}    log_results=${FALSE}
-    
+
     # Convert to list of dictionaries
     @{dict_results}=    Create List
     FOR    ${row}    IN    @{results}
@@ -493,7 +493,7 @@ Get Table Data As Dictionary
         END
         Append To List    ${dict_results}    ${row_dict}
     END
-    
+
     Log    Converted ${results.__len__()} rows to dictionary format    console=yes
     RETURN    ${dict_results}
 
@@ -508,11 +508,11 @@ Execute Select Query And Verify Count
     ELSE
         ${results}=    Select Records With Where Clause    ${table_name}    ${where_clause}    log_results=${FALSE}
     END
-    
+
     ${actual_count}=    Get Length    ${results}
     Should Be Equal As Integers    ${actual_count}    ${expected_count}
     ...    msg=Expected ${expected_count} records but got ${actual_count} from ${table_name}
-    
+
     Log    ✓ Verified: ${actual_count} records found (expected: ${expected_count})    console=yes
     RETURN    ${results}
 
@@ -520,19 +520,22 @@ Extract Column Values From Dictionary
     [Documentation]    Extract all values for a specific column from dictionary results
     ...    Returns a list containing only the values for the specified column
     [Arguments]    ${dict_results}    ${column_name}
-    
+
     @{column_values}=    Create List
-    
+
     FOR    ${row_dict}    IN    @{dict_results}
         # Check if column exists in the dictionary
-        ${has_column}=    Run Keyword And Return Status    Dictionary Should Contain Key    ${row_dict}    ${column_name}
+        ${has_column}=    Run Keyword And Return Status
+        ...    Dictionary Should Contain Key
+        ...    ${row_dict}
+        ...    ${column_name}
         IF    ${has_column}
             Append To List    ${column_values}    ${row_dict}[${column_name}]
         ELSE
             Log    Warning: Column ${column_name} not found in record    WARN
         END
     END
-    
+
     ${count}=    Get Length    ${column_values}
     Log    Extracted ${count} values for column ${column_name}: ${column_values}    console=yes
     RETURN    ${column_values}
@@ -541,25 +544,28 @@ Extract Multiple Columns From Dictionary
     [Documentation]    Extract values for multiple columns from dictionary results
     ...    Returns a dictionary with column names as keys and lists of values
     [Arguments]    ${dict_results}    @{column_names}
-    
+
     &{extracted_data}=    Create Dictionary
-    
+
     # Initialize lists for each column
     FOR    ${col_name}    IN    @{column_names}
         @{col_values}=    Create List
         Set To Dictionary    ${extracted_data}    ${col_name}=${col_values}
     END
-    
+
     # Extract values for each record
     FOR    ${row_dict}    IN    @{dict_results}
         FOR    ${col_name}    IN    @{column_names}
-            ${has_column}=    Run Keyword And Return Status    Dictionary Should Contain Key    ${row_dict}    ${col_name}
+            ${has_column}=    Run Keyword And Return Status
+            ...    Dictionary Should Contain Key
+            ...    ${row_dict}
+            ...    ${col_name}
             IF    ${has_column}
                 Append To List    ${extracted_data}[${col_name}]    ${row_dict}[${col_name}]
             END
         END
     END
-    
+
     Log    Extracted data for columns ${column_names}: ${extracted_data}    console=yes
     RETURN    ${extracted_data}
 
@@ -567,14 +573,14 @@ Get Unique Column Values
     [Documentation]    Extract unique values for a specific column from dictionary results
     ...    Returns a list of unique values (removes duplicates)
     [Arguments]    ${dict_results}    ${column_name}
-    
+
     # First extract all values
     @{all_values}=    Extract Column Values From Dictionary    ${dict_results}    ${column_name}
-    
+
     # Convert to set to remove duplicates, then back to list
     ${unique_values}=    Evaluate    list(set(${all_values}))
     ${unique_values}=    Evaluate    sorted(${unique_values})    # Sort for consistency
-    
+
     ${count}=    Get Length    ${unique_values}
     Log    Found ${count} unique values for ${column_name}: ${unique_values}    console=yes
     RETURN    ${unique_values}
@@ -583,11 +589,14 @@ Filter Dictionary Results By Column Value
     [Documentation]    Filter dictionary results based on a column value condition
     ...    Returns only the records that match the condition
     [Arguments]    ${dict_results}    ${column_name}    ${operator}    ${value}
-    
+
     @{filtered_results}=    Create List
-    
+
     FOR    ${row_dict}    IN    @{dict_results}
-        ${has_column}=    Run Keyword And Return Status    Dictionary Should Contain Key    ${row_dict}    ${column_name}
+        ${has_column}=    Run Keyword And Return Status
+        ...    Dictionary Should Contain Key
+        ...    ${row_dict}
+        ...    ${column_name}
         IF    ${has_column}
             ${match}=    Evaluate Column Condition    ${row_dict}[${column_name}]    ${operator}    ${value}
             IF    ${match}
@@ -595,7 +604,7 @@ Filter Dictionary Results By Column Value
             END
         END
     END
-    
+
     ${count}=    Get Length    ${filtered_results}
     Log    Found ${count} records where ${column_name} ${operator} ${value}    console=yes
     RETURN    ${filtered_results}
@@ -603,17 +612,27 @@ Filter Dictionary Results By Column Value
 Evaluate Column Condition
     [Documentation]    Helper keyword to evaluate conditions for filtering
     [Arguments]    ${actual_value}    ${operator}    ${expected_value}
-    
-    ${result}=    Run Keyword If    '${operator}' == '=='    Evaluate    '${actual_value}' == '${expected_value}'
-    ...    ELSE IF    '${operator}' == '!='    Evaluate    '${actual_value}' != '${expected_value}'
-    ...    ELSE IF    '${operator}' == '>'     Evaluate    ${actual_value} > ${expected_value}
-    ...    ELSE IF    '${operator}' == '>='    Evaluate    ${actual_value} >= ${expected_value}
-    ...    ELSE IF    '${operator}' == '<'     Evaluate    ${actual_value} < ${expected_value}
-    ...    ELSE IF    '${operator}' == '<='    Evaluate    ${actual_value} <= ${expected_value}
-    ...    ELSE IF    '${operator}' == 'IN'    Evaluate    '${actual_value}' in ${expected_value}
-    ...    ELSE IF    '${operator}' == 'LIKE'   Evaluate    '${expected_value}' in '${actual_value}'
-    ...    ELSE    Fail    Unsupported operator: ${operator}
-    
+
+    IF    '${operator}' == '=='
+        ${result}=    Evaluate    '${actual_value}' == '${expected_value}'
+    ELSE IF    '${operator}' == '!='
+        ${result}=    Evaluate    '${actual_value}' != '${expected_value}'
+    ELSE IF    '${operator}' == '>'
+        ${result}=    Evaluate    ${actual_value} > ${expected_value}
+    ELSE IF    '${operator}' == '>='
+        ${result}=    Evaluate    ${actual_value} >= ${expected_value}
+    ELSE IF    '${operator}' == '<'
+        ${result}=    Evaluate    ${actual_value} < ${expected_value}
+    ELSE IF    '${operator}' == '<='
+        ${result}=    Evaluate    ${actual_value} <= ${expected_value}
+    ELSE IF    '${operator}' == 'IN'
+        ${result}=    Evaluate    '${actual_value}' in ${expected_value}
+    ELSE IF    '${operator}' == 'LIKE'
+        ${result}=    Evaluate    '${expected_value}' in '${actual_value}'
+    ELSE
+        ${result}=    Fail    Unsupported operator: ${operator}
+    END
+
     RETURN    ${result}
 
 Drop Table

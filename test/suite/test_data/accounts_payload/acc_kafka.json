@@ -1,6 +1,6 @@
 {
     "path": "{{ACCOUNT_LOCATION_PATH}}",
-    "duplicate_check": true,
+    "duplicate_check": false,
     "account": {
         "class_fqid": "com-snaplogic-snaps-confluentkafka-confluentkafkaaccountnoauth_1-main32088",
         "property_map": {
@@ -10,7 +10,7 @@
                     "value": [
                         {
                             "bootstrapServer": {
-                                "value": "{{KAKFA_BOOTSTRAP_SERVER}}",
+                                "value": "{{KAFKA_BOOTSTRAP_SERVER}}",
                                 "expression": false
                             }
                         }
@@ -20,24 +20,24 @@
                     "value": [
                         {
                             "advancedKafkaValueProperty": {
-                                "value": "{{KAKFA_ADVANCED_PROPERTY_VALUE}}",
+                                "value": "{{KAFKA_ADVANCED_PROPERTY_VALUE}}",
                                 "expression": false
                             },
                             "advancedKafkaKeyProperty": {
-                                "value": "{{KAKFA_ADVANCED_PROPERTY_KEY}}",
+                                "value": "{{KAFKA_ADVANCED_PROPERTY_KEY}}",
                                 "expression": false
                             }
                         }
                     ]
                 },
                 "schemaRegistryUrl": {
-                    "value": "{{KAKFA_SCHEMA_REGISTRY_URL}}",
+                    "value": "{{KAFKA_SCHEMA_REGISTRY_URL}}",
                     "expression": false
                 }
             },
             "info": {
                 "label": {
-                    "value": "Kafka2"
+                    "value": "{{KAFKA_ACCOUNT_NAME}}"
                 },
                 "notes": {
                     "value": null
@@ -45,7 +45,7 @@
             }
         },
         "test_settings": {
-            "runtime_path_id": "ml-legacy-migration/rt/cloud/dev"
+            "runtime_path_id": "{{ORG_NAME}}/rt/sidekick/{{GROUNDPLEX_ENV}}"
         }
     }
 }

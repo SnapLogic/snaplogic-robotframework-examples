@@ -20,12 +20,10 @@ Suite Setup         Check connections    # Check if the connection to the DB2 da
 
 *** Variables ***
 # Project Configuration
-${project_path}                     ${org_name}/${project_space}/${project_name}
 ${pipeline_file_path}               ${CURDIR}/../../../../src/pipelines
 
 ${upload_source_file_path}          ${CURDIR}/../../test_data/actual_expected_data/expression_libraries
 ${container_source_file_path}       opt/snaplogic/test_data/actual_expected_data/expression_libraries
-${upload_destination_file_path}     ${org_name}/${project_space}/shared
 
 # DB2 Pipeline and Task Configuration
 ${ACCOUNT_PAYLOAD_FILE}             acc_db2.json
@@ -66,14 +64,14 @@ Upload Files With File Protocol
     ...    • Files are accessible in SnapLogic project space
     [Tags]    db2    db2jar    regression
     [Template]    Upload File Using File Protocol Template
-    file:///opt/snaplogic/test_data/accounts_jar_files/db2/db2jcc4.jar    ${upload_destination_file_path}
+    file:///opt/snaplogic/test_data/accounts_jar_files/db2/db2jcc4.jar    ${ACCOUNT_LOCATION_PATH}
 
 Create Account
     [Documentation]    Creates a DB2 account in the project space using the provided payload file.
     ...    "account_payload_path"    value as assigned to global variable    in __init__.robot file
     [Tags]    db2    regression
     [Template]    Create Account From Template
-    ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
+    ${ACCOUNT_LOCATION_PATH}    ${DB2_ACCOUNT_PAYLOAD_FILE_NAME}    ${DB2_ACCOUNT_NAME}
 
 ################## DATA SETUP    ##################
 # Test execution order:
@@ -158,14 +156,14 @@ Create Triggered_task
     ...    task_snodeid --> which is used to update the task params
     [Tags]    db2
     [Template]    Create Triggered Task From Template
-    ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    ${task_params_set1}    ${task_notifications}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task1}    ${GROUNDPLEX_NAME}    ${task_params_set1}    ${task_notifications}
 
 Execute Triggered Task With Parameters
     [Documentation]    Updates the task parameters and runs the task
     ...    Prereq: Need task_payload,task_snodeid (from Create Triggered_task)
     [Tags]    db2
     [Template]    Run Triggered Task With Parameters From Template
-    ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    M_CURR_DATE=10/12/2024
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task1}    M_CURR_DATE=10/12/2024
 
 # Test Control Date Operations
 #    [Documentation]    Tests control date table operations for pipeline date management
@@ -210,16 +208,16 @@ Check connections
 
     # Debug: Log the DB2 connection parameters
     Log    DB2 Host: ${DB2_HOST}    console=True
-    Log    DB2 Port: ${DB2_DBPORT}    console=True
-    Log    DB2 Database: ${DB2_DBNAME}    console=True
-    Log    DB2 User: ${DB2_DBUSER}    console=True
+    Log    DB2 Port: ${DB2_PORT}    console=True
+    Log    DB2 Database: ${DB2_DATABASE}    console=True
+    Log    DB2 User: ${DB2_USER}    console=True
 
     Connect to DB2 Database
-    ...    ${DB2_DBNAME}
-    ...    ${DB2_DBUSER}
-    ...    ${DB2_DBPASS}
+    ...    ${DB2_DATABASE}
+    ...    ${DB2_USER}
+    ...    ${DB2_PASSWORD}
     ...    ${DB2_HOST}
-    ...    ${DB2_DBPORT}
+    ...    ${DB2_PORT}
     Initialize Variables
 
 Initialize Variables

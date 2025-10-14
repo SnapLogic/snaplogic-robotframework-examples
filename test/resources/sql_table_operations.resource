@@ -35,71 +35,172 @@ ${DB_TYPE}      ${NONE}
 
 
 *** Keywords ***
+# ==================== HELPER OPERATIONS ====================
+
+Get Qualified Table Name
+    [Documentation]    Returns fully qualified table name with schema if provided
+    ...    Handles cases where table_name already includes schema (schema.table)
+    ...    Arguments:
+    ...    table_name: Table name (may already include schema)
+    ...    schema: Optional schema to prepend (ignored if table_name already has schema)
+    [Arguments]    ${table_name}    ${schema}=${EMPTY}
+    
+    # Check if table_name already contains a schema (has a dot)
+    ${has_schema}=    Run Keyword And Return Status    Should Contain    ${table_name}    .
+    
+    IF    ${has_schema}
+        # Table name already includes schema, use as-is
+        RETURN    ${table_name}
+    ELSE IF    '${schema}' != '${EMPTY}'
+        # Schema provided separately, prepend it
+        RETURN    ${schema}.${table_name}
+    ELSE
+        # No schema provided, use table name as-is
+        RETURN    ${table_name}
+    END
+
 # ==================== TABLE MANAGEMENT OPERATIONS ====================
 
 Create Table
     [Documentation]    Creates a table with the specified definition
     ...    Works with any SQL database
     ...    Arguments:
-    ...    table_name: Name of the table to create
+    ...    table_name: Name of the table to create (can include schema)
     ...    table_definition: SQL column definitions (e.g., "(id INT, name VARCHAR(100))")
     ...    drop_if_exists: If TRUE, drops existing table before creating (default: TRUE)
-    [Arguments]    ${table_name}    ${table_definition}    ${drop_if_exists}=${TRUE}
+    ...    schema: Optional schema name (if not included in table_name)
+    [Arguments]    ${table_name}    ${table_definition}    ${drop_if_exists}=${TRUE}    ${schema}=${EMPTY}
 
-    Log    Creating table: ${table_name}    console=yes
+    # Build fully qualified table name if schema is provided
+    ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
+    
+    Log    Creating table: ${qualified_name}    console=yes
 
     # Drop existing table if requested
     IF    ${drop_if_exists}
-        Execute Sql String    DROP TABLE IF EXISTS ${table_name}
-        Log    Dropped existing table ${table_name} (if it existed)    console=yes
+        Drop Table    ${table_name}    if_exists=${TRUE}    schema=${schema}
     END
 
     # Create the table
-    ${create_sql}=    Set Variable    CREATE TABLE ${table_name} ${table_definition}
+    ${create_sql}=    Set Variable    CREATE TABLE ${qualified_name} ${table_definition}
     Execute Sql String    ${create_sql}
-    Log    Table ${table_name} created successfully    console=yes
+    Log    Table ${qualified_name} created successfully    console=yes
 
     RETURN    ${TRUE}
 
 Create Table If Not Exists
     [Documentation]    Creates a table only if it doesn't already exist
     ...    Note: Not all databases support IF NOT EXISTS clause
-    [Arguments]    ${table_name}    ${table_definition}
+    ...    Arguments:
+    ...    table_name: Table name (can include schema)
+    ...    table_definition: SQL column definitions
+    ...    schema: Optional schema name (if not included in table_name)
+    [Arguments]    ${table_name}    ${table_definition}    ${schema}=${EMPTY}
 
-    ${create_sql}=    Set Variable    CREATE TABLE IF NOT EXISTS ${table_name} ${table_definition}
+    ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
+    ${create_sql}=    Set Variable    CREATE TABLE IF NOT EXISTS ${qualified_name} ${table_definition}
     Execute Sql String    ${create_sql}
-    Log    Table ${table_name} created (if not exists)    console=yes
+    Log    Table ${qualified_name} created (if not exists)    console=yes
     RETURN    ${TRUE}
 
 Drop Table
     [Documentation]    Drops a table from the database
-    [Arguments]    ${table_name}    ${if_exists}=${TRUE}
+    ...    Can handle schema-qualified table names or separate schema parameter
+    ...    Arguments:
+    ...    table_name: Table name (can be 'table' or 'schema.table')
+    ...    if_exists: Whether to use IF EXISTS clause (default: TRUE)
+    ...    schema: Optional schema name (if not included in table_name)
+    [Arguments]    ${table_name}    ${if_exists}=${TRUE}    ${schema}=${EMPTY}
+
+    # Build fully qualified table name if schema is provided
+    ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
 
     IF    ${if_exists}
-        Execute Sql String    DROP TABLE IF EXISTS ${table_name}
+        Execute Sql String    DROP TABLE IF EXISTS ${qualified_name}
+        Log    Executed: DROP TABLE IF EXISTS ${qualified_name}    console=yes
     ELSE
-        Execute Sql String    DROP TABLE ${table_name}
+        Execute Sql String    DROP TABLE ${qualified_name}
+        Log    Executed: DROP TABLE ${qualified_name}    console=yes
     END
 
-    Log    Table ${table_name} dropped    console=yes
+    Log    Table ${qualified_name} dropped successfully    console=yes
     RETURN    ${TRUE}
 
 Truncate Table
     [Documentation]    Removes all rows from a table but keeps the table structure
-    [Arguments]    ${table_name}
+    ...    Arguments:
+    ...    table_name: Table name (can include schema)
+    ...    schema: Optional schema name (if not included in table_name)
+    [Arguments]    ${table_name}    ${schema}=${EMPTY}
 
-    Execute Sql String    TRUNCATE TABLE ${table_name}
-    Log    Table ${table_name} truncated    console=yes
+    ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
+    Execute Sql String    TRUNCATE TABLE ${qualified_name}
+    Log    Table ${qualified_name} truncated    console=yes
     RETURN    ${TRUE}
+
+Truncate Table If Exists
+    [Documentation]    Removes all rows from a table but keeps the table structure
+    ...    If table doesn't exist, logs a warning and continues without failing
+    ...    Verifies table is empty after successful truncation
+    ...    
+    ...    Arguments:
+    ...    table_name: Table name (can include schema)
+    ...    schema: Optional schema name (if not included in table_name)
+    ...    verify_empty: Whether to verify table is empty after truncation (default: TRUE)
+    ...    
+    ...    Returns:
+    ...    ${TRUE} if table was truncated successfully
+    ...    ${FALSE} if table doesn't exist or truncate failed
+    ...    
+    ...    Example:
+    ...    ${truncated}=    Truncate Table If Exists    employees    schema=public
+    ...    IF    ${truncated}
+    ...        Log    Table was cleaned
+    ...    ELSE
+    ...        Log    Table doesn't exist yet
+    ...    END
+    [Arguments]    ${table_name}    ${schema}=${EMPTY}    ${verify_empty}=${TRUE}
+
+    ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
+    Log    Attempting to truncate table: ${qualified_name}    console=yes
+
+    TRY
+        Execute Sql String    TRUNCATE TABLE ${qualified_name}
+        Log    ✅ Table ${qualified_name} truncated successfully    console=yes
+        
+        # Verify table is empty after truncation if requested
+        IF    ${verify_empty}
+            Log    🔍 Verifying table is empty after truncation...    console=yes
+            ${count_after_truncate}=    Get Row Count    ${table_name}    schema=${schema}
+            
+            Should Be Equal As Integers    ${count_after_truncate}    0
+            ...    TRUNCATE operation completed but table still has ${count_after_truncate} rows! Expected 0 rows.
+            
+            Log    ✅ Verification passed: Table has 0 rows after truncation    console=yes
+        END
+        
+        RETURN    ${TRUE}
+    EXCEPT    AS    ${error}
+        Log    ⚠️ Could not truncate table ${qualified_name}: ${error}    level=WARN
+        Log    Table may not exist or insufficient permissions    console=yes
+        RETURN    ${FALSE}
+    END
 
 Rename Table
     [Documentation]    Renames a table
     ...    Note: Syntax may vary between databases
-    [Arguments]    ${old_table_name}    ${new_table_name}
+    ...    Arguments:
+    ...    old_table_name: Current table name (can include schema)
+    ...    new_table_name: New table name (can include schema)
+    ...    schema: Optional schema name (applies to both if not included in names)
+    [Arguments]    ${old_table_name}    ${new_table_name}    ${schema}=${EMPTY}
 
+    ${old_qualified}=    Get Qualified Table Name    ${old_table_name}    ${schema}
+    ${new_qualified}=    Get Qualified Table Name    ${new_table_name}    ${schema}
+    
     # Standard SQL syntax (works for most databases)
-    Execute Sql String    ALTER TABLE ${old_table_name} RENAME TO ${new_table_name}
-    Log    Table renamed from ${old_table_name} to ${new_table_name}    console=yes
+    Execute Sql String    ALTER TABLE ${old_qualified} RENAME TO ${new_qualified}
+    Log    Table renamed from ${old_qualified} to ${new_qualified}    console=yes
     RETURN    ${TRUE}
 
 # ==================== DATA MANIPULATION OPERATIONS ====================
@@ -107,14 +208,16 @@ Rename Table
 Insert Into Table
     [Documentation]    Inserts a single row into a table
     ...    Arguments:
-    ...    table_name: Target table
+    ...    table_name: Target table (can include schema)
     ...    columns: Comma-separated column names
     ...    values: Values to insert (with proper SQL formatting)
-    [Arguments]    ${table_name}    ${columns}    ${values}
+    ...    schema: Optional schema name (if not included in table_name)
+    [Arguments]    ${table_name}    ${columns}    ${values}    ${schema}=${EMPTY}
 
-    ${insert_sql}=    Set Variable    INSERT INTO ${table_name} (${columns}) VALUES (${values})
+    ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
+    ${insert_sql}=    Set Variable    INSERT INTO ${qualified_name} (${columns}) VALUES (${values})
     Execute Sql String    ${insert_sql}
-    Log    Data inserted into ${table_name}    console=yes
+    Log    Data inserted into ${qualified_name}    console=yes
     RETURN    ${TRUE}
 
 Bulk Insert Into Table
@@ -137,43 +240,52 @@ Bulk Insert Into Table
 Update Table
     [Documentation]    Updates rows in a table based on a condition
     ...    Arguments:
-    ...    table_name: Name of the table to update
+    ...    table_name: Name of the table to update (can include schema)
     ...    set_clause: SET clause (e.g., "column1 = value1, column2 = value2")
     ...    where_clause: Optional WHERE condition (e.g., "id = 1")
-    [Arguments]    ${table_name}    ${set_clause}    ${where_clause}=${EMPTY}
+    ...    schema: Optional schema name (if not included in table_name)
+    [Arguments]    ${table_name}    ${set_clause}    ${where_clause}=${EMPTY}    ${schema}=${EMPTY}
 
+    ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
+    
     # Check if where_clause is empty
     ${is_empty}=    Run Keyword And Return Status    Should Be Empty    ${where_clause}
 
     IF    ${is_empty}
-        ${update_sql}=    Set Variable    UPDATE ${table_name} SET ${set_clause}
-        Log    WARNING: Updating ALL rows in ${table_name} (no WHERE clause)    WARN
+        ${update_sql}=    Set Variable    UPDATE ${qualified_name} SET ${set_clause}
+        Log    WARNING: Updating ALL rows in ${qualified_name} (no WHERE clause)    WARN
     ELSE
-        ${update_sql}=    Set Variable    UPDATE ${table_name} SET ${set_clause} WHERE ${where_clause}
+        ${update_sql}=    Set Variable    UPDATE ${qualified_name} SET ${set_clause} WHERE ${where_clause}
     END
 
     Log    Executing: ${update_sql}    console=yes
     Execute Sql String    ${update_sql}
-    Log    Table ${table_name} updated successfully    console=yes
+    Log    Table ${qualified_name} updated successfully    console=yes
     RETURN    ${TRUE}
 
 Delete From Table
     [Documentation]    Deletes rows from a table based on a condition
     ...    If no where_clause provided, deletes all rows (use with caution!)
-    [Arguments]    ${table_name}    ${where_clause}=${EMPTY}
+    ...    Arguments:
+    ...    table_name: Table name (can include schema)
+    ...    where_clause: Optional WHERE condition
+    ...    schema: Optional schema name (if not included in table_name)
+    [Arguments]    ${table_name}    ${where_clause}=${EMPTY}    ${schema}=${EMPTY}
 
+    ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
+    
     # Check if where_clause is empty
     ${is_empty}=    Run Keyword And Return Status    Should Be Empty    ${where_clause}
 
     IF    ${is_empty}
-        ${delete_sql}=    Set Variable    DELETE FROM ${table_name}
-        Log    WARNING: Deleting ALL rows from ${table_name}    WARN
+        ${delete_sql}=    Set Variable    DELETE FROM ${qualified_name}
+        Log    WARNING: Deleting ALL rows from ${qualified_name}    WARN
     ELSE
-        ${delete_sql}=    Set Variable    DELETE FROM ${table_name} WHERE ${where_clause}
+        ${delete_sql}=    Set Variable    DELETE FROM ${qualified_name} WHERE ${where_clause}
     END
 
     Execute Sql String    ${delete_sql}
-    Log    Rows deleted from ${table_name}    console=yes
+    Log    Rows deleted from ${qualified_name}    console=yes
     RETURN    ${TRUE}
 
 Upsert Into Table
@@ -193,10 +305,18 @@ Upsert Into Table
 
 Select All From Table
     [Documentation]    Selects all records from a table
-    [Arguments]    ${table_name}    ${columns}=*    ${order_by}=${EMPTY}    ${limit}=${EMPTY}
+    ...    Arguments:
+    ...    table_name: Table name (can include schema)
+    ...    columns: Columns to select (default: *)
+    ...    order_by: Optional ORDER BY clause
+    ...    limit: Optional LIMIT clause
+    ...    schema: Optional schema name (if not included in table_name)
+    [Arguments]    ${table_name}    ${columns}=*    ${order_by}=${EMPTY}    ${limit}=${EMPTY}    ${schema}=${EMPTY}
 
+    ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
+    
     # Build query
-    ${query}=    Set Variable    SELECT ${columns} FROM ${table_name}
+    ${query}=    Set Variable    SELECT ${columns} FROM ${qualified_name}
 
     # Add ORDER BY if specified
     ${has_order_by}=    Run Keyword And Return Status    Should Not Be Empty    ${order_by}
@@ -220,10 +340,19 @@ Select All From Table
 
 Select Where
     [Documentation]    Selects records based on a WHERE condition
-    [Arguments]    ${table_name}    ${where_clause}    ${columns}=*    ${order_by}=${EMPTY}    ${limit}=${EMPTY}
+    ...    Arguments:
+    ...    table_name: Table name (can include schema)
+    ...    where_clause: WHERE condition
+    ...    columns: Columns to select (default: *)
+    ...    order_by: Optional ORDER BY clause
+    ...    limit: Optional LIMIT clause
+    ...    schema: Optional schema name (if not included in table_name)
+    [Arguments]    ${table_name}    ${where_clause}    ${columns}=*    ${order_by}=${EMPTY}    ${limit}=${EMPTY}    ${schema}=${EMPTY}
 
+    ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
+    
     # Build query
-    ${query}=    Set Variable    SELECT ${columns} FROM ${table_name} WHERE ${where_clause}
+    ${query}=    Set Variable    SELECT ${columns} FROM ${qualified_name} WHERE ${where_clause}
 
     # Add ORDER BY if specified
     ${has_order_by}=    Run Keyword And Return Status    Should Not Be Empty    ${order_by}
@@ -247,15 +376,21 @@ Select Where
 
 Get Row Count
     [Documentation]    Returns the number of rows in a table
-    [Arguments]    ${table_name}    ${where_clause}=${EMPTY}
+    ...    Arguments:
+    ...    table_name: Table name (can include schema)
+    ...    where_clause: Optional WHERE condition
+    ...    schema: Optional schema name (if not included in table_name)
+    [Arguments]    ${table_name}    ${where_clause}=${EMPTY}    ${schema}=${EMPTY}
 
+    ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
+    
     # Check if where_clause is empty
     ${is_empty}=    Run Keyword And Return Status    Should Be Empty    ${where_clause}
 
     IF    ${is_empty}
-        ${query}=    Set Variable    SELECT COUNT(*) FROM ${table_name}
+        ${query}=    Set Variable    SELECT COUNT(*) FROM ${qualified_name}
     ELSE
-        ${query}=    Set Variable    SELECT COUNT(*) FROM ${table_name} WHERE ${where_clause}
+        ${query}=    Set Variable    SELECT COUNT(*) FROM ${qualified_name} WHERE ${where_clause}
     END
 
     ${result}=    Query    ${query}
@@ -266,8 +401,16 @@ Get Row Count
 
 Get Column Values
     [Documentation]    Returns all values from a specific column
-    [Arguments]    ${table_name}    ${column_name}    ${distinct}=${FALSE}    ${where_clause}=${EMPTY}
+    ...    Arguments:
+    ...    table_name: Table name (can include schema)
+    ...    column_name: Column to retrieve values from
+    ...    distinct: Whether to return only distinct values
+    ...    where_clause: Optional WHERE condition
+    ...    schema: Optional schema name (if not included in table_name)
+    [Arguments]    ${table_name}    ${column_name}    ${distinct}=${FALSE}    ${where_clause}=${EMPTY}    ${schema}=${EMPTY}
 
+    ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
+    
     # Build query with optional DISTINCT
     IF    ${distinct}
         ${select_part}=    Set Variable    SELECT DISTINCT ${column_name}
@@ -280,9 +423,9 @@ Get Column Values
 
     # Add WHERE clause if provided
     IF    ${is_empty}
-        ${query}=    Set Variable    ${select_part} FROM ${table_name}
+        ${query}=    Set Variable    ${select_part} FROM ${qualified_name}
     ELSE
-        ${query}=    Set Variable    ${select_part} FROM ${table_name} WHERE ${where_clause}
+        ${query}=    Set Variable    ${select_part} FROM ${qualified_name} WHERE ${where_clause}
     END
 
     ${results}=    Query    ${query}
@@ -890,7 +1033,7 @@ Compare Table With CSV File
     ...    ${ignore_order} - Whether to ignore row order (default: FALSE)
     ...    ${order_by} - ORDER BY clause for consistent ordering
     ...    ${where_clause} - Optional WHERE clause to filter data
-    ...    ${temp_dir} - Directory for temporary files (default: /tmp)
+    ...    ${temp_dir} - Directory for temporary files (default: ${ACTUAL_DATA_DIR} or /tmp)
     ...
     ...    Returns:
     ...    Comparison result dictionary from Compare CSV Files
@@ -901,7 +1044,7 @@ Compare Table With CSV File
     ...    ${ignore_order}=${FALSE}
     ...    ${order_by}=${EMPTY}
     ...    ${where_clause}=${EMPTY}
-    ...    ${temp_dir}=/tmp
+    ...    ${temp_dir}=${EMPTY}
 
     Log    \n========== COMPARING TABLE WITH CSV ==========    console=yes
     Log    Table: ${table_name}    console=yes
@@ -910,9 +1053,22 @@ Compare Table With CSV File
     # Verify expected file exists
     File Should Exist    ${expected_csv}    Expected CSV file not found: ${expected_csv}
 
-    # Generate temporary file name for actual data
+    # Determine temp directory - use ACTUAL_DATA_DIR if available, else /tmp
+    IF    '${temp_dir}' == '${EMPTY}'
+        # Try to get ACTUAL_DATA_DIR from test variables
+        ${has_actual_dir}=    Run Keyword And Return Status    Variable Should Exist    ${ACTUAL_DATA_DIR}
+        IF    ${has_actual_dir}
+            ${temp_dir}=    Set Variable    ${ACTUAL_DATA_DIR}
+        ELSE
+            ${temp_dir}=    Set Variable    /tmp
+        END
+    END
+    
+    # Generate file name for actual data - use meaningful name instead of timestamp
+    ${table_base_name}=    Set Variable    ${table_name}
+    ${table_base_name}=    Replace String    ${table_base_name}    .    _
     ${timestamp}=    Get Time    epoch
-    ${actual_csv}=    Set Variable    ${temp_dir}/table_export_${timestamp}.csv
+    ${actual_csv}=    Set Variable    ${temp_dir}/actual_${table_base_name}_${timestamp}.csv
 
     # Export table to CSV
     ${export_result}=    Export Table To CSV
@@ -935,10 +1091,16 @@ Compare Table With CSV File
     Set To Dictionary    ${comparison_result}    actual_file=${actual_csv}
     Set To Dictionary    ${comparison_result}    export_details=${export_result}
 
-    # Clean up temp file if comparison passed
+    # Clean up temp file if comparison passed (unless KEEP_ACTUAL_FILES is set)
     IF    '${comparison_result}[status]' == 'IDENTICAL'
-        Remove File    ${actual_csv}
-        Log    ✅ Comparison passed, removed temporary file    console=yes
+        # Check if we should keep the actual files
+        ${should_keep}=    Run Keyword And Return Status    Variable Should Exist    ${KEEP_ACTUAL_FILES}
+        IF    ${should_keep} and ${KEEP_ACTUAL_FILES}
+            Log    ✅ Comparison passed, keeping actual file at: ${actual_csv}    console=yes
+        ELSE
+            Remove File    ${actual_csv}
+            Log    ✅ Comparison passed, removed temporary file    console=yes
+        END
     ELSE
         Log    ⚠️ Comparison failed, keeping ${actual_csv} for investigation    console=yes    level=WARN
     END
@@ -954,14 +1116,16 @@ Verify Table Matches CSV
     ...    ${expected_csv} - Expected CSV file path
     ...    ${ignore_order} - Whether to ignore row order
     ...    ${order_by} - ORDER BY clause for consistent ordering
+    ...    ${temp_dir} - Directory for temporary files (optional)
     ...
-    [Arguments]    ${table_name}    ${expected_csv}    ${ignore_order}=${FALSE}    ${order_by}=${EMPTY}
+    [Arguments]    ${table_name}    ${expected_csv}    ${ignore_order}=${FALSE}    ${order_by}=${EMPTY}    ${temp_dir}=${EMPTY}
 
     ${comparison}=    Compare Table With CSV File
     ...    ${table_name}
     ...    ${expected_csv}
     ...    ignore_order=${ignore_order}
     ...    order_by=${order_by}
+    ...    temp_dir=${temp_dir}
 
     Should Be Equal
     ...    ${comparison}[status]

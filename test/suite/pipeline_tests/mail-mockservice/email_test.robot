@@ -31,8 +31,6 @@ ${TEST_CC_EMAIL}            test-cc@example.com
 ${SUBJECT}                  Test Email Subject
 ${TEMPLATE_BODY}            Hello, this is a test email
 # Project Configuration
-${project_path}             ${org_name}/${project_space}/${project_name}
-${pipeline_file_path}       ${CURDIR}/../../../../src/pipelines
 
 ${ACCOUNT_PAYLOAD_FILE}     acc_email.json
 ${pipeline_name}            email_notification
@@ -59,7 +57,7 @@ Create Account
     ...    "account_payload_path"    value as assigned to global variable    in __init__.robot file
     [Tags]    email2
     [Template]    Create Account From Template
-    ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
+    ${ACCOUNT_LOCATION_PATH}    ${EMAIL_ACCOUNT_PAYLOAD_FILE_NAME}    ${EMAIL_ACCOUNT_NAME}
 
 Import Pipelines
     [Documentation]    Imports the Email notitificarion Pipeline
@@ -68,7 +66,7 @@ Import Pipelines
     ...    pipeline_snodeid --> which is used to create the tasks
     [Tags]    email2
     [Template]    Import Pipelines From Template
-    ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${pipeline_name_slp}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${pipeline_name_slp}
 
 Create Triggered_task
     [Documentation]    Creates triggered task and returns the task name and task snode id
@@ -79,14 +77,14 @@ Create Triggered_task
     ...    task_snodeid --> which is used to update the task params
     [Tags]    email2
     [Template]    Create Triggered Task From Template
-    ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    ${task_params_set1}    ${task_notifications}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task1}    ${GROUNDPLEX_NAME}    ${task_params_set1}    ${task_notifications}
 
 Execute Triggered Task With Parameters
     [Documentation]    Updates the task parameters and runs the task
     ...    Prereq: Need task_payload,task_snodeid (from Create Triggered_task)
     [Tags]    email2
     [Template]    Run Triggered Task With Parameters From Template
-    ${unique_id}    ${project_path}    ${pipeline_name}    ${task1}    TEMPLATE_BODY=Hello, this is a test email
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task1}    TEMPLATE_BODY=Hello, this is a test email
 
 Verify Email Setup
     [Documentation]    Verifies that the email was sent and received correctly using MailDev.

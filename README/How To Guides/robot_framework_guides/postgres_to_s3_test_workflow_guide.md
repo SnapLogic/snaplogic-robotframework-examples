@@ -45,12 +45,12 @@ Validate complete data pipeline integrity from PostgreSQL database to S3 storage
 
 ### 📊 Service Dependencies
 
-| Service | Purpose | Container | Port |
-|---------|---------|-----------|------|
-| **PostgreSQL** | Source database | `postgres-db` | 5432 |
-| **MinIO** | S3-compatible storage | `snaplogic-minio` | 9000/9001 |
-| **SnapLogic Groundplex** | Pipeline runtime | `snaplogic-groundplex` | 8081/8090 |
-| **Robot Framework** | Test execution | `tools` | N/A |
+| Service                  | Purpose               | Container              | Port      |
+| ------------------------ | --------------------- | ---------------------- | --------- |
+| **PostgreSQL**           | Source database       | `postgres-db`          | 5432      |
+| **MinIO**                | S3-compatible storage | `snaplogic-minio`      | 9000/9001 |
+| **SnapLogic Groundplex** | Pipeline runtime      | `snaplogic-groundplex` | 8081/8090 |
+| **Robot Framework**      | Test execution        | `tools`                | N/A       |
 
 ## Data Flow Diagram
 
@@ -180,7 +180,7 @@ Initialize Test Environment
     ${unique_id}=    Get Unique Id
     Set Suite Variable    ${unique_id}    ${unique_id}
     Wait Until Plex Status Is Up    /${ORG_NAME}/${GROUNDPLEX_LOCATION_PATH}/${GROUNDPLEX_NAME}
-    Connect to Postgres Database    ${POSTGRES_DBNAME}    ${POSTGRES_DBUSER}    ${POSTGRES_DBPASS}    ${POSTGRES_HOST}
+    Connect to Postgres Database    ${POSTGRES_DATABASE}    ${POSTGRES_USER}    ${POSTGRES_PASSWORD}    ${POSTGRES_HOST}
 ```
 
 **Purpose**: Sets up test isolation and service connectivity
@@ -368,13 +368,13 @@ Compare Actual vs Expected JSON Output
 
 ### 📊 Expected vs Actual Validation
 
-| Validation Type | Source | Target | Assertion |
-|-----------------|--------|--------|-----------|
-| **Row Count** | CSV file (2 rows) | Database (2 rows) | Exact match |
-| **Row Count** | JSON file (2 rows) | Database (2 rows) | Exact match |
-| **Data Content** | Database (4 total rows) | S3 files | Complete transfer |
-| **File Structure** | Expected CSV/JSON | Downloaded CSV/JSON | Identical format |
-| **Field Values** | Original data | Exported data | No corruption |
+| Validation Type    | Source                  | Target              | Assertion         |
+| ------------------ | ----------------------- | ------------------- | ----------------- |
+| **Row Count**      | CSV file (2 rows)       | Database (2 rows)   | Exact match       |
+| **Row Count**      | JSON file (2 rows)      | Database (2 rows)   | Exact match       |
+| **Data Content**   | Database (4 total rows) | S3 files            | Complete transfer |
+| **File Structure** | Expected CSV/JSON       | Downloaded CSV/JSON | Identical format  |
+| **Field Values**   | Original data           | Exported data       | No corruption     |
 
 ## File Structure and Data
 
@@ -478,9 +478,9 @@ make groundplex-status
 ```bash
 # PostgreSQL Configuration
 POSTGRES_HOST=postgres-db
-POSTGRES_DBNAME=testdb
-POSTGRES_DBUSER=postgres
-POSTGRES_DBPASS=postgres
+POSTGRES_DATABASE=testdb
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
 
 # MinIO Configuration
 MINIO_ENDPOINT=http://snaplogic-minio:9000

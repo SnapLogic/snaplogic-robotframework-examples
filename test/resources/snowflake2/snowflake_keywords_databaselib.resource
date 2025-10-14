@@ -18,7 +18,7 @@ ${SNOWFLAKE_ACCOUNT}                %{SNOWFLAKE_ACCOUNT=snaplogic}
 ${SNOWFLAKE_USER}                   %{SNOWFLAKE_USERNAME=Bigdatasnaplogic}
 ${SNOWFLAKE_PASSWORD}               %{SNOWFLAKE_PASSWORD=Snaplogic2018}
 ${SNOWFLAKE_DATABASE}               %{SNOWFLAKE_DATABASE=FDLDB}
-${SNOWFLAKE_SCHEMA}                 %{SNOWFLAKE_SCHEMA=INTUIT}
+${SNOWFLAKE_SCHEMA}                 %{SNOWFLAKE_SCHEMA=DEMO}
 ${SNOWFLAKE_WAREHOUSE}              %{SNOWFLAKE_WAREHOUSE=ELT_XS_WH}
 ${SNOWFLAKE_ROLE}                   %{SNOWFLAKE_ROLE=SYSADMIN}
 
@@ -113,7 +113,7 @@ Connect To Snowflake Via DatabaseLibrary
 
 Get Current Snowflake Context Via DatabaseLibrary
     [Documentation]    Get current database context using DatabaseLibrary
-    
+
     ${context_query}=    Catenate    SEPARATOR=${SPACE}
     ...    SELECT
     ...    CURRENT_DATABASE() as database,
@@ -122,7 +122,7 @@ Get Current Snowflake Context Via DatabaseLibrary
     ...    CURRENT_USER() as user,
     ...    CURRENT_ROLE() as role,
     ...    CURRENT_VERSION() as version
-    
+
     ${context}=    Query    ${context_query}
 
     ${context_dict}=    Create Dictionary
@@ -172,7 +172,7 @@ Get Snowflake Version Wrapper
 
 Get Current Snowflake Context
     [Documentation]    Get all current context information using DatabaseLibrary
-    
+
     ${context_query}=    Catenate    SEPARATOR=${SPACE}
     ...    SELECT
     ...    CURRENT_USER() as user,
@@ -181,7 +181,7 @@ Get Current Snowflake Context
     ...    CURRENT_WAREHOUSE() as warehouse,
     ...    CURRENT_ROLE() as role,
     ...    CURRENT_ACCOUNT() as account
-    
+
     ${result}=    Query    ${context_query}
 
     ${context}=    Create Dictionary
@@ -239,7 +239,7 @@ Get Current Snowflake Account
 
 # REMOVED: The following Snowflake-specific keywords are replaced by generic ones:
 # - Create Snowflake Table If Not Exists → Use 'Create Table If Not Exists' from sql_table_operations.resource
-# - Drop Snowflake Table If Exists → Use 'Drop Table' with if_exists=${TRUE} from sql_table_operations.resource  
+# - Drop Snowflake Table If Exists → Use 'Drop Table' with if_exists=${TRUE} from sql_table_operations.resource
 # - Insert Into Snowflake Table → Use 'Insert Into Table' from sql_table_operations.resource
 # - Get Row Count From Snowflake Table → Use 'Get Row Count' from sql_table_operations.resource
 # - Table Should Exist In Snowflake → Use 'Table Should Exist' from sql_table_operations.resource
@@ -263,11 +263,11 @@ Use Snowflake Warehouse
 Test Time Travel
     [Documentation]    Query data from a past point in time
     [Arguments]    ${table_name}    ${minutes_ago}=5
-    
+
     ${query}=    Catenate    SEPARATOR=${SPACE}
     ...    SELECT COUNT(*) FROM ${table_name}
     ...    AT(OFFSET => -${minutes_ago}*60)
-    
+
     ${result}=    Query    ${query}
     ${past_count}=    Set Variable    ${result[0][0]}
     Log    Row count ${minutes_ago} minutes ago: ${past_count}

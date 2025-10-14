@@ -15,7 +15,7 @@
                             "value": null
                         },
                         "databaseName": {
-                            "value": "{{ORACLE_DBNAME}}",
+                            "value": "{{ORACLE_DATABASE}}",
                             "expression": false
                         },
                         "authMethod": {
@@ -36,7 +36,7 @@
                             "value": "oracle.jdbc.OracleDriver"
                         },
                         "username": {
-                            "value": "{{ORACLE_DBUSER}}",
+                            "value": "{{ORACLE_USER}}",
                             "expression": false
                         },
                         "SSL_CONNECT": {
@@ -44,7 +44,7 @@
                         },
                         "password": {
                             "expression": false,
-                            "value": "{{ORACLE_DBPASS}}"
+                            "value": "{{ORACLE_PASSWORD}}"
                         },
                         "DATABASE_SPECIFIER_TYPE": {
                             "value": "Service name"

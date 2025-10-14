@@ -1,0 +1,208 @@
+# =============================================================================
+# SQL Server Database Management
+# =============================================================================
+# This file contains SQL Server database specific targets
+# =============================================================================
+
+.PHONY: sqlserver-start sqlserver-stop sqlserver-logs sqlserver-shell sqlserver-status \
+        sqlserver-restart sqlserver-backup sqlserver-restore sqlserver-help
+
+# Include common configuration
+include makefiles/common_services/Makefile.common
+
+# =============================================================================
+# 🗄️ SQL Server Configuration
+# =============================================================================
+SQLSERVER_CONTAINER_NAME := sqlserver-db
+SQLSERVER_PROFILE := sqlserver-dev
+SQLSERVER_PORT := 1433
+SQLSERVER_PASSWORD := Snaplogic123!
+SQLSERVER_USER := sa
+SQLSERVER_DATABASE := TEST
+
+# =============================================================================
+# 🚀 SQL Server Commands
+# =============================================================================
+
+# Start SQL Server database
+sqlserver-start:
+	@echo "🗄️  Starting SQL Server Database..."
+	@echo "⚠️  SQL Server requires at least 2GB RAM"
+	$(DOCKER_COMPOSE) --profile $(SQLSERVER_PROFILE) up -d $(SQLSERVER_CONTAINER_NAME)
+	@echo "⏳ Waiting for SQL Server to initialize (this may take 30-60 seconds)..."
+	@sleep 10
+	@echo "✅ SQL Server database started"
+	@echo "📊 Connection details:"
+	@echo "   - Host: localhost"
+	@echo "   - Port: $(SQLSERVER_PORT)"
+	@echo "   - User: $(SQLSERVER_USER)"
+	@echo "   - Password: $(SQLSERVER_PASSWORD)"
+	@echo "   - Initial Catalog: master"
+
+# Stop SQL Server database
+sqlserver-stop:
+	@echo "🛑 Stopping SQL Server container..."
+	$(DOCKER_COMPOSE) stop $(SQLSERVER_CONTAINER_NAME) || true
+	@echo "🧹 Removing SQL Server container and volumes..."
+	$(DOCKER_COMPOSE) rm -f -v $(SQLSERVER_CONTAINER_NAME) || true
+	@echo "🗑️  Cleaning up SQL Server volumes..."
+	docker volume rm $$(docker volume ls -q | grep sqlserver) 2>/dev/null || true
+	@echo "✅ SQL Server stopped and cleaned up."
+
+# View SQL Server logs
+sqlserver-logs:
+	@echo "📜 Viewing SQL Server logs..."
+	$(DOCKER_COMPOSE) logs -f $(SQLSERVER_CONTAINER_NAME)
+
+# Access SQL Server shell
+sqlserver-shell:
+	@echo "🐚 Accessing SQL Server shell (sqlcmd)..."
+	docker exec -it $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C
+
+# Check SQL Server status
+sqlserver-status:
+	@echo "📊 SQL Server Database Status:"
+	@docker ps -a --filter name=$(SQLSERVER_CONTAINER_NAME) --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+	@echo ""
+	@if docker ps --filter name=$(SQLSERVER_CONTAINER_NAME) --format "{{.Names}}" | grep -q $(SQLSERVER_CONTAINER_NAME); then \
+		echo "✅ SQL Server is running"; \
+		echo "🔍 Testing connection..."; \
+		docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C -Q "SELECT @@VERSION" 2>/dev/null && echo "✅ Connection successful" || echo "⚠️  Connection test failed"; \
+	else \
+		echo "❌ SQL Server is not running"; \
+	fi
+
+# Restart SQL Server database
+sqlserver-restart: sqlserver-stop sqlserver-start
+
+# Backup SQL Server database
+sqlserver-backup:
+	@echo "💾 Backing up SQL Server database..."
+	@mkdir -p backups/sqlserver
+	@echo "Creating backup inside container..."
+	@docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C -Q "\
+		BACKUP DATABASE [$(SQLSERVER_DATABASE)] \
+		TO DISK = '/var/opt/mssql/backup/$(SQLSERVER_DATABASE)_$$(date +%Y%m%d_%H%M%S).bak' \
+		WITH FORMAT, INIT, NAME = '$(SQLSERVER_DATABASE) Full Backup', SKIP, STATS = 10"
+	@echo "Copying backup to local filesystem..."
+	@docker cp $(SQLSERVER_CONTAINER_NAME):/var/opt/mssql/backup/. backups/sqlserver/
+	@echo "✅ Backup completed to backups/sqlserver/"
+
+# Restore SQL Server database from backup
+sqlserver-restore:
+	@echo "📥 Available backups:"
+	@ls -la backups/sqlserver/*.bak 2>/dev/null || echo "No backups found"
+	@echo ""
+	@echo "To restore a backup:"
+	@echo "  1. Copy backup to container: docker cp backups/sqlserver/[backup_file].bak $(SQLSERVER_CONTAINER_NAME):/var/opt/mssql/backup/"
+	@echo "  2. Restore: docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C -Q \"RESTORE DATABASE [$(SQLSERVER_DATABASE)] FROM DISK = '/var/opt/mssql/backup/[backup_file].bak' WITH REPLACE\""
+
+# Create test database and tables
+sqlserver-init:
+	@echo "🔧 Initializing SQL Server test database..."
+	@docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C -Q "\
+		IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '$(SQLSERVER_DATABASE)') \
+		BEGIN \
+			CREATE DATABASE [$(SQLSERVER_DATABASE)]; \
+		END"
+	@docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C -d $(SQLSERVER_DATABASE) -Q "\
+		IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'snaptest') \
+		BEGIN \
+			EXEC('CREATE SCHEMA snaptest'); \
+		END; \
+		IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'users' AND schema_id = SCHEMA_ID('snaptest')) \
+		BEGIN \
+			CREATE TABLE snaptest.users ( \
+				id INT IDENTITY(1,1) PRIMARY KEY, \
+				username NVARCHAR(100) NOT NULL, \
+				email NVARCHAR(100), \
+				created_at DATETIME DEFAULT GETDATE() \
+			); \
+		END; \
+		IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'products' AND schema_id = SCHEMA_ID('snaptest')) \
+		BEGIN \
+			CREATE TABLE snaptest.products ( \
+				id INT IDENTITY(1,1) PRIMARY KEY, \
+				name NVARCHAR(200) NOT NULL, \
+				price DECIMAL(10,2), \
+				quantity INT \
+			); \
+		END; \
+		IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'orders' AND schema_id = SCHEMA_ID('snaptest')) \
+		BEGIN \
+			CREATE TABLE snaptest.orders ( \
+				id INT IDENTITY(1,1) PRIMARY KEY, \
+				user_id INT, \
+				product_id INT, \
+				order_date DATETIME DEFAULT GETDATE(), \
+				FOREIGN KEY (user_id) REFERENCES snaptest.users(id), \
+				FOREIGN KEY (product_id) REFERENCES snaptest.products(id) \
+			); \
+		END;"
+	@echo "✅ Test database initialized"
+
+# Show SQL Server databases
+sqlserver-show-dbs:
+	@echo "📂 SQL Server Databases:"
+	@docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C -Q "SELECT name FROM sys.databases"
+
+# Show SQL Server tables
+sqlserver-show-tables:
+	@echo "📋 Tables in $(SQLSERVER_DATABASE):"
+	@docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C -d $(SQLSERVER_DATABASE) -Q "\
+		SELECT \
+			s.name AS SchemaName, \
+			t.name AS TableName \
+		FROM sys.tables t \
+		INNER JOIN sys.schemas s ON t.schema_id = s.schema_id \
+		ORDER BY s.name, t.name"
+
+# Run SQL Server query
+sqlserver-query:
+	@echo "Enter your SQL query (or use: make sqlserver-query QUERY='SELECT * FROM snaptest.users')"
+	@if [ -n "$(QUERY)" ]; then \
+		docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C -d $(SQLSERVER_DATABASE) -Q "$(QUERY)"; \
+	else \
+		read -p "SQL Query: " query; \
+		docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C -d $(SQLSERVER_DATABASE) -Q "$query"; \
+	fi
+
+# Show SQL Server version and edition
+sqlserver-version:
+	@echo "📌 SQL Server Version:"
+	@docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C -Q "\
+		SELECT \
+			SERVERPROPERTY('ProductVersion') AS Version, \
+			SERVERPROPERTY('ProductLevel') AS ServicePack, \
+			SERVERPROPERTY('Edition') AS Edition"
+
+# Check SQL Server configuration
+sqlserver-config:
+	@echo "⚙️  SQL Server Configuration:"
+	@docker exec $(SQLSERVER_CONTAINER_NAME) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(SQLSERVER_USER) -P $(SQLSERVER_PASSWORD) -C -Q "\
+		SELECT \
+			name, \
+			value, \
+			value_in_use, \
+			description \
+		FROM sys.configurations \
+		WHERE name IN ('max server memory (MB)', 'min server memory (MB)', 'max degree of parallelism', 'cost threshold for parallelism')"
+
+# Help for SQL Server commands
+sqlserver-help:
+	@echo "SQL Server Database Management Commands:"
+	@echo "  make sqlserver-start        - Start SQL Server database"
+	@echo "  make sqlserver-stop         - Stop and clean up SQL Server"
+	@echo "  make sqlserver-restart      - Restart SQL Server database"
+	@echo "  make sqlserver-logs         - View SQL Server logs"
+	@echo "  make sqlserver-shell        - Access SQL Server shell (sqlcmd)"
+	@echo "  make sqlserver-status       - Check SQL Server status"
+	@echo "  make sqlserver-backup       - Backup database"
+	@echo "  make sqlserver-restore      - Restore database from backup"
+	@echo "  make sqlserver-init         - Initialize test database and tables"
+	@echo "  make sqlserver-show-dbs     - Show all databases"
+	@echo "  make sqlserver-show-tables  - Show tables in database"
+	@echo "  make sqlserver-version      - Show SQL Server version info"
+	@echo "  make sqlserver-config       - Show SQL Server configuration"
+	@echo "  make sqlserver-query        - Run a SQL query"
+	@echo "  make sqlserver-help         - Show this help message"

@@ -19,7 +19,7 @@
                             "expression": false
                         },
                         "databaseName": {
-                            "value": "{{MYSQL_DBNAME}}",
+                            "value": "{{MYSQL_DATABASE}}",
                             "expression": false
                         },
                         "PassPhrase": {
@@ -42,7 +42,7 @@
                             "expression": false
                         },
                         "username": {
-                            "value": "{{MYSQL_DBUSER}}",
+                            "value": "{{MYSQL_USER}}",
                             "expression": false
                         },
                         "AuthenticationMode": {
@@ -54,7 +54,7 @@
                         },
                         "password": {
                             "expression": false,
-                            "value": "{{MYSQL_DBPASS}}"
+                            "value": "{{MYSQL_PASSWORD}}"
                         },
                         "keystorePassword": {
                             "expression": false

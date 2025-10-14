@@ -1,0 +1,86 @@
+# DB2 Docker Compose Configuration
+# 
+# PLATFORM COMPATIBILITY:
+# - Windows (x86_64): Works seamlessly with native performance
+# - Linux (x86_64): Works seamlessly with native performance
+# - macOS Intel (x86_64): Works seamlessly with native performance
+# - macOS Apple Silicon (M1/M2/M3): ❌ DOES NOT WORK - See details below
+#
+# ⚠️ CRITICAL LIMITATION FOR APPLE SILICON (M1/M2/M3) USERS:
+# ====================================================
+# DB2 CANNOT run in Docker on Apple Silicon Macs due to a fundamental incompatibility
+# with shared libraries. The error you will encounter:
+# "libicudatadb2.so.32: cannot enable executable stack as shared object requires: Invalid argument"
+#
+# This is NOT fixable through configuration changes. IBM has not provided ARM64-compatible
+# images, and the x86_64 emulation cannot handle DB2's specific shared library requirements.
+#
+#
+# ALTERNATIVES FOR TESTING DB2 ON APPLE SILICON:
+# ==============================================
+# 
+# 1. IBM DB2 on Cloud (Recommended)
+#    - Sign up at: https://cloud.ibm.com/catalog/services/db2
+#    - Free Lite tier available
+#    - Connect from DBeaver/tests using cloud credentials
+#    - Full DB2 compatibility
+#
+# 2. Remote Docker Host
+#    - Set up Docker on a Linux server
+#    - Use: export DOCKER_HOST=tcp://your-linux-server:2375
+#    - Run: make db2-start (executes on remote host)
+#
+# 3. Alternative Hardware
+#    - Use an Intel-based Mac
+#    - Use a Windows or Linux machine
+#    - Use a cloud VM (AWS EC2, Google Cloud, etc.)
+#
+# 4. GitHub Codespaces / Cloud Development
+#    - Develop in a browser-based Linux environment
+#    - Full Docker support with DB2
+#
+# WHAT THIS MEANS FOR YOUR TESTING:
+# =================================
+# - You CANNOT test DB2 locally on Apple Silicon Macs
+# - You MUST use one of the alternatives above for DB2-specific testing
+# - Do NOT assume other databases can replicate DB2 behavior
+# - Consider using CI/CD pipelines on Linux for automated DB2 tests
+#
+# The 'platform: linux/amd64' directive forces Docker to use x86_64 emulation on ARM64 systems.
+# This is necessary because IBM DB2 doesn't provide native ARM64 images, but it's not sufficient
+# to make DB2 work due to the shared library issues.
+#
+# Connection Details (when DB2 is running on supported platforms):
+# - Port: 50000
+# - Database: TESTDB
+# - Schema: SNAPTEST
+# - Admin User: db2inst1 / Password: snaplogic
+# - Test User: testuser / Password: snaplogic
+
+services:
+  db2-db:
+    image: ibmcom/db2:11.5.7.0
+    platform: linux/amd64
+    container_name: db2-db
+    ports:
+      - "${DB2_PORT:-50000}:50000"
+    environment:
+      LICENSE: accept
+      DB2INST1_PASSWORD: ${DB2_PASSWORD:-snaplogic}
+      DBNAME: ${DB2_DATABASE:-TESTDB}
+    volumes:
+      - db2_database:/database
+    # Remove health check for now to let it start
+    profiles: [ dev, db2-dev ]
+    networks:
+      - snaplogicnet
+    privileged: true
+
+volumes:
+  db2_database:
+    # Use a fresh volume name to avoid conflicts
+    name: db2_database_v2
+
+networks:
+  snaplogicnet:
+    driver: bridge

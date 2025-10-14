@@ -24,20 +24,16 @@ Suite Setup         Initialize Test Environment
 
 *** Variables ***
 # Project Configuration
-${project_path}                     ${org_name}/${project_space}/${project_name}
-# Use absolute path in container
-${pipeline_file_path}               /app/src/pipelines
-${upload_destination_file_path}     ${project_path}
 
 # Postgres to Oracle Pipeline Configuration
-${pipeline_name_csv}                postgres_oracle
-${pipeline_name_csv_slp}            postgres_oracle.slp
-${task_csv}                         pg_oracle_csv_Task
+${pipeline_name_csv}        postgres_oracle
+${pipeline_name_csv_slp}    postgres_oracle.slp
+${task_csv}                 pg_oracle_csv_Task
 
 # CSV and test data configuration
-${CSV_DATA_TO_DB}                   ${CURDIR}/../../test_data/actual_expected_data/input_data/employees.csv    # Source CSV from input_data folder
-${ACTUAL_DATA_DIR}                  /app/test/suite/test_data/actual_expected_data/actual_output    # Base directory for Oracle export files
-${EXPECTED_OUTPUT_DIR}              ${CURDIR}/../../test_data/actual_expected_data/expected_output    # Expected output files for comparison
+${CSV_DATA_TO_DB}           ${CURDIR}/../../test_data/actual_expected_data/input_data/employees.csv    # Source CSV from input_data folder
+${ACTUAL_DATA_DIR}          /app/test/suite/test_data/actual_expected_data/actual_output    # Base directory for Oracle export files
+${EXPECTED_OUTPUT_DIR}      ${CURDIR}/../../test_data/actual_expected_data/expected_output    # Expected output files for comparison
 
 
 *** Test Cases ***
@@ -58,8 +54,8 @@ Create Account
     ...    • Account payloads are properly formatted and processed
     [Tags]    postgres_oracle    create_account    regression
     [Template]    Create Account From Template
-    ${account_payload_path}/acc_postgres.json
-    ${account_payload_path}/acc_oracle.json
+    ${ACCOUNT_LOCATION_PATH}    ${POSTGRES_ACCOUNT_PAYLOAD_FILE_NAME}    ${POSTGRES_ACCOUNT_NAME}
+    ${ACCOUNT_LOCATION_PATH}    ${ORACLE_ACCOUNT_PAYLOAD_FILE_NAME}    ${ORACLE_ACCOUNT_NAME}
 
 Create postgres table for DB Operations
     [Documentation]    Creates the employees table structure in PostgreSQL source database
@@ -116,14 +112,14 @@ Upload Files With File Protocol
     # file_url    destination_path
     # === From new comprehensive mount point ===
 
-    file:///opt/snaplogic/test_data/actual_expected_data/expression_libraries/test.expr    ${upload_destination_file_path}
+    file:///opt/snaplogic/test_data/actual_expected_data/expression_libraries/test.expr    ${ACCOUNT_LOCATION_PATH}
 
     # === From App Mount (always available - entire test directory is mounted) ===
-    file:///app/test/suite/test_data/actual_expected_data/expression_libraries/test.expr    ${upload_destination_file_path}/app_mount
+    file:///app/test/suite/test_data/actual_expected_data/expression_libraries/test.expr    ${ACCOUNT_LOCATION_PATH}/app_mount
 
     # === Using CURDIR Relative Paths (resolves to mounted paths) ===
     # Need to go up TWO directories from psdemo_usecase1 to reach suite level
-    file://${CURDIR}/../../test_data/actual_expected_data/expression_libraries/test.expr    ${upload_destination_file_path}/curdir
+    file://${CURDIR}/../../test_data/actual_expected_data/expression_libraries/test.expr    ${ACCOUNT_LOCATION_PATH}/curdir
 
 Import Pipelines
     [Documentation]    Imports the PostgreSQL to Oracle data transfer pipeline into SnapLogic project
@@ -135,7 +131,7 @@ Import Pipelines
     ...    • Pipeline is successfully deployed to the project space
     [Tags]    postgres_oracle    import_pipeline    regression
     [Template]    Import Pipelines From Template
-    ${unique_id}    ${pipeline_file_path}    ${pipeline_name_csv}    ${pipeline_name_csv_slp}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name_csv}    ${pipeline_name_csv_slp}
 
 Create Triggered_task
     [Documentation]    Creates a triggered task for the PostgreSQL to Oracle pipeline
@@ -147,7 +143,7 @@ Create Triggered_task
     ...    • Task payload structure is valid
     [Tags]    postgres_oracle    create_triggered_task    regression
     [Template]    Create Triggered Task From Template
-    ${unique_id}    ${project_path}    ${pipeline_name_csv}    ${task_csv}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name_csv}    ${task_csv}
 
 Execute Triggered Task
     [Documentation]    Executes the pipeline task to transfer data from PostgreSQL to Oracle
@@ -162,7 +158,7 @@ Execute Triggered Task
     # Execute the pipeline
     [Template]    Run Triggered Task With Parameters From Template
 
-    ${unique_id}    ${project_path}    ${pipeline_name_csv}    ${task_csv}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name_csv}    ${task_csv}
 
 Export Oracle Table To CSV After Pipeline
     [Documentation]    Exports Oracle employees table to CSV after the pipeline has transferred data
@@ -237,15 +233,15 @@ Initialize Test Environment
 
     # Connect to databases with aliases
     Connect to Postgres Database
-    ...    ${POSTGRES_DBNAME}
-    ...    ${POSTGRES_DBUSER}
-    ...    ${POSTGRES_DBPASS}
+    ...    ${POSTGRES_DATABASE}
+    ...    ${POSTGRES_USER}
+    ...    ${POSTGRES_PASSWORD}
     ...    ${POSTGRES_HOST}
 
     Connect to Oracle Database
-    ...    ${ORACLE_DBNAME}
-    ...    ${ORACLE_DBUSER}
-    ...    ${ORACLE_DBPASS}
+    ...    ${ORACLE_DATABASE}
+    ...    ${ORACLE_USER}
+    ...    ${ORACLE_PASSWORD}
     ...    ${ORACLE_HOST}
 
     # Set PostgreSQL as default connection
@@ -290,18 +286,18 @@ Export DB Table To CSV
     # Connect to appropriate database
     IF    '${db_type}' == 'oracle'
         Connect to Oracle Database
-        ...    ${ORACLE_DBNAME}
-        ...    ${ORACLE_DBUSER}
-        ...    ${ORACLE_DBPASS}
+        ...    ${ORACLE_DATABASE}
+        ...    ${ORACLE_USER}
+        ...    ${ORACLE_PASSWORD}
         ...    ${ORACLE_HOST}
-        ...    ${ORACLE_DBPORT}
+        ...    ${ORACLE_PORT}
     ELSE IF    '${db_type}' == 'postgres'
         Connect to Postgres Database
-        ...    ${POSTGRES_DBNAME}
-        ...    ${POSTGRES_DBUSER}
-        ...    ${POSTGRES_DBPASS}
+        ...    ${POSTGRES_DATABASE}
+        ...    ${POSTGRES_USER}
+        ...    ${POSTGRES_PASSWORD}
         ...    ${POSTGRES_HOST}
-        ...    ${POSTGRES_DBPORT}
+        ...    ${POSTGRES_PORT}
     ELSE
         Fail    Unsupported database type: ${db_type}
     END
