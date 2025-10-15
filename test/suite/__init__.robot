@@ -71,12 +71,9 @@ Validate Environment Variables
     END
 
 Load Environment Variables
-    [Documentation]    Loads environment variables from the root .env file and all .env files from env_files directory and subdirectories
+    [Documentation]    Loads environment variables from env_files directory first, then root .env file last (highest precedence)
 
-    # First load the root .env file
-    Load Single Env File    ${ENV_FILE_PATH}
-
-    # Then load all .env files from env_files directory and subdirectories
+    # First load all .env files from env_files directory and subdirectories
     ${env_dir_exists}=    Run Keyword And Return Status    Directory Should Exist    ${ENV_FILES_DIR}
 
     IF    ${env_dir_exists}
@@ -112,6 +109,10 @@ Load Environment Variables
     ELSE
         Log To Console    \nEnvironment files directory not found: ${ENV_FILES_DIR}
     END
+
+    # Finally load the root .env file LAST (highest precedence - can override all previous values)
+    Log To Console    \nLoading root .env file (HIGHEST PRECEDENCE):
+    Load Single Env File    ${ENV_FILE_PATH}
 
 Load Single Env File
     [Documentation]    Loads environment variables from a single .env file and auto-detects JSON values

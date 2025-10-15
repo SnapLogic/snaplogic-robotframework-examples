@@ -168,6 +168,7 @@ Import Pipeline
     ...    ${unique_id}    /org/project/dev/pipelines    dev_pipeline    pipeline_v1.slp
     ...    # Example 3: Import with different unique_ids
     ...    ${unique_id}_test1    ${PIPELINES_LOCATION_PATH}    pipeline_variant_a    pipeline.slp
+    [Tags]    snowflake_demo
     [Template]    Import Pipelines From Template
 
     ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${pipeline_file_name}

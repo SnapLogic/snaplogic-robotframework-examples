@@ -7,7 +7,7 @@
 
 .PHONY: snaplogic-start-services snaplogic-stop snaplogic-build-tools snaplogic-stop-tools \
         start-services check-env clean-start ensure-config-dir \
-        rebuild-tools restart-tools restart-all restart-services
+        rebuild-tools restart-tools recreate-tools restart-all restart-services
 
 # Include common configuration
 include makefiles/common_services/Makefile.common
@@ -213,26 +213,57 @@ rebuild-tools:
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# RESTART-TOOLS: Quick restart of tools container (3 seconds)
+# RESTART-TOOLS: Quick restart without env reload (3 seconds)
 # -----------------------------------------------------------------------------
 # What it does:
-#   - Restarts the existing container without rebuilding
-#   - Reloads environment variables from .env and env_files/*.env
+#   - Restarts the existing container without rebuilding or recreating
+#   - Does NOT reload environment variables from .env files
+#   - Keeps the same Docker image and installed packages
+# When to use:
+#   - When container is stuck or frozen
+#   - Quick restart for troubleshooting
+#   - When you need to restart but don't need env changes
+# Time: ~3 seconds
+# Usage:
+#   make restart-tools
+# NOTE: Use 'make recreate-tools' if you changed .env files!
+# -----------------------------------------------------------------------------
+restart-tools:
+	@echo "🔄 Restarting tools container (without env reload)..."
+	$(DOCKER_COMPOSE) restart tools
+	@echo "⏳ Waiting for container to be ready..."
+	@sleep 3
+	@echo "✅ Tools container restarted!"
+	@echo "💡 Tip: Use 'make recreate-tools' to reload .env file changes"
+
+# -----------------------------------------------------------------------------
+# RECREATE-TOOLS: Recreate tools container to reload env files (5 seconds)
+# -----------------------------------------------------------------------------
+# What it does:
+#   - Stops and removes the existing tools container
+#   - Creates a fresh container with updated environment variables
+#   - Reloads ALL environment variables from .env and env_files/*.env
 #   - Keeps the same Docker image and installed packages
 # When to use:
 #   - After changing any .env files (passwords, hosts, ports, etc.)
 #   - After changing configuration values in env_files/
-#   - When container is stuck or needs a quick refresh
-# Time: ~3 seconds
+#   - When you need environment variables to be reloaded
+# Time: ~5 seconds
 # Usage:
-#   make restart-tools                            # Reloads .env + env_files/*.env
+#   make recreate-tools                           # Recreates with .env + env_files/*.env
+# NOTE: Use 'make rebuild-tools' if you changed requirements.txt or Dockerfile!
 # -----------------------------------------------------------------------------
-restart-tools:
-	@echo "🔄 Restarting tools container to reload environment files..."
-	$(DOCKER_COMPOSE) restart tools
+recreate-tools:
+	@echo "🔄 Recreating tools container to reload environment files..."
+	@echo "ℹ️ Stopping and removing existing container..."
+	$(DOCKER_COMPOSE) stop tools
+	$(DOCKER_COMPOSE) rm -f tools
+	@echo "🚀 Creating fresh container with updated environment..."
+	$(DOCKER_COMPOSE) --profile tools up -d
 	@echo "⏳ Waiting for container to be ready..."
-	@sleep 3
-	@echo "✅ Tools container restarted with updated environment!"
+	@sleep 5
+	@echo "✅ Tools container recreated with updated environment!"
+	@echo "💡 Tip: Use 'make rebuild-tools' if you changed Dockerfile or requirements.txt"
 
 # -----------------------------------------------------------------------------
 # RESTART-ALL: Restart all running services (10 seconds)
@@ -298,7 +329,8 @@ show-running:
 	@echo "========================================"
 	$(DOCKER_COMPOSE) ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
 	@echo "========================================"
-	@echo "💡 Tip: Use 'make restart-tools' to restart just the test container"
+	@echo "💡 Tip: Use 'make recreate-tools' to reload .env file changes (5s)"
+	@echo "💡 Tip: Use 'make restart-tools' for quick restart without env reload (3s)"
 	@echo "💡 Tip: Use 'make restart-all' to restart all services"
 
 # =============================================================================
