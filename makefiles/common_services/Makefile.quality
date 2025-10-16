@@ -5,7 +5,8 @@
 # =============================================================================
 
 .PHONY: robotidy robocop lint \
-        install-requirements-local install-requirements-venv update-requirements-all clean-install-requirements
+        install-requirements-local install-requirements-venv update-requirements-all clean-install-requirements \
+        reinstall-requirements-docker install-snaplogic-common-robot show-snaplogic-version
 
 # Include common configuration
 include makefiles/common_services/Makefile.common
@@ -66,7 +67,7 @@ install-requirements-venv:
 	@echo "💡 To activate the virtual environment, run:"
 	@echo "   source ../.venv/bin/activate"
 
-# Update requirements in both local venv and Docker tools container
+# Update requirements Docker tools container
 update-requirements-all: install-requirements-venv
 	@echo "🔄 Updating Docker tools container..."
 	@if docker ps | grep -q snaplogic-test-example-tools-container; then \
@@ -92,3 +93,81 @@ clean-install-requirements:
 	@pip install --upgrade pip
 	@pip install -r src/tools/requirements.txt
 	@echo "✅ Clean install completed!"
+
+# Reinstall and verify requirements in running Docker container (fast refresh)
+reinstall-requirements-docker:
+	@echo "⚡ Reinstalling and verifying requirements in Docker container..."
+	@echo ""
+	@echo "📋 Step 1/4: Checking if container is running..."
+	@if ! docker ps | grep -q snaplogic-test-example-tools-container; then \
+		echo "❌ Error: Container 'snaplogic-test-example-tools-container' is not running!"; \
+		echo "💡 Start it first with: make start-tools"; \
+		exit 1; \
+	fi
+	@echo "✅ Container is running"
+	@echo ""
+	@echo "📦 Step 2/4: Reinstalling requirements.txt..."
+	@echo "   Using: pip install -r /app/requirements.txt --force-reinstall --no-cache-dir"
+	@docker exec snaplogic-test-example-tools-container pip install -r /app/requirements.txt --force-reinstall --no-cache-dir
+	@echo "✅ Requirements reinstalled successfully!"
+	@echo ""
+	@echo "🔍 Step 3/4: Checking installed packages..."
+	@echo "📋 Installed packages (first 25):"
+	@docker exec snaplogic-test-example-tools-container pip list | head -25
+	@echo ""
+	@echo "🔍 Checking critical packages:"install-snaplogic-common-robot
+	@echo "   ✓ Robot Framework:"
+	@docker exec snaplogic-test-example-tools-container pip show robotframework | grep -E "^(Name|Version):"
+	@echo "   ✓ Requests Library:"
+	@docker exec snaplogic-test-example-tools-container pip show robotframework-requests | grep -E "^(Name|Version):"
+	@echo "   ✓ Database Library:"
+	@docker exec snaplogic-test-example-tools-container pip show robotframework-databaselibrary | grep -E "^(Name|Version):"
+	@echo ""
+	@echo "🧪 Step 4/4: Testing imports..."
+	@docker exec snaplogic-test-example-tools-container python -c "import robot; print('   ✅ Robot Framework imported successfully')"
+	@docker exec snaplogic-test-example-tools-container python -c "import RequestsLibrary; print('   ✅ RequestsLibrary imported successfully')"
+	@docker exec snaplogic-test-example-tools-container python -c "import DatabaseLibrary; print('   ✅ DatabaseLibrary imported successfully')"
+	@echo ""
+	@echo "🎉 All done! Requirements have been reinstalled and verified successfully."
+
+# Install/update only snaplogic-common-robot in Docker container
+install-snaplogic-common-robot:
+	@echo "🚀 Installing snaplogic-common-robot in Docker container..."
+	@echo ""
+	@echo "📋 Step 1/4: Checking if container is running..."
+	@if ! docker ps | grep -q snaplogic-test-example-tools-container; then \
+		echo "❌ Error: Container 'snaplogic-test-example-tools-container' is not running!"; \
+		echo "💡 Start it first with: make start-tools"; \
+		exit 1; \
+	fi
+	@echo "✅ Container is running"
+	@echo ""
+	@echo "🔧 Step 2/4: Installing setuptools (required dependency)..."
+	@docker exec snaplogic-test-example-tools-container pip install setuptools --quiet
+	@echo "✅ setuptools installed"
+	@echo ""
+	@echo "📦 Step 3/4: Installing snaplogic-common-robot..."
+	@echo "   Using: pip install snaplogic-common-robot --force-reinstall --no-cache-dir"
+	@docker exec snaplogic-test-example-tools-container pip install snaplogic-common-robot --force-reinstall --no-cache-dir
+	@echo "✅ snaplogic-common-robot installed successfully!"
+	@echo ""
+	@echo "🔍 Step 4/4: Verifying installation..."
+	@echo "   Package details:"
+	@docker exec snaplogic-test-example-tools-container pip show snaplogic-common-robot
+	@echo ""
+	@echo "   Testing import:"
+	@docker exec snaplogic-test-example-tools-container python -c "import snaplogic_common_robot; print('   ✅ snaplogic-common-robot imported successfully')"
+	@echo ""
+	@echo "🎉 Done! snaplogic-common-robot has been installed and verified."
+
+# Show snaplogic-common-robot version
+show-snaplogic-version:
+	@echo "📦 SnapLogic Common Robot Library Version"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@if ! docker ps | grep -q snaplogic-test-example-tools-container; then \
+		echo "❌ Error: Container 'snaplogic-test-example-tools-container' is not running!"; \
+		echo "💡 Start it first with: make start-tools"; \
+		exit 1; \
+	fi
+	@docker exec snaplogic-test-example-tools-container pip show snaplogic-common-robot | grep -E "^(Name|Version|Location):" || echo "❌ snaplogic-common-robot not installed"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

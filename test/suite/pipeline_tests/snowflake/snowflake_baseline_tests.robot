@@ -304,7 +304,7 @@ Export Snowflake Data To CSV
     ...    • Argument 1: Table Name - ${task_params_set}[table_name] - Source table to export data from
     ...    • Argument 2: Order By Column - DCEVENTHEADERS_USERID - Column for consistent row ordering
     ...    • Argument 3: Output File Path - ${actual_output_file_from_db} - Local path to save CSV file
-    [Tags]    snowflake_demo4
+    [Tags]    snowflake_demo
 
     Export Snowflake Table Data To CSV
     ...    ${task_params_set}[table_name]
@@ -336,11 +336,110 @@ Compare Actual vs Expected CSV Output
     ...    IDENTICAL = Files must match exactly
     ...    DIFFERENT = Files expected to differ
     ...    SUBSET = File1 is subset of File2
-    [Tags]    snowflake_demo4
+    [Tags]    snowflake_demo
     [Template]    Compare CSV Files Template
 
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status
     ${actual_output_file_from_db}    ${expected_output_file}    ${FALSE}    ${TRUE}    IDENTICAL
+
+Export Assets From a Project
+    [Documentation]    Exports pipeline assets from SnapLogic project to a local backup folder.
+    ...    This test case creates a backup of all pipeline assets (pipelines, accounts, etc.)
+    ...    by exporting them as a ZIP file to a local directory for version control,
+    ...    disaster recovery, or migration purposes.
+    ...
+    ...    📋 PREREQUISITES:
+    ...    • Pipeline and related assets exist in the SnapLogic project
+    ...    • Local backup directory is writable
+    ...    • ${ORG_SNODE_ID} is set (done during suite setup)
+    ...
+    ...    📋 ARGUMENT DETAILS:
+    ...    • Argument 1: project_path - Path to the project in SnapLogic
+    ...    (e.g., ${PIPELINES_LOCATION_PATH} = shared/pipelines or project_space/project)
+    ...    • Argument 2: save_to_file - Local file path where the exported ZIP will be saved
+    ...    (e.g., ${CURDIR}/src/exported_assets/snowflake_backup.zip)
+    ...    • Argument 3: asset_types (Optional) - Type of assets to export
+    ...    (default: All - exports pipelines, accounts, and all other assets)
+    ...    Options: All, Pipeline, Account, File, etc.
+    ...
+    ...    💡 TO EXPORT MULTIPLE PROJECTS OR ASSET TYPES:
+    ...    You can add multiple records to export different projects or asset types:
+    ...    # Export all assets from pipelines folder
+    ...    ${PIPELINES_LOCATION_PATH}    ${CURDIR}/src/exported_assets/all_assets.zip    All
+    ...    # Export only pipelines
+    ...    ${PIPELINES_LOCATION_PATH}    ${CURDIR}/src/exported_assets/pipelines_only.zip    Pipeline
+    ...    # Export from different project paths
+    ...    shared/accounts    ${CURDIR}/src/exported_assets/accounts_backup.zip    Account
+    ...
+    ...    📝 USAGE EXAMPLES:
+    ...    # Example 1: Export all assets with timestamp
+    ...    ${PIPELINES_LOCATION_PATH}    ${CURDIR}/src/exported_assets/backup_${timestamp}.zip
+    ...
+    ...    # Example 2: Export only pipelines
+    ...    ${PIPELINES_LOCATION_PATH}    ${CURDIR}/src/exported_assets/pipelines.zip    Pipeline
+    ...
+    ...    # Example 3: Export to different locations
+    ...    project_space/dev    ${CURDIR}/backups/dev_backup.zip
+    ...    project_space/prod    ${CURDIR}/backups/prod_backup.zip
+    ...
+    ...    📋 ASSERTIONS:
+    ...    • Export API call succeeds with status 200
+    ...    • ZIP file is created at the specified location
+    ...    • ZIP file contains the expected assets
+    [Tags]    snowflake_demo    export_assets
+    [Template]    Export Assets Template
+    ${PIPELINES_LOCATION_PATH}    ${CURDIR}/../../../../src/pipelines/snowflake_assets_backup.zip
+
+Import Assets To a project
+    [Documentation]    Imports pipeline assets from a backup ZIP file into a SnapLogic project.
+    ...    This test case restores pipeline assets from a previously exported backup file,
+    ...    allowing you to migrate assets between environments, restore from backups,
+    ...    or deploy assets to new project locations.
+    ...
+    ...    📋 PREREQUISITES:
+    ...    • Backup ZIP file exists (created by Export Pipeline Assets test case)
+    ...    • Target project path exists in SnapLogic
+    ...    • ${ORG_SNODE_ID} is set (done during suite setup)
+    ...    • User has permissions to import assets to the target path
+    ...
+    ...    📋 ARGUMENT DETAILS:
+    ...    • Argument 1: import_path - Target path in SnapLogic where assets will be imported
+    ...    (e.g., ${PIPELINES_LOCATION_PATH}_restored or shared/imported_pipelines)
+    ...    Note: This can be the same path (to restore) or different path (to migrate/clone)
+    ...    • Argument 2: zip_file_path - Local path to the backup ZIP file to import
+    ...    (e.g., ${CURDIR}/../../../../src/pipelines/snowflake_assets_backup.zip)
+    ...    • Argument 3: duplicate_check (Optional) - Whether to check for duplicate assets
+    ...    (default: false - allows overwriting existing assets)
+    ...    Options: true (prevent duplicates), false (allow overwrite)
+    ...
+    ...    💡 COMMON USE CASES:
+    ...    # Use Case 1: Import to new location (migration/cloning) - RECOMMENDED
+    ...    shared/imported_pipelines    ${CURDIR}/backup/assets.zip    false
+    ...
+    ...    # Use Case 2: Restore to original location (overwrite existing)
+    ...    ${PIPELINES_LOCATION_PATH}    ${CURDIR}/backup/assets.zip    false
+    ...
+    ...    # Use Case 3: Import with duplicate check (prevent overwrite)
+    ...    ${PIPELINES_LOCATION_PATH}    ${CURDIR}/backup/assets.zip    true
+    ...
+    ...    📝 USAGE EXAMPLES:
+    ...    # Example 1: Import to a different location (recommended to avoid conflicts)
+    ...    ${PIPELINES_LOCATION_PATH}_restored    ${CURDIR}/../../../../src/pipelines/snowflake_assets_backup.zip
+    ...
+    ...    # Example 2: Import to same location with duplicate check
+    ...    ${PIPELINES_LOCATION_PATH}    ${CURDIR}/../../../../src/pipelines/snowflake_assets_backup.zip    true
+    ...
+    ...    📋 ASSERTIONS:
+    ...    • ZIP file exists and is readable
+    ...    • Import API call succeeds with status 200
+    ...    • Assets are imported to the specified location
+    ...    • Import result contains success status
+    ...
+    ...    ⚠️    NOTE: Importing to a NEW location (e.g., ${PIPELINES_LOCATION_PATH}_restored)
+    ...    is recommended to avoid conflicts with existing pipelines.
+    [Tags]    snowflake_demo    import_assets
+    [Template]    Import Assets Template
+    swapna-automation-latest/test    ${CURDIR}/../../../../src/pipelines/snowflake_assets_backup.zip
 
 
 *** Keywords ***
