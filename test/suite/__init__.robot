@@ -52,7 +52,6 @@ Validate Environment Variables
     ...    PROJECT_SPACE
     ...    PROJECT_NAME
     ...    GROUNDPLEX_NAME
-    ...    RELEASE_BUILD_VERSION
 
     @{missing_vars}=    Create List
 

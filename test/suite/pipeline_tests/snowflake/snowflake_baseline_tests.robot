@@ -76,38 +76,13 @@ Create Account
     ...    (e.g., /org/project/shared) - This should be added in the .env file as a variable
     ...    • Argument 2: ${SNOWFLAKE_ACCOUNT_PAYLOAD_FILE_NAME} - The JSON payload file containing account credentials
     ...    and configuration (includes connection details, username, password, warehouse, etc.)
-    ...    The payload name is added in ../snaplogic-robotframework-examples/env_files/external_accounts/.env.snowflake
     ...    • Argument 3: ${sf_acct} - The name to assign to the account in SnapLogic
-    ...    (referenced by pipelines as '../shared/account_name')
-    ...
-    ...    💡 TO ADD MULTIPLE ACCOUNTS:
-    ...    You can create additional accounts by adding more records to this template.
-    ...    Each record should pass three arguments:
-    ...    1. Account location path (where to create the account)
-    ...    2. Payload file name (JSON file with account credentials)
-    ...    3. Account name (unique name for the account)
-    ...
     ...    📝 USAGE EXAMPLES:
-    ...    # Example 1: Create single account
     ...    ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_FILE_NAME}    ${sf_acct}
-    ...
-    ...    # Example 2: Create multiple accounts for different environments
-    ...    ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_FILE_NAME}    ${sf_acct}
-    ...    ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_DEV_PAYLOAD_FILE_NAME}    dev_snowflake_account
-    ...    ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_TEST_PAYLOAD_FILE_NAME}    test_snowflake_account
-    ...
-    ...    # Example 3: Create accounts in different locations
-    ...    /org/project/shared    snowflake_prod.json    prod_snowflake_acct
-    ...    /org/project/dev/shared    snowflake_dev.json    dev_snowflake_acct
-    ...
-    ...    📋 ASSERTIONS:
-    ...    • Account payload file exists and contains valid JSON
-    ...    • Account creation API call succeeds
-    ...    • Account is created at specified location path
-    ...    • Account credentials are securely stored
-    ...    • Account is accessible for pipeline execution
+    ...    /org/project/shared    ${SNOWFLAKE_ACCOUNT_PAYLOAD_FILE_NAME}    prod_snowflake_acct
     [Tags]    snowflake_demo
     [Template]    Create Account From Template
+
     ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_FILE_NAME}    ${sf_acct}
 
 Upload Expression Library
@@ -120,14 +95,6 @@ Upload Expression Library
     ...    (e.g., ${CURDIR}/../../test_data/expression_libraries/snowflake/snowflake_library.expr)
     ...    • Argument 2: Destination Path - The destination path in SnapLogic where the file will be uploaded
     ...    (typically the same as ${ACCOUNT_LOCATION_PATH} for shared resources)
-    ...
-    ...    💡 TO UPLOAD MULTIPLE EXPRESSION LIBRARIES:
-    ...    You can upload additional expression libraries by adding more records to this template.
-    ...
-    ...    📝 USAGE EXAMPLES:
-    ...    # Example 1: Upload single library
-    ...    ${CURDIR}/../../test_data/expression_libraries/snowflake/snowflake_library.expr    ${ACCOUNT_LOCATION_PATH}
-    ...    ${CURDIR}/../../test_data/expression_libraries/snowflake/snowflake_library2.expr    ${ACCOUNT_LOCATION_PATH}
     [Tags]    snowflake_demo    upload_expression_library
     [Template]    Upload File Using File Protocol Template
 
@@ -153,21 +120,9 @@ Import Pipeline
     ...    • Argument 4: ${pipeline_file_name} - Physical .slp file name to import
     ...    (e.g., snowflake1.slp, pipeline.slp)
     ...
-    ...    📄 RETURNS:
-    ...    • pipeline_snodeid - Unique identifier for the imported pipeline
-    ...    • pipeline_path - Full path to the imported pipeline in SnapLogic
-    ...
     ...    💡 TO IMPORT MULTIPLE PIPELINES:
     ...    You can import multiple pipeline files by adding more records to this template.
     ...    Each record represents one pipeline import operation.
-    ...
-    ...    📝 USAGE EXAMPLES:
-    ...    # Example 1: Import single pipeline
-    ...    ${unique_id}    ${PIPELINES_LOCATION_PATH}    my_pipeline    my_pipeline.slp
-    ...    # Example 2: Import to different locations
-    ...    ${unique_id}    /org/project/dev/pipelines    dev_pipeline    pipeline_v1.slp
-    ...    # Example 3: Import with different unique_ids
-    ...    ${unique_id}_test1    ${PIPELINES_LOCATION_PATH}    pipeline_variant_a    pipeline.slp
     [Tags]    snowflake_demo
     [Template]    Import Pipelines From Template
 
@@ -193,25 +148,6 @@ Create Triggered_task
     ...    (e.g., snowflake_acct, schema_name, table_name)-(optional- can be omitted)
     ...    • Argument 7: ${task_notifications} (Optional) - Dictionary containing notification settings
     ...    (recipients and states for task completion/failure alerts)-(optional- can be omitted)
-    ...
-    ...    📄 RETURNS:
-    ...    • task_payload - Complete task configuration for parameter updates
-    ...    • task_snodeid - Unique task identifier for execution and updates
-    ...
-    ...    📝 USAGE EXAMPLES:
-    ...    # Example 1: Create task with full parameters including notifications
-    ...    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}    ${GROUNDPLEX_NAME}    ${task_params_set}    ${task_notifications}
-    ...
-    ...    # Example 2: Create task without notifications
-    ...    ${unique_id}_2    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}    ${GROUNDPLEX_NAME}
-    ...
-    ...    # Example 3: Create multiple tasks for different pipelines
-    ...    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}    ${GROUNDPLEX_NAME}    ${task_params_set}    ${task_notifications}
-    ...    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name2}    ${task_name2}    ${GROUNDPLEX_NAME}    ${task_params_set2}    ${task_notifications2}
-    ...
-    ...    # Example 4: Create tasks with different parameter sets
-    ...    ${unique_id}    ${PIPELINES_LOCATION_PATH}    data_pipeline    daily_task    ${GROUNDPLEX_NAME}    ${daily_params}    ${notifications}
-    ...    ${unique_id}    ${PIPELINES_LOCATION_PATH}    data_pipeline    weekly_task    ${GROUNDPLEX_NAME}    ${weekly_params}    ${notifications}
     [Tags]    snowflake_demo    regression
     [Template]    Create Triggered Task From Template
 
@@ -235,35 +171,9 @@ Execute Triggered Task
     ...    • Argument 4: ${task_name} - Name of the triggered task to execute
     ...    • Arguments 5+: Optional key=value parameters - Override default task parameters
     ...    (e.g., table_name=DEMO.DIFFERENT_TABLE, schema_name=TEST_SCHEMA)
-    ...
-    ...    💡 TO EXECUTE MULTIPLE TASK RUNS:
-    ...    You can execute the same task multiple times with different parameters.
-    ...    Each record represents one task execution:
-    ...    - With default parameters (no overrides)
-    ...    - With parameter overrides for different scenarios
-    ...    - Multiple sequential executions for testing
-    ...
-    ...    📝 USAGE EXAMPLES:
-    ...    # Example 1: Execute with default parameters (no overrides)
-    ...    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}
-    ...
-    ...    # Example 2: Execute with single parameter override
-    ...    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}    table_name=DEMO.LIFEEVENTSDATA3
-    ...
-    ...    # Example 3: Execute with multiple parameter overrides
-    ...    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}    schema_name=TEST    table_name=TEST.DATA
-    ...
-    ...    # Example 4: Execute same task multiple times with different data
-    ...    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}
-    ...    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}    table_name=DEMO.LIFEEVENTSDATA3
-    ...
-    ...    # Example 5: Execute different tasks
-    ...    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}    table_name=DEMO.TABLE1
-    ...    ${unique_id}_2    ${PIPELINES_LOCATION_PATH}    ${pipeline_name2}    ${task_name2}    table_name=DEMO.TABLE2
     [Tags]    snowflake_demo
     [Template]    Run Triggered Task With Parameters From Template
 
-    # ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}
     ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}
     ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}    table_name=DEMO.LIFEEVENTSDATA3
 
@@ -341,105 +251,6 @@ Compare Actual vs Expected CSV Output
 
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status
     ${actual_output_file_from_db}    ${expected_output_file}    ${FALSE}    ${TRUE}    IDENTICAL
-
-Export Assets From a Project
-    [Documentation]    Exports pipeline assets from SnapLogic project to a local backup folder.
-    ...    This test case creates a backup of all pipeline assets (pipelines, accounts, etc.)
-    ...    by exporting them as a ZIP file to a local directory for version control,
-    ...    disaster recovery, or migration purposes.
-    ...
-    ...    📋 PREREQUISITES:
-    ...    • Pipeline and related assets exist in the SnapLogic project
-    ...    • Local backup directory is writable
-    ...    • ${ORG_SNODE_ID} is set (done during suite setup)
-    ...
-    ...    📋 ARGUMENT DETAILS:
-    ...    • Argument 1: project_path - Path to the project in SnapLogic
-    ...    (e.g., ${PIPELINES_LOCATION_PATH} = shared/pipelines or project_space/project)
-    ...    • Argument 2: save_to_file - Local file path where the exported ZIP will be saved
-    ...    (e.g., ${CURDIR}/src/exported_assets/snowflake_backup.zip)
-    ...    • Argument 3: asset_types (Optional) - Type of assets to export
-    ...    (default: All - exports pipelines, accounts, and all other assets)
-    ...    Options: All, Pipeline, Account, File, etc.
-    ...
-    ...    💡 TO EXPORT MULTIPLE PROJECTS OR ASSET TYPES:
-    ...    You can add multiple records to export different projects or asset types:
-    ...    # Export all assets from pipelines folder
-    ...    ${PIPELINES_LOCATION_PATH}    ${CURDIR}/src/exported_assets/all_assets.zip    All
-    ...    # Export only pipelines
-    ...    ${PIPELINES_LOCATION_PATH}    ${CURDIR}/src/exported_assets/pipelines_only.zip    Pipeline
-    ...    # Export from different project paths
-    ...    shared/accounts    ${CURDIR}/src/exported_assets/accounts_backup.zip    Account
-    ...
-    ...    📝 USAGE EXAMPLES:
-    ...    # Example 1: Export all assets with timestamp
-    ...    ${PIPELINES_LOCATION_PATH}    ${CURDIR}/src/exported_assets/backup_${timestamp}.zip
-    ...
-    ...    # Example 2: Export only pipelines
-    ...    ${PIPELINES_LOCATION_PATH}    ${CURDIR}/src/exported_assets/pipelines.zip    Pipeline
-    ...
-    ...    # Example 3: Export to different locations
-    ...    project_space/dev    ${CURDIR}/backups/dev_backup.zip
-    ...    project_space/prod    ${CURDIR}/backups/prod_backup.zip
-    ...
-    ...    📋 ASSERTIONS:
-    ...    • Export API call succeeds with status 200
-    ...    • ZIP file is created at the specified location
-    ...    • ZIP file contains the expected assets
-    [Tags]    snowflake_demo    export_assets
-    [Template]    Export Assets Template
-    ${PIPELINES_LOCATION_PATH}    ${CURDIR}/../../../../src/pipelines/snowflake_assets_backup.zip
-
-Import Assets To a project
-    [Documentation]    Imports pipeline assets from a backup ZIP file into a SnapLogic project.
-    ...    This test case restores pipeline assets from a previously exported backup file,
-    ...    allowing you to migrate assets between environments, restore from backups,
-    ...    or deploy assets to new project locations.
-    ...
-    ...    📋 PREREQUISITES:
-    ...    • Backup ZIP file exists (created by Export Pipeline Assets test case)
-    ...    • Target project path exists in SnapLogic
-    ...    • ${ORG_SNODE_ID} is set (done during suite setup)
-    ...    • User has permissions to import assets to the target path
-    ...
-    ...    📋 ARGUMENT DETAILS:
-    ...    • Argument 1: import_path - Target path in SnapLogic where assets will be imported
-    ...    (e.g., ${PIPELINES_LOCATION_PATH}_restored or shared/imported_pipelines)
-    ...    Note: This can be the same path (to restore) or different path (to migrate/clone)
-    ...    • Argument 2: zip_file_path - Local path to the backup ZIP file to import
-    ...    (e.g., ${CURDIR}/../../../../src/pipelines/snowflake_assets_backup.zip)
-    ...    • Argument 3: duplicate_check (Optional) - Whether to check for duplicate assets
-    ...    (default: false - allows overwriting existing assets)
-    ...    Options: true (prevent duplicates), false (allow overwrite)
-    ...
-    ...    💡 COMMON USE CASES:
-    ...    # Use Case 1: Import to new location (migration/cloning) - RECOMMENDED
-    ...    shared/imported_pipelines    ${CURDIR}/backup/assets.zip    false
-    ...
-    ...    # Use Case 2: Restore to original location (overwrite existing)
-    ...    ${PIPELINES_LOCATION_PATH}    ${CURDIR}/backup/assets.zip    false
-    ...
-    ...    # Use Case 3: Import with duplicate check (prevent overwrite)
-    ...    ${PIPELINES_LOCATION_PATH}    ${CURDIR}/backup/assets.zip    true
-    ...
-    ...    📝 USAGE EXAMPLES:
-    ...    # Example 1: Import to a different location (recommended to avoid conflicts)
-    ...    ${PIPELINES_LOCATION_PATH}_restored    ${CURDIR}/../../../../src/pipelines/snowflake_assets_backup.zip
-    ...
-    ...    # Example 2: Import to same location with duplicate check
-    ...    ${PIPELINES_LOCATION_PATH}    ${CURDIR}/../../../../src/pipelines/snowflake_assets_backup.zip    true
-    ...
-    ...    📋 ASSERTIONS:
-    ...    • ZIP file exists and is readable
-    ...    • Import API call succeeds with status 200
-    ...    • Assets are imported to the specified location
-    ...    • Import result contains success status
-    ...
-    ...    ⚠️    NOTE: Importing to a NEW location (e.g., ${PIPELINES_LOCATION_PATH}_restored)
-    ...    is recommended to avoid conflicts with existing pipelines.
-    [Tags]    snowflake_demo    import_assets
-    [Template]    Import Assets Template
-    swapna-automation-latest/test    ${CURDIR}/../../../../src/pipelines/snowflake_assets_backup.zip
 
 
 *** Keywords ***

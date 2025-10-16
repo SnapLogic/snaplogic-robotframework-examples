@@ -13,10 +13,11 @@ Library             BuiltIn
 
 
 *** Variables ***
-# Snowflake connection parameters (same as main resource file)
-${SNOWFLAKE_ACCOUNT}                %{SNOWFLAKE_ACCOUNT=snaplogic}
+# Snowflake connection parameters
+# SNOWFLAKE_HOSTNAME is used to automatically extract the account identifier
+${SNOWFLAKE_HOSTNAME}               %{SNOWFLAKE_HOSTNAME}
 ${SNOWFLAKE_USER}                   %{SNOWFLAKE_USERNAME=Bigdatasnaplogic}
-${SNOWFLAKE_PASSWORD}               %{SNOWFLAKE_PASSWORD=Snaplogic2018}
+${SNOWFLAKE_PASSWORD}               %{SNOWFLAKE_PASSWORD}
 ${SNOWFLAKE_DATABASE}               %{SNOWFLAKE_DATABASE=FDLDB}
 ${SNOWFLAKE_SCHEMA}                 %{SNOWFLAKE_SCHEMA=DEMO}
 ${SNOWFLAKE_WAREHOUSE}              %{SNOWFLAKE_WAREHOUSE=ELT_XS_WH}
@@ -24,15 +25,33 @@ ${SNOWFLAKE_ROLE}                   %{SNOWFLAKE_ROLE=SYSADMIN}
 
 # Connection tracking
 ${SNOWFLAKE_CONNECTION_METHOD}      NONE
+${SNOWFLAKE_ACCOUNT}                ${EMPTY}    # Will be extracted from SNOWFLAKE_HOSTNAME
 
 
 *** Keywords ***
+Extract Snowflake Account Identifier From Hostname
+    [Documentation]    Extract the account identifier from SNOWFLAKE_HOSTNAME
+    ...    Example: snaplogic.snowflakecomputing.com -> snaplogic
+    ...    Returns: Account identifier (first part before the first dot)
+
+    # Split hostname by "." and get the first part
+    @{parts}=    Split String    ${SNOWFLAKE_HOSTNAME}    .
+    ${account_id}=    Get From List    ${parts}    0
+
+    Log    Extracted Account Identifier: ${account_id}    console=yes
+    Log    From Hostname: ${SNOWFLAKE_HOSTNAME}    console=yes
+
+    # Set as suite variable so it can be used throughout
+    Set Suite Variable    ${SNOWFLAKE_ACCOUNT_IDENTIFIER}    ${account_id}
+
+    RETURN    ${account_id}
+
 Connect To Snowflake Via DatabaseLibrary
     [Documentation]    Connect to Snowflake using DatabaseLibrary for compatibility with standard templates
     ...    This creates a connection that Load JSON Data Template can use
     ...    Uses Method 1: Custom Params which is the recommended approach
     ...    Returns: Connection details dictionary with status and database info
-    [Arguments]    ${account}=${SNOWFLAKE_ACCOUNT}
+    [Arguments]    ${account}=${EMPTY}
     ...    ${user}=${SNOWFLAKE_USER}
     ...    ${password}=${SNOWFLAKE_PASSWORD}
     ...    ${database}=${SNOWFLAKE_DATABASE}
@@ -40,11 +59,18 @@ Connect To Snowflake Via DatabaseLibrary
     ...    ${warehouse}=${SNOWFLAKE_WAREHOUSE}
     ...    ${role}=${SNOWFLAKE_ROLE}
 
+    # Extract account from hostname if not provided
+    IF    '${account}' == '${EMPTY}'
+        ${account}=    Extract Snowflake Account Identifier From Hostname
+    END
+
     # Initialize connection details
     ${connection_details}=    Create Dictionary    method=NONE    status=FAILED    error=${EMPTY}
 
     Log    ========================================    console=yes
     Log    Connecting to Snowflake via DatabaseLibrary...    console=yes
+    Log    Account: ${account}    console=yes
+    Log    Hostname: ${SNOWFLAKE_HOSTNAME}    console=yes
     Log    ========================================    console=yes
 
     TRY
