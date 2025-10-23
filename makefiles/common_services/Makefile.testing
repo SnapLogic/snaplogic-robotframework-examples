@@ -5,7 +5,7 @@
 # including single tests, parallel execution, and test reporting
 # =============================================================================
 
-.PHONY: robot-run-tests robot-run-all-tests robot-run-tests-no-gp slack-notify upload-test-results upload-test-results-cli
+.PHONY: robot-run-tests robot-run-all-tests robot-run-tests-no-gp slack-notify upload-test-results upload-test-results-cli sl-export-assets sl-import-assets sl-export-assets-full sl-import-assets-full
 
 # Include common configuration
 include makefiles/common_services/Makefile.common
@@ -161,60 +161,75 @@ upload-test-results:
 	@echo "🚀 Running upload script inside tools container..."
 	$(DOCKER_COMPOSE) exec -w /app/test -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e CREATE_ZIP -e UPLOAD_LATEST_ONLY -e LATEST_COUNT tools python upload_robot_results.py
 
+
+
+
 # =============================================================================
-# 🚀 Upload test results using AWS CLI (alternative to Python script)
+# 📤 Export Assets From Project (Full Suite Setup)
+#   → Exports assets with full suite initialization (includes credential setup)
+#   → This runs the full suite setup which properly initializes authentication
+#   → usage: make sl-export-assets
+#   → Optional arguments:
+#     PROJECT_PATH       - SnapLogic project path to export from
+#     ASSET_TYPES        - Types of assets to export: All, Pipeline, Account, File (default: All)
+#     EXPORT_FILE_NAME   - Custom ZIP filename
+#   → Examples:
+#     make sl-export-assets
+#     make sl-export-assets PROJECT_PATH="shared/my-project"
+#     make sl-export-assets PROJECT_PATH="swapna-automation-latest/sl_project" EXPORT_FILE_NAME="prod_backup.zip"
 # =============================================================================
-upload-test-results-cli:
-	@echo "📤 Uploading test results to S3 using AWS CLI..."
-	@echo "🔍 Checking for AWS credentials..."
-	@if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then \
-		echo "⚠️  AWS credentials not found in environment."; \
-		echo "🔍 Checking .env file for credentials..."; \
-		if [ -f ".env" ] && grep -q "AWS_ACCESS_KEY_ID" .env && grep -q "AWS_SECRET_ACCESS_KEY" .env; then \
-			echo "✅ Found AWS credentials in .env file"; \
-			source .env && export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; \
-		else \
-			echo "❌ AWS credentials not found. Please set:"; \
-			echo "   export AWS_ACCESS_KEY_ID=your_access_key"; \
-			echo "   export AWS_SECRET_ACCESS_KEY=your_secret_key"; \
-			echo "   Or add them to your .env file"; \
-			exit 1; \
-		fi; \
-	fi
-	@echo "⏰ Creating timestamp..."
-	$(eval TIMESTAMP := $(shell date +'%Y%m%d-%H%M%S'))
-	@echo "📁 Timestamp: $(TIMESTAMP)"
-	@echo "🚀 Uploading files to S3..."
-	@echo "📤 Uploading XML files..."
-	@$(DOCKER_COMPOSE) exec -T -w /app/test \
-		-e AWS_ACCESS_KEY_ID \
-		-e AWS_SECRET_ACCESS_KEY \
-		tools bash -c 'aws s3 cp robot_output/ s3://artifacts.slimdev.snaplogic/RF_CommonTests_Results/$(TIMESTAMP)/ \
-		--recursive --exclude "*" --include "output-*.xml" --no-progress || echo "No XML files to upload"'
-	@echo "📤 Uploading HTML log files..."
-	@$(DOCKER_COMPOSE) exec -T -w /app/test \
-		-e AWS_ACCESS_KEY_ID \
-		-e AWS_SECRET_ACCESS_KEY \
-		tools bash -c 'aws s3 cp robot_output/ s3://artifacts.slimdev.snaplogic/RF_CommonTests_Results/$(TIMESTAMP)/ \
-		--recursive --exclude "*" --include "log-*.html" --no-progress || echo "No log files to upload"'
-	@echo "📤 Uploading HTML report files..."
-	@$(DOCKER_COMPOSE) exec -T -w /app/test \
-		-e AWS_ACCESS_KEY_ID \
-		-e AWS_SECRET_ACCESS_KEY \
-		tools bash -c 'aws s3 cp robot_output/ s3://artifacts.slimdev.snaplogic/RF_CommonTests_Results/$(TIMESTAMP)/ \
-		--recursive --exclude "*" --include "report-*.html" --no-progress || echo "No report files to upload"'
-	@echo "" 
-	@echo "======================================================================"
-	@echo "✅ All uploads completed successfully!"
-	@echo "📍 Complete S3 Location:"
-	@echo "   s3://artifacts.slimdev.snaplogic/RF_CommonTests_Results/$(TIMESTAMP)/"
-	@echo ""
-	@echo "🌐 S3 Console URL:"
-	@echo "   https://s3.console.aws.amazon.com/s3/buckets/artifacts.slimdev.snaplogic?prefix=RF_CommonTests_Results/$(TIMESTAMP)/"
-	@echo ""
-	@echo "📋 AWS CLI command to list uploaded files:"
-	@echo "   aws s3 ls s3://artifacts.slimdev.snaplogic/RF_CommonTests_Results/$(TIMESTAMP)/"
-	@echo ""
-	@echo "📥 AWS CLI command to download all files:"
-	@echo "   aws s3 sync s3://artifacts.slimdev.snaplogic/RF_CommonTests_Results/$(TIMESTAMP)/ ./downloaded_results/"
-	@echo "======================================================================"
+sl-export-assets: check-env
+	@echo "📤 Exporting assets from SnapLogic project (with full suite initialization)..."
+	$(eval ORG_NAME_VALUE := $(shell grep -E '^ORG_NAME=' .env | cut -d '=' -f 2))
+	$(eval ROBOT_VARS := )
+	$(if $(PROJECT_PATH),$(eval ROBOT_VARS += --variable PROJECT_PATH:$(PROJECT_PATH)))
+	$(if $(ASSET_TYPES),$(eval ROBOT_VARS += --variable ASSET_TYPES:$(ASSET_TYPES)))
+	$(if $(EXPORT_FILE_NAME),$(eval ROBOT_VARS += --variable EXPORT_FILE_NAME:$(EXPORT_FILE_NAME)))
+	@echo "ℹ️  Organization: $(ORG_NAME_VALUE)"
+	@if [ -n "$(PROJECT_PATH)" ]; then echo "ℹ️  Project Path: $(PROJECT_PATH)"; fi
+	@if [ -n "$(ASSET_TYPES)" ]; then echo "ℹ️  Asset Types: $(ASSET_TYPES)"; fi
+	@if [ -n "$(EXPORT_FILE_NAME)" ]; then echo "ℹ️  Export File: $(EXPORT_FILE_NAME)"; fi
+	@$(DOCKER_COMPOSE) exec -w /app/test tools robot \
+		--include export_assets \
+		--outputdir robot_output \
+		$(ROBOT_VARS) \
+		suite/ && \
+	echo "✅ Assets exported successfully!" || \
+	echo "❌ Export failed. Check the logs for details."
+
+# =============================================================================
+# 📥 Import Assets To Project (Full Suite Setup)
+#   → Imports assets with full suite initialization (includes credential setup)
+#   → This runs the full suite setup which properly initializes authentication
+#   → usage: make sl-import-assets
+#   → Optional arguments:
+#     IMPORT_PATH          - Target path in SnapLogic where assets will be imported
+#     ZIP_FILE_PATH        - Local path to the backup ZIP file to import
+#     DUPLICATE_CHECK      - Whether to check for duplicate assets: true or false (default: false)
+#     PROJECT_SPACE_SETUP  - Whether to delete/recreate project space: True or False (default: False)
+#   → Examples:
+#     make sl-import-assets
+#     make sl-import-assets IMPORT_PATH="shared/restored-project"
+#     make sl-import-assets IMPORT_PATH="swapna-automation-latest/test2" ZIP_FILE_PATH="src/exported_assets/prod_backup.zip"
+#     make sl-import-assets IMPORT_PATH="swapna-automation-latest/sl_project" PROJECT_SPACE_SETUP=False
+# =============================================================================
+sl-import-assets: check-env
+	@echo "📥 Importing assets to SnapLogic project (with full suite initialization)..."
+	$(eval ORG_NAME_VALUE := $(shell grep -E '^ORG_NAME=' .env | cut -d '=' -f 2))
+	$(eval PROJECT_SPACE_SETUP_VAL := $(if $(PROJECT_SPACE_SETUP),$(PROJECT_SPACE_SETUP),False))
+	$(eval ROBOT_VARS := --variable PROJECT_SPACE_SETUP:$(PROJECT_SPACE_SETUP_VAL))
+	$(if $(IMPORT_PATH),$(eval ROBOT_VARS += --variable IMPORT_PATH:$(IMPORT_PATH)))
+	$(if $(ZIP_FILE_PATH),$(eval ROBOT_VARS += --variable ZIP_FILE_PATH:$(ZIP_FILE_PATH)))
+	$(if $(DUPLICATE_CHECK),$(eval ROBOT_VARS += --variable DUPLICATE_CHECK:$(DUPLICATE_CHECK)))
+	@echo "ℹ️  Organization: $(ORG_NAME_VALUE)"
+	@echo "ℹ️  Project Space Setup: $(PROJECT_SPACE_SETUP_VAL)"
+	@if [ -n "$(IMPORT_PATH)" ]; then echo "ℹ️  Import Path: $(IMPORT_PATH)"; fi
+	@if [ -n "$(ZIP_FILE_PATH)" ]; then echo "ℹ️  ZIP File: $(ZIP_FILE_PATH)"; fi
+	@if [ -n "$(DUPLICATE_CHECK)" ]; then echo "ℹ️  Duplicate Check: $(DUPLICATE_CHECK)"; fi
+	@$(DOCKER_COMPOSE) exec -w /app/test tools robot \
+		--include import_assets \
+		--outputdir robot_output \
+		$(ROBOT_VARS) \
+		suite/ && \
+	echo "✅ Assets imported successfully!" || \
+	echo "❌ Import failed. Check the logs for details."

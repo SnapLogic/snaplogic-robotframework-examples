@@ -579,7 +579,7 @@ groundplex-status:
 | `make groundplex-status`            | 20-attempt health checking with logging  | `docker exec snaplogic-groundplex jcc.sh status`       |
 | `make stop-groundplex`              | Graceful JCC shutdown with retries       | JCC stop + `docker compose --profile gp down`          |
 | `make start-services`               | Profile-based service orchestration      | `COMPOSE_PROFILES=tools,oracle-dev,minio,postgres-dev` |
-| `make snaplogic-start-services`     | Full rebuild and start workflow          | `build --no-cache` + profile startup                   |
+| `make start-services`               | Full rebuild and start workflow          | `build --no-cache` + profile startup                   |
 
 ### Environment and Profile Management
 

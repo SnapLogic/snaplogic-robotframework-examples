@@ -23,7 +23,7 @@
 # -----------------------------------------------------------------------------
 # Declare all phony targets (targets that don't create files)
 # -----------------------------------------------------------------------------
-.PHONY: help list-categories status docker-networks container-networks network-check
+.PHONY: help list-categories status docker-networks container-networks network-check show-running
 
 
 # -----------------------------------------------------------------------------
@@ -143,5 +143,26 @@ network-check:
 			echo "  $network: $count container(s)"; \
 		fi; \
 	done
+
+# -----------------------------------------------------------------------------
+# SHOW-RUNNING: Display currently running services
+# -----------------------------------------------------------------------------
+# What it does:
+#   - Shows all running containers and their status
+#   - Helps identify what services might need restart
+# When to use:
+#   - To check what's currently running
+#   - Before deciding what to restart
+#   - To verify services are up
+# Usage:
+#   make show-running
+# -----------------------------------------------------------------------------
+show-running:
+	@echo "📋 Currently running services:"
+	@echo "========================================"
+	$(DOCKER_COMPOSE) ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
+	@echo "========================================"
+	@echo "💡 Tip: Use 'make recreate-tools' to reload .env file changes (5s)"
+	@echo "💡 Tip: Use 'make restart-tools' for quick restart without env reload (3s)"
 
 

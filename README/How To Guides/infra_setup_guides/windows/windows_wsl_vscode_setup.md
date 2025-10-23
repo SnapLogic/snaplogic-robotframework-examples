@@ -414,7 +414,7 @@ Expected output:
 
 4. **Now you can run your make commands:**
    ```bash
-   make snaplogic-start-services
+   make start-services
    make robot-run-all-tests
    ```
 
@@ -543,17 +543,17 @@ Add to VS Code settings.json (`Ctrl+,` then click {} icon):
 
 ### Essential Commands
 
-| Action                     | Command                            |
-| -------------------------- | ---------------------------------- |
-| Check if WSL installed     | `wsl --status`                     |
-| Install WSL + Ubuntu       | `wsl --install`                    |
-| Open Ubuntu                | `wsl` or `ubuntu`                  |
-| Check make version         | `make --version`                   |
-| Install make               | `sudo apt install build-essential` |
-| Check Docker in WSL        | `docker --version`                 |
-| Test Docker connection     | `docker ps`                        |
-| Restart WSL                | `wsl --shutdown` (from PowerShell) |
-| Open WSL in VS Code        | Terminal dropdown → Ubuntu (WSL)   |
+| Action                 | Command                            |
+| ---------------------- | ---------------------------------- |
+| Check if WSL installed | `wsl --status`                     |
+| Install WSL + Ubuntu   | `wsl --install`                    |
+| Open Ubuntu            | `wsl` or `ubuntu`                  |
+| Check make version     | `make --version`                   |
+| Install make           | `sudo apt install build-essential` |
+| Check Docker in WSL    | `docker --version`                 |
+| Test Docker connection | `docker ps`                        |
+| Restart WSL            | `wsl --shutdown` (from PowerShell) |
+| Open WSL in VS Code    | Terminal dropdown → Ubuntu (WSL)   |
 
 ### Terminal Indicators
 
@@ -566,15 +566,15 @@ Add to VS Code settings.json (`Ctrl+,` then click {} icon):
 
 ### Common Issues and Fixes
 
-| Issue                            | Solution                                               |
-| -------------------------------- | ------------------------------------------------------ |
-| WSL not recognized               | Run PowerShell as Admin                                |
-| Ubuntu won't start               | `wsl --shutdown` then retry                            |
-| Make not found                   | `sudo apt install build-essential`                     |
-| Docker not found in WSL          | Enable WSL integration in Docker Desktop settings      |
-| Docker daemon connection error   | Restart terminal after enabling WSL integration        |
-| Wrong terminal in VS Code        | Select "Ubuntu (WSL)" from dropdown                    |
-| Permission denied                | Use `sudo` before commands                             |
+| Issue                          | Solution                                          |
+| ------------------------------ | ------------------------------------------------- |
+| WSL not recognized             | Run PowerShell as Admin                           |
+| Ubuntu won't start             | `wsl --shutdown` then retry                       |
+| Make not found                 | `sudo apt install build-essential`                |
+| Docker not found in WSL        | Enable WSL integration in Docker Desktop settings |
+| Docker daemon connection error | Restart terminal after enabling WSL integration   |
+| Wrong terminal in VS Code      | Select "Ubuntu (WSL)" from dropdown               |
+| Permission denied              | Use `sudo` before commands                        |
 
 ### File Path Conversions
 
