@@ -20,12 +20,6 @@ Documentation       Test Suite for PostgreSQL to S3 Pipeline Integration
 ...                 - Asserts: Downloaded CSV matches expected CSV structure and content
 ...                 - Asserts: Downloaded JSON matches expected JSON structure and content
 ...                 - Asserts: No data loss or corruption during pipeline process
-...
-...                 🔍 KEY VALIDATION POINTS:
-...                 • Data Integrity: Source data = Exported data
-...                 • Row Count Accuracy: File analysis = Database operations = S3 exports
-...                 • Format Preservation: CSV and JSON structures maintained
-...                 • Pipeline Reliability: End-to-end data flow validation
 
 # Standard Libraries
 Library             OperatingSystem    # File system operations

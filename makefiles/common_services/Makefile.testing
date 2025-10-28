@@ -175,7 +175,6 @@ upload-test-results:
 #     EXPORT_FILE_NAME   - Custom ZIP filename
 #   → Examples:
 #     make sl-export-assets
-#     make sl-export-assets PROJECT_PATH="shared/my-project"
 #     make sl-export-assets PROJECT_PATH="swapna-automation-latest/sl_project" EXPORT_FILE_NAME="prod_backup.zip"
 # =============================================================================
 sl-export-assets: check-env
@@ -207,11 +206,8 @@ sl-export-assets: check-env
 #     ZIP_FILE_PATH        - Local path to the backup ZIP file to import
 #     DUPLICATE_CHECK      - Whether to check for duplicate assets: true or false (default: false)
 #     PROJECT_SPACE_SETUP  - Whether to delete/recreate project space: True or False (default: False)
-#   → Examples:
-#     make sl-import-assets
-#     make sl-import-assets IMPORT_PATH="shared/restored-project"
+#   → Usage Examples:
 #     make sl-import-assets IMPORT_PATH="swapna-automation-latest/test2" ZIP_FILE_PATH="src/exported_assets/prod_backup.zip"
-#     make sl-import-assets IMPORT_PATH="swapna-automation-latest/sl_project" PROJECT_SPACE_SETUP=False
 # =============================================================================
 sl-import-assets: check-env
 	@echo "📥 Importing assets to SnapLogic project (with full suite initialization)..."
