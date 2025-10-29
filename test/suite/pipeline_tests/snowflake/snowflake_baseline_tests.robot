@@ -16,6 +16,7 @@ Resource            ../../../resources/sql_table_operations.resource    # Generi
 Resource            ../../test_data/queries/snowflake_queries.resource    # Snowflake SQL queries
 
 Suite Setup         Check connections    # Check if the connection to the snowflake database is successful and snaplex is up
+Suite Teardown      Delete All Files    # Clean up all all files after execution
 
 
 *** Variables ***
@@ -79,13 +80,13 @@ Create Account
     ...    • Argument 3: ${sf_acct} - The name to assign to the account in SnapLogic
     ...    📝 USAGE EXAMPLES:
     ...    ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_FILE_NAME}    ${sf_acct}
-    ...    /org/project/shared    ${SNOWFLAKE_ACCOUNT_PAYLOAD_FILE_NAME}    prod_snowflake_acct
+    ...    /org/project/shared    ${SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_FILE_NAME}    prod_snowflake_acct
     [Tags]    snowflake_demo
     [Template]    Create Account From Template
-
     ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_FILE_NAME}    ${sf_acct}
+    ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_FILE_NAME}    ${sf_acct2}
 
-Upload Expression Library
+Upload Files
     [Documentation]    Uploads the expression library (.expr file) to the project level shared folder.
     ...    Expression libraries contain reusable custom functions and expressions that can be
     ...    referenced across multiple pipelines in the project.
@@ -95,10 +96,19 @@ Upload Expression Library
     ...    (e.g., ${CURDIR}/../../test_data/expression_libraries/snowflake/snowflake_library.expr)
     ...    • Argument 2: Destination Path - The destination path in SnapLogic where the file will be uploaded
     ...    (typically the same as ${ACCOUNT_LOCATION_PATH} for shared resources)
-    [Tags]    snowflake_demo    upload_expression_library
+    [Tags]    snowflake_demo2    upload_expression_library
     [Template]    Upload File Using File Protocol Template
-
+    # file path    destination_path
     ${CURDIR}/../../test_data/actual_expected_data/expression_libraries/snowflake/snowflake_library.expr    ${ACCOUNT_LOCATION_PATH}
+    ${CURDIR}/../../test_data/actual_expected_data/expression_libraries/snowflake/snowflake_library2.expr    ${ACCOUNT_LOCATION_PATH}
+
+Delete Files
+    [Documentation]    Delete files with different soft_delete and status settings
+    [Tags]    delete_snowflake_files
+    [Template]    Delete File
+    # project_path    soft_delete(Have it in recyclebin or not)
+    ${ACCOUNT_LOCATION_PATH}/snowflake_library.expr    ${True}
+    ${ACCOUNT_LOCATION_PATH}/snowflake_library2.expr    ${False}
 
 Import Pipeline
     [Documentation]    Imports Snowflake pipeline files (.slp) into the SnapLogic project space.
@@ -307,3 +317,22 @@ Export Snowflake Table Data To CSV
 
     Log    ✅ Exported ${export_result}[row_count] rows to ${export_result}[file_path]    console=yes
     Log    📁 CSV file location: ${output_file}    console=yes
+
+Delete All Files
+    [Documentation]    Deletes uploaded expression library files from the project
+    Log    🗑️ Deleting expression library files...    console=yes
+
+    @{files}=    Create List
+    ...    snowflake_library.expr
+    ...    snowflake_library2.expr
+
+    FOR    ${file}    IN    @{files}
+        ${status}    ${response}=    Run Keyword And Ignore Error
+        ...    Delete File    ${ACCOUNT_LOCATION_PATH}/${file}    soft_delete=${False}
+
+        IF    '${status}' == 'PASS'
+            Log    ✓ Deleted: ${file}    console=yes
+        ELSE
+            Log    ⚠️ Could not delete: ${file} (may not exist)    console=yes
+        END
+    END
