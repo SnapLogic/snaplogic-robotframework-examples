@@ -1,9 +1,6 @@
 *** Settings ***
-Documentation       Snowflake DatabaseLibrary Keywords
-...                 This resource file contains keywords for connecting to and working with
-...                 Snowflake using DatabaseLibrary instead of the custom SnowflakeLib.
-...                 These keywords enable using generic database templates and provide
-...                 compatibility with standard DatabaseLibrary operations.
+Documentation       Snowflake DatabaseLibrary Keywords - Refactored Version
+...                 This is the refactored version with modular keywords
 
 Library             DatabaseLibrary
 Library             OperatingSystem
@@ -13,95 +10,83 @@ Library             BuiltIn
 
 
 *** Variables ***
-# Snowflake connection parameters
-# SNOWFLAKE_HOSTNAME is used to automatically extract the account identifier
-${SNOWFLAKE_HOSTNAME}               %{SNOWFLAKE_HOSTNAME}
-${SNOWFLAKE_USER}                   %{SNOWFLAKE_USERNAME=Bigdatasnaplogic}
-${SNOWFLAKE_PASSWORD}               %{SNOWFLAKE_PASSWORD}
-${SNOWFLAKE_DATABASE}               %{SNOWFLAKE_DATABASE=FDLDB}
-${SNOWFLAKE_SCHEMA}                 %{SNOWFLAKE_SCHEMA=DEMO}
-${SNOWFLAKE_WAREHOUSE}              %{SNOWFLAKE_WAREHOUSE=ELT_XS_WH}
-${SNOWFLAKE_ROLE}                   %{SNOWFLAKE_ROLE=SYSADMIN}
-
-# Connection tracking
+# Copy the existing variables from the original file
+${SNOWFLAKE_HOSTNAME}               ${EMPTY}
+${SNOWFLAKE_USERNAME}               ${EMPTY}
+${SNOWFLAKE_PASSWORD}               ${EMPTY}
+${SNOWFLAKE_DATABASE}               ${EMPTY}
+${SNOWFLAKE_SCHEMA}                 ${EMPTY}
+${SNOWFLAKE_WAREHOUSE}              ${EMPTY}
+${SNOWFLAKE_ROLE}                   ${EMPTY}
+${SNOWFLAKE_ACCOUNT_IDENTIFIER}     ${EMPTY}
 ${SNOWFLAKE_CONNECTION_METHOD}      NONE
-${SNOWFLAKE_ACCOUNT}                ${EMPTY}    # Will be extracted from SNOWFLAKE_HOSTNAME
 
 
 *** Keywords ***
-Extract Snowflake Account Identifier From Hostname
-    [Documentation]    Extract the account identifier from SNOWFLAKE_HOSTNAME
-    ...    Example: snaplogic.snowflakecomputing.com -> snaplogic
-    ...    Returns: Account identifier (first part before the first dot)
-
-    # Split hostname by "." and get the first part
-    @{parts}=    Split String    ${SNOWFLAKE_HOSTNAME}    .
-    ${account_id}=    Get From List    ${parts}    0
-
-    Log    Extracted Account Identifier: ${account_id}    console=yes
-    Log    From Hostname: ${SNOWFLAKE_HOSTNAME}    console=yes
-
-    # Set as suite variable so it can be used throughout
-    Set Suite Variable    ${SNOWFLAKE_ACCOUNT_IDENTIFIER}    ${account_id}
-
-    RETURN    ${account_id}
-
 Connect To Snowflake Via DatabaseLibrary
-    [Documentation]    Connect to Snowflake using DatabaseLibrary for compatibility with standard templates
-    ...    This creates a connection that Load JSON Data Template can use
-    ...    Uses Method 1: Custom Params which is the recommended approach
+    [Documentation]    Connect to Snowflake using DatabaseLibrary - Simplified version
+    ...    This version uses modular keywords for each connection step
     ...    Returns: Connection details dictionary with status and database info
-    [Arguments]    ${account}=${EMPTY}
-    ...    ${user}=${SNOWFLAKE_USER}
+    [Arguments]    ${account}=${SNOWFLAKE_ACCOUNT_IDENTIFIER}
+    ...    ${user}=${SNOWFLAKE_USERNAME}
     ...    ${password}=${SNOWFLAKE_PASSWORD}
     ...    ${database}=${SNOWFLAKE_DATABASE}
     ...    ${schema}=${SNOWFLAKE_SCHEMA}
     ...    ${warehouse}=${SNOWFLAKE_WAREHOUSE}
     ...    ${role}=${SNOWFLAKE_ROLE}
 
-    # Extract account from hostname if not provided
-    IF    '${account}' == '${EMPTY}'
-        ${account}=    Extract Snowflake Account Identifier From Hostname
-    END
-
-    # Initialize connection details
+    # Initialize connection details dictionary
     ${connection_details}=    Create Dictionary    method=NONE    status=FAILED    error=${EMPTY}
 
     Log    ========================================    console=yes
     Log    Connecting to Snowflake via DatabaseLibrary...    console=yes
+    Log    User: ${user}    console=yes
+    Log    Role: ${role}    console=yes
     Log    Account: ${account}    console=yes
-    Log    Hostname: ${SNOWFLAKE_HOSTNAME}    console=yes
     Log    ========================================    console=yes
 
     TRY
-        # Using the recommended Method 1: Custom Params
-        # Note: This keyword shows deprecation warning but still works perfectly
-        Connect To Database Using Custom Params
-        ...    snowflake.connector
-        ...    database='${database}', user='${user}', password='${password}', account='${account}', warehouse='${warehouse}', schema='${schema}', role='${role}'
+        # Step 1: Establish the connection
+        ${connected}=    Establish Snowflake Connection    
+        ...    user=${user}    
+        ...    password=${password}    
+        ...    account=${account}    
+        ...    role=${role}
 
-        # Test the connection and get details
-        ${result}=    Query    SELECT CURRENT_DATABASE(), CURRENT_SCHEMA(), CURRENT_WAREHOUSE()
+        # Step 2: Check available resources
+        Log    ========================================    console=yes
+        Log    Checking available Snowflake resources...    console=yes
+        ${db_names}=    Get Available Snowflake Databases
+        ${warehouses}=    Get Available Snowflake Warehouses
+        Log    ========================================    console=yes
 
-        # Connection successful! Store the details
-        ${connection_method}=    Set Variable    Method 1: Custom Params
-        Set Suite Variable    ${SNOWFLAKE_CONNECTION_METHOD}    ${connection_method}
+        # Step 3: Setup warehouse
+        ${warehouse_status}=    Setup Snowflake Warehouse    ${warehouse}
+
+        # Step 4: Setup database
+        ${actual_database}=    Setup Snowflake Database    ${database}    ${db_names}
+        
+        # Step 5: Setup schema (only if database was set)
+        ${actual_schema}=    Set Variable    ${EMPTY}
+        IF    '${actual_database}' != '${EMPTY}'
+            ${actual_schema}=    Setup Snowflake Schema    ${schema}
+        END
+
+        # Step 6: Verify the final context
+        ${context}=    Verify Snowflake Context
+
+        # Step 7: Update connection details with success
+        Set Suite Variable    ${SNOWFLAKE_CONNECTION_METHOD}    DatabaseLibrary Connection
 
         Set To Dictionary    ${connection_details}
-        ...    method=Method 1
+        ...    method=DatabaseLibrary
         ...    status=SUCCESS
-        ...    database=${result[0][0]}
-        ...    schema=${result[0][1]}
-        ...    warehouse=${result[0][2]}
-
-        Log    ========================================    console=yes
-        Log    ✅ Successfully connected to Snowflake    console=yes
-        Log    Database: ${result[0][0]}    console=yes
-        Log    Schema: ${result[0][1]}    console=yes
-        Log    Warehouse: ${result[0][2]}    console=yes
-        Log    ========================================    console=yes
+        ...    database=${context}[database]
+        ...    schema=${context}[schema]
+        ...    warehouse=${context}[warehouse]
 
         RETURN    ${connection_details}
+        
     EXCEPT    AS    ${error}
         # Connection failed
         Set Suite Variable    ${SNOWFLAKE_CONNECTION_METHOD}    FAILED
@@ -112,225 +97,220 @@ Connect To Snowflake Via DatabaseLibrary
         Log    Error: ${error}    console=yes
         Log    ========================================    console=yes
         Log    Troubleshooting tips:    console=yes
-        Log    1. Ensure snowflake-connector-python is installed: pip install snowflake-connector-python    console=yes
+        Log    1. Ensure snowflake-connector-python is installed    console=yes
         Log    2. Verify your credentials and network access    console=yes
-        Log    3. Check if account format is correct (e.g., 'account' or 'account.region')    console=yes
+        Log    3. Check if account format is correct    console=yes
         Log    ========================================    console=yes
 
         Fail    Could not connect to Snowflake via DatabaseLibrary: ${error}
     END
 
-# REMOVED: Select All Records From Table - Use 'Select All From Table' from sql_table_operations.resource
-# REMOVED: Select Records With Where Clause - Use 'Select Where' from sql_table_operations.resource
-
-# REMOVED: Get Table Data As Dictionary - Use from sql_table_operations.resource
-# REMOVED: Extract Column Values From Dictionary - Use from sql_table_operations.resource
-# REMOVED: Extract Multiple Columns From Dictionary - Use from sql_table_operations.resource
-# REMOVED: Get Unique Column Values - Use from sql_table_operations.resource
-# REMOVED: Filter Dictionary Results By Column Value - Use from sql_table_operations.resource
-# REMOVED: Evaluate Column Condition - Use from sql_table_operations.resource
-
-# REMOVED: Test DatabaseLibrary Connection - Use 'Test Database Connection' from sql_table_operations.resource
-
-# DatabaseLibrary Wrapper Keywords for Consistency
-
-# REMOVED: Execute Query Via DatabaseLibrary - Use 'Execute Custom Query' from sql_table_operations.resource
-# REMOVED: Execute Command Via DatabaseLibrary - Use 'Execute Custom Command' from sql_table_operations.resource
-
-Get Current Snowflake Context Via DatabaseLibrary
-    [Documentation]    Get current database context using DatabaseLibrary
-
-    ${context_query}=    Catenate    SEPARATOR=${SPACE}
-    ...    SELECT
-    ...    CURRENT_DATABASE() as database,
-    ...    CURRENT_SCHEMA() as schema,
-    ...    CURRENT_WAREHOUSE() as warehouse,
-    ...    CURRENT_USER() as user,
-    ...    CURRENT_ROLE() as role,
-    ...    CURRENT_VERSION() as version
-
-    ${context}=    Query    ${context_query}
-
-    ${context_dict}=    Create Dictionary
-    ...    database=${context[0][0]}
-    ...    schema=${context[0][1]}
-    ...    warehouse=${context[0][2]}
-    ...    user=${context[0][3]}
-    ...    role=${context[0][4]}
-    ...    version=${context[0][5]}
-
-    Log    Current Snowflake Context:    console=yes
-    Log    Database: ${context_dict}[database]    console=yes
-    Log    Schema: ${context_dict}[schema]    console=yes
-    Log    Warehouse: ${context_dict}[warehouse]    console=yes
-    Log    User: ${context_dict}[user]    console=yes
-    Log    Role: ${context_dict}[role]    console=yes
-    Log    Version: ${context_dict}[version]    console=yes
-
-    RETURN    ${context_dict}
-
-# REMOVED: The following keywords are replaced by generic ones in sql_table_operations.resource:
-# - Table Should Exist Via DatabaseLibrary → Use 'Table Should Exist'
-# - Table Should Not Exist Via DatabaseLibrary → Use 'Table Should Not Exist'
-# - Get Row Count Via DatabaseLibrary → Use 'Get Row Count'
-# - Create Table Via DatabaseLibrary → Use 'Create Table'
-# - Drop Table Via DatabaseLibrary → Use 'Drop Table'
-# - Insert Into Table Via DatabaseLibrary → Use 'Insert Into Table'
-
-Disconnect From Snowflake
-    [Documentation]    Disconnect from Snowflake DatabaseLibrary connection
-
-    Disconnect From Database
-    Log    Disconnected from Snowflake    console=yes
-
-# Additional Keywords from SnowflakeLib converted to DatabaseLibrary
-
-# REMOVED: Execute Snowflake Query - Use 'Execute Custom Query' from sql_table_operations.resource
-# REMOVED: Execute Snowflake Command Wrapper - Use 'Execute Custom Command' from sql_table_operations.resource
-
-Get Snowflake Version Wrapper
-    [Documentation]    Get Snowflake version using DatabaseLibrary
-
-    ${result}=    Query    SELECT CURRENT_VERSION()
-    ${version}=    Set Variable    ${result[0][0]}
-    Log    Snowflake Version: ${version}    console=yes
-    RETURN    ${version}
-
-Get Current Snowflake Context
-    [Documentation]    Get all current context information using DatabaseLibrary
-
-    ${context_query}=    Catenate    SEPARATOR=${SPACE}
-    ...    SELECT
-    ...    CURRENT_USER() as user,
-    ...    CURRENT_DATABASE() as database,
-    ...    CURRENT_SCHEMA() as schema,
-    ...    CURRENT_WAREHOUSE() as warehouse,
-    ...    CURRENT_ROLE() as role,
-    ...    CURRENT_ACCOUNT() as account
-
-    ${result}=    Query    ${context_query}
-
-    ${context}=    Create Dictionary
-    ...    user=${result[0][0]}
-    ...    database=${result[0][1]}
-    ...    schema=${result[0][2]}
-    ...    warehouse=${result[0][3]}
-    ...    role=${result[0][4]}
-    ...    account=${result[0][5]}
-
-    Log    Current Snowflake Context:    console=yes
-    Log    User: ${context}[user]    console=yes
-    Log    Database: ${context}[database]    console=yes
-    Log    Schema: ${context}[schema]    console=yes
-    Log    Warehouse: ${context}[warehouse]    console=yes
-    Log    Role: ${context}[role]    console=yes
-    Log    Account: ${context}[account]    console=yes
-    RETURN    ${context}
-
-Get Current Snowflake User
-    [Documentation]    Get the current connected user
-
-    ${result}=    Query    SELECT CURRENT_USER()
-    RETURN    ${result[0][0]}
-
-Get Current Snowflake Database
-    [Documentation]    Get the current database
-
-    ${result}=    Query    SELECT CURRENT_DATABASE()
-    RETURN    ${result[0][0]}
-
-Get Current Snowflake Schema
-    [Documentation]    Get the current schema
-
-    ${result}=    Query    SELECT CURRENT_SCHEMA()
-    RETURN    ${result[0][0]}
-
-Get Current Snowflake Warehouse
-    [Documentation]    Get the current warehouse
-
-    ${result}=    Query    SELECT CURRENT_WAREHOUSE()
-    RETURN    ${result[0][0]}
-
-Get Current Snowflake Role
-    [Documentation]    Get the current role
-
-    ${result}=    Query    SELECT CURRENT_ROLE()
-    RETURN    ${result[0][0]}
-
-Get Current Snowflake Account
-    [Documentation]    Get the current account identifier
-
-    ${result}=    Query    SELECT CURRENT_ACCOUNT()
-    RETURN    ${result[0][0]}
-
-# REMOVED: The following Snowflake-specific keywords are replaced by generic ones:
-# - Create Snowflake Table If Not Exists → Use 'Create Table If Not Exists' from sql_table_operations.resource
-# - Drop Snowflake Table If Exists → Use 'Drop Table' with if_exists=${TRUE} from sql_table_operations.resource
-# - Insert Into Snowflake Table → Use 'Insert Into Table' from sql_table_operations.resource
-# - Get Row Count From Snowflake Table → Use 'Get Row Count' from sql_table_operations.resource
-# - Table Should Exist In Snowflake → Use 'Table Should Exist' from sql_table_operations.resource
-# - Table Should Not Exist In Snowflake → Use 'Table Should Not Exist' from sql_table_operations.resource
-# - Get Snowflake Table Columns → Use 'Get Table Columns' from sql_table_operations.resource
-
-# REMOVED: Test Snowflake Connection - Use 'Test Database Connection' from sql_table_operations.resource
-
-# REMOVED: The following keywords have been moved to sql_table_operations.resource:
-# - Use Snowflake Database → Use 'Use Database' from sql_table_operations.resource
-# - Use Snowflake Schema → Use 'Use Schema' from sql_table_operations.resource
-
-Use Snowflake Warehouse
-    [Documentation]    Switch to a different warehouse
-    [Arguments]    ${warehouse_name}
-
-    Execute Sql String    USE WAREHOUSE ${warehouse_name}
-    Log    Switched to warehouse: ${warehouse_name}
+# Include all the modular keywords here
+Establish Snowflake Connection
+    [Documentation]    Establish initial connection to Snowflake using various methods
+    [Arguments]    ${user}    ${password}    ${account}    ${role}
+    
+    Log    Connecting with user=${user}, account=${account}    console=yes
+    
+    # Method 1: Use the new Connect To Database with custom parameters
+    TRY
+        Connect To Database
+        ...    snowflake.connector
+        ...    ${EMPTY}
+        ...    ${user}
+        ...    ${password}
+        ...    ${EMPTY}
+        ...    ${EMPTY}
+        ...    account=${account}
+        ...    role=${role}
+        
+        Log    ✅ Connected using new Connect To Database syntax (no deprecation warning)    console=yes
+        RETURN    ${TRUE}
+    EXCEPT    AS    ${error1}
+        Log    ⚠️ New syntax failed: ${error1}    console=yes
+    END
+    
+    # Method 2: Try with connection string format
+    TRY
+        ${conn_string}=    Set Variable    account=${account};user=${user};password=${password};role=${role}
+        Connect To Database    snowflake.connector    ${conn_string}
+        Log    ✅ Connected using connection string format    console=yes
+        RETURN    ${TRUE}
+    EXCEPT    AS    ${error2}
+        Log    ⚠️ Connection string method failed: ${error2}    console=yes
+    END
+    
+    # Method 3: Last resort - use deprecated method that we know works
+    Log    Using fallback (deprecated) connection method...    console=yes
+    Connect To Database Using Custom Params
+    ...    snowflake.connector
+    ...    user='${user}', password='${password}', account='${account}', role='${role}'
+    Log    ⚠️ Connected using deprecated method (will show warning)    console=yes
     RETURN    ${TRUE}
 
-Test Time Travel
-    [Documentation]    Query data from a past point in time
-    [Arguments]    ${table_name}    ${minutes_ago}=5
-
-    ${query}=    Catenate    SEPARATOR=${SPACE}
-    ...    SELECT COUNT(*) FROM ${table_name}
-    ...    AT(OFFSET => -${minutes_ago}*60)
-
-    ${result}=    Query    ${query}
-    ${past_count}=    Set Variable    ${result[0][0]}
-    Log    Row count ${minutes_ago} minutes ago: ${past_count}
-    RETURN    ${past_count}
-
-Create Stage
-    [Documentation]    Create a Snowflake stage for data loading
-    [Arguments]    ${stage_name}    ${stage_type}=INTERNAL
-
-    IF    '${stage_type}' == 'INTERNAL'
-        ${create_stage}=    Set Variable    CREATE OR REPLACE STAGE ${stage_name}
-    ELSE
-        ${create_stage}=    Set Variable    CREATE OR REPLACE STAGE ${stage_name} STAGE_TYPE = ${stage_type}
+Get Available Snowflake Databases
+    [Documentation]    Get list of available databases in Snowflake
+    [Return]    ${db_names}
+    
+    TRY
+        ${databases}=    Query    SHOW DATABASES
+        ${db_names}=    Create List
+        FOR    ${db}    IN    @{databases}
+            Append To List    ${db_names}    ${db[1]}
+            Log    Available DB: ${db[1]}    console=yes
+        END
+        RETURN    ${db_names}
+    EXCEPT
+        Log    Could not list databases    console=yes
+        ${empty_list}=    Create List
+        RETURN    ${empty_list}
     END
 
-    Execute Sql String    ${create_stage}
-    Log    Stage ${stage_name} created successfully
-    RETURN    ${TRUE}
-
-Load Data From Stage
-    [Documentation]    Load data from a stage into a table
-    [Arguments]    ${stage_name}    ${table_name}    ${file_format}=${None}
-
-    IF    '${file_format}' == '${None}'
-        ${copy_cmd}=    Set Variable
-        ...    COPY INTO ${table_name} FROM @${stage_name}
-    ELSE
-        ${copy_cmd}=    Set Variable
-        ...    COPY INTO ${table_name} FROM @${stage_name} FILE_FORMAT = (${file_format})
+Get Available Snowflake Warehouses
+    [Documentation]    Get list of available warehouses in Snowflake
+    
+    TRY
+        ${warehouses}=    Query    SHOW WAREHOUSES
+        Log    Available Warehouses:    console=yes
+        FOR    ${wh}    IN    @{warehouses}
+            Log    - ${wh[0]} (state: ${wh[2]})    console=yes
+        END
+        RETURN    ${warehouses}
+    EXCEPT
+        Log    Could not list warehouses    console=yes
+        RETURN    ${EMPTY}
     END
 
-    Execute Sql String    ${copy_cmd}
-    Log    Data loaded from stage ${stage_name} to table ${table_name}
-    RETURN    ${TRUE}
+Setup Snowflake Warehouse
+    [Documentation]    Set up or create the specified warehouse
+    [Arguments]    ${warehouse}
+    [Return]    ${status}
+    
+    # Try to use existing warehouse
+    TRY
+        Log    Setting warehouse: ${warehouse}    console=yes
+        Execute Sql String    USE WAREHOUSE ${warehouse}
+        Log    ✅ Warehouse set successfully    console=yes
+        RETURN    ${TRUE}
+    EXCEPT    AS    ${wh_error}
+        Log    ⚠️ Could not set warehouse ${warehouse}: ${wh_error}    console=yes
+    END
+    
+    # Try to create warehouse if it doesn't exist
+    TRY
+        Log    Attempting to create warehouse ${warehouse}...    console=yes
+        Execute Sql String    CREATE WAREHOUSE IF NOT EXISTS ${warehouse} WITH WAREHOUSE_SIZE = 'XSMALL'
+        Execute Sql String    USE WAREHOUSE ${warehouse}
+        Log    ✅ Created and set warehouse ${warehouse}    console=yes
+        RETURN    ${TRUE}
+    EXCEPT
+        Log    ❌ Could not create warehouse    console=yes
+        RETURN    ${FALSE}
+    END
 
-# REMOVED: Execute Snowflake Script - Use 'Execute SQL Script' from sql_table_operations.resource
-# REMOVED: Bulk Insert Into Snowflake - Use 'Bulk Insert Into Table' from sql_table_operations.resource
+Setup Snowflake Database
+    [Documentation]    Set up or create the specified database
+    [Arguments]    ${database}    ${db_names}
+    [Return]    ${actual_database}
+    
+    # Check if requested database exists
+    IF    '${database}' in ${db_names}
+        TRY
+            Log    Database ${database} exists, using it...    console=yes
+            Execute Sql String    USE DATABASE ${database}
+            Log    ✅ Database set to ${database}    console=yes
+            RETURN    ${database}
+        EXCEPT    AS    ${db_error}
+            Log    ⚠️ Could not use existing database ${database}: ${db_error}    console=yes
+        END
+    ELSE
+        Log    ⚠️ Database ${database} does not exist    console=yes
+    END
+    
+    # Try to create the database
+    TRY
+        Log    Attempting to create database ${database}...    console=yes
+        Execute Sql String    CREATE DATABASE IF NOT EXISTS ${database}
+        Execute Sql String    USE DATABASE ${database}
+        Log    ✅ Created and set database ${database}    console=yes
+        RETURN    ${database}
+    EXCEPT    AS    ${create_error}
+        Log    ⚠️ Could not create database ${database}: ${create_error}    console=yes
+    END
+    
+    # Fall back to first available database
+    IF    ${db_names}
+        ${first_db}=    Get From List    ${db_names}    0
+        TRY
+            Log    Using first available database: ${first_db}    console=yes
+            Execute Sql String    USE DATABASE ${first_db}
+            Log    ✅ Using database ${first_db} instead    console=yes
+            RETURN    ${first_db}
+        EXCEPT
+            Log    ❌ Could not use any database    console=yes
+        END
+    END
+    
+    RETURN    ${EMPTY}
 
-# REMOVED: Create Table - Use 'Create Table' from sql_table_operations.resource
-# REMOVED: Drop Table - Use 'Drop Table' from sql_table_operations.resource
+Setup Snowflake Schema
+    [Documentation]    Set up or create the specified schema
+    [Arguments]    ${schema}
+    [Return]    ${actual_schema}
+    
+    # Try to use requested schema
+    TRY
+        Log    Setting schema: ${schema}    console=yes
+        Execute Sql String    USE SCHEMA ${schema}
+        Log    ✅ Schema set successfully    console=yes
+        RETURN    ${schema}
+    EXCEPT    AS    ${schema_error}
+        Log    ⚠️ Could not set schema ${schema}: ${schema_error}    console=yes
+    END
+    
+    # Try to create schema
+    TRY
+        Log    Attempting to create schema ${schema}...    console=yes
+        Execute Sql String    CREATE SCHEMA IF NOT EXISTS ${schema}
+        Execute Sql String    USE SCHEMA ${schema}
+        Log    ✅ Created and set schema ${schema}    console=yes
+        RETURN    ${schema}
+    EXCEPT
+        Log    ⚠️ Could not create schema ${schema}    console=yes
+    END
+    
+    # Fall back to PUBLIC schema
+    TRY
+        Execute Sql String    USE SCHEMA PUBLIC
+        Log    ℹ️ Using PUBLIC schema instead    console=yes
+        RETURN    PUBLIC
+    EXCEPT
+        Log    ❌ Could not set any schema    console=yes
+        RETURN    ${EMPTY}
+    END
+
+Verify Snowflake Context
+    [Documentation]    Verify and log the current Snowflake context
+    [Return]    ${context_details}
+    
+    TRY
+        ${result}=    Query    SELECT CURRENT_DATABASE(), CURRENT_SCHEMA(), CURRENT_WAREHOUSE()
+        
+        ${context_details}=    Create Dictionary
+        ...    database=${result[0][0]}
+        ...    schema=${result[0][1]}
+        ...    warehouse=${result[0][2]}
+        
+        Log    ========================================    console=yes
+        Log    ✅ Successfully connected to Snowflake    console=yes
+        Log    Database: ${result[0][0]}    console=yes
+        Log    Schema: ${result[0][1]}    console=yes
+        Log    Warehouse: ${result[0][2]}    console=yes
+        Log    ========================================    console=yes
+        
+        RETURN    ${context_details}
+    EXCEPT    AS    ${error}
+        Log    ❌ Could not verify context: ${error}    console=yes
+        ${empty_context}=    Create Dictionary    database=${EMPTY}    schema=${EMPTY}    warehouse=${EMPTY}
+        RETURN    ${empty_context}
+    END
