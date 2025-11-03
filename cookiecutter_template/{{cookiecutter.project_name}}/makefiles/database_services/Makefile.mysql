@@ -1,0 +1,187 @@
+# =============================================================================
+# MySQL Database Management
+# =============================================================================
+# This file contains MySQL database specific targets
+# =============================================================================
+
+.PHONY: mysql-start mysql-stop mysql-logs mysql-shell mysql-status \
+        mysql-restart mysql-backup mysql-restore mysql-help
+
+# Include common configuration
+include makefiles/common_services/Makefile.common
+
+# =============================================================================
+# 🐬 MySQL Configuration
+# =============================================================================
+MYSQL_CONTAINER_NAME := mysql-db
+MYSQL_PROFILE := mysql-dev
+MYSQL_PORT := 3306
+MYSQL_ROOT_PASSWORD := snaplogic
+MYSQL_USER := testuser
+MYSQL_PASSWORD := snaplogic
+MYSQL_DATABASE := TEST
+
+# =============================================================================
+# 🚀 MySQL Commands
+# =============================================================================
+
+# Start MySQL database
+mysql-start:
+	@echo "🐬 Starting MySQL Database..."
+	$(DOCKER_COMPOSE) --profile $(MYSQL_PROFILE) up -d $(MYSQL_CONTAINER_NAME)
+	@echo "⏳ Waiting for MySQL to be ready..."
+	@sleep 5
+	@echo "✅ MySQL database started"
+	@echo "📊 Connection details:"
+	@echo "   - Host: localhost"
+	@echo "   - Port: $(MYSQL_PORT)"
+	@echo "   - Database: $(MYSQL_DATABASE)"
+	@echo "   - Root Password: $(MYSQL_ROOT_PASSWORD)"
+	@echo "   - User: $(MYSQL_USER)"
+	@echo "   - Password: $(MYSQL_PASSWORD)"
+
+# Stop MySQL database
+mysql-stop:
+	@echo "🛑 Stopping MySQL container..."
+	$(DOCKER_COMPOSE) stop $(MYSQL_CONTAINER_NAME) || true
+	@echo "🧹 Removing MySQL container and volumes..."
+	$(DOCKER_COMPOSE) rm -f -v $(MYSQL_CONTAINER_NAME) || true
+	@echo "🗑️  Cleaning up MySQL volumes..."
+	docker volume rm $$(docker volume ls -q | grep mysql) 2>/dev/null || true
+	@echo "✅ MySQL stopped and cleaned up."
+
+# View MySQL logs
+mysql-logs:
+	@echo "📜 Viewing MySQL logs..."
+	$(DOCKER_COMPOSE) logs -f $(MYSQL_CONTAINER_NAME)
+
+# Access MySQL shell
+mysql-shell:
+	@echo "🐚 Accessing MySQL shell..."
+	docker exec -it $(MYSQL_CONTAINER_NAME) mysql -u root -p$(MYSQL_ROOT_PASSWORD) $(MYSQL_DATABASE)
+
+# Access MySQL shell as user
+mysql-user-shell:
+	@echo "🐚 Accessing MySQL shell as $(MYSQL_USER)..."
+	docker exec -it $(MYSQL_CONTAINER_NAME) mysql -u $(MYSQL_USER) -p$(MYSQL_PASSWORD) $(MYSQL_DATABASE)
+
+# Check MySQL status
+mysql-status:
+	@echo "📊 MySQL Database Status:"
+	@docker ps -a --filter name=$(MYSQL_CONTAINER_NAME) --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+	@echo ""
+	@if docker ps --filter name=$(MYSQL_CONTAINER_NAME) --format "{{.Names}}" | grep -q $(MYSQL_CONTAINER_NAME); then \
+		echo "✅ MySQL is running"; \
+		echo "🔍 Testing connection..."; \
+		docker exec $(MYSQL_CONTAINER_NAME) mysql -u root -p$(MYSQL_ROOT_PASSWORD) -e "SELECT VERSION();" 2>/dev/null || echo "⚠️  Connection test failed"; \
+	else \
+		echo "❌ MySQL is not running"; \
+	fi
+
+# Restart MySQL database
+mysql-restart: mysql-stop mysql-start
+
+# Backup MySQL database
+mysql-backup:
+	@echo "💾 Backing up MySQL database..."
+	@mkdir -p backups/mysql
+	@docker exec $(MYSQL_CONTAINER_NAME) mysqldump -u root -p$(MYSQL_ROOT_PASSWORD) --all-databases > backups/mysql/backup_$$(date +%Y%m%d_%H%M%S).sql
+	@echo "✅ Backup completed to backups/mysql/"
+
+# Backup specific database
+mysql-backup-db:
+	@echo "💾 Backing up $(MYSQL_DATABASE) database..."
+	@mkdir -p backups/mysql
+	@docker exec $(MYSQL_CONTAINER_NAME) mysqldump -u root -p$(MYSQL_ROOT_PASSWORD) $(MYSQL_DATABASE) > backups/mysql/$(MYSQL_DATABASE)_$$(date +%Y%m%d_%H%M%S).sql
+	@echo "✅ Backup of $(MYSQL_DATABASE) completed"
+
+# Restore MySQL database from backup
+mysql-restore:
+	@echo "📥 Available backups:"
+	@ls -la backups/mysql/*.sql 2>/dev/null || echo "No backups found"
+	@echo ""
+	@echo "To restore a backup, run:"
+	@echo "  docker exec -i $(MYSQL_CONTAINER_NAME) mysql -u root -p$(MYSQL_ROOT_PASSWORD) < backups/mysql/[backup_file].sql"
+
+# Create test database and tables
+mysql-init:
+	@echo "🔧 Initializing MySQL test database..."
+	@docker exec $(MYSQL_CONTAINER_NAME) mysql -u root -p$(MYSQL_ROOT_PASSWORD) -e "\
+		CREATE DATABASE IF NOT EXISTS $(MYSQL_DATABASE); \
+		USE $(MYSQL_DATABASE); \
+		CREATE TABLE IF NOT EXISTS users ( \
+			id INT AUTO_INCREMENT PRIMARY KEY, \
+			username VARCHAR(100) NOT NULL, \
+			email VARCHAR(100), \
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP \
+		); \
+		CREATE TABLE IF NOT EXISTS products ( \
+			id INT AUTO_INCREMENT PRIMARY KEY, \
+			name VARCHAR(200) NOT NULL, \
+			price DECIMAL(10,2), \
+			quantity INT \
+		); \
+		CREATE TABLE IF NOT EXISTS orders ( \
+			id INT AUTO_INCREMENT PRIMARY KEY, \
+			user_id INT, \
+			product_id INT, \
+			order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, \
+			FOREIGN KEY (user_id) REFERENCES users(id), \
+			FOREIGN KEY (product_id) REFERENCES products(id) \
+		);"
+	@echo "✅ Test database initialized"
+
+# Show MySQL databases
+mysql-show-dbs:
+	@echo "📂 MySQL Databases:"
+	@docker exec $(MYSQL_CONTAINER_NAME) mysql -u root -p$(MYSQL_ROOT_PASSWORD) -e "SHOW DATABASES;"
+
+# Show MySQL tables
+mysql-show-tables:
+	@echo "📋 Tables in $(MYSQL_DATABASE):"
+	@docker exec $(MYSQL_CONTAINER_NAME) mysql -u root -p$(MYSQL_ROOT_PASSWORD) -D $(MYSQL_DATABASE) -e "SHOW TABLES;"
+
+# Run MySQL query
+mysql-query:
+	@echo "Enter your SQL query (or use: make mysql-query QUERY='SELECT * FROM users')"
+	@if [ -n "$(QUERY)" ]; then \
+		docker exec $(MYSQL_CONTAINER_NAME) mysql -u root -p$(MYSQL_ROOT_PASSWORD) -D $(MYSQL_DATABASE) -e "$(QUERY)"; \
+	else \
+		read -p "SQL Query: " query; \
+		docker exec $(MYSQL_CONTAINER_NAME) mysql -u root -p$(MYSQL_ROOT_PASSWORD) -D $(MYSQL_DATABASE) -e "$$query"; \
+	fi
+
+# Show MySQL users
+mysql-show-users:
+	@echo "👥 MySQL Users:"
+	@docker exec $(MYSQL_CONTAINER_NAME) mysql -u root -p$(MYSQL_ROOT_PASSWORD) -e "SELECT User, Host FROM mysql.user;"
+
+# Create MySQL user
+mysql-create-user:
+	@echo "Creating MySQL user $(MYSQL_USER)..."
+	@docker exec $(MYSQL_CONTAINER_NAME) mysql -u root -p$(MYSQL_ROOT_PASSWORD) -e "\
+		CREATE USER IF NOT EXISTS '$(MYSQL_USER)'@'%' IDENTIFIED BY '$(MYSQL_PASSWORD)'; \
+		GRANT ALL PRIVILEGES ON $(MYSQL_DATABASE).* TO '$(MYSQL_USER)'@'%'; \
+		FLUSH PRIVILEGES;"
+	@echo "✅ User $(MYSQL_USER) created with access to $(MYSQL_DATABASE)"
+
+# Help for MySQL commands
+mysql-help:
+	@echo "MySQL Database Management Commands:"
+	@echo "  make mysql-start        - Start MySQL database"
+	@echo "  make mysql-stop         - Stop and clean up MySQL"
+	@echo "  make mysql-restart      - Restart MySQL database"
+	@echo "  make mysql-logs         - View MySQL logs"
+	@echo "  make mysql-shell        - Access MySQL shell as root"
+	@echo "  make mysql-user-shell   - Access MySQL shell as user"
+	@echo "  make mysql-status       - Check MySQL status"
+	@echo "  make mysql-backup       - Backup all databases"
+	@echo "  make mysql-backup-db    - Backup specific database"
+	@echo "  make mysql-restore      - Restore MySQL from backup"
+	@echo "  make mysql-init         - Initialize test database and tables"
+	@echo "  make mysql-show-dbs     - Show all databases"
+	@echo "  make mysql-show-tables  - Show tables in database"
+	@echo "  make mysql-show-users   - Show MySQL users"
+	@echo "  make mysql-create-user  - Create test user"
+	@echo "  make mysql-query        - Run a SQL query"
+	@echo "  make mysql-help         - Show this help message"

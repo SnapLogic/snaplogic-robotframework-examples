@@ -1,0 +1,32 @@
+[
+    {
+        "status": 1,
+        "message": "success",
+        "original": {
+            "id": 1,
+            "name": "Swapna",
+            "role": "Engineer",
+            "salary": 90000
+        }
+    },
+    {
+        "status": 1,
+        "message": "success",
+        "original": {
+            "id": 2,
+            "name": "Bob",
+            "role": "Analyst",
+            "salary": 75000
+        }
+    },
+    {
+        "status": 1,
+        "message": "success",
+        "original": {
+            "id": 3,
+            "name": "Swapna2",
+            "role": "QA",
+            "salary": 80000
+        }
+    }
+]

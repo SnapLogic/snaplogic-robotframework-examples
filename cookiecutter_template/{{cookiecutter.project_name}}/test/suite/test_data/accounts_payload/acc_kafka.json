@@ -1,0 +1,51 @@
+{
+    "path": "{{ACCOUNT_LOCATION_PATH}}",
+    "duplicate_check": false,
+    "account": {
+        "class_fqid": "com-snaplogic-snaps-confluentkafka-confluentkafkaaccountnoauth_1-main32088",
+        "property_map": {
+            "view_serial": 100,
+            "settings": {
+                "bootstrapServerList": {
+                    "value": [
+                        {
+                            "bootstrapServer": {
+                                "value": "{{KAFKA_BOOTSTRAP_SERVER}}",
+                                "expression": false
+                            }
+                        }
+                    ]
+                },
+                "advancedKafkaPropertiesList": {
+                    "value": [
+                        {
+                            "advancedKafkaValueProperty": {
+                                "value": "{{KAFKA_ADVANCED_PROPERTY_VALUE}}",
+                                "expression": false
+                            },
+                            "advancedKafkaKeyProperty": {
+                                "value": "{{KAFKA_ADVANCED_PROPERTY_KEY}}",
+                                "expression": false
+                            }
+                        }
+                    ]
+                },
+                "schemaRegistryUrl": {
+                    "value": "{{KAFKA_SCHEMA_REGISTRY_URL}}",
+                    "expression": false
+                }
+            },
+            "info": {
+                "label": {
+                    "value": "{{KAFKA_ACCOUNT_NAME}}"
+                },
+                "notes": {
+                    "value": null
+                }
+            }
+        },
+        "test_settings": {
+            "runtime_path_id": "{{ORG_NAME}}/rt/sidekick/{{GROUNDPLEX_ENV}}"
+        }
+    }
+}

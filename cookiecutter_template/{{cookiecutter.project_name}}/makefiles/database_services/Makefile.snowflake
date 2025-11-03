@@ -1,0 +1,306 @@
+# =============================================================================
+# Snowflake SQL Client Management
+# =============================================================================
+# This file contains Snowflake SQL client specific targets
+# =============================================================================
+
+.PHONY: snowflake-start snowflake-stop snowflake-setup snowflake-logs \
+        snowflake-shell snowflake-status snowflake-help snowflake-config
+
+# Include common configuration
+include makefiles/common_services/Makefile.common
+
+# =============================================================================
+# ❄️ Snowflake Configuration
+# =============================================================================
+SNOWFLAKE_CONTAINER_NAME := snowsql-client
+SNOWFLAKE_PROFILE := snowflake-dev
+SNOWFLAKE_CONFIG_DIR := docker/snowflake-config
+
+# =============================================================================
+# ⚠️  Important Notice
+# =============================================================================
+# Snowflake is a cloud-only service and cannot run locally.
+# This container provides the SnowSQL CLI client to connect to your 
+# Snowflake cloud account.
+#
+# Prerequisites:
+#   1. A Snowflake account (sign up for free trial at https://signup.snowflake.com/)
+#   2. Configure your connection in docker/snowflake-config/config
+# =============================================================================
+
+# =============================================================================
+# 🚀 Snowflake Commands
+# =============================================================================
+
+# Start Snowflake SQL client
+snowflake-start:
+	@echo "❄️  Starting Snowflake SQL client..."
+	@echo "⚠️  IMPORTANT: Snowflake is a cloud-only service and cannot run locally"
+	@echo "👉 This container provides the SnowSQL CLI client to connect to your Snowflake cloud account"
+	@echo ""
+	@if [ ! -f "$(SNOWFLAKE_CONFIG_DIR)/config" ]; then \
+		echo "⚠️  No config file found at $(SNOWFLAKE_CONFIG_DIR)/config"; \
+		echo "📝 Creating a sample config file..."; \
+		make snowflake-config; \
+	fi
+	$(DOCKER_COMPOSE) --profile $(SNOWFLAKE_PROFILE) up -d $(SNOWFLAKE_CONTAINER_NAME)
+	@echo "⏳ SnowSQL client is starting..."
+	@sleep 5
+	@echo "🌐 SnowSQL client ready!"
+	@echo ""
+	@echo "🔧 Usage examples:"
+	@echo "   - Interactive shell: make snowflake-shell"
+	@echo "   - With connection: docker exec -it $(SNOWFLAKE_CONTAINER_NAME) snowsql -c example"
+	@echo "   - Run query: docker exec -it $(SNOWFLAKE_CONTAINER_NAME) snowsql -c example -q 'SELECT CURRENT_VERSION()'"
+	@echo ""
+	@echo "📄 Don't forget to configure your connection in $(SNOWFLAKE_CONFIG_DIR)/config"
+
+# Stop Snowflake SQL client
+snowflake-stop:
+	@echo "🛑 Stopping Snowflake SQL client..."
+	$(DOCKER_COMPOSE) stop $(SNOWFLAKE_CONTAINER_NAME) || true
+	@echo "🧹 Removing Snowflake client container..."
+	$(DOCKER_COMPOSE) rm -f -v $(SNOWFLAKE_CONTAINER_NAME) || true
+	@echo "✅ Snowflake SQL client stopped and cleaned up."
+
+# View Snowflake client logs
+snowflake-logs:
+	@echo "📜 Viewing Snowflake client logs..."
+	$(DOCKER_COMPOSE) logs -f $(SNOWFLAKE_CONTAINER_NAME)
+
+# Access Snowflake shell
+snowflake-shell:
+	@echo "❄️  Accessing SnowSQL shell..."
+	@echo "📝 Available connections are defined in your config file"
+	@echo "📝 Use: !help for SnowSQL commands"
+	@echo "📝 Use: !quit or !exit to leave"
+	docker exec -it $(SNOWFLAKE_CONTAINER_NAME) snowsql
+
+# Check Snowflake client status
+snowflake-status:
+	@echo "📊 Snowflake SQL Client Status:"
+	@docker ps -a --filter name=$(SNOWFLAKE_CONTAINER_NAME) --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+	@echo ""
+	@if docker ps --filter name=$(SNOWFLAKE_CONTAINER_NAME) --format "{{.Names}}" | grep -q $(SNOWFLAKE_CONTAINER_NAME); then \
+		echo "✅ SnowSQL client container is running"; \
+		echo "🔍 Testing SnowSQL..."; \
+		docker exec $(SNOWFLAKE_CONTAINER_NAME) snowsql -v 2>/dev/null && echo "✅ SnowSQL is ready" || echo "⚠️  SnowSQL check failed"; \
+	else \
+		echo "❌ SnowSQL client is not running"; \
+	fi
+
+# Create/Update Snowflake configuration
+snowflake-config:
+	@echo "📝 Creating Snowflake configuration..."
+	@mkdir -p $(SNOWFLAKE_CONFIG_DIR)
+	@if [ ! -f "$(SNOWFLAKE_CONFIG_DIR)/config" ]; then \
+		echo "# Snowflake SnowSQL Configuration File" > $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "# Documentation: https://docs.snowflake.com/en/user-guide/snowsql-config.html" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "[connections.example]" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "accountname = <your_account>.<region>" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "username = <your_username>" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "password = <your_password>" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "dbname = TESTDB" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "schemaname = PUBLIC" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "warehousename = COMPUTE_WH" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "rolename = SYSADMIN" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "[connections.dev]" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "accountname = <your_account>.<region>" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "username = <your_username>" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "password = <your_password>" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "dbname = DEV_DB" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "schemaname = PUBLIC" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "warehousename = DEV_WH" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "rolename = DEVELOPER" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "[options]" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "auto_completion = True" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "log_file = ~/snowsql_log" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "log_level = INFO" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "timing = True" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "output_format = psql" >> $(SNOWFLAKE_CONFIG_DIR)/config; \
+		echo "✅ Created sample configuration at $(SNOWFLAKE_CONFIG_DIR)/config"; \
+		echo "📝 Please edit this file with your Snowflake account details"; \
+	else \
+		echo "✅ Configuration already exists at $(SNOWFLAKE_CONFIG_DIR)/config"; \
+	fi
+	@echo ""
+	@echo "📌 Snowflake Account Format Examples:"
+	@echo "   - AWS US West: xy12345.us-west-2.aws"
+	@echo "   - AWS US East: xy12345.us-east-1.aws"
+	@echo "   - Azure: xy12345.east-us-2.azure"
+	@echo "   - GCP: xy12345.us-central1.gcp"
+
+# Setup Snowflake test database
+snowflake-setup:
+	@echo "🔧 Snowflake Test Data Setup"
+	@echo "⚠️  Note: Snowflake runs in the cloud, so you need to:"
+	@echo "   1. Have a Snowflake account (sign up for free trial at https://signup.snowflake.com/)"
+	@echo "   2. Configure your connection in $(SNOWFLAKE_CONFIG_DIR)/config"
+	@echo "   3. Ensure the SnowSQL client is running (make snowflake-start)"
+	@echo ""
+	@echo "📄 To set up test data, run ONE of these commands:"
+	@echo ""
+	@echo "Option 1 - Run setup script directly:"
+	@echo "  docker exec -it $(SNOWFLAKE_CONTAINER_NAME) snowsql -c example -f /scripts/setup_testdb.sql"
+	@echo ""
+	@echo "Option 2 - Interactive session:"
+	@echo "  docker exec -it $(SNOWFLAKE_CONTAINER_NAME) snowsql -c example"
+	@echo "  Then in SnowSQL: !source /scripts/setup_testdb.sql"
+	@echo ""
+	@echo "Option 3 - Run individual commands:"
+	@echo "  docker exec -it $(SNOWFLAKE_CONTAINER_NAME) snowsql -c example -q \"CREATE DATABASE IF NOT EXISTS TESTDB\""
+	@echo ""
+	@echo "🧪 Test your setup:"
+	@echo "  docker exec -it $(SNOWFLAKE_CONTAINER_NAME) snowsql -c example -f /scripts/test_queries.sql"
+	@echo ""
+	@echo "📁 Available SQL scripts:"
+	@echo "  - /scripts/setup_testdb.sql - Creates tables and sample data"
+	@echo "  - /scripts/test_queries.sql - Sample queries to verify setup"
+
+# Initialize Snowflake test database (requires configured connection)
+snowflake-init:
+	@echo "🔧 Initializing Snowflake test database..."
+	@echo "⚠️  This requires a configured connection in $(SNOWFLAKE_CONFIG_DIR)/config"
+	@docker exec -it $(SNOWFLAKE_CONTAINER_NAME) snowsql -c example -q "\
+		CREATE DATABASE IF NOT EXISTS TESTDB; \
+		USE DATABASE TESTDB; \
+		CREATE SCHEMA IF NOT EXISTS SNAPTEST; \
+		USE SCHEMA SNAPTEST; \
+		CREATE TABLE IF NOT EXISTS users ( \
+			user_id NUMBER AUTOINCREMENT PRIMARY KEY, \
+			username VARCHAR(100) NOT NULL, \
+			email VARCHAR(100), \
+			created_at TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP() \
+		); \
+		CREATE TABLE IF NOT EXISTS products ( \
+			product_id NUMBER AUTOINCREMENT PRIMARY KEY, \
+			name VARCHAR(200) NOT NULL, \
+			price NUMBER(10,2), \
+			quantity NUMBER \
+		); \
+		CREATE TABLE IF NOT EXISTS orders ( \
+			order_id NUMBER AUTOINCREMENT PRIMARY KEY, \
+			user_id NUMBER, \
+			product_id NUMBER, \
+			order_date TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(), \
+			FOREIGN KEY (user_id) REFERENCES users(user_id), \
+			FOREIGN KEY (product_id) REFERENCES products(product_id) \
+		);"
+	@echo "✅ Test database initialized (if connection was successful)"
+
+# Run Snowflake query
+snowflake-query:
+	@echo "Enter your SQL query (or use: make snowflake-query QUERY='SELECT CURRENT_VERSION()' CONN=example)"
+	@if [ -n "$(QUERY)" ]; then \
+		CONN=$${CONN:-example}; \
+		docker exec -it $(SNOWFLAKE_CONTAINER_NAME) snowsql -c $$CONN -q "$(QUERY)"; \
+	else \
+		read -p "SQL Query: " query; \
+		read -p "Connection name (default: example): " conn; \
+		conn=$${conn:-example}; \
+		docker exec -it $(SNOWFLAKE_CONTAINER_NAME) snowsql -c $$conn -q "$$query"; \
+	fi
+
+# Show available Snowflake connections
+snowflake-connections:
+	@echo "🔗 Available Snowflake Connections:"
+	@if [ -f "$(SNOWFLAKE_CONFIG_DIR)/config" ]; then \
+		grep "^\[connections\." $(SNOWFLAKE_CONFIG_DIR)/config | sed 's/\[connections\./  - /g' | sed 's/\]//g'; \
+	else \
+		echo "⚠️  No configuration file found. Run 'make snowflake-config' to create one."; \
+	fi
+
+# Test Snowflake connection
+snowflake-test:
+	@echo "🔍 Testing Snowflake connection..."
+	@read -p "Connection name to test (default: example): " conn; \
+	conn=$${conn:-example}; \
+	echo "Testing connection: $$conn"; \
+	docker exec -it $(SNOWFLAKE_CONTAINER_NAME) snowsql -c $$conn -q "SELECT CURRENT_VERSION(), CURRENT_ACCOUNT(), CURRENT_USER()"
+
+# Insert sample data into Snowflake
+snowflake-sample-data:
+	@echo "📝 Inserting sample data into Snowflake..."
+	@docker exec -it $(SNOWFLAKE_CONTAINER_NAME) snowsql -c example -q "\
+		USE DATABASE TESTDB; \
+		USE SCHEMA SNAPTEST; \
+		INSERT INTO users (username, email) VALUES \
+			('john_doe', 'john@example.com'), \
+			('jane_smith', 'jane@example.com'), \
+			('bob_wilson', 'bob@example.com'); \
+		INSERT INTO products (name, price, quantity) VALUES \
+			('Laptop', 999.99, 10), \
+			('Mouse', 29.99, 50), \
+			('Keyboard', 79.99, 30); \
+		INSERT INTO orders (user_id, product_id) VALUES \
+			(1, 1), \
+			(2, 2), \
+			(3, 3); \
+		SELECT 'Sample data inserted successfully' AS status;"
+	@echo "✅ Sample data inserted (if connection was successful)"
+
+# Show Snowflake warehouses
+snowflake-warehouses:
+	@echo "🏭 Snowflake Warehouses:"
+	@docker exec -it $(SNOWFLAKE_CONTAINER_NAME) snowsql -c example -q "SHOW WAREHOUSES"
+
+# Show Snowflake databases
+snowflake-databases:
+	@echo "📂 Snowflake Databases:"
+	@docker exec -it $(SNOWFLAKE_CONTAINER_NAME) snowsql -c example -q "SHOW DATABASES"
+
+# Show Snowflake schemas
+snowflake-schemas:
+	@echo "📁 Snowflake Schemas in current database:"
+	@docker exec -it $(SNOWFLAKE_CONTAINER_NAME) snowsql -c example -q "SHOW SCHEMAS"
+
+# Show Snowflake tables
+snowflake-tables:
+	@echo "📋 Snowflake Tables in current schema:"
+	@docker exec -it $(SNOWFLAKE_CONTAINER_NAME) snowsql -c example -q "SHOW TABLES"
+
+# Snowflake account usage
+snowflake-usage:
+	@echo "📊 Snowflake Account Usage:"
+	@docker exec -it $(SNOWFLAKE_CONTAINER_NAME) snowsql -c example -q "\
+		USE DATABASE SNOWFLAKE; \
+		USE SCHEMA ACCOUNT_USAGE; \
+		SELECT \
+			DATE_TRUNC('day', start_time) AS usage_date, \
+			warehouse_name, \
+			SUM(credits_used) AS total_credits \
+		FROM warehouse_metering_history \
+		WHERE start_time >= DATEADD('day', -7, CURRENT_DATE()) \
+		GROUP BY 1, 2 \
+		ORDER BY 1 DESC, 3 DESC;"
+
+# Help for Snowflake commands
+snowflake-help:
+	@echo "Snowflake SQL Client Management Commands:"
+	@echo "  make snowflake-start        - Start SnowSQL client container"
+	@echo "  make snowflake-stop         - Stop and clean up SnowSQL client"
+	@echo "  make snowflake-logs         - View SnowSQL client logs"
+	@echo "  make snowflake-shell        - Access SnowSQL interactive shell"
+	@echo "  make snowflake-status       - Check SnowSQL client status"
+	@echo "  make snowflake-config       - Create/view configuration file"
+	@echo "  make snowflake-connections  - Show available connections"
+	@echo "  make snowflake-test         - Test a Snowflake connection"
+	@echo "  make snowflake-setup        - Show setup instructions"
+	@echo "  make snowflake-init         - Initialize test database and tables"
+	@echo "  make snowflake-sample-data  - Insert sample data"
+	@echo "  make snowflake-query        - Run a SQL query"
+	@echo "  make snowflake-warehouses   - Show warehouses"
+	@echo "  make snowflake-databases    - Show databases"
+	@echo "  make snowflake-schemas      - Show schemas"
+	@echo "  make snowflake-tables       - Show tables"
+	@echo "  make snowflake-usage        - Show account usage stats"
+	@echo "  make snowflake-help         - Show this help message"
+	@echo ""
+	@echo "⚠️  Remember: Snowflake is cloud-only. You need:"
+	@echo "   1. A Snowflake account"
+	@echo "   2. Configured connection in $(SNOWFLAKE_CONFIG_DIR)/config"
+	@echo "   3. SnowSQL client running (make snowflake-start)"

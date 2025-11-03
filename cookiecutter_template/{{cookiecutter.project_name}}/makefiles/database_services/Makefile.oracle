@@ -1,0 +1,91 @@
+# =============================================================================
+# Oracle Database Management
+# =============================================================================
+# This file contains Oracle database specific targets
+# =============================================================================
+
+.PHONY: oracle-start oracle-stop oracle-logs oracle-shell oracle-status
+
+# Include common configuration
+include makefiles/common_services/Makefile.common
+
+# =============================================================================
+# 🛢️ Oracle Database Configuration
+# =============================================================================
+ORACLE_CONTAINER_NAME := oracle-db
+ORACLE_PROFILE := oracle-dev
+ORACLE_PORT := 1521
+ORACLE_USER := SYSTEM
+ORACLE_PASSWORD := oracle
+
+# =============================================================================
+# 🚀 Oracle Database Commands
+# =============================================================================
+
+# Start Oracle database
+oracle-start:
+	@echo "🛢️  Starting Oracle Database..."
+	@echo "⏳ This may take several minutes on first run..."
+	$(DOCKER_COMPOSE) --profile $(ORACLE_PROFILE) up -d $(ORACLE_CONTAINER_NAME)
+	@echo "✅ Oracle database started"
+	@echo "📊 Connection details:"
+	@echo "   - Host: localhost"
+	@echo "   - Port: $(ORACLE_PORT)"
+	@echo "   - SID: XE"
+	@echo "   - User: $(ORACLE_USER)"
+	@echo "   - Password: $(ORACLE_PASSWORD)"
+
+# Stop Oracle database
+oracle-stop:
+	@echo "🛑 Stopping Oracle DB container..."
+	$(DOCKER_COMPOSE) stop $(ORACLE_CONTAINER_NAME) || true
+	@echo "🧹 Removing Oracle container and volumes..."
+	$(DOCKER_COMPOSE) rm -f -v $(ORACLE_CONTAINER_NAME) || true
+	@echo "🗑️  Cleaning up Oracle volumes..."
+	docker volume rm $$(docker volume ls -q | grep oracle) 2>/dev/null || true
+	@echo "✅ Oracle stopped and cleaned up."
+
+# View Oracle logs
+oracle-logs:
+	@echo "📜 Viewing Oracle logs..."
+	$(DOCKER_COMPOSE) logs -f $(ORACLE_CONTAINER_NAME)
+
+# Access Oracle shell
+oracle-shell:
+	@echo "🐚 Accessing Oracle SQL*Plus..."
+	docker exec -it $(ORACLE_CONTAINER_NAME) sqlplus $(ORACLE_USER)/$(ORACLE_PASSWORD)@XE
+
+# Check Oracle status
+oracle-status:
+	@echo "📊 Oracle Database Status:"
+	@docker ps -a --filter name=$(ORACLE_CONTAINER_NAME) --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+	@echo ""
+	@if docker ps --filter name=$(ORACLE_CONTAINER_NAME) --format "{{.Names}}" | grep -q $(ORACLE_CONTAINER_NAME); then \
+		echo "✅ Oracle is running"; \
+		echo "🔍 Testing connection..."; \
+		docker exec $(ORACLE_CONTAINER_NAME) sqlplus -s $(ORACLE_USER)/$(ORACLE_PASSWORD)@XE <<< "SELECT 'Connected to Oracle' FROM DUAL;" 2>/dev/null || echo "⚠️  Connection test failed"; \
+	else \
+		echo "❌ Oracle is not running"; \
+	fi
+
+# Restart Oracle database
+oracle-restart: oracle-stop oracle-start
+
+# Backup Oracle database
+oracle-backup:
+	@echo "💾 Backing up Oracle database..."
+	@mkdir -p backups/oracle
+	@docker exec $(ORACLE_CONTAINER_NAME) expdp $(ORACLE_USER)/$(ORACLE_PASSWORD)@XE full=Y directory=DATA_PUMP_DIR dumpfile=backup_$$(date +%Y%m%d_%H%M%S).dmp
+	@echo "✅ Backup completed"
+
+# Help for Oracle commands
+oracle-help:
+	@echo "Oracle Database Management Commands:"
+	@echo "  make oracle-start    - Start Oracle database"
+	@echo "  make oracle-stop     - Stop and clean up Oracle"
+	@echo "  make oracle-restart  - Restart Oracle database"
+	@echo "  make oracle-logs     - View Oracle logs"
+	@echo "  make oracle-shell    - Access Oracle SQL*Plus"
+	@echo "  make oracle-status   - Check Oracle status"
+	@echo "  make oracle-backup   - Backup Oracle database"
+	@echo "  make oracle-help     - Show this help message"

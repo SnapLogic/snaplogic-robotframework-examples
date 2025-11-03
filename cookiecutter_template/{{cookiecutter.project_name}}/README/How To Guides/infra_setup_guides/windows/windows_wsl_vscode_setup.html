@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windows: WSL Setup and VS Code Integration Guide</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            color: #34495e;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 8px;
+        }
+
+        h3 {
+            color: #4a5568;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        h4 {
+            color: #4a5568;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        code {
+            background-color: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background-color: #282c34;
+            color: #abb2bf;
+            padding: 20px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 15px 0;
+            line-height: 1.4;
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: #abb2bf;
+            font-size: 0.9em;
+        }
+
+        .powershell {
+            background-color: #012456;
+            color: #eeedf0;
+        }
+
+        .bash {
+            background-color: #282c34;
+            color: #abb2bf;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        tr:hover {
+            background-color: #e3f2fd;
+        }
+
+        ul,
+        ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+
+        .toc {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .toc h2 {
+            margin-top: 0;
+            border-bottom: none;
+            font-size: 1.2em;
+        }
+
+        .toc ol {
+            margin: 10px 0;
+        }
+
+        .toc a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .error {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            color: #856404;
+        }
+
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            color: #0c5460;
+        }
+
+        strong {
+            color: #2c3e50;
+        }
+
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .json {
+            background-color: #2d2d2d;
+            color: #cccccc;
+        }
+
+        .keyword {
+            color: #c678dd;
+        }
+
+        .string {
+            color: #98c379;
+        }
+
+        .number {
+            color: #d19a66;
+        }
+
+        .property {
+            color: #61afef;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Windows: WSL Setup and VS Code Integration Guide</h1>
+
+        <p>A complete guide to check for WSL, install Ubuntu on Windows, verify make commands, and integrate with VS
+            Code terminal.</p>
+
+        <div class="toc">
+            <h2>Table of Contents</h2>
+            <ol>
+                <li><a href="#checking-if-wsl-is-installed">Checking if WSL is Installed</a></li>
+                <li><a href="#installing-wsl-and-ubuntu">Installing WSL and Ubuntu</a></li>
+                <li><a href="#setting-up-development-environment">Setting Up Development Environment</a></li>
+                <li><a href="#docker-desktop-wsl-integration">Docker Desktop WSL Integration</a></li>
+                <li><a href="#using-wsl-in-vs-code-terminal">Using WSL in VS Code Terminal</a></li>
+                <li><a href="#quick-reference">Quick Reference</a></li>
+            </ol>
+        </div>
+
+        <h2 id="checking-if-wsl-is-installed">Checking if WSL is Installed</h2>
+
+        <h3>Method 1: Using Command Line</h3>
+        <p>Open PowerShell or Command Prompt and run:</p>
+        <pre class="powershell"><code>wsl --status</code></pre>
+
+        <p><strong>Possible outcomes:</strong></p>
+        <p><span class="success">✅ WSL is installed:</span></p>
+        <pre><code>Default Distribution: Ubuntu
+Default Version: 2</code></pre>
+
+        <p><span class="error">❌ WSL is NOT installed:</span></p>
+        <pre><code>The term 'wsl' is not recognized as the name of a cmdlet...</code></pre>
+
+        <h3>Method 2: Check Version and Distributions</h3>
+        <pre class="powershell"><code># Check WSL version
+wsl --version
+
+# List installed distributions
+wsl --list --verbose</code></pre>
+
+        <p>Output example if installed:</p>
+        <pre><code>  NAME            STATE           VERSION
+* Ubuntu          Running         2
+  Debian          Stopped         2</code></pre>
+
+        <h3>Method 3: Check Windows Features</h3>
+        <pre class="powershell"><code># In PowerShell as Administrator
+Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux</code></pre>
+
+        <ul>
+            <li><strong>State: Enabled</strong> = WSL is enabled</li>
+            <li><strong>State: Disabled</strong> = WSL is not enabled</li>
+        </ul>
+
+        <h3>Method 4: Via Windows Settings</h3>
+        <ol>
+            <li>Open <strong>Settings</strong> → <strong>Apps</strong> → <strong>Optional features</strong></li>
+            <li>Click <strong>"More Windows features"</strong></li>
+            <li>Look for <strong>"Windows Subsystem for Linux"</strong> (should be checked if enabled)</li>
+        </ol>
+
+        <h2 id="installing-wsl-and-ubuntu">Installing WSL and Ubuntu</h2>
+
+        <h3>Prerequisites</h3>
+
+        <ol>
+            <li><strong>Check Windows Version:</strong>
+                <pre class="powershell"><code>winver</code></pre>
+                <ul>
+                    <li>Minimum: Windows 10 version 1607</li>
+                    <li>Recommended: Windows 10 version 2004 or higher</li>
+                    <li>Windows 11: All versions supported</li>
+                </ul>
+            </li>
+            <li><strong>Enable Virtualization:</strong>
+                <ul>
+                    <li>Check in Task Manager → Performance → CPU</li>
+                    <li>"Virtualization: Enabled" should be shown</li>
+                    <li>If disabled, enable in BIOS/UEFI</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h3>Quick Installation (Recommended)</h3>
+
+        <ol>
+            <li><strong>Open PowerShell as Administrator:</strong>
+                <ul>
+                    <li>Right-click Start button</li>
+                    <li>Select "Windows PowerShell (Admin)"</li>
+                </ul>
+            </li>
+            <li><strong>Install WSL with Ubuntu:</strong>
+                <pre class="powershell"><code>wsl --install</code></pre>
+                <p>This single command will:</p>
+                <ul>
+                    <li>Enable WSL feature</li>
+                    <li>Install WSL 2</li>
+                    <li>Download and install Ubuntu</li>
+                    <li>Set Ubuntu as default</li>
+                </ul>
+            </li>
+            <li><strong>Restart your computer</strong> when prompted</li>
+            <li><strong>Complete Ubuntu setup:</strong>
+                <ul>
+                    <li>After restart, Ubuntu window will open automatically</li>
+                    <li>Create a username (lowercase recommended)</li>
+                    <li>Set a password (won't show while typing)</li>
+                    <li>Remember these credentials!</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h3>Manual Installation Steps</h3>
+
+        <p>If the quick install doesn't work:</p>
+
+        <h4>Step 1: Enable WSL Features</h4>
+        <pre class="powershell"><code># Enable WSL
+dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+
+# Enable Virtual Machine Platform
+dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+
+# Restart your computer
+shutdown /r /t 0</code></pre>
+
+        <h4>Step 2: Set WSL 2 as Default</h4>
+        <p>After restart:</p>
+        <pre class="powershell"><code>wsl --set-default-version 2</code></pre>
+
+        <h4>Step 3: Install Ubuntu</h4>
+
+        <p><strong>Option A - From Microsoft Store:</strong></p>
+        <ol>
+            <li>Open Microsoft Store</li>
+            <li>Search "Ubuntu"</li>
+            <li>Click "Get" or "Install"</li>
+            <li>Launch after installation</li>
+        </ol>
+
+        <p><strong>Option B - From Command Line:</strong></p>
+        <pre class="powershell"><code># List available distributions
+wsl --list --online
+
+# Install Ubuntu
+wsl --install -d Ubuntu</code></pre>
+
+        <p><strong>Option C - Direct Download:</strong></p>
+        <pre class="powershell"><code># Download Ubuntu 22.04
+Invoke-WebRequest -Uri https://aka.ms/wslubuntu2204 -OutFile Ubuntu.appx -UseBasicParsing
+
+# Install
+Add-AppxPackage .\Ubuntu.appx</code></pre>
+
+        <h3>Post-Installation Setup</h3>
+
+        <ol>
+            <li><strong>Launch Ubuntu:</strong>
+                <pre class="powershell"><code>ubuntu</code></pre>
+                <p>Or search "Ubuntu" in Start Menu</p>
+            </li>
+            <li><strong>Update Ubuntu:</strong>
+                <pre class="bash"><code>sudo apt update && sudo apt upgrade -y</code></pre>
+            </li>
+            <li><strong>Set Ubuntu as default WSL distribution:</strong>
+                <pre class="powershell"><code>wsl --set-default Ubuntu</code></pre>
+            </li>
+        </ol>
+
+        <h2 id="setting-up-development-environment">Setting Up Development Environment</h2>
+
+        <p>After installing WSL and Ubuntu, you'll need to set up development tools including make, compilers, and other
+            essentials.</p>
+
+        <h3>Step 1: Check if Make is Already Installed</h3>
+
+        <p>First, open Ubuntu/WSL and check if make is already installed:</p>
+
+        <pre class="bash"><code># Open WSL from PowerShell/Command Prompt
+wsl
+# or
+ubuntu
+
+# Check if make is installed
+make --version</code></pre>
+
+        <p><strong>Results:</strong></p>
+        <ul>
+            <li><span class="success">✅ Installed:</span> Shows GNU Make version (skip to verification)</li>
+            <li><span class="error">❌ Not installed:</span> Shows "command not found" (continue with installation)</li>
+        </ul>
+
+        <h3>Step 2: Quick Development Setup</h3>
+
+        <p>This single command installs the most common development tools:</p>
+
+        <pre class="bash"><code>sudo apt update && sudo apt install -y build-essential git python3-pip</code></pre>
+
+        <h3>What Each Part Does</h3>
+
+        <ol>
+            <li><code>sudo apt update</code> - Updates the package list from Ubuntu repositories</li>
+            <li><code>&&</code> - Chains commands (runs the second only if the first succeeds)</li>
+            <li><code>sudo apt install -y</code> - Installs packages with automatic yes to prompts</li>
+        </ol>
+
+        <h3>What Gets Installed</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Package</th>
+                    <th>Description</th>
+                    <th>Includes/Purpose</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>build-essential</strong></td>
+                    <td>Core compilation tools meta-package</td>
+                    <td>gcc, g++, make, dpkg-dev, libc6-dev</td>
+                </tr>
+                <tr>
+                    <td><strong>git</strong></td>
+                    <td>Version control system</td>
+                    <td>Clone repos, manage code, collaborate</td>
+                </tr>
+                <tr>
+                    <td><strong>python3-pip</strong></td>
+                    <td>Python package installer</td>
+                    <td>Install Python packages like numpy, django</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Why This Combination?</h3>
+
+        <p>This gives you everything needed for basic development:</p>
+
+        <pre class="bash"><code># After installation, you can:
+
+# Compile C/C++ programs
+gcc myprogram.c -o myprogram
+g++ myapp.cpp -o myapp
+
+# Use makefiles
+make
+make clean
+make install
+
+# Work with Git
+git clone https://github.com/user/repo.git
+git add .
+git commit -m "Initial commit"
+
+# Install Python packages
+pip install requests
+pip install django
+pip install numpy</code></pre>
+
+        <h3>Step 3: Verify Installation</h3>
+
+        <p>After installation, verify all tools are working:</p>
+
+        <pre class="bash"><code># Check core tools
+make --version
+gcc --version
+g++ --version
+git --version
+python3 --version
+pip --version
+
+# Check installation paths
+which make
+which gcc
+which git</code></pre>
+
+        <h3>Alternative: Install Only Make</h3>
+
+        <p>If you only need make without other development tools:</p>
+
+        <pre class="bash"><code>sudo apt update
+sudo apt install make -y</code></pre>
+
+        <p>However, <code>build-essential</code> is recommended as it includes make plus other tools you'll likely need.
+        </p>
+
+        <h3>Extended Development Setup</h3>
+
+        <p>For a more comprehensive environment, add these commonly needed tools:</p>
+
+        <pre class="bash"><code>sudo apt update && sudo apt install -y \
+    build-essential \
+    git \
+    python3-pip \
+    nodejs \
+    npm \
+    curl \
+    wget \
+    vim \
+    htop \
+    tree</code></pre>
+
+        <p><strong>Additional tools explained:</strong></p>
+        <ul>
+            <li><strong>nodejs/npm</strong> - JavaScript runtime and package manager</li>
+            <li><strong>curl/wget</strong> - Download files from the command line</li>
+            <li><strong>vim</strong> - Powerful text editor</li>
+            <li><strong>htop</strong> - Interactive process viewer</li>
+            <li><strong>tree</strong> - Display directory structure</li>
+        </ul>
+
+        <h3>Language-Specific Development</h3>
+
+        <p><strong>For Python Development:</strong></p>
+        <pre class="bash"><code>sudo apt install -y python3-venv python3-dev
+# Create virtual environments with: python3 -m venv myenv</code></pre>
+
+        <p><strong>For Node.js Development:</strong></p>
+        <pre class="bash"><code># Install Node Version Manager (nvm) for better Node.js management
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash</code></pre>
+
+        <p><strong>For C/C++ Development:</strong></p>
+        <pre class="bash"><code>sudo apt install -y cmake gdb valgrind</code></pre>
+
+        <h3>Troubleshooting Development Tools</h3>
+
+        <p><strong>"make: command not found" after installation:</strong></p>
+        <pre class="bash"><code># Refresh shell environment
+source ~/.bashrc
+# Or exit and reopen WSL
+exit
+wsl</code></pre>
+
+        <p><strong>Permission denied errors:</strong></p>
+        <pre class="bash"><code># Always use sudo for system installations
+sudo apt install package-name</code></pre>
+
+        <p><strong>Package not found errors:</strong></p>
+        <pre class="bash"><code># Update package lists first
+sudo apt update
+# Then try installing again
+sudo apt install package-name</code></pre>
+
+        <h2 id="docker-desktop-wsl-integration">Docker Desktop WSL Integration</h2>
+
+        <p>After installing WSL and Ubuntu, you need to configure Docker Desktop to work with WSL for running Docker
+            commands.</p>
+
+        <h3>Prerequisites</h3>
+
+        <ul>
+            <li>Docker Desktop installed on Windows</li>
+            <li>WSL 2 with Ubuntu installed (from previous steps)</li>
+        </ul>
+
+        <h3>Enable WSL Integration in Docker Desktop</h3>
+
+        <ol>
+            <li><strong>Open Docker Desktop</strong></li>
+            <li><strong>Navigate to Settings:</strong>
+                <ul>
+                    <li>Click the gear icon (⚙️) in the top right</li>
+                    <li>Or go to <strong>Docker Desktop</strong> → <strong>Settings</strong></li>
+                </ul>
+            </li>
+            <li><strong>Configure WSL Integration:</strong>
+                <ul>
+                    <li>Go to <strong>Resources</strong> → <strong>WSL Integration</strong></li>
+                    <li>Ensure <strong>"Enable integration with my default WSL distro"</strong> is checked ✅</li>
+                    <li>Under <strong>"Enable integration with additional distros"</strong>, toggle on
+                        <strong>Ubuntu</strong></li>
+                    <li>Click <strong>"Refetch distros"</strong> if Ubuntu doesn't appear in the list</li>
+                    <li>Click <strong>"Apply & Restart"</strong></li>
+                </ul>
+            </li>
+        </ol>
+
+        <h3>Why This Integration Is Important</h3>
+
+        <ul>
+            <li>Allows you to run Docker commands from within WSL/Ubuntu</li>
+            <li>Enables seamless container management from Linux environment</li>
+            <li>Required for make commands that use Docker in your projects</li>
+            <li>Provides better performance than running Docker through Windows</li>
+        </ul>
+
+        <h3>Verify Docker Integration</h3>
+
+        <p>Test that Docker is accessible from WSL:</p>
+
+        <pre class="bash"><code># In your WSL/Ubuntu terminal
+docker --version
+docker ps</code></pre>
+
+        <p>Expected output:</p>
+        <ul>
+            <li><code>docker --version</code> should show Docker version</li>
+            <li><code>docker ps</code> should list running containers (or show empty list)</li>
+        </ul>
+
+        <div class="warning">
+            <h3>⚠️ Important: After Enabling WSL Integration</h3>
+
+            <p><strong>You must complete these steps:</strong></p>
+
+            <ol>
+                <li><strong>Restart your WSL terminal:</strong>
+                    <pre class="bash"><code># Exit current WSL session
+exit
+# Open a new WSL session
+wsl</code></pre>
+                </li>
+                <li><strong>If using VS Code, restart the terminal:</strong>
+                    <ul>
+                        <li>Close all terminal tabs in VS Code</li>
+                        <li>Open a new terminal with <code>Ctrl+`</code></li>
+                        <li>Select Ubuntu (WSL) from the dropdown</li>
+                    </ul>
+                </li>
+                <li><strong>Verify Docker is working:</strong>
+                    <pre class="bash"><code>docker version</code></pre>
+                    <p>You should see both Client and Server information</p>
+                </li>
+                <li><strong>Now you can run your make commands:</strong>
+                    <pre class="bash"><code>make start-services
+make robot-run-all-tests</code></pre>
+                </li>
+            </ol>
+        </div>
+
+        <h3>Troubleshooting Docker WSL Integration</h3>
+
+        <p><strong>"Cannot connect to Docker daemon" error:</strong></p>
+        <ul>
+            <li>Ensure Docker Desktop is running</li>
+            <li>Check WSL integration is enabled in Docker settings</li>
+            <li>Restart both Docker Desktop and WSL</li>
+        </ul>
+
+        <p><strong>"docker: command not found" in WSL:</strong></p>
+        <ul>
+            <li>Verify WSL integration is enabled for Ubuntu</li>
+            <li>Restart your terminal after enabling integration</li>
+            <li>Try running <code>wsl --shutdown</code> in PowerShell, then reopen WSL</li>
+        </ul>
+
+        <p><strong>Docker commands work in PowerShell but not WSL:</strong></p>
+        <ul>
+            <li>This indicates WSL integration is not properly configured</li>
+            <li>Follow the integration steps above again</li>
+            <li>Ensure you clicked "Apply & Restart" after making changes</li>
+        </ul>
+
+        <h2 id="using-wsl-in-vs-code-terminal">Using WSL in VS Code Terminal</h2>
+
+        <h3>Prerequisites</h3>
+
+        <ol>
+            <li>Install VS Code if not already installed</li>
+            <li>Ensure WSL and Ubuntu are set up (previous steps)</li>
+        </ol>
+
+        <h3>Step 1: Install WSL Extension</h3>
+
+        <ol>
+            <li>Open VS Code</li>
+            <li>Press <code>Ctrl+Shift+X</code> (Extensions)</li>
+            <li>Search for "WSL"</li>
+            <li>Install the official Microsoft "WSL" extension</li>
+            <li>Reload VS Code if prompted</li>
+        </ol>
+
+        <h3>Step 2: Open Terminal with WSL</h3>
+
+        <h4>Method 1: Select WSL Terminal</h4>
+        <ol>
+            <li>Open terminal: <code>Ctrl+`</code> or View → Terminal</li>
+            <li>Click the dropdown arrow (˅) next to the + icon</li>
+            <li>Select "Ubuntu (WSL)" or your Linux distribution</li>
+            <li>Terminal prompt changes to: <code>username@computer:~$</code></li>
+        </ol>
+
+        <h4>Method 2: Set WSL as Default Terminal</h4>
+        <ol>
+            <li>Press <code>Ctrl+Shift+P</code> (Command Palette)</li>
+            <li>Type "Terminal: Select Default Profile"</li>
+            <li>Choose "Ubuntu (WSL)"</li>
+            <li>Now all new terminals will be WSL</li>
+        </ol>
+
+        <h4>Method 3: Open Project in WSL</h4>
+        <ol>
+            <li>Press <code>Ctrl+Shift+P</code></li>
+            <li>Type "WSL: Open Folder in WSL"</li>
+            <li>Select your project folder</li>
+            <li>VS Code reopens connected to WSL</li>
+            <li>Look for "[WSL: Ubuntu]" in the title bar</li>
+        </ol>
+
+        <h3>Step 3: Configure VS Code for WSL</h3>
+
+        <p>Add to VS Code settings.json (<code>Ctrl+,</code> then click {} icon):</p>
+
+        <pre class="json"><code>{
+    <span class="comment">// Set WSL as default terminal</span>
+    <span class="property">"terminal.integrated.defaultProfile.windows"</span>: <span class="string">"Ubuntu (WSL)"</span>,
+    
+    <span class="comment">// Configure WSL profile</span>
+    <span class="property">"terminal.integrated.profiles.windows"</span>: {
+        <span class="property">"Ubuntu (WSL)"</span>: {
+            <span class="property">"path"</span>: <span class="string">"wsl.exe"</span>,
+            <span class="property">"args"</span>: [<span class="string">"-d"</span>, <span class="string">"Ubuntu"</span>],
+            <span class="property">"icon"</span>: <span class="string">"terminal-ubuntu"</span>
+        }
+    },
+    
+    <span class="comment">// Optional: Set starting directory</span>
+    <span class="property">"terminal.integrated.cwd"</span>: <span class="string">"/home/username/projects"</span>
+}</code></pre>
+
+        <h3>Step 4: Using Make in VS Code Terminal</h3>
+
+        <ol>
+            <li><strong>With WSL terminal active:</strong>
+                <pre class="bash"><code># Navigate to project
+cd /mnt/c/Users/YourName/project
+# or if in Linux filesystem
+cd ~/project
+
+# Run make
+make
+make clean
+make test</code></pre>
+            </li>
+            <li><strong>From any terminal using wsl prefix:</strong>
+                <pre class="powershell"><code>wsl make
+wsl make clean</code></pre>
+            </li>
+            <li><strong>Create VS Code tasks</strong> (<code>.vscode/tasks.json</code>):
+                <pre class="json"><code>{
+    <span class="property">"version"</span>: <span class="string">"2.0.0"</span>,
+    <span class="property">"tasks"</span>: [
+        {
+            <span class="property">"label"</span>: <span class="string">"Make Build"</span>,
+            <span class="property">"type"</span>: <span class="string">"shell"</span>,
+            <span class="property">"command"</span>: <span class="string">"make"</span>,
+            <span class="property">"options"</span>: {
+                <span class="property">"shell"</span>: {
+                    <span class="property">"executable"</span>: <span class="string">"wsl.exe"</span>
+                }
+            },
+            <span class="property">"group"</span>: {
+                <span class="property">"kind"</span>: <span class="string">"build"</span>,
+                <span class="property">"isDefault"</span>: <span class="keyword">true</span>
+            }
+        }
+    ]
+}</code></pre>
+                <p>Run with <code>Ctrl+Shift+B</code></p>
+            </li>
+        </ol>
+
+        <h2 id="quick-reference">Quick Reference</h2>
+
+        <h3>Essential Commands</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Action</th>
+                    <th>Command</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Check if WSL installed</td>
+                    <td><code>wsl --status</code></td>
+                </tr>
+                <tr>
+                    <td>Install WSL + Ubuntu</td>
+                    <td><code>wsl --install</code></td>
+                </tr>
+                <tr>
+                    <td>Open Ubuntu</td>
+                    <td><code>wsl</code> or <code>ubuntu</code></td>
+                </tr>
+                <tr>
+                    <td>Check make version</td>
+                    <td><code>make --version</code></td>
+                </tr>
+                <tr>
+                    <td>Install make</td>
+                    <td><code>sudo apt install build-essential</code></td>
+                </tr>
+                <tr>
+                    <td>Check Docker in WSL</td>
+                    <td><code>docker --version</code></td>
+                </tr>
+                <tr>
+                    <td>Test Docker connection</td>
+                    <td><code>docker ps</code></td>
+                </tr>
+                <tr>
+                    <td>Restart WSL</td>
+                    <td><code>wsl --shutdown</code> (from PowerShell)</td>
+                </tr>
+                <tr>
+                    <td>Open WSL in VS Code</td>
+                    <td>Terminal dropdown → Ubuntu (WSL)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Terminal Indicators</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Terminal Type</th>
+                    <th>Prompt Example</th>
+                    <th>Can Run Make?</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>PowerShell</td>
+                    <td><code>PS C:\></code></td>
+                    <td>No (use <code>wsl make</code>)</td>
+                </tr>
+                <tr>
+                    <td>Command Prompt</td>
+                    <td><code>C:\></code></td>
+                    <td>No (use <code>wsl make</code>)</td>
+                </tr>
+                <tr>
+                    <td>Git Bash</td>
+                    <td><code>user@PC MINGW64</code></td>
+                    <td>Maybe (limited)</td>
+                </tr>
+                <tr>
+                    <td>WSL/Ubuntu</td>
+                    <td><code>user@pc:~$</code></td>
+                    <td>Yes ✅</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Common Issues and Fixes</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Issue</th>
+                    <th>Solution</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>WSL not recognized</td>
+                    <td>Run PowerShell as Admin</td>
+                </tr>
+                <tr>
+                    <td>Ubuntu won't start</td>
+                    <td><code>wsl --shutdown</code> then retry</td>
+                </tr>
+                <tr>
+                    <td>Make not found</td>
+                    <td><code>sudo apt install build-essential</code></td>
+                </tr>
+                <tr>
+                    <td>Docker not found in WSL</td>
+                    <td>Enable WSL integration in Docker Desktop settings</td>
+                </tr>
+                <tr>
+                    <td>Docker daemon connection error</td>
+                    <td>Restart terminal after enabling WSL integration</td>
+                </tr>
+                <tr>
+                    <td>Wrong terminal in VS Code</td>
+                    <td>Select "Ubuntu (WSL)" from dropdown</td>
+                </tr>
+                <tr>
+                    <td>Permission denied</td>
+                    <td>Use <code>sudo</code> before commands</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>File Path Conversions</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Windows Path</th>
+                    <th>WSL Path</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>C:\Users\Name\project</code></td>
+                    <td><code>/mnt/c/Users/Name/project</code></td>
+                </tr>
+                <tr>
+                    <td><code>D:\data</code></td>
+                    <td><code>/mnt/d/data</code></td>
+                </tr>
+                <tr>
+                    <td><code>\\wsl$\Ubuntu\home</code></td>
+                    <td><code>/home</code> or <code>~</code></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Troubleshooting</h2>
+
+        <h3>WSL Installation Issues</h3>
+
+        <ol>
+            <li><strong>"Virtualization not enabled"</strong>
+                <ul>
+                    <li>Restart computer</li>
+                    <li>Enter BIOS/UEFI (usually F2, F10, or Del during startup)</li>
+                    <li>Enable Virtualization/VT-x/AMD-V</li>
+                    <li>Save and exit</li>
+                </ul>
+            </li>
+            <li><strong>"WSL 2 requires an update"</strong>
+                <pre class="powershell"><code>wsl --update</code></pre>
+            </li>
+            <li><strong>"Access denied" errors</strong>
+                <ul>
+                    <li>Ensure running PowerShell as Administrator</li>
+                    <li>Check Windows Defender exclusions</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h3>Ubuntu Issues</h3>
+
+        <ol>
+            <li><strong>Forgot password:</strong>
+                <pre class="powershell"><code># In PowerShell
+ubuntu config --default-user root
+# Then in Ubuntu
+passwd your_username</code></pre>
+            </li>
+            <li><strong>Reset Ubuntu:</strong>
+                <pre class="powershell"><code>wsl --unregister Ubuntu
+wsl --install -d Ubuntu</code></pre>
+            </li>
+        </ol>
+
+        <h3>VS Code Terminal Issues</h3>
+
+        <ol>
+            <li><strong>Terminal not showing WSL option:</strong>
+                <ul>
+                    <li>Restart VS Code</li>
+                    <li>Ensure WSL extension is installed</li>
+                    <li>Check if Ubuntu is running: <code>wsl --list --running</code></li>
+                </ul>
+            </li>
+            <li><strong>"Command 'make' not found in WSL terminal":</strong>
+                <pre class="bash"><code># In WSL terminal
+sudo apt update
+sudo apt install build-essential -y</code></pre>
+            </li>
+        </ol>
+
+        <h2>Next Steps</h2>
+
+        <ol>
+            <li><strong>Optimize Performance:</strong>
+                <ul>
+                    <li>Store projects in WSL filesystem (<code>~/projects/</code>)</li>
+                    <li>Use <code>.wslconfig</code> for memory limits</li>
+                </ul>
+            </li>
+            <li><strong>Set up Git:</strong>
+                <pre class="bash"><code>git config --global user.name "Your Name"
+git config --global user.email "your.email@example.com"</code></pre>
+            </li>
+            <li><strong>Create aliases</strong> in <code>~/.bashrc</code>:
+                <pre class="bash"><code>alias ll='ls -la'
+alias gs='git status'
+alias mk='make'</code></pre>
+            </li>
+            <li><strong>Install Docker</strong> (optional):
+                <pre><code># Docker Desktop for Windows integrates with WSL2
+# Download from https://www.docker.com/products/docker-desktop</code></pre>
+            </li>
+        </ol>
+
+        <div class="info">
+            <p><strong>Now you're ready to use make and other Linux tools seamlessly in Windows through VS
+                    Code!</strong></p>
+        </div>
+    </div>
+</body>
+
+</html>

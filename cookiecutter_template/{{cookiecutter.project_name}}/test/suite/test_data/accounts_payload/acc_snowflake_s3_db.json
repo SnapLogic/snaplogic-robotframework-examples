@@ -1,0 +1,114 @@
+{
+    "path": "{{ACCOUNT_LOCATION_PATH}}",
+    "duplicate_check": true,
+    "account": {
+        "class_fqid": "com-snaplogic-snap-api-sql-accounts-snowflakedatabaseaccount_1-main32088",
+        "property_map": {
+            "view_serial": 100,
+            "settings": {
+                "connectionProperties": {
+                    "value": {
+                        "authType": {
+                            "value": "Password"
+                        },
+                        "warehouse": {
+                            "value": "{{SNOWFLAKE_WAREHOUSE}}"
+                        },
+                        "databaseName": {
+                            "value": "{{SNOWFLAKE_DATABASE}}"
+                        },
+                        "bucket": {
+                            "value": "{{SNOWFLAKE_S3_BUCKET}}",
+                            "expression": false
+                        },
+                        "portNumber": {
+                            "value": "{{SNOWFLAKE_PORT}}"
+                        },
+                        "s3Folder": {
+                            "value": "{{SNOWFLAKE_S3_FOLDER}}",
+                            "expression": false
+                        },
+                        "secretKey": {
+                            "expression": false,
+                            "value": "{{SNOWFLAKE_S3_SECRET_KEY}}"
+                        },
+                        "hostname": {
+                            "value": "{{SNOWFLAKE_HOSTNAME}}"
+                        },
+                        "JdbcDriversProp": {
+                            "value": []
+                        },
+                        "jdbcDriverClass": {
+                            "value": "net.snowflake.client.jdbc.SnowflakeDriver"
+                        },
+                        "username": {
+                            "value": "{{SNOWFLAKE_USERNAME}}"
+                        },
+                        "accessKeyId": {
+                            "expression": false,
+                            "value": "{{SNOWFLAKE_S3_ACCESS_KEY}}"
+                        },
+                        "storageIntegration": {
+                            "value": null,
+                            "expression": false
+                        },
+                        "password": {
+                            "value": "{{SNOWFLAKE_PASSWORD}}"
+                        },
+                        "awsToken": {
+                            "expression": false
+                        },
+                        "privateKey": {
+                            "value": null
+                        }
+                    }
+                },
+                "advancedProperties": {
+                    "value": {
+                        "maxPoolSize": {
+                            "value": 15
+                        },
+                        "urlProperties": {
+                            "value": []
+                        },
+                        "idleConnectionTestPeriod": {
+                            "value": 5
+                        },
+                        "maxIdleTime": {
+                            "value": 60
+                        },
+                        "retryAttempts": {
+                            "value": 0
+                        },
+                        "minPoolSize": {
+                            "value": 3
+                        },
+                        "acquireIncrement": {
+                            "value": 2
+                        },
+                        "checkoutTimeout": {
+                            "value": 10000
+                        },
+                        "fetchSize": {
+                            "value": 100
+                        },
+                        "batchSize": {
+                            "value": 50
+                        }
+                    }
+                }
+            },
+            "info": {
+                "label": {
+                    "value": "{{SNOWFLAKE_ACCOUNT_NAME}}"
+                },
+                "notes": {
+                    "value": null
+                }
+            }
+        },
+        "test_settings": {
+            "runtime_path_id": "{{ORG_NAME}}/rt/sidekick/{{GROUNDPLEX_ENV}}"
+        }
+    }
+}

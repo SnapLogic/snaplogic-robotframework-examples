@@ -1,0 +1,225 @@
+# =============================================================================
+# Groundplex Management Targets
+# =============================================================================
+# This file contains all SnapLogic Groundplex related targets
+# including launching, stopping, certificate management, and status checks
+# =============================================================================
+
+.PHONY: launch-groundplex groundplex-status stop-groundplex restart-groundplex \
+        setup-groundplex-cert launch-groundplex-with-cert groundplex-check-cert groundplex-remove-cert \
+        createplex-launch-groundplex
+
+# Include common configuration
+include makefiles/common_services/Makefile.common
+
+# =============================================================================
+#  Create project space, Create Plex in Project Space, and launch Groundplex
+# =============================================================================
+createplex-launch-groundplex:
+	@echo ":========= Running createplex tests to create plex in Proejctspace ========================================="
+	$(MAKE) robot-run-tests TAGS="createplex" PROJECT_SPACE_SETUP=True
+
+	@echo ":========== [Phase 2] Computing and starting containers using COMPOSE_PROFILES... =========="
+	$(MAKE) launch-groundplex
+
+
+# =============================================================================
+# 🚀 Launch SnapLogic Groundplex container and validate status
+# =============================================================================
+launch-groundplex:
+	@echo "Launching Groundplex..."
+	$(DOCKER_COMPOSE) --profile gp up -d snaplogic-groundplex
+	make groundplex-status
+
+# =============================================================================
+# 🔁 Poll for Groundplex JCC readiness inside container
+# =============================================================================
+groundplex-status:
+	@echo "🔁 Checking Snaplex JCC status in snaplogic-groundplex container (20 attempts, 10s interval)..."
+	@attempt=1; \
+	while [ $$attempt -le 20 ]; do \
+		echo "⏱️ Attempt $$attempt..."; \
+		container_status=$$(docker inspect -f '{{.State.Status}}' snaplogic-groundplex 2>/dev/null); \
+		if [ "$$container_status" != "running" ]; then \
+			echo "⚠️  snaplogic-groundplex is not running (status: $$container_status). Retrying in 10s..."; \
+			exit_code=$$(docker inspect -f '{{.State.ExitCode}}' snaplogic-groundplex 2>/dev/null); \
+			echo "🔎 Exit code: $$exit_code"; \
+			echo "🪵 Last 5 log lines from snaplogic-groundplex:"; \
+			docker logs --tail 5 snaplogic-groundplex 2>/dev/null || echo "⚠️  Could not fetch logs."; \
+		else \
+			status_output=$$(docker exec snaplogic-groundplex /bin/bash -c "cd /opt/snaplogic/bin && sh jcc.sh status" 2>&1); \
+			echo "🔍 JCC Status Output: $$status_output"; \
+			if echo "$$status_output" | grep -q "PID file not found"; then \
+				echo "❌ JCC not running (PID file not found). Retrying in 10s..."; \
+			elif echo "$$status_output" | grep -q "is running"; then \
+				echo "✅ JCC is running."; \
+				exit 0; \
+			else \
+				echo "❌ JCC status unclear. Retrying in 10s..."; \
+			fi; \
+		fi; \
+		sleep 10; \
+		attempt=$$((attempt + 1)); \
+	done; \
+	echo "❌ JCC failed to start after 20 attempts."; \
+	exit 1
+
+# =============================================================================
+# 🛑 Kill Snaplex JCC and shutdown groundplex container (with retries)
+# =============================================================================
+stop-groundplex:
+	@echo "🛑 Attempting to stop JCC inside snaplogic-groundplex container..."
+	docker exec snaplogic-groundplex /bin/bash -c "cd /opt/snaplogic/bin && sh jcc.sh stop" || true
+
+	@echo "🔁 Waiting for JCC to fully shut down (up to 20 attempts, 10s interval)..."
+	@attempt=1; \
+	while [ $$attempt -le 20 ]; do \
+		echo "⏱️ Attempt $$attempt..."; \
+		container_status=$$(docker inspect -f '{{.State.Status}}' snaplogic-groundplex 2>/dev/null); \
+		if [ "$$container_status" != "running" ]; then \
+			echo "✅ Container is already stopped."; \
+			break; \
+		else \
+			status=$$(docker exec snaplogic-groundplex /bin/bash -c "cd /opt/snaplogic/bin && sh jcc.sh status" 2>&1); \
+			echo "🔍 JCC Status: $$status"; \
+			echo "$$status" | grep -q "PID file not found" && break; \
+			echo "⌛ JCC still shutting down. Retrying in 10s..."; \
+		fi; \
+		sleep 10; \
+		attempt=$$((attempt + 1)); \
+	done; \
+	if [ $$attempt -gt 20 ]; then \
+		echo "❌ JCC failed to stop cleanly after 20 attempts."; \
+		exit 1; \
+	else \
+		echo "✅ JCC shutdown confirmed."; \
+	fi
+
+	@echo "🧹 Bringing down container using Docker Compose profile 'gp'..."
+	$(DOCKER_COMPOSE) --profile gp down --remove-orphans
+
+	@echo "✅ Groundplex successfully stopped and cleaned up."
+
+# =============================================================================
+# 🔄 Restart Groundplex (stop and launch)
+# =============================================================================
+restart-groundplex: stop-groundplex launch-groundplex
+	@echo "✅ Groundplex successfully restarted!"
+
+# =============================================================================
+# 🔐 Setup certificates for Groundplex (for HTTPS connections to mocks)
+# =============================================================================
+setup-groundplex-cert:
+	@echo "🔐 Setting up certificates for Groundplex..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+	@container_status=$$(docker inspect -f '{{.State.Status}}' snaplogic-groundplex 2>/dev/null || echo "not found"); \
+	if [ "$$container_status" != "running" ]; then \
+		echo "❌ Groundplex container is not running. Please run 'make launch-groundplex' first."; \
+		exit 1; \
+	fi
+
+	@echo "📥 Extracting WireMock certificate..."
+	@echo | openssl s_client -connect localhost:8443 -servername localhost 2>/dev/null | openssl x509 > /tmp/wiremock.crt 2>/dev/null || { \
+		echo "⚠️  Could not extract certificate from localhost:8443"; \
+		echo "💡 Make sure WireMock is running with HTTPS on port 8443"; \
+		exit 1; \
+	}
+
+	@echo "📋 Copying certificate to Groundplex container..."
+	@docker cp /tmp/wiremock.crt snaplogic-groundplex:/tmp/wiremock.crt
+
+	@echo "🔑 Importing certificate into Java truststore..."
+	@docker exec snaplogic-groundplex bash -c '\
+		JAVA_HOME="/opt/snaplogic/pkgs/jdk-11.0.24+8-jre"; \
+		if [ ! -d "$$JAVA_HOME" ]; then \
+			JAVA_HOME=$$(ls -d /opt/snaplogic/pkgs/jdk* 2>/dev/null | head -1); \
+		fi; \
+		echo "Found JAVA_HOME: $$JAVA_HOME"; \
+		KEYTOOL="$$JAVA_HOME/bin/keytool"; \
+		TRUSTSTORE="$$JAVA_HOME/lib/security/cacerts"; \
+		if [ ! -f "$$TRUSTSTORE" ]; then \
+			echo "❌ Could not find Java truststore at $$TRUSTSTORE"; \
+			exit 1; \
+		fi; \
+		echo "Using truststore: $$TRUSTSTORE"; \
+		"$$KEYTOOL" -import -trustcacerts -keystore "$$TRUSTSTORE" \
+			-storepass changeit -noprompt -alias wiremock \
+			-file /tmp/wiremock.crt 2>/dev/null && \
+			echo "✅ Certificate imported successfully" || \
+			echo "⚠️  Certificate may already exist (this is OK)"; \
+		rm -f /tmp/wiremock.crt \
+	'
+
+	@echo "🔄 Restarting JCC to apply certificate changes..."
+	@docker exec snaplogic-groundplex bash -c 'cd /opt/snaplogic/bin && ./jcc.sh restart'
+
+	@echo "⏳ Waiting for JCC to restart..."
+	@sleep 30
+
+	@docker exec snaplogic-groundplex bash -c 'cd /opt/snaplogic/bin && ./jcc.sh status' && \
+		echo "✅ Certificate imported and Groundplex restarted successfully!" || \
+		echo "❌ JCC failed to restart. Please check logs."
+
+# =============================================================================
+# 🚀 Launch Groundplex with certificate setup (combined target)
+# =============================================================================
+launch-groundplex-with-cert: launch-groundplex
+	@echo "⏳ Waiting for Groundplex to be ready..."
+	@sleep 30
+	@$(MAKE) setup-groundplex-cert
+
+# =============================================================================
+# 🔍 Check certificate status in Groundplex
+# =============================================================================
+groundplex-check-cert:
+	@echo "🔍 Checking certificate status in Groundplex..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@docker exec snaplogic-groundplex bash -c '\
+		JAVA_HOME="/opt/snaplogic/pkgs/jdk-11.0.24+8-jre"; \
+		if [ ! -d "$$JAVA_HOME" ]; then \
+			JAVA_HOME=$$(ls -d /opt/snaplogic/pkgs/jdk* 2>/dev/null | head -1); \
+		fi; \
+		KEYTOOL="$$JAVA_HOME/bin/keytool"; \
+		TRUSTSTORE="$$JAVA_HOME/lib/security/cacerts"; \
+		if [ ! -f "$$TRUSTSTORE" ]; then \
+			echo "❌ Could not find Java truststore"; \
+			exit 1; \
+		fi; \
+		echo "📁 Truststore location: $$TRUSTSTORE"; \
+		echo; \
+		echo "🔐 Checking for WireMock certificate:"; \
+		if "$$KEYTOOL" -list -keystore "$$TRUSTSTORE" -storepass changeit -alias wiremock >/dev/null 2>&1; then \
+			echo "✅ WireMock certificate is installed"; \
+		else \
+			echo "❌ WireMock certificate not found"; \
+		fi; \
+		echo; \
+		echo "📋 Total certificates in truststore:"; \
+		"$$KEYTOOL" -list -keystore "$$TRUSTSTORE" -storepass changeit 2>/dev/null | grep "Entry," | wc -l \
+	'
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# =============================================================================
+# 🗑️ Remove certificate from Groundplex truststore
+# =============================================================================
+groundplex-remove-cert:
+	@echo "🗑️ Removing WireMock certificate from Groundplex truststore..."
+	@docker exec snaplogic-groundplex bash -c '\
+		JAVA_HOME="/opt/snaplogic/pkgs/jdk-11.0.24+8-jre"; \
+		if [ ! -d "$$JAVA_HOME" ]; then \
+			JAVA_HOME=$$(ls -d /opt/snaplogic/pkgs/jdk* 2>/dev/null | head -1); \
+		fi; \
+		KEYTOOL="$$JAVA_HOME/bin/keytool"; \
+		TRUSTSTORE="$$JAVA_HOME/lib/security/cacerts"; \
+		if [ ! -f "$$TRUSTSTORE" ]; then \
+			echo "❌ Could not find Java truststore"; \
+			exit 1; \
+		fi; \
+		if "$$KEYTOOL" -delete -keystore "$$TRUSTSTORE" -storepass changeit -alias wiremock >/dev/null 2>&1; then \
+			echo "✅ Certificate removed successfully"; \
+		else \
+			echo "⚠️  Certificate not found or already removed"; \
+		fi \
+	'
+	@echo "🔄 Restart JCC with 'make restart-groundplex' to apply changes"

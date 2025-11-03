@@ -1,0 +1,14 @@
+{
+    "project_name": "demo_project",
+    "_copy_without_render": [
+        ".*",
+        "**/.DS_Store",
+        "docker/**",
+        "makefiles/**",
+        "README/**",
+        "travis_scripts/**",
+        "test/suite/test_data/accounts_payload/*.json",
+        "**/*.md",
+        "**/*.html"
+    ]
+}

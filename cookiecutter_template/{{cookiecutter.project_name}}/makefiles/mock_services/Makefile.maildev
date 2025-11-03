@@ -1,0 +1,180 @@
+# =============================================================================
+# 📧 Email Server (MailDev) Management
+# =============================================================================
+# This file contains targets for MailDev email testing server
+# MailDev provides a simple way to test email sending functionality
+# =============================================================================
+
+.PHONY: email-start email-stop email-restart email-status email-clean \
+        email-logs email-test email-web email-purge
+
+# Include common configuration
+include makefiles/common_services/Makefile.common
+
+# =============================================================================
+# MailDev Email Service Management
+# =============================================================================
+
+# 🚀 Start MailDev email testing server
+email-start:
+	@echo "📧 Starting MailDev email testing server..."
+	docker compose $(ENV_FILE_FLAGS) -f docker/docker-compose.email-mock.yml --profile email-mock up -d maildev
+	@echo "⏳ Waiting for MailDev to initialize..."
+	@sleep 3
+	@echo "✅ MailDev email server started!"
+	@echo ""
+	@echo "🌐 Service endpoints:"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "📬 SMTP Configuration:"
+	@echo "   • SMTP Host: localhost"
+	@echo "   • SMTP Port: 1025"
+	@echo "   • Authentication: None required"
+	@echo "   • Encryption: None"
+	@echo ""
+	@echo "🖥️ Web Interface:"
+	@echo "   • Web UI: http://localhost:1080"
+	@echo "   • Auto-refresh enabled"
+	@echo "   • All emails are caught here"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
+	@echo "🔧 SnapLogic Email Snap configuration:"
+	@echo "   • SMTP Host: localhost (or maildev-test from Groundplex)"
+	@echo "   • Port: 1025"
+	@echo "   • Authentication: None"
+	@echo "   • Encryption: None"
+	@echo ""
+	@echo "🐳 Docker network access:"
+	@echo "   • From Groundplex: maildev-test:1025"
+	@echo "   • Container name: maildev-test"
+
+# ⛔ Stop MailDev email testing server
+email-stop:
+	@echo "⛔ Stopping MailDev email server..."
+	docker compose $(ENV_FILE_FLAGS) -f docker/docker-compose.email-mock.yml stop maildev || true
+	@echo "🗑️ Removing MailDev container and volumes..."
+	docker compose $(ENV_FILE_FLAGS) -f docker/docker-compose.email-mock.yml rm -f -v maildev || true
+	@echo "✅ MailDev email server stopped and cleaned up."
+
+# 🔄 Restart MailDev email testing server
+email-restart:
+	@echo "🔄 Restarting MailDev email server..."
+	@$(MAKE) email-stop
+	@sleep 2
+	@$(MAKE) email-start
+	@echo "✅ MailDev email server restarted successfully!"
+
+# 🔍 Check MailDev email server status
+email-server-status:
+	@echo "🔍 Checking MailDev email server status..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@container_status=$$(docker inspect -f '{{.State.Status}}' maildev-test 2>/dev/null || echo "not found"); \
+	if [ "$$container_status" = "running" ]; then \
+		echo "✅ MailDev container is running"; \
+		echo "   Container: maildev-test"; \
+		echo "   SMTP Port: 1025"; \
+		echo "   Web UI Port: 1080"; \
+		echo ""; \
+		echo "🧪 Testing service health..."; \
+		if curl -s -f http://localhost:1080/ >/dev/null 2>&1; then \
+			echo "   ✅ Web UI is accessible at http://localhost:1080"; \
+			email_count=$$(curl -s http://localhost:1080/email | python3 -c "import sys, json; data=json.load(sys.stdin); print(len(data))" 2>/dev/null || echo "0"); \
+			echo "   📬 Emails in inbox: $$email_count"; \
+		else \
+			echo "   ⚠️  Web UI not responding (may still be starting)"; \
+		fi; \
+		echo ""; \
+		echo "📊 Container resource usage:"; \
+		docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}" maildev-test 2>/dev/null || true; \
+		echo ""; \
+		echo "🌐 Network connectivity:"; \
+		docker inspect maildev-test --format '{{range $k, $v := .NetworkSettings.Networks}}   Network: {{$k}} (IP: {{$v.IPAddress}}){{end}}' 2>/dev/null || true; \
+	else \
+		echo "❌ MailDev container is not running (status: $$container_status)"; \
+		echo "💡 Run 'make email-start' to start the email server"; \
+	fi
+
+# 🗑️ Purge all emails from MailDev inbox
+email-purge:
+	@echo "🗑️ Purging all emails from MailDev inbox..."
+	@echo "🔍 Checking MailDev accessibility at http://localhost:1080..."
+	@if curl -s -f http://localhost:1080/ >/dev/null 2>&1; then \
+		echo "✅ MailDev is accessible"; \
+		response=$$(curl -s -o /dev/null -w "%{http_code}" -X DELETE http://localhost:1080/email/all); \
+		if [ "$$response" = "200" ]; then \
+			echo "✅ All emails have been purged from MailDev"; \
+			email_count=$$(curl -s http://localhost:1080/email | python3 -c "import sys, json; data=json.load(sys.stdin); print(len(data))" 2>/dev/null || echo "0"); \
+			echo "📬 Inbox is now empty ($$email_count emails)"; \
+		else \
+			echo "⚠️  Failed to purge emails (HTTP status: $$response)"; \
+			echo "💡 Try accessing http://localhost:1080 in your browser"; \
+		fi; \
+	else \
+		echo "❌ Cannot connect to MailDev at http://localhost:1080"; \
+		echo "💡 Checking for MailDev containers..."; \
+		docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -i mail || echo "  No mail-related containers found"; \
+		echo ""; \
+		echo "💡 To start MailDev, run: make email-start"; \
+	fi
+
+# 🧹 Clean all email server data and restart
+email-clean:
+	@echo "🧹 Cleaning and restarting MailDev email server..."
+	@$(MAKE) email-stop
+	@echo "🗑️ Removing any cached email data..."
+	@docker volume prune -f 2>/dev/null || true
+	@sleep 2
+	@$(MAKE) email-start
+	@echo "✅ MailDev email server started with clean state!"
+	@echo "📬 All previous emails have been cleared."
+
+# 📋 View MailDev logs
+email-logs:
+	@echo "📋 MailDev Email Server Logs"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@docker logs maildev-test --tail=50 2>/dev/null || echo "❌ No logs available. Is MailDev running?"
+
+# 🧪 Send test email to MailDev
+email-test:
+	@echo "🧪 Sending test email to MailDev..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@if command -v python3 >/dev/null 2>&1; then \
+		echo "📤 Sending test email via Python..."; \
+		python3 -c "import smtplib; from email.mime.text import MIMEText; from datetime import datetime; \
+		msg = MIMEText('This is a test email sent to MailDev at ' + str(datetime.now())); \
+		msg['Subject'] = 'MailDev Test Email'; \
+		msg['From'] = 'test@snaplogic.com'; \
+		msg['To'] = 'recipient@example.com'; \
+		s = smtplib.SMTP('localhost', 1025); \
+		s.send_message(msg); \
+		s.quit(); \
+		print('✅ Test email sent successfully!')"; \
+		echo ""; \
+		echo "📬 View the email at: http://localhost:1080"; \
+	else \
+		echo "❌ Python3 not found. Using telnet method..."; \
+		echo "💡 Install Python3 for easier email testing"; \
+		echo ""; \
+		echo "Manual test command:"; \
+		echo "telnet localhost 1025"; \
+		echo "HELO localhost"; \
+		echo "MAIL FROM: test@example.com"; \
+		echo "RCPT TO: recipient@example.com"; \
+		echo "DATA"; \
+		echo "Subject: Test Email"; \
+		echo "This is a test email."; \
+		echo "."; \
+		echo "QUIT"; \
+	fi
+
+# 🌐 Open MailDev web interface
+email-web:
+	@echo "🌐 Opening MailDev web interface..."
+	@if command -v open >/dev/null 2>&1; then \
+		open http://localhost:1080; \
+		echo "✅ Opened http://localhost:1080 in your browser"; \
+	elif command -v xdg-open >/dev/null 2>&1; then \
+		xdg-open http://localhost:1080; \
+		echo "✅ Opened http://localhost:1080 in your browser"; \
+	else \
+		echo "📌 Please open http://localhost:1080 in your browser"; \
+	fi

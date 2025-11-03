@@ -1,0 +1,439 @@
+# =============================================================================
+# Docker & Tools Container Management
+# =============================================================================
+# This file contains targets for managing Docker containers, tools, and
+# development environment setup including environment validation
+# =============================================================================
+
+.PHONY: check-env start-tools-service-only snaplogic-stop-tools start-services snaplogic-stop \
+        clean-start clean-start-tools reload-env-files \
+        reinstall-requirements reinstall-snaplogic-common-robot show-snaplogic-coommon-robot-version
+
+# Include common configuration
+include makefiles/common_services/Makefile.common
+
+
+# =============================================================================
+# ✅ Environment Validation
+# =============================================================================
+# Check if environment files exist
+# Usage:
+# make check-env   # Checks .env and env_files/
+# =============================================================================
+check-env:
+	@echo "🔍 Checking environment files..."
+	@if [ ! -f "$(ROOT_ENV_FILE)" ]; then \
+		echo "❌ Error: Root environment file not found: $(ROOT_ENV_FILE)"; \
+		echo "ℹ️ Please ensure .env exists in project root."; \
+		echo "Current directory: $$(pwd)"; \
+		echo "Available .env files:"; \
+		ls -la | grep -E '\.env' || true; \
+		exit 1; \
+	fi
+	@if [ -z "$(ENV_FILES_FROM_DIR)" ]; then \
+		echo "❌ Error: No .env files found in $(ENV_DIR)/ directory"; \
+		echo "ℹ️ Please ensure env files exist in $(ENV_DIR)/"; \
+		ls -la "$(ENV_DIR)/" 2>/dev/null | grep -E '\.env' || true; \
+		exit 1; \
+	fi
+	@echo "✅ Found environment files:"
+	@missing=0; \
+	for file in $(ENV_FILES); do \
+		if [ -f "$$file" ]; then \
+			echo "   ✓ $$file"; \
+		else \
+			echo "   ✗ $$file (NOT FOUND)"; \
+			missing=1; \
+		fi; \
+	done; \
+	if [ $$missing -eq 1 ]; then \
+		echo "❌ Some environment files are missing!"; \
+		exit 1; \
+	fi
+	@echo "✅ Environment check passed!"
+
+
+
+# =============================================================================
+# START-TOOLS-SERVICE-ONLY: Start only the tools container
+# -----------------------------------------------------------------------------
+# What it does:
+#   - Starts ONLY the tools container (not other services)
+#   - Uses existing image (doesn't rebuild)
+# When to use:
+#   - When you only need the tools container running (For first time)
+# Time: ~5 seconds
+# Usage:
+#   make start-tools-service-only                          
+#   make start-tools-service-only ENV_FILES=".env.qa"           # Uses specific env file
+# NOTE: Use 'start-services' to start all services based on COMPOSE_PROFILES
+# =============================================================================
+:
+	@echo "🚀 Starting tools container only..."
+	$(DOCKER_COMPOSE) --profile tools up -d
+	@echo "⏳ Waiting for container to be ready..."
+	@sleep 5
+	@echo "✅ Tools container started successfully!"
+	@echo "💡 Verify with: make show-running"
+
+# =============================================================================
+# 🛑 SNAPLOGIC-STOP-TOOLS: Stop and remove tools container
+# =============================================================================
+# What it does:
+#   - Stops the tools container if running
+#   - Removes the tools container
+# Usage:
+#   make snaplogic-stop-tools
+# =============================================================================
+snaplogic-stop-tools:
+	@echo "🛑 Stopping tools container..."
+	$(DOCKER_COMPOSE) stop tools || true
+	$(DOCKER_COMPOSE) rm -f tools || true
+	@echo "✅ Tools container stopped and removed"
+
+# -----------------------------------------------------------------------------
+# START-SERVICES: Start all configured services
+# -----------------------------------------------------------------------------
+# What it does:
+#   - Starts containers based on COMPOSE_PROFILES setting
+#   - Uses existing images (doesn't rebuild)
+#   - Loads environment variables from env files
+# When to use:
+#   - Starting your development environment
+#   - After 'snaplogic-stop' to restart everything
+#   - Beginning of the day to start working
+# Time: ~30 seconds
+# Usage:
+#   make start-services                           # Uses default profiles
+#   make start-services COMPOSE_PROFILES=tools,postgres-dev,kafka
+# NOTE: If services are already running, use 'restart-tools' for env changes
+# -----------------------------------------------------------------------------
+
+start-services: 
+	@echo "=========================================================================="
+	@echo "🚀 Starting services/containers using COMPOSE_PROFILES..."
+	@echo "=========================================================================="
+	COMPOSE_PROFILES=$(COMPOSE_PROFILES) $(DOCKER_COMPOSE) up -d
+	@echo "⏳ Waiting for services to stabilize..."
+	@sleep 30
+	@echo "✅ All services are up and running!"
+
+
+# =============================================================================
+# Stop all snaplogic containers and clean up
+# Usage:
+#   make snaplogic-stop                           # Uses .env + env_files/*.env
+#   make snaplogic-stop ENV_FILES=".env.staging"  # Stop with specific config
+# =============================================================================
+snaplogic-stop:
+	@echo "🛑 Stopping SnapLogic App..."
+	@echo "ℹ️ Stopping containers connected to snaplogic-network..."
+	@docker ps -a --filter network=snaplogic-network --format "{{.ID}}" | xargs -r docker stop || true
+	@echo "🧹 Removing stopped containers..."
+	@docker container prune -f || true
+	@echo "ℹ️ Running docker compose down..."
+	$(DOCKER_COMPOSE) down --remove-orphans
+	$(DOCKER_COMPOSE) --profile tools down --volumes --remove-orphans
+	@echo "🧹 Ensuring snaplogic-network is removed..."
+	@docker network rm snaplogic-network 2>/dev/null || true
+	@echo "✅ SnapLogic stopped and cleaned up successfully!"
+
+
+
+# =============================================================================
+# 🏗️ clean-start: Complete rebuild of ALL services (10-15+ minutes)
+# =============================================================================
+# What it does:
+#   - Stops and removes ALL running containers
+#   - Optionally removes old Docker images (uncomment to enable)
+#   - Rebuilds ALL service images from scratch (no cache)
+#   - Includes: tools, databases (postgres, mysql, oracle, etc.), messaging (kafka), mocks (minio, maildev)
+#   - Reinstalls all packages and dependencies for each service
+#   - Reloads environment variables from .env and env_files/*.env
+#   - Starts all services based on COMPOSE_PROFILES
+#
+# When to use:
+#   - After major Dockerfile changes across multiple services
+#   - After updating base images for multiple services
+#   - When multiple services have corrupted dependencies
+#   - Complete environment refresh needed
+#   - After pulling major code updates affecting multiple services
+#
+# Time: 10-15+ minutes (depends on number of services in COMPOSE_PROFILES)
+#
+# Usage:
+#   make clean-start                              # Rebuild all services with default profiles
+#   make clean-start COMPOSE_PROFILES="tools,postgres-dev,kafka"  # Rebuild specific profiles
+#
+# NOTE: 
+#   - Use 'rebuild-tools' if you only need to rebuild tools container (5-10 min)
+#   - Use 'reload-env-files' if you only changed .env files (5 seconds)
+#   - This is the "nuclear option" - complete rebuild of everything
+# =============================================================================
+clean-start: snaplogic-stop
+	@echo "=========================================================================="
+	@echo "🏗️  CLEAN BUILD: Rebuilding ALL services from scratch"
+	@echo "=========================================================================="
+	@echo "ℹ️  This will rebuild all services: $(COMPOSE_PROFILES)"
+	@echo "⏰ Estimated time: 10-15+ minutes"
+	@echo ""
+	
+	@echo "🧹 Step 2/5: Cleaning up old images (optional - currently disabled)..."
+	@echo "ℹ️  To enable image removal, uncomment the line in Makefile.docker"
+	# Uncomment the line below to remove old images before rebuild:
+	# @docker compose config --services | xargs -I {} docker rmi $(docker compose config | grep 'image:' | awk '{print $2}') 2>/dev/null || true
+	@echo "✅ Cleanup check complete"
+	@echo ""
+	
+	@echo "🔨 Step 3/5: Building all service images without cache..."
+	@echo "ℹ️  This will take several minutes..."
+	COMPOSE_PROFILES=$(COMPOSE_PROFILES) $(DOCKER_COMPOSE) build --no-cache
+	@echo "✅ All images built successfully!"
+	@echo ""
+	
+	@echo "🚀 Step 4/5: Starting all services..."
+	COMPOSE_PROFILES=$(COMPOSE_PROFILES) $(DOCKER_COMPOSE) up -d
+	@echo "✅ All services started"
+	@echo ""
+	
+	@echo "⏳ Step 5/5: Waiting for services to stabilize..."
+	@sleep 30
+	@echo ""
+	
+	@echo "📋 Verifying running services:"
+	@echo "=========================================="
+	@$(DOCKER_COMPOSE) ps
+	@echo "=========================================="
+	@echo ""
+	@echo "✅ Clean build complete!"
+	@echo "🎉 All services have been rebuilt and are running!"
+	@echo ""
+	@echo "💡 Next steps:"
+	@echo "   - Verify tools container: make show-running"
+	@echo "   - Check snaplogic version: $(DOCKER_COMPOSE) exec tools pip show snaplogic-common-robot"
+	@echo "   - Run tests: make robot-run-tests TAGS=your_tags"
+
+# =============================================================================
+# 🛠️ clean-start-tools: Complete rebuild of ONLY tools container (5-10 minutes)
+# =============================================================================
+# What it does:
+#   - Stops and removes the tools container
+#   - Optionally removes old tools Docker image (uncomment to enable)
+#   - Rebuilds tools container image from scratch (no cache)
+#   - Reinstalls ALL Python packages from requirements.txt
+#   - Reloads environment variables from .env and env_files/*.env
+#   - Starts the tools container
+#
+# When to use:
+#   - After changing Dockerfile for tools
+#   - After updating requirements.txt
+#   - When tools container has corrupted dependencies
+#   - Need fresh tools environment without rebuilding other services
+#   - After pulling code updates affecting tools
+#
+# Time: 5-10 minutes
+#
+# Usage:
+#   make clean-start-tools                # Rebuild tools with default env files
+#   make clean-start-tools ENV_FILES=".env.qa"  # Rebuild with specific config
+#
+# NOTE:
+#   - Use 'reload-env-files' if you only changed .env files (5 seconds)
+#   - Use 'clean-start' if you need to rebuild ALL services (10-15+ minutes)
+#   - This rebuilds ONLY tools, other services remain running
+# =============================================================================
+clean-start-tools: snaplogic-stop-tools
+	@echo "=========================================================================="
+	@echo "🛠️  CLEAN BUILD: Rebuilding ONLY tools container from scratch"
+	@echo "=========================================================================="
+	@echo "⏰ Estimated time: 5-10 minutes"
+	@echo ""
+	
+	@echo "🧹 Step 1/4: Cleaning up old tools image (optional - currently disabled)..."
+	@echo "ℹ️  To enable image removal, uncomment the line below"
+	# Uncomment the line below to remove old tools image before rebuild:
+	# @docker rmi $(docker compose config | grep 'tools:' -A 5 | grep 'image:' | awk '{print $2}') 2>/dev/null || true
+	@echo "✅ Cleanup check complete"
+	@echo ""
+	
+	@echo "🔨 Step 2/4: Building tools container image without cache..."
+	@echo "ℹ️  This will take several minutes..."
+	$(DOCKER_COMPOSE) build --no-cache tools
+	@echo "✅ Tools image built successfully!"
+	@echo ""
+	
+	@echo "🚀 Step 3/4: Starting tools container..."
+	$(DOCKER_COMPOSE) --profile tools up -d
+	@echo "✅ Tools container started"
+	@echo ""
+	
+	@echo "⏳ Step 4/4: Waiting for container to be ready..."
+	@sleep 5
+	@echo ""
+	
+	@echo "📋 Verifying tools container:"
+	@echo "=========================================="
+	@$(DOCKER_COMPOSE) ps tools
+	@echo "=========================================="
+	@echo ""
+	@echo "✅ Clean build of tools container complete!"
+	@echo "🎉 Tools container has been rebuilt and is running!"
+	@echo ""
+	@echo "💡 Next steps:"
+	@echo "   - Verify installation: $(DOCKER_COMPOSE) exec tools pip show snaplogic-common-robot"
+	@echo "   - Check Python packages: $(DOCKER_COMPOSE) exec tools pip list"
+	@echo "   - Run tests: make robot-run-tests TAGS=your_tags"
+
+
+
+# -----------------------------------------------------------------------------
+#reload-env-files: reload-env-files tools container to reload env files (5 seconds)
+# -----------------------------------------------------------------------------
+# What it does:
+#   - Stops and removes the existing tools container
+#   - Creates a fresh container with updated environment variables
+#   - Reloads ALL environment variables from .env and env_files/*.env
+#   - Keeps the same Docker image and installed packages
+# When to use:
+#   - After changing any .env files (passwords, hosts, ports, etc.)
+#   - After changing configuration values in env_files/
+#   - When you need environment variables to be reloaded
+# Time: ~5 seconds
+# Usage:
+#   make reload-env-files                          # Recreates with .env + env_files/*.env
+# NOTE: Use 'make rebuild-tools' if you changed requirements.txt or Dockerfile!
+# -----------------------------------------------------------------------------
+reload-env-files:
+	@echo "🔄 Recreating tools container to reload environment files..."
+	@echo "ℹ️ Stopping and removing existing container..."
+	$(DOCKER_COMPOSE) stop tools
+	$(DOCKER_COMPOSE) rm -f tools
+	@echo "🚀 Creating fresh container with updated environment..."
+	$(DOCKER_COMPOSE) --profile tools up -d
+	@echo "⏳ Waiting for container to be ready..."
+	@sleep 5
+	@echo "✅ Tools container recreated with updated environment!"
+	@echo "💡 Tip: Use 'make rebuild-tools' if you changed Dockerfile or requirements.txt"
+
+
+# =============================================================================
+# 🔄 REINSTALL-REQUIREMENTS-DOCKER: Reinstall ALL packages (2-3 minutes)
+# =============================================================================
+# What it does:
+#   - Reinstalls ALL packages from requirements.txt (~50+ packages)
+#   - Forces reinstall with --force-reinstall --no-cache-dir
+#
+# When to use:
+#   - Updated requirements.txt with new packages
+#   - Changed multiple package versions
+#   - Multiple packages corrupted or broken
+#   - Want to ensure entire environment is fresh
+#
+# Time: ~2-3 minutes
+#
+# Usage:
+#   make reinstall-requirements-docker
+#
+# Note: For updating ONLY snaplogic-common-robot, use install-snaplogic-common-robot (30s)
+# =============================================================================
+reinstall-requirements:
+	@echo "⚡ Reinstalling and verifying requirements in Docker container..."
+	@echo ""
+	@echo "📋 Step 1/4: Checking if container is running..."
+	@if ! docker ps | grep -q snaplogic-test-example-tools-container; then \
+		echo "❌ Error: Container 'snaplogic-test-example-tools-container' is not running!"; \
+		echo "💡 Start it first with: make start-tools"; \
+		exit 1; \
+	fi
+	@echo "✅ Container is running"
+	@echo ""
+	@echo "📦 Step 2/4: Reinstalling requirements.txt..."
+	@echo "   Using: pip install -r /app/requirements.txt --force-reinstall --no-cache-dir"
+	@docker exec snaplogic-test-example-tools-container pip install -r /app/requirements.txt --force-reinstall --no-cache-dir
+	@echo "✅ Requirements reinstalled successfully!"
+	@echo ""
+	@echo "🔍 Step 3/4: Checking installed packages..."
+	@echo "📋 Installed packages (first 25):"
+	@docker exec snaplogic-test-example-tools-container pip list | head -25
+	@echo ""
+	@echo "🔍 Checking critical packages:"install-snaplogic-common-robot
+	@echo "   ✓ Robot Framework:"
+	@docker exec snaplogic-test-example-tools-container pip show robotframework | grep -E "^(Name|Version):"
+	@echo "   ✓ Requests Library:"
+	@docker exec snaplogic-test-example-tools-container pip show robotframework-requests | grep -E "^(Name|Version):"
+	@echo "   ✓ Database Library:"
+	@docker exec snaplogic-test-example-tools-container pip show robotframework-databaselibrary | grep -E "^(Name|Version):"
+	@echo ""
+	@echo "🧪 Step 4/4: Testing imports..."
+	@docker exec snaplogic-test-example-tools-container python -c "import robot; print('   ✅ Robot Framework imported successfully')"
+	@docker exec snaplogic-test-example-tools-container python -c "import RequestsLibrary; print('   ✅ RequestsLibrary imported successfully')"
+	@docker exec snaplogic-test-example-tools-container python -c "import DatabaseLibrary; print('   ✅ DatabaseLibrary imported successfully')"
+	@echo ""
+	@echo "🎉 All done! Requirements have been reinstalled and verified successfully."
+
+# =============================================================================
+# 🎯 INSTALL-SNAPLOGIC-COMMON-ROBOT: Install ONLY snaplogic package (30 seconds)
+# =============================================================================
+# What it does:
+#   - Installs ONLY snaplogic-common-robot package (not entire requirements.txt)
+#   - Installs setuptools first (required dependency)
+#   - Forces reinstall with --force-reinstall --no-cache-dir
+#   - Verifies installation and tests import
+#
+# When to use:
+#   - New version of snaplogic-common-robot released
+#   - Testing snaplogic-common-robot changes
+#   - Fix corrupted snaplogic-common-robot installation
+#   - Quick update without reinstalling all 50+ packages
+#
+# Time: ~30 seconds (⚡ 4x faster than reinstall-requirements-docker)
+#
+# Usage:
+#   make reinstall-snaplogic-common-robot
+
+# =============================================================================
+reinstall-snaplogic-common-robot:
+	@echo "🚀 Installing snaplogic-common-robot in Docker container..."
+	@echo ""
+	@echo "📦 updating snaplogic-common-robot to latest version..."
+	@echo "ℹ️ Current version:"
+	@echo "📋 Step 1/4: Checking if container is running..."
+	@if ! docker ps | grep -q snaplogic-test-example-tools-container; then \
+		echo "❌ Error: Container 'snaplogic-test-example-tools-container' is not running!"; \
+		echo "💡 Start it first with: make start-tools"; \
+		exit 1; \
+	fi
+	@echo "✅ Container is running"
+	@echo ""
+	@echo "🔧 Step 2/4: Installing setuptools (required dependency)..."
+	@docker exec snaplogic-test-example-tools-container pip install setuptools --quiet
+	@echo "✅ setuptools installed"
+	@echo ""
+	@echo "📦 Step 3/4: Installing snaplogic-common-robot..."
+	@echo "   Using: pip install snaplogic-common-robot --force-reinstall --no-cache-dir"
+	@docker exec snaplogic-test-example-tools-container pip install snaplogic-common-robot --force-reinstall --no-cache-dir
+	@echo "✅ snaplogic-common-robot installed successfully!"
+	@echo ""
+	@echo "🔍 Step 4/4: Verifying installation..."
+	@echo "   Package details:"
+	@docker exec snaplogic-test-example-tools-container pip show snaplogic-common-robot
+	@echo ""
+	@echo "   Testing import:"
+	@docker exec snaplogic-test-example-tools-container python -c "import snaplogic_common_robot; print('   ✅ snaplogic-common-robot imported successfully')"
+	@echo ""
+	@echo "🎉 Done! snaplogic-common-robot has been installed and verified."
+
+# Show snaplogic-common-robot version
+show-snaplogic-coommon-robot-version:
+	@echo "📦 SnapLogic Common Robot Library Version"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@if ! docker ps | grep -q snaplogic-test-example-tools-container; then \
+		echo "❌ Error: Container 'snaplogic-test-example-tools-container' is not running!"; \
+		echo "💡 Start it first with: make start-tools"; \
+		exit 1; \
+	fi
+	@docker exec snaplogic-test-example-tools-container pip show snaplogic-common-robot | grep -E "^(Name|Version|Location):" || echo "❌ snaplogic-common-robot not installed"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+
+

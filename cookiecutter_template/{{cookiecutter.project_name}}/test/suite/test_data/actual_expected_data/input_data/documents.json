@@ -1,0 +1,394 @@
+[
+  {
+    "DOCUMENT_NUMBER": 1070780,
+    "IDOC_CONTROL": {
+      "STD": "",
+      "SNDSCA": "",
+      "MESTYP": "RSINFO",
+      "RCVSMN": "",
+      "RCVPOR": "A000000017",
+      "SNDLAD": "",
+      "MANDT": "800",
+      "STATUS": "03",
+      "RCVSAD": "",
+      "CIMTYP": "",
+      "IDOCTP": "RSINFO",
+      "SNDSDF": "",
+      "MAXSEGNUM": 2,
+      "RCVSNA": "",
+      "SNDPRT": "LS",
+      "REFINT": "",
+      "REFGRP": "",
+      "SNDSLF": "",
+      "SNDPFC": "",
+      "EXPRSS": "",
+      "SNDPRN": "T90CLNT090",
+      "REFMES": "",
+      "TEST": "",
+      "STDMES": "",
+      "SNDSAD": "",
+      "ARCKEY": "",
+      "MESFCT": "",
+      "SNDSMN": "",
+      "SNDPOR": "SAPEC3",
+      "RCVSCA": "",
+      "DOCNUM": 1070780,
+      "RCVLAD": "",
+      "OUTMOD": "2",
+      "SNDSNA": "",
+      "DOCTYP": "",
+      "STDVRS": "",
+      "UPDTIM": {
+        "_snaptype_datetime": "1970-01-01T09:42:17.000 UTC"
+      },
+      "DIRECT": "1",
+      "UPDDAT": {
+        "_snaptype_datetime": "2012-07-09T00:00:00.000 UTC"
+      },
+      "SERIAL": "20120709094217",
+      "RCVPRN": "B3TCLNT800",
+      "DOCREL": "731",
+      "MESCOD": "",
+      "RCVPRT": "LS",
+      "RCVSLF": "",
+      "RCVPFC": "",
+      "RCVSDF": "",
+      "CREDAT": {
+        "_snaptype_datetime": "2012-07-09T00:00:00.000 UTC"
+      },
+      "CRETIM": {
+        "_snaptype_datetime": "1970-01-01T09:42:17.000 UTC"
+      }
+    },
+    "NUMBER_OF_DATA_RECORDS": 2,
+    "NUMBER_OF_STATUS_RECORDS": 3,
+    "INT_EDIDD": [
+      {
+        "MANDT": "800",
+        "DOCNUM": 1070780,
+        "SEGNUM": 1,
+        "SEGNAM": "E1RSHIN",
+        "PSGNUM": 0,
+        "HLEVEL": 2,
+        "DTINT2": 1000,
+        "SDATA": "REQU_DD7UIMJ94E7DLK1YSLUMGJ9XH    3 201207090942162       2610"
+      },
+      {
+        "MANDT": "800",
+        "DOCNUM": 1070780,
+        "SEGNUM": 2,
+        "SEGNAM": "E1RSPIN",
+        "PSGNUM": 1,
+        "HLEVEL": 3,
+        "DTINT2": 1000,
+        "SDATA": "000001       2610"
+      }
+    ],
+    "INT_EDIDS": [
+      {
+        "MANDT": "800",
+        "DOCNUM": 1070780,
+        "LOGDAT": {
+          "_snaptype_datetime": "2012-07-09T00:00:00.000 UTC"
+        },
+        "LOGTIM": {
+          "_snaptype_datetime": "1970-01-01T09:42:17.000 UTC"
+        },
+        "COUNTR": 0,
+        "CREDAT": {
+          "_snaptype_datetime": "2012-07-09T00:00:00.000 UTC"
+        },
+        "CRETIM": {
+          "_snaptype_datetime": "1970-01-01T09:42:17.000 UTC"
+        },
+        "STATUS": "01",
+        "UNAME": "SAP",
+        "REPID": "",
+        "ROUTID": "",
+        "STACOD": "",
+        "STATXT": "",
+        "SEGNUM": 0,
+        "SEGFLD": "",
+        "STAPA1": "",
+        "STAPA2": "",
+        "STAPA3": "",
+        "STAPA4": "",
+        "STATYP": "",
+        "STAMQU": "",
+        "STAMID": "",
+        "STAMNO": 0,
+        "TID": "",
+        "APPL_LOG": "",
+        "_DATAAGING": null
+      },
+      {
+        "MANDT": "800",
+        "DOCNUM": 1070780,
+        "LOGDAT": {
+          "_snaptype_datetime": "2012-07-09T00:00:00.000 UTC"
+        },
+        "LOGTIM": {
+          "_snaptype_datetime": "1970-01-01T09:42:17.000 UTC"
+        },
+        "COUNTR": 1,
+        "CREDAT": {
+          "_snaptype_datetime": "2012-07-09T00:00:00.000 UTC"
+        },
+        "CRETIM": {
+          "_snaptype_datetime": "1970-01-01T09:42:17.000 UTC"
+        },
+        "STATUS": "30",
+        "UNAME": "SAP",
+        "REPID": "",
+        "ROUTID": "",
+        "STACOD": "",
+        "STATXT": "&, &, &, &",
+        "SEGNUM": 0,
+        "SEGFLD": "",
+        "STAPA1": "Receiver exists",
+        "STAPA2": "No filters",
+        "STAPA3": "No conversion",
+        "STAPA4": "No version change",
+        "STATYP": "S",
+        "STAMQU": "SAP",
+        "STAMID": "B1",
+        "STAMNO": 6,
+        "TID": "",
+        "APPL_LOG": "",
+        "_DATAAGING": null
+      },
+      {
+        "MANDT": "800",
+        "DOCNUM": 1070780,
+        "LOGDAT": {
+          "_snaptype_datetime": "2012-07-09T00:00:00.000 UTC"
+        },
+        "LOGTIM": {
+          "_snaptype_datetime": "1970-01-01T09:42:17.000 UTC"
+        },
+        "COUNTR": 2,
+        "CREDAT": {
+          "_snaptype_datetime": "2012-07-09T00:00:00.000 UTC"
+        },
+        "CRETIM": {
+          "_snaptype_datetime": "1970-01-01T09:42:17.000 UTC"
+        },
+        "STATUS": "03",
+        "UNAME": "SAP",
+        "REPID": "LEDI7F10",
+        "ROUTID": "",
+        "STACOD": "",
+        "STATXT": "IDoc sent to SAP system or external program",
+        "SEGNUM": 0,
+        "SEGFLD": "",
+        "STAPA1": "0A16BC1E0F7C4FFA8B590008",
+        "STAPA2": "Creation TID: 0A16BC1E0F7C4FFA8B590007",
+        "STAPA3": "",
+        "STAPA4": "",
+        "STATYP": "I",
+        "STAMQU": "SAP",
+        "STAMID": "EA",
+        "STAMNO": 83,
+        "TID": "0A16BC1E0F7C4FFA8B590008",
+        "APPL_LOG": "",
+        "_DATAAGING": null
+      }
+    ],
+    "original": {
+      "DOCUMENT_NUMBER": 1070780,
+      "IDOC_CONTROL": {
+        "STD": "",
+        "SNDSCA": "",
+        "MESTYP": "RSINFO",
+        "RCVSMN": "",
+        "RCVPOR": "A000000017",
+        "SNDLAD": "",
+        "MANDT": "800",
+        "STATUS": "03",
+        "RCVSAD": "",
+        "CIMTYP": "",
+        "IDOCTP": "RSINFO",
+        "SNDSDF": "",
+        "MAXSEGNUM": 2,
+        "RCVSNA": "",
+        "SNDPRT": "LS",
+        "REFINT": "",
+        "REFGRP": "",
+        "SNDSLF": "",
+        "SNDPFC": "",
+        "EXPRSS": "",
+        "SNDPRN": "T90CLNT090",
+        "REFMES": "",
+        "TEST": "",
+        "STDMES": "",
+        "SNDSAD": "",
+        "ARCKEY": "",
+        "MESFCT": "",
+        "SNDSMN": "",
+        "SNDPOR": "SAPEC3",
+        "RCVSCA": "",
+        "DOCNUM": 1070780,
+        "RCVLAD": "",
+        "OUTMOD": "2",
+        "SNDSNA": "",
+        "DOCTYP": "",
+        "STDVRS": "",
+        "UPDTIM": {
+          "_snaptype_datetime": "1970-01-01T09:42:17.000 UTC"
+        },
+        "DIRECT": "1",
+        "UPDDAT": {
+          "_snaptype_datetime": "2012-07-09T00:00:00.000 UTC"
+        },
+        "SERIAL": "20120709094217",
+        "RCVPRN": "B3TCLNT800",
+        "DOCREL": "731",
+        "MESCOD": "",
+        "RCVPRT": "LS",
+        "RCVSLF": "",
+        "RCVPFC": "",
+        "RCVSDF": "",
+        "CREDAT": {
+          "_snaptype_datetime": "2012-07-09T00:00:00.000 UTC"
+        },
+        "CRETIM": {
+          "_snaptype_datetime": "1970-01-01T09:42:17.000 UTC"
+        }
+      },
+      "NUMBER_OF_DATA_RECORDS": 2,
+      "NUMBER_OF_STATUS_RECORDS": 3,
+      "INT_EDIDD": [
+        {
+          "MANDT": "800",
+          "DOCNUM": 1070780,
+          "SEGNUM": 1,
+          "SEGNAM": "E1RSHIN",
+          "PSGNUM": 0,
+          "HLEVEL": 2,
+          "DTINT2": 1000,
+          "SDATA": "REQU_DD7UIMJ94E7DLK1YSLUMGJ9XH    3 201207090942162       2610"
+        },
+        {
+          "MANDT": "800",
+          "DOCNUM": 1070780,
+          "SEGNUM": 2,
+          "SEGNAM": "E1RSPIN",
+          "PSGNUM": 1,
+          "HLEVEL": 3,
+          "DTINT2": 1000,
+          "SDATA": "000001       2610"
+        }
+      ],
+      "INT_EDIDS": [
+        {
+          "MANDT": "800",
+          "DOCNUM": 1070780,
+          "LOGDAT": {
+            "_snaptype_datetime": "2012-07-09T00:00:00.000 UTC"
+          },
+          "LOGTIM": {
+            "_snaptype_datetime": "1970-01-01T09:42:17.000 UTC"
+          },
+          "COUNTR": 0,
+          "CREDAT": {
+            "_snaptype_datetime": "2012-07-09T00:00:00.000 UTC"
+          },
+          "CRETIM": {
+            "_snaptype_datetime": "1970-01-01T09:42:17.000 UTC"
+          },
+          "STATUS": "01",
+          "UNAME": "SAP",
+          "REPID": "",
+          "ROUTID": "",
+          "STACOD": "",
+          "STATXT": "",
+          "SEGNUM": 0,
+          "SEGFLD": "",
+          "STAPA1": "",
+          "STAPA2": "",
+          "STAPA3": "",
+          "STAPA4": "",
+          "STATYP": "",
+          "STAMQU": "",
+          "STAMID": "",
+          "STAMNO": 0,
+          "TID": "",
+          "APPL_LOG": "",
+          "_DATAAGING": null
+        },
+        {
+          "MANDT": "800",
+          "DOCNUM": 1070780,
+          "LOGDAT": {
+            "_snaptype_datetime": "2012-07-09T00:00:00.000 UTC"
+          },
+          "LOGTIM": {
+            "_snaptype_datetime": "1970-01-01T09:42:17.000 UTC"
+          },
+          "COUNTR": 1,
+          "CREDAT": {
+            "_snaptype_datetime": "2012-07-09T00:00:00.000 UTC"
+          },
+          "CRETIM": {
+            "_snaptype_datetime": "1970-01-01T09:42:17.000 UTC"
+          },
+          "STATUS": "30",
+          "UNAME": "SAP",
+          "REPID": "",
+          "ROUTID": "",
+          "STACOD": "",
+          "STATXT": "&, &, &, &",
+          "SEGNUM": 0,
+          "SEGFLD": "",
+          "STAPA1": "Receiver exists",
+          "STAPA2": "No filters",
+          "STAPA3": "No conversion",
+          "STAPA4": "No version change",
+          "STATYP": "S",
+          "STAMQU": "SAP",
+          "STAMID": "B1",
+          "STAMNO": 6,
+          "TID": "",
+          "APPL_LOG": "",
+          "_DATAAGING": null
+        },
+        {
+          "MANDT": "800",
+          "DOCNUM": 1070780,
+          "LOGDAT": {
+            "_snaptype_datetime": "2012-07-09T00:00:00.000 UTC"
+          },
+          "LOGTIM": {
+            "_snaptype_datetime": "1970-01-01T09:42:17.000 UTC"
+          },
+          "COUNTR": 2,
+          "CREDAT": {
+            "_snaptype_datetime": "2012-07-09T00:00:00.000 UTC"
+          },
+          "CRETIM": {
+            "_snaptype_datetime": "1970-01-01T09:42:17.000 UTC"
+          },
+          "STATUS": "03",
+          "UNAME": "SAP",
+          "REPID": "LEDI7F10",
+          "ROUTID": "",
+          "STACOD": "",
+          "STATXT": "IDoc sent to SAP system or external program",
+          "SEGNUM": 0,
+          "SEGFLD": "",
+          "STAPA1": "0A16BC1E0F7C4FFA8B590008",
+          "STAPA2": "Creation TID: 0A16BC1E0F7C4FFA8B590007",
+          "STAPA3": "",
+          "STAPA4": "",
+          "STATYP": "I",
+          "STAMQU": "SAP",
+          "STAMID": "EA",
+          "STAMNO": 83,
+          "TID": "0A16BC1E0F7C4FFA8B590008",
+          "APPL_LOG": "",
+          "_DATAAGING": null
+        }
+      ]
+    }
+  }
+]

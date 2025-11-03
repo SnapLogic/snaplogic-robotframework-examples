@@ -1,0 +1,119 @@
+{
+    "path": "{{ACCOUNT_LOCATION_PATH}}",
+    "duplicate_check": false,
+    "account": {
+        "class_fqid": "com-snaplogic-snap-api-sql-accounts-oraclethindatabaseaccount_2-main29887",
+        "property_map": {
+            "view_serial": 100,
+            "settings": {
+                "jdbcUrlSource": {
+                    "value": "Snap Generated"
+                },
+                "connectionProperties": {
+                    "value": {
+                        "customJdbcUrl": {
+                            "value": null
+                        },
+                        "databaseName": {
+                            "value": "{{ORACLE_DATABASE}}",
+                            "expression": false
+                        },
+                        "authMethod": {
+                            "value": "User ID and Password"
+                        },
+                        "portNumber": {
+                            "value": 1521,
+                            "expression": false
+                        },
+                        "hostname": {
+                            "value": "{{ORACLE_HOST}}",
+                            "expression": false
+                        },
+                        "JdbcDriversProp": {
+                            "value": []
+                        },
+                        "jdbcDriverClass": {
+                            "value": "oracle.jdbc.OracleDriver"
+                        },
+                        "username": {
+                            "value": "{{ORACLE_USER}}",
+                            "expression": false
+                        },
+                        "SSL_CONNECT": {
+                            "value": false
+                        },
+                        "password": {
+                            "expression": false,
+                            "value": "{{ORACLE_PASSWORD}}"
+                        },
+                        "DATABASE_SPECIFIER_TYPE": {
+                            "value": "Service name"
+                        },
+                        "krbConf": {
+                            "value": null,
+                            "expression": false
+                        }
+                    }
+                },
+                "advancedProperties": {
+                    "value": {
+                        "maxPoolSize": {
+                            "value": 50,
+                            "expression": false
+                        },
+                        "urlProperties": {
+                            "value": []
+                        },
+                        "idleConnectionTestPeriod": {
+                            "value": 5,
+                            "expression": false
+                        },
+                        "maxIdleTime": {
+                            "value": 30,
+                            "expression": false
+                        },
+                        "autoCommit": {
+                            "value": true,
+                            "expression": false
+                        },
+                        "retryAttempts": {
+                            "value": 0
+                        },
+                        "minPoolSize": {
+                            "value": 0
+                        },
+                        "evictConnectionOnClose": {
+                            "value": false
+                        },
+                        "acquireIncrement": {
+                            "value": 1
+                        },
+                        "checkoutTimeout": {
+                            "value": 10000,
+                            "expression": false
+                        },
+                        "fetchSize": {
+                            "value": 100,
+                            "expression": false
+                        },
+                        "batchSize": {
+                            "value": 50,
+                            "expression": false
+                        }
+                    }
+                }
+            },
+            "info": {
+                "label": {
+                    "value": "{{ORACLE_ACCOUNT_NAME}}"
+                },
+                "notes": {
+                    "value": null
+                }
+            }
+        },
+        "test_settings": {
+            "runtime_path_id": "ml-legacy-migration/rt/sidekick/snaplogicgroundplexdev"
+        }
+    }
+}

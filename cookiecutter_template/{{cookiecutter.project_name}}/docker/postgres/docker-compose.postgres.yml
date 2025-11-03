@@ -1,0 +1,22 @@
+services:
+  postgres-db:
+    image: postgres:15
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-snaplogic}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-snaplogic}
+      POSTGRES_DB: ${POSTGRES_DB:-snaplogic}
+    ports:
+      - "${POSTGRES_PORT:-5435}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    profiles: [ postgres-dev ]
+    networks:
+      - snaplogicnet
+
+volumes:
+  postgres_data:
+
+networks:
+  snaplogicnet:
+    driver: bridge

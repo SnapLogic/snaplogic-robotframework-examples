@@ -1,0 +1,169 @@
+{
+    "path": "{{ACCOUNT_LOCATION_PATH}}",
+    "duplicate_check": false,
+    "account": {
+        "class_fqid": "com-snaplogic-snap-api-sql-accounts-postgresdatabaseaccount_1-main31019",
+        "property_map": {
+            "view_serial": 100,
+            "settings": {
+                "authMethod": {
+                    "value": "User ID and Password"
+                },
+                "connectionProperties": {
+                    "value": {
+                        "sshpassword": {
+                            "expression": false
+                        },
+                        "privateKeyPassphrase": {
+                            "expression": false
+                        },
+                        "sshTunnelConfiguration": {
+                            "value": false,
+                            "expression": false
+                        },
+                        "databaseName": {
+                            "value": "{{POSTGRES_DATABASE}}",
+                            "expression": false
+                        },
+                        "sshPort": {
+                            "value": 22,
+                            "expression": false
+                        },
+                        "portNumber": {
+                            "value": 5432,
+                            "expression": false
+                        },
+                        "hostname": {
+                            "value": "{{POSTGRES_HOST}}",
+                            "expression": false
+                        },
+                        "JdbcDriversProp": {
+                            "value": []
+                        },
+                        "privateKeyUrl": {
+                            "value": null,
+                            "expression": false
+                        },
+                        "jdbcDriverClass": {
+                            "value": "org.postgresql.Driver"
+                        },
+                        "username": {
+                            "value": "{{POSTGRES_USER}}",
+                            "expression": false
+                        },
+                        "iamProps": {
+                            "value": {
+                                "iamRole": {
+                                    "value": false
+                                },
+                                "accessKey": {
+                                    "value": null,
+                                    "expression": false
+                                },
+                                "secretKey": {
+                                    "expression": false
+                                },
+                                "securityToken": {
+                                    "value": null,
+                                    "expression": false
+                                },
+                                "region": {
+                                    "value": null,
+                                    "expression": false
+                                },
+                                "crossAccountIAM": {
+                                    "value": {
+                                        "roleARN": {
+                                            "value": null,
+                                            "expression": false
+                                        },
+                                        "externalID": {
+                                            "expression": false
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "AuthenticationMode": {
+                            "value": "Password",
+                            "expression": false
+                        },
+                        "sshhostname": {
+                            "value": null,
+                            "expression": false
+                        },
+                        "password": {
+                            "expression": false,
+                            "value": "{{POSTGRES_PASSWORD}}"
+                        },
+                        "PrivateKey": {
+                            "expression": false
+                        },
+                        "sshusername": {
+                            "value": null,
+                            "expression": false
+                        }
+                    }
+                },
+                "advancedProperties": {
+                    "value": {
+                        "maxPoolSize": {
+                            "value": 50,
+                            "expression": false
+                        },
+                        "urlProperties": {
+                            "value": []
+                        },
+                        "idleConnectionTestPeriod": {
+                            "value": 5,
+                            "expression": false
+                        },
+                        "maxIdleTime": {
+                            "value": 30,
+                            "expression": false
+                        },
+                        "autoCommit": {
+                            "value": true,
+                            "expression": false
+                        },
+                        "retryAttempts": {
+                            "value": 0
+                        },
+                        "minPoolSize": {
+                            "value": 0
+                        },
+                        "evictConnectionOnClose": {
+                            "value": false
+                        },
+                        "acquireIncrement": {
+                            "value": 1
+                        },
+                        "checkoutTimeout": {
+                            "value": 10000,
+                            "expression": false
+                        },
+                        "fetchSize": {
+                            "value": 100,
+                            "expression": false
+                        },
+                        "batchSize": {
+                            "value": 50,
+                            "expression": false
+                        }
+                    }
+                }
+            },
+            "info": {
+                "label": {
+                    "value": "{{POSTGRES_ACCOUNT_NAME}}"
+                },
+                "notes": {
+                    "value": null
+                }
+            }
+        },
+        "test_settings": {
+            "runtime_path_id": null
+        }
+    }
+}

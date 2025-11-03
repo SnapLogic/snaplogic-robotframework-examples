@@ -1,0 +1,12 @@
+[
+  {
+    "name": "Alice Johnson",
+    "role": "Architect",
+    "salary": 85000
+  },
+  {
+    "name": "Bob Wilson",
+    "role": "DevOps",
+    "salary": 70000
+  }
+]
