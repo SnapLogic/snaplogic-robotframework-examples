@@ -278,7 +278,8 @@ Check connections
 Connect To Snowflake Cloud DB
     [Documentation]    Test connection using resource keywords
     ...    No need to set env variables - already loaded from .env
-    Connect To Snowflake Via DatabaseLibrary
+    # Connect To Snowflake Via DatabaseLibrary
+    Connect To Snowflake Via DatabaseLibrary    keypair
 
 Clean Table
     [Documentation]    Truncates the Snowflake table before test execution to ensure clean state
