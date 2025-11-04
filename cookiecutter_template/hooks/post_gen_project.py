@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 """
-Post-generation hook for cookiecutter template.
-Cleans up files and directories for systems not included in the project,
-including docker folders, env files, Makefile includes, and test directories.
+Post-generation hook for cookiecutter template - ENHANCED DEBUG VERSION
+This version includes extensive logging to help diagnose cleanup issues.
 """
 
 import os
@@ -16,18 +15,8 @@ from typing import List, Dict, Tuple
 
 # --- Define valid systems ---
 VALID_SYSTEMS = [
-    "oracle",
-    "postgres",
-    "mysql",
-    "sqlserver",
-    "db2",
-    "teradata",
-    "snowflake",
-    "salesforce",
-    "kafka",
-    "activemq",
-    "s3",
-    "email",
+    "oracle", "postgres", "mysql", "sqlserver", "db2", "teradata",
+    "snowflake", "salesforce", "kafka", "activemq", "s3", "email",
 ]
 
 # --- System to Docker profile mapping ---
@@ -46,9 +35,26 @@ SYSTEM_TO_PROFILE = {
     "email": "email-mock",
 }
 
+# --- System to Makefile name mapping ---
+SYSTEM_TO_MAKEFILE = {
+    "oracle": "Makefile.oracle",
+    "postgres": "Makefile.postgres",
+    "mysql": "Makefile.mysql",
+    "sqlserver": "Makefile.sqlserver",
+    "db2": "Makefile.db2",
+    "teradata": "Makefile.teradata",
+    "snowflake": "Makefile.snowflake",
+    "kafka": "Makefile.kafka",
+    "activemq": "Makefile.activemq",
+    "s3": "Makefile.minio",
+    "email": "Makefile.maildev",
+    "salesforce": "Makefile.salesforce",
+}
+
 
 # ------------------------------------------------------
 # Step 1: Initialize project information
+# Retrieves project root directory and name from cookiecutter variables
 # ------------------------------------------------------
 def initialize_project_info() -> Tuple[Path, str]:
     project_root = Path.cwd()
@@ -59,6 +65,7 @@ def initialize_project_info() -> Tuple[Path, str]:
     print(f"📁 Project root: {project_root}")
     print(f"📝 Project name: {project_name}")
     print(f"👤 Author: {{ cookiecutter.author_name }}")
+    print(f"🔧 Current working directory: {os.getcwd()}")
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
 
     return project_root, project_name
@@ -66,6 +73,11 @@ def initialize_project_info() -> Tuple[Path, str]:
 
 # ------------------------------------------------------
 # Step 2: Parse included systems from cookiecutter input
+# ------------------------------------------------------
+# Parses the cookiecutter.included_systems variable into a list.
+# If "all" is specified or input is empty, keeps all files and exits.
+# Otherwise, returns a list of lowercase, trimmed system names.
+# Example: "Oracle, Kafka" → ["oracle", "kafka"]
 # ------------------------------------------------------
 def get_included_systems() -> List[str]:
     included_systems_raw = """{{ cookiecutter.included_systems }}"""
@@ -81,7 +93,7 @@ def get_included_systems() -> List[str]:
         for sm_file in Path(".").rglob("system_mappings.json"):
             try:
                 sm_file.unlink()
-                print(f"   Removed system_mappings.json")
+                print("   Removed system_mappings.json")
             except:
                 pass
         exit(0)
@@ -92,6 +104,11 @@ def get_included_systems() -> List[str]:
 
 # ------------------------------------------------------
 # Step 3: Validate systems
+# ------------------------------------------------------
+# Validates that all specified systems are in the VALID_SYSTEMS list.
+# Uses fuzzy matching (difflib) to suggest corrections for typos.
+# Filters out invalid systems and continues with valid ones only.
+# Exits if no valid systems remain after validation.
 # ------------------------------------------------------
 def validate_systems(included_systems: List[str]) -> List[str]:
     invalid_systems = [s for s in included_systems if s not in VALID_SYSTEMS]
@@ -118,7 +135,145 @@ def validate_systems(included_systems: List[str]) -> List[str]:
 
 
 # ------------------------------------------------------
-# Step 4: Update COMPOSE_PROFILES in Makefile.common
+# Step 4: Load system mappings
+# ------------------------------------------------------
+# Loads system_mappings.json which contains glob patterns for cleanup.
+# This file maps each system to a list of file patterns to remove.
+# If not found, cleanup falls back to directory-based matching only.
+# ------------------------------------------------------
+def load_system_mappings(project_root: Path) -> Dict:
+    system_mappings = {}
+    local_mappings = project_root / "system_mappings.json"
+    
+    print(f"\n🔍 Looking for system_mappings.json at: {local_mappings}")
+    
+    if local_mappings.exists():
+        with open(local_mappings, "r") as f:
+            system_mappings = json.load(f)
+        print(f"✅ Loaded cleanup patterns from system_mappings.json")
+        print(f"   Found {len(system_mappings)} system definitions")
+        
+        # Show what systems are defined
+        print(f"   Systems in mappings: {', '.join(system_mappings.keys())}")
+    else:
+        print(f"❌ WARNING: system_mappings.json not found at {local_mappings}")
+        print("   Skipping pattern-based cleanup")
+    
+    return system_mappings
+
+
+# ------------------------------------------------------
+# Step 5: Pattern-based cleanup using reversed logic
+# Collects files from excluded systems, protects included system files, deletes remainder
+# ------------------------------------------------------
+def pattern_based_cleanup(system_mappings: Dict, included_systems: List[str]):
+    """
+    Reversed logic cleanup:
+    1. Collect all files from EXCLUDED systems (deletion candidates)
+    2. Remove files from INCLUDED systems (protect them)
+    3. Delete what remains
+    """
+    if not system_mappings:
+        print("\n⚠️  No system mappings loaded - skipping cleanup")
+        return
+
+    print("\n🧹 Starting pattern-based cleanup (Reversed Logic)...")
+    print(f"   Systems to KEEP: {', '.join(included_systems)}")
+    
+    # ═══════════════════════════════════════════════════════════
+    # STEP 1: Collect all files from EXCLUDED systems
+    # ═══════════════════════════════════════════════════════════
+    print("\n📋 STEP 1: Collecting files from EXCLUDED systems...")
+    
+    files_to_delete = set()  # Use set to avoid duplicates
+    excluded_systems = []
+    
+    for system, patterns in system_mappings.items():
+        if system in included_systems:
+            continue  # Skip included systems for now
+            
+        excluded_systems.append(system)
+        print(f"   Scanning {system}...")
+        
+        for pattern in patterns:
+            matches = glob.glob(pattern, recursive=True)
+            for match in matches:
+                if Path(match).exists():
+                    files_to_delete.add(match)
+    
+    print(f"   ✓ Found {len(files_to_delete)} files from excluded systems")
+    print(f"   Excluded systems: {', '.join(excluded_systems)}")
+    
+    # ═══════════════════════════════════════════════════════════
+    # STEP 2: Remove files from INCLUDED systems (protection)
+    # ═══════════════════════════════════════════════════════════
+    print("\n🛡️  STEP 2: Protecting files from INCLUDED systems...")
+    
+    files_to_protect = set()
+    
+    for system, patterns in system_mappings.items():
+        if system not in included_systems:
+            continue  # Only process included systems
+            
+        print(f"   Protecting {system} files...")
+        
+        for pattern in patterns:
+            matches = glob.glob(pattern, recursive=True)
+            for match in matches:
+                if match in files_to_delete:
+                    files_to_protect.add(match)
+                    files_to_delete.remove(match)
+    
+    print(f"   ✓ Protected {len(files_to_protect)} files (removed from deletion list)")
+    
+    if files_to_protect:
+        print(f"\n   Protected files (sample):")
+        for protected_file in list(files_to_protect)[:5]:
+            print(f"      🛡️  {protected_file}")
+        if len(files_to_protect) > 5:
+            print(f"      ... and {len(files_to_protect) - 5} more")
+    
+    # ═══════════════════════════════════════════════════════════
+    # STEP 3: Delete remaining files
+    # ═══════════════════════════════════════════════════════════
+    print(f"\n🗑️  STEP 3: Deleting {len(files_to_delete)} remaining files...")
+    
+    removed_count = 0
+    
+    for file_path in sorted(files_to_delete):
+        match_path = Path(file_path)
+        
+        if not match_path.exists():
+            continue
+        
+        try:
+            if match_path.is_dir():
+                shutil.rmtree(match_path, ignore_errors=True)
+                if not match_path.exists():
+                    print(f"   ✓ Removed directory: {file_path}")
+                    removed_count += 1
+            elif match_path.is_file():
+                match_path.unlink()
+                if not match_path.exists():
+                    print(f"   ✓ Removed file: {file_path}")
+                    removed_count += 1
+        except Exception as e:
+            print(f"   ❌ Error removing {file_path}: {e}")
+    
+    print("\n" + "━" * 70)
+    print(f"📊 CLEANUP SUMMARY:")
+    print(f"   Files from excluded systems: {len(files_to_delete) + len(files_to_protect)}")
+    print(f"   Files protected (included): {len(files_to_protect)}")
+    print(f"   Files deleted: {removed_count}")
+    print("━" * 70)
+
+# ------------------------------------------------------
+# Step 6: Update COMPOSE_PROFILES in Makefile.common
+# ------------------------------------------------------
+# Builds and updates the COMPOSE_PROFILES variable with selected system profiles.
+# Always includes "tools" profile, then adds Docker profiles for each included system.
+# Updates the COMPOSE_PROFILES line in makefiles/common_services/Makefile.common.
+# Example: If systems = ["oracle", "kafka"], profiles = "tools,oracle-dev,kafka"
 # ------------------------------------------------------
 def update_compose_profiles(project_root: Path, included_systems: List[str]) -> str:
     print("\n🔧 Updating Docker Compose profiles in Makefile.common...")
@@ -152,163 +307,11 @@ def update_compose_profiles(project_root: Path, included_systems: List[str]) -> 
 
 
 # ------------------------------------------------------
-# Step 5: Load system mappings
+# Step 7:  Updates docker-compose.yml include files
 # ------------------------------------------------------
-def load_system_mappings(project_root: Path) -> Dict:
-    system_mappings = {}
-    local_mappings = project_root / "system_mappings.json"
-    if local_mappings.exists():
-        with open(local_mappings, "r") as f:
-            system_mappings = json.load(f)
-        print("\n📖 Loaded cleanup patterns from system_mappings.json")
-    else:
-        print("\n⚠️  Warning: system_mappings.json not found - using directory-based cleanup only")
-    return system_mappings
-
-
-# ------------------------------------------------------
-# Step 6: Pattern-based cleanup
-# ------------------------------------------------------
-def pattern_based_cleanup(system_mappings: Dict, included_systems: List[str]):
-    if not system_mappings:
-        return
-    removed_count = 0
-    patterns_to_remove = []
-    print("\n🧹 Removing files for excluded systems:")
-    for system, patterns in system_mappings.items():
-        if system not in included_systems:
-            patterns_to_remove.extend(patterns)
-            print(f"   - {system}")
-    for pattern in patterns_to_remove:
-        for match_path in glob.glob(pattern, recursive=True):
-            path = Path(match_path)
-            try:
-                if path.exists():
-                    if path.is_dir():
-                        shutil.rmtree(path, ignore_errors=True)
-                    elif path.is_file():
-                        path.unlink()
-                    removed_count += 1
-            except:
-                pass
-    if removed_count > 0:
-        print(f"   ✓ Removed {removed_count} files/directories")
-
-
-# ------------------------------------------------------
-# Step 7: Directory-based cleanup (docker/tests/env/makefiles)
-# ------------------------------------------------------
-# ------------------------------------------------------
-# Helper Function: Remove unmatched directories
-# ------------------------------------------------------
-def remove_unmatched_dirs(base_path: Path, included_systems: List[str], always_keep: List[str] = None) -> int:
-    always_keep = always_keep or []
-    if not base_path.exists():
-        return 0
-    removed_count = 0
-    for folder in base_path.iterdir():
-        if folder.is_dir():
-            folder_name = folder.name.lower()
-            if any(sys in folder_name for sys in included_systems) or folder_name in always_keep:
-                continue
-            try:
-                shutil.rmtree(folder, ignore_errors=True)
-                removed_count += 1
-            except:
-                pass
-    return removed_count
-
-# ------------------------------------------------------
-# Step 7a: Clean up makefiles (file-based filtering)
-# ------------------------------------------------------
-def cleanup_makefiles(project_root: Path, included_systems: List[str]):
-    """
-    Clean up makefiles - remove individual Makefile files for excluded systems.
-    Keeps all category folders (database_services, messaging_services, mock_services, common_services)
-    but removes specific Makefile.* files for systems not in included_systems.
-    """
-    makefiles_root = project_root / "makefiles"
-    if not makefiles_root.exists():
-        return
-    
-    print("\n📝 Cleaning makefiles directory...")
-    removed_count = 0
-    
-    # Define makefile name to system mapping
-    makefile_to_system = {
-        "makefile.oracle": "oracle",
-        "makefile.postgres": "postgres",
-        "makefile.mysql": "mysql",
-        "makefile.sqlserver": "sqlserver",
-        "makefile.db2": "db2",
-        "makefile.teradata": "teradata",
-        "makefile.snowflake": "snowflake",
-        "makefile.kafka": "kafka",
-        "makefile.activemq": "activemq",
-        "makefile.minio": "s3",
-        "makefile.maildev": "email",
-        "makefile.salesforce": "salesforce",
-    }
-    
-    # Iterate through all category folders and their files
-    for category_folder in makefiles_root.iterdir():
-        if category_folder.is_dir() and category_folder.name != "common_services":
-            for makefile in category_folder.glob("Makefile.*"):
-                makefile_name = makefile.name.lower()
-                system = makefile_to_system.get(makefile_name)
-                
-                # Remove if system not in included systems
-                if system and system not in included_systems:
-                    try:
-                        makefile.unlink()
-                        removed_count += 1
-                    except:
-                        pass
-    
-    if removed_count > 0:
-        print(f"   ✓ Removed {removed_count} Makefile files for excluded systems")
-
-# ------------------------------------------------------
-# Step 7: Directory-based cleanup (tests/docker/makefiles/env)
-# ------------------------------------------------------
-def directory_based_cleanup(project_root: Path, included_systems: List[str]):
-    pipeline_tests_dir = project_root / "test" / "suite" / "pipeline_tests"
-    if pipeline_tests_dir.exists():
-        print("\n📁 Cleaning pipeline_tests directory...")
-        count = remove_unmatched_dirs(pipeline_tests_dir, included_systems)
-        if count > 0:
-            print(f"   ✓ Removed {count} test directories")
-
-    docker_root = project_root / "docker"
-    if docker_root.exists():
-        print("\n🐳 Cleaning docker directory...")
-        count = remove_unmatched_dirs(docker_root, included_systems, always_keep=["groundplex"])
-        if count > 0:
-            print(f"   ✓ Removed {count} docker directories")
-
-    # Clean up makefiles using the new file-based strategy
-    cleanup_makefiles(project_root, included_systems)
-
-    env_root = project_root / "env_files"
-    if env_root.exists():
-        print("\n📄 Filtering .env files...")
-        removed_count = 0
-        for env_file in env_root.rglob(".env.*"):
-            filename = env_file.name.lower()
-            if filename == ".env.ports":
-                continue
-            if not any(sys in filename for sys in included_systems):
-                try:
-                    env_file.unlink()
-                    removed_count += 1
-                except:
-                    pass
-        if removed_count > 0:
-            print(f"   ✓ Removed {removed_count} .env files")
-
-
-# ------------------------------------------------------
-# Step 8a: Update docker-compose.yml service includes
+# Filters docker-compose.yml to keep only service includes for selected systems.
+# Preserves lines starting with "- docker/" that match included_systems or "groundplex".
+# Removes service includes for excluded systems to avoid loading unnecessary containers.
 # ------------------------------------------------------
 def update_docker_compose(project_root: Path, included_systems: List[str]):
     compose_file = project_root / "docker-compose.yml"
@@ -335,9 +338,12 @@ def update_docker_compose(project_root: Path, included_systems: List[str]):
     except Exception as e:
         print(f"   ⚠️  Error updating docker-compose.yml: {e}")
 
-
 # ------------------------------------------------------
-# Step 8b: Update main Makefile includes
+# Step 8: Update main Makefile includes
+# -----------------------------------------------------
+# Filters the main Makefile to keep only includes for selected systems.
+# Always preserves common service makefiles (common, testing, groundplex, docker, quality).
+# Removes makefile includes for excluded systems to avoid referencing non-existent files.
 # ------------------------------------------------------
 def update_makefile(project_root: Path, included_systems: List[str]):
     makefile_path = project_root / "Makefile"
@@ -376,18 +382,14 @@ def update_makefile(project_root: Path, included_systems: List[str]):
 
 
 # ------------------------------------------------------
-# Step 8: Update configuration files (orchestrator)
-# ------------------------------------------------------
-def update_configuration_files(project_root: Path, included_systems: List[str]):
-    update_docker_compose(project_root, included_systems)
-    update_makefile(project_root, included_systems)
-
-
-# ------------------------------------------------------
 # Step 9: Remove empty directories
+# Recursively removes empty directories from the project.
+# Uses bottom-up traversal (topdown=False) to clean nested empty folders.
+# Skips the project root directory itself.
 # ------------------------------------------------------
 def remove_empty_directories(project_root: Path):
     print("\n🗑️  Cleaning up empty directories...")
+    removed = 0
     for dirpath, dirnames, filenames in os.walk(project_root, topdown=False):
         dirpath = Path(dirpath)
         if dirpath == project_root:
@@ -395,17 +397,18 @@ def remove_empty_directories(project_root: Path):
         if not dirnames and not filenames:
             try:
                 os.rmdir(dirpath)
-            except:
+                print(f"   Removed empty directory: {dirpath}")
+                removed += 1
+            except Exception as e:
                 pass
+    if removed > 0:
+        print(f"   ✓ Removed {removed} empty directories")
 
 
 # ------------------------------------------------------
-# Step 10a: Clean up root-level .env file
+# Step 10: Clean up root-level .env file
 # ------------------------------------------------------
-def cleanup_env_files(project_root: Path):
-    """
-    Remove the root-level .env file.
-    """
+def cleanup_root_level_env_file(project_root: Path):
     print("\n🧹 Removing root-level .env file...")
     for env_file in project_root.glob(".env"):
         try:
@@ -416,7 +419,7 @@ def cleanup_env_files(project_root: Path):
 
 
 # ------------------------------------------------------
-# Step 10b: Clean up template artifacts
+# Step 11: Clean up template artifacts
 # ------------------------------------------------------
 def cleanup_template_artifacts(project_root: Path):
     print("\n🧹 Removing template artifacts...")
@@ -429,9 +432,6 @@ def cleanup_template_artifacts(project_root: Path):
                 pass
 
 
-# ------------------------------------------------------
-# Step 11: Summary
-# ------------------------------------------------------
 def print_final_summary(project_name: str, included_systems: List[str], compose_profiles_value: str, project_root: Path):
     print("\n" + "=" * 50)
     print("🎉 PROJECT CONFIGURATION COMPLETE!")
@@ -441,14 +441,14 @@ def print_final_summary(project_name: str, included_systems: List[str], compose_
     print(f"🐳 Docker Profiles: {compose_profiles_value}")
     print(f"📁 Location: {project_root}")
     print("\n💡 Next steps:")
-    print("   1. cd {project_name}")
+    print(f"   1. cd {project_name}")
     print("   2. make tools-start  # Start selected services")
     print("   3. make robot-run-tests")
     print("=" * 50 + "\n")
 
 
 # ------------------------------------------------------
-# Main Orchestration
+# Main
 # ------------------------------------------------------
 def main():
     project_root, project_name = initialize_project_info()
@@ -456,10 +456,10 @@ def main():
     compose_profiles_value = update_compose_profiles(project_root, included_systems)
     system_mappings = load_system_mappings(project_root)
     pattern_based_cleanup(system_mappings, included_systems)
-    directory_based_cleanup(project_root, included_systems)
-    update_configuration_files(project_root, included_systems)
+    update_docker_compose(project_root, included_systems)
+    update_makefile(project_root, included_systems)
     remove_empty_directories(project_root)
-    cleanup_env_files(project_root)
+    cleanup_root_level_env_file(project_root)
     cleanup_template_artifacts(project_root)
     print_final_summary(project_name, included_systems, compose_profiles_value, project_root)
 
