@@ -1,0 +1,43 @@
+{
+  "oracle": [
+    "test/suite/test_data/accounts_payload/acc_oracle.json",
+    "test/suite/test_data/accounts_jar_files/oracle/**"
+  ],
+  "postgres": [
+    "test/suite/test_data/accounts_payload/acc_postgres.json"
+  ],
+  "mysql": [
+    "test/suite/test_data/accounts_payload/acc_mysql.json",
+    "test/suite/test_data/accounts_jar_files/mysql/**"
+  ],
+  "sqlserver": [
+    "test/suite/test_data/accounts_payload/acc_sqlserver.json"
+  ],
+  "db2": [
+    "test/suite/test_data/accounts_payload/acc_db2.json",
+    "test/suite/test_data/accounts_jar_files/db2/**",
+    "docker/db2/db2jcc4.jar"
+  ],
+  "teradata": [
+    "test/suite/test_data/accounts_payload/acc_teradata.json"
+  ],
+  "snowflake": [
+    "test/suite/test_data/accounts_payload/acc_snowflake*.json"
+  ],
+  "salesforce": [
+    "test/suite/test_data/accounts_payload/acc_salesforce.json"
+  ],
+  "kafka": [
+    "test/suite/test_data/accounts_payload/acc_kafka.json"
+  ],
+  "activemq": [
+    "test/suite/test_data/accounts_payload/acc_jms.json",
+    "test/suite/test_data/accounts_jar_files/jms/**"
+  ],
+  "s3": [
+    "test/suite/test_data/accounts_payload/acc_s3.json"
+  ],
+  "email": [
+    "test/suite/test_data/accounts_payload/acc_email.json"
+  ]
+}

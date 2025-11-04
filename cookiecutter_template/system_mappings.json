@@ -1,0 +1,81 @@
+{
+  "oracle": [
+    "test/suite/test_data/accounts_payload/acc_oracle.json",
+    "test/suite/test_data/accounts_jar_files/oracle/**",
+    "test/suite/pipeline_tests/*oracle*/**"
+  ],
+  "postgres": [
+    "docker/postgres/**",
+    "makefiles/database_services/Makefile.postgres",
+    "test/suite/test_data/accounts_payload/acc_postgres.json",
+    "test/suite/pipeline_tests/*postgres*/**"
+  ],
+  "mysql": [
+    "docker/mysql/**",
+    "docker/mysql-init/**",
+    "makefiles/database_services/Makefile.mysql",
+    "test/suite/test_data/accounts_payload/acc_mysql.json",
+    "test/suite/test_data/accounts_jar_files/mysql/**",
+    "test/suite/pipeline_tests/*mysql*/**"
+  ],
+  "sqlserver": [
+    "docker/sqlserver/**",
+    "docker/sqlserver-init/**",
+    "makefiles/database_services/Makefile.sqlserver",
+    "test/suite/test_data/accounts_payload/acc_sqlserver.json",
+    "test/suite/pipeline_tests/*sqlserver*/**"
+  ],
+  "db2": [
+    "docker/db2/**",
+    "makefiles/database_services/Makefile.db2",
+    "test/suite/test_data/accounts_payload/acc_db2.json",
+    "test/suite/test_data/accounts_jar_files/db2/**",
+    "docker/db2/db2jcc4.jar",
+    "test/suite/pipeline_tests/*db2*/**"
+  ],
+  "teradata": [
+    "docker/teradata/**",
+    "makefiles/database_services/Makefile.teradata",
+    "test/suite/test_data/accounts_payload/acc_teradata.json",
+    "test/suite/pipeline_tests/*teradata*/**"
+  ],
+  "snowflake": [
+    "docker/snowflake-config/**",
+    "makefiles/database_services/Makefile.snowflake",
+    "test/suite/test_data/accounts_payload/acc_snowflake*.json",
+    "test/suite/pipeline_tests/*snowflake*/**"
+  ],
+  "salesforce": [
+    "docker/salesforce/**",
+    "makefiles/mock_services/Makefile.salesforce",
+    "test/suite/test_data/accounts_payload/acc_salesforce.json",
+    "test/suite/pipeline_tests/*salesforce*/**"
+  ],
+  "kafka": [
+    "docker/kafka/**",
+    "makefiles/messaging_services/Makefile.kafka",
+    "test/suite/test_data/accounts_payload/acc_kafka.json",
+    "test/suite/pipeline_tests/*kafka*/**"
+  ],
+  "activemq": [
+    "docker/activemq/**",
+    "makefiles/messaging_services/Makefile.activemq",
+    "test/suite/test_data/accounts_payload/acc_jms.json",
+    "test/suite/test_data/accounts_jar_files/jms/**",
+    "test/suite/pipeline_tests/*jms*/**",
+    "test/suite/pipeline_tests/*activemq*/**",
+    "test/suite/pipeline_tests/*jms*.robot"
+  ],
+  "s3": [
+    "docker/minio/**",
+    "makefiles/mock_services/Makefile.minio",
+    "test/suite/test_data/accounts_payload/acc_s3.json",
+    "test/suite/pipeline_tests/*s3*/**"
+  ],
+  "email": [
+    "docker/email/**",
+    "makefiles/mock_services/Makefile.maildev",
+    "test/suite/test_data/accounts_payload/acc_email.json",
+    "test/suite/pipeline_tests/*mail*/**"
+  ]
+}
