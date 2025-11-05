@@ -65,6 +65,9 @@ ${task_name2}                       Task2
 ${actual_output_file_from_db2}      ${CURDIR}/../../test_data/actual_expected_data/actual_output/snowflake/${pipeline_name2}_actual_output_from_snowflake_db.csv    # Actual output files for comparison
 ${expected_output_file2}            ${CURDIR}/../../test_data/actual_expected_data/expected_output/snowflake/snowflake_inserted_data2.csv    # Expected Output file (User have to create it)
 
+######################### Pipeline3 details ###########################
+${sf_acct3}                         SF_account_key_pair_s3Dynamic
+
 
 *** Test Cases ***
 Create Account
@@ -81,10 +84,11 @@ Create Account
     ...    📝 USAGE EXAMPLES:
     ...    ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_FILE_NAME}    ${sf_acct}
     ...    /org/project/shared    ${SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_FILE_NAME}    prod_snowflake_acct
-    [Tags]    snowflake_demo
+    [Tags]    snowflake_demo3
     [Template]    Create Account From Template
     ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_FILE_NAME}    ${sf_acct}
     ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_FILE_NAME}    ${sf_acct2}
+    ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_S3_DYNAMIC_FILE_NAME}    ${sf_acct3}
 
 Upload Files
     [Documentation]    Uploads the expression library (.expr file) to the project level shared folder.

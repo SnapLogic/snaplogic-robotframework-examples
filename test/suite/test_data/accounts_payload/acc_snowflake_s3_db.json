@@ -22,7 +22,7 @@
                             "expression": false
                         },
                         "portNumber": {
-                            "value": "{{SNOWFLAKE_PORT}}"
+                            "value": 443
                         },
                         "s3Folder": {
                             "value": "{{SNOWFLAKE_S3_FOLDER}}",

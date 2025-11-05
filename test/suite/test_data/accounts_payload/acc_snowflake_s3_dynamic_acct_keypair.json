@@ -2,57 +2,57 @@
     "path": "{{ACCOUNT_LOCATION_PATH}}",
     "duplicate_check": true,
     "account": {
-        "class_fqid": "com-snaplogic-snap-api-sql-accounts-snowflakedatabaseaccount_1-442patches32393",
+        "class_fqid": "com-snaplogic-snap-api-sql-accounts-snowflakedynamicaccount_1-442patches32393",
         "property_map": {
             "view_serial": 100,
             "settings": {
                 "connectionProperties": {
                     "value": {
                         "authType": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_AUTHENTICATION_TYPE}}"
+                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_AUTHENTICATION_TYPE}}"
                         },
                         "warehouse": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_WAREHOUSE}}"
+                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_WAREHOUSE}}"
                         },
                         "privateKeyPassphrase": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_PRIVATE_KEY_PASSPHRASE}}"
+                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_PRIVATE_KEY_PASSPHRASE}}"
                         },
                         "databaseName": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_DATABASE}}"
+                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_DATABASE}}"
                         },
                         "bucket": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_S3_BUCKET}}",
+                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_S3_BUCKET}}",
                             "expression": false
                         },
                         "portNumber": {
                             "value": 443
                         },
                         "s3Folder": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_S3_FOLDER}}",
+                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_S3_FOLDER}}",
                             "expression": false
                         },
                         "secretKey": {
                             "expression": false,
-                            "value": "{{SNOWFLAKE_KEYPAIR_S3_SECRET_KEY}}"
+                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_S3_SECRET_KEY}}"
                         },
                         "hostname": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_HOSTNAME}}"
+                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_HOSTNAME}}"
                         },
                         "JdbcDriversProp": {
                             "value": []
                         },
                         "jdbcDriverClass": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_JDBC_DRIVER_CLASS}}"
+                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_JDBC_DRIVER_CLASS}}"
                         },
                         "username": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_USERNAME}}"
+                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_USERNAME}}"
                         },
                         "accessKeyId": {
                             "expression": false,
-                            "value": "{{SNOWFLAKE_KEYPAIR_S3_ACCESS_KEY_ID}}"
+                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_S3_ACCESS_KEY_ID}}"
                         },
                         "storageIntegration": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_S3_STORAGE_INTEGRATION}}",
+                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_S3_STORAGE_INTEGRATION}}",
                             "expression": false
                         },
                         "password": {
@@ -60,68 +60,68 @@
                         },
                         "awsToken": {
                             "expression": false,
-                            "value": "{{SNOWFLAKE_KEYPAIR_S3_AWS_TOKEN}}"
+                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_S3_AWS_TOKEN}}"
                         },
                         "privateKey": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_PRIVATE_KEY}}"
+                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_PRIVATE_KEY}}"
                         }
                     }
                 },
                 "advancedProperties": {
                     "value": {
                         "maxPoolSize": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_MAX_POOL_SIZE}}"
+                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_MAX_POOL_SIZE}}"
                         },
                         "urlProperties": {
                             "value": [
                                 {
                                     "urlPropertyName": {
-                                        "value": "{{SNOWFLAKE_KEYPAIR_URL_PROPERTY1}}"
+                                        "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_URL_PROPERTY1}}"
                                     },
                                     "urlPropertyValue": {
-                                        "value": "{{SNOWFLAKE_KEYPAIR_URL_PROPERTY1_VALUE}}"
+                                        "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_URL_PROPERTY1_VALUE}}"
                                     }
                                 },
                                 {
                                     "urlPropertyName": {
-                                        "value": "{{SNOWFLAKE_KEYPAIR_URL_PROPERTY2}}"
+                                        "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_URL_PROPERTY2}}"
                                     },
                                     "urlPropertyValue": {
-                                        "value": "{{SNOWFLAKE_KEYPAIR_URL_PROPERTY2_VALUE}}"
+                                        "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_URL_PROPERTY2_VALUE}}"
                                     }
                                 }
                             ]
                         },
                         "idleConnectionTestPeriod": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_IDLE_TIMEOUT_MINUTES}}"
+                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_IDLE_TIMEOUT_MINUTES}}"
                         },
                         "maxIdleTime": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_MAX_LIFETIME_MINUTES}}"
+                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_MAX_LIFETIME_MINUTES}}"
                         },
                         "retryAttempts": {
                             "value": 0
                         },
                         "minPoolSize": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_MIN_POOL_SIZE}}"
+                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_MIN_POOL_SIZE}}"
                         },
                         "acquireIncrement": {
                             "value": 2
                         },
                         "checkoutTimeout": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_CHECKOUT_TIMEOUT_MS}}"
+                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_CHECKOUT_TIMEOUT_MS}}"
                         },
                         "fetchSize": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_FETCH_SIZE}}"
+                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_FETCH_SIZE}}"
                         },
                         "batchSize": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_BATCH_SIZE}}"
+                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_BATCH_SIZE}}"
                         }
                     }
                 }
             },
             "info": {
                 "label": {
-                    "value": "{{SNOWFLAKE_KEYPAIR_ACCOUNT_NAME}}"
+                    "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_ACCOUNT_NAME}}"
                 },
                 "notes": {
                     "value": null
