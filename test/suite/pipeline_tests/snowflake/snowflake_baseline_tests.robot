@@ -100,7 +100,7 @@ Upload Files
     ...    (e.g., ${CURDIR}/../../test_data/expression_libraries/snowflake/snowflake_library.expr)
     ...    • Argument 2: Destination Path - The destination path in SnapLogic where the file will be uploaded
     ...    (typically the same as ${ACCOUNT_LOCATION_PATH} for shared resources)
-    [Tags]    snowflake_demo2    upload_expression_library
+    [Tags]    snowflake_demo    upload_expression_library
     [Template]    Upload File Using File Protocol Template
     # file path    destination_path
     ${CURDIR}/../../test_data/actual_expected_data/expression_libraries/snowflake/snowflake_library.expr    ${ACCOUNT_LOCATION_PATH}
@@ -283,7 +283,7 @@ Connect To Snowflake Cloud DB
     [Documentation]    Test connection using resource keywords
     ...    No need to set env variables - already loaded from .env
     # Connect To Snowflake Via DatabaseLibrary
-    Connect To Snowflake Via DatabaseLibrary    keypair
+    Connect To Snowflake Via DatabaseLibrary
 
 Clean Table
     [Documentation]    Truncates the Snowflake table before test execution to ensure clean state
