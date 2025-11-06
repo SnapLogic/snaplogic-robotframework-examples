@@ -20,6 +20,8 @@ Suite Teardown      Delete All Files    # Clean up all all files after execution
 
 
 *** Variables ***
+${upload_source_files_path}         ${CURDIR}/../../test_data/actual_expected_data/expected_output/snowflake
+${upload_files_for_file_reader}     ${CURDIR}/../../test_data/actual_expected_data/expected_output/file_reader
 ######################### Pipeline1 details ###########################
 
 # Pipeline name and file details
@@ -45,8 +47,8 @@ ${expected_output_file}             ${CURDIR}/../../test_data/actual_expected_da
 
 ######################### Pipeline2 details ###########################
 # Pipeline name and file details
-${pipeline_name2}                   snowflake_pl2
-${pipeline_file_name2}              snowflake2.slp
+${pipeline_name2}                   snowflake_keypair_dynamic
+${pipeline_file_name2}              snowflake_keypair.slp
 ${sf_acct2}                         ${pipeline_name2}_account
 
 # Task Details for created triggered task from the above pipeline
@@ -58,15 +60,27 @@ ${task_name2}                       Task2
 
 &{task_params_set2}
 ...                                 snowflake_acct=../shared/${sf_acct2}
-...                                 schema_name=DEMO
-...                                 table_name=DEMO.LIFEEVENTSDATA2
+...                                 schema_name=PUBLIC
+...                                 table_name=PUBLIC.TEST
 
 # Actual and Expected output file paths for verification
 ${actual_output_file_from_db2}      ${CURDIR}/../../test_data/actual_expected_data/actual_output/snowflake/${pipeline_name2}_actual_output_from_snowflake_db.csv    # Actual output files for comparison
 ${expected_output_file2}            ${CURDIR}/../../test_data/actual_expected_data/expected_output/snowflake/snowflake_inserted_data2.csv    # Expected Output file (User have to create it)
 
 ######################### Pipeline3 details ###########################
-${sf_acct3}                         SF_account_key_pair_s3Dynamic
+# Pipeline name and file details
+${pipeline_name3}                   filereader
+${pipeline_file_name3}              filereader.slp
+
+# Task Details for created triggered task from the above pipeline
+${task_name3}                       Task3
+@{notification_states3}             Completed    Failed
+&{task_notifications3}
+...                                 recipients=newemail@gmail.com
+...                                 states=${notification_states3}
+
+&{task_params_set3}
+...                                 test_json_file=../shared/test1.json
 
 
 *** Test Cases ***
@@ -87,10 +101,9 @@ Create Account
     [Tags]    snowflake_demo
     [Template]    Create Account From Template
     ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_FILE_NAME}    ${sf_acct}
-    ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_FILE_NAME}    ${sf_acct2}
-    ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_S3_DYNAMIC_FILE_NAME}    ${sf_acct3}
+    ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_S3_DYNAMIC_FILE_NAME}    ${sf_acct2}
 
-Upload Files
+Upload Files individual
     [Documentation]    Uploads the expression library (.expr file) to the project level shared folder.
     ...    Expression libraries contain reusable custom functions and expressions that can be
     ...    referenced across multiple pipelines in the project.
@@ -105,6 +118,16 @@ Upload Files
     # file path    destination_path
     ${CURDIR}/../../test_data/actual_expected_data/expression_libraries/snowflake/snowflake_library.expr    ${ACCOUNT_LOCATION_PATH}
     ${CURDIR}/../../test_data/actual_expected_data/expression_libraries/snowflake/snowflake_library2.expr    ${ACCOUNT_LOCATION_PATH}
+
+Upload Multiple Files
+    [Documentation]    Data-driven test case using template format for multiple file upload scenarios
+    ...    Each row represents a different upload configuration
+    [Tags]    snowflake_demo    upload_multiple_files
+    [Template]    Upload Files To SnapLogic From Template
+
+    # Test with wildcards (upload all .csv files form a directory)
+    ${upload_source_files_path}    *.csv    ${ACCOUNT_LOCATION_PATH}
+    ${upload_files_for_file_reader}    *.json    ${ACCOUNT_LOCATION_PATH}
 
 Delete Files
     [Documentation]    Delete files with different soft_delete and status settings
@@ -142,6 +165,7 @@ Import Pipeline
 
     ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${pipeline_file_name}
     ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name2}    ${pipeline_file_name2}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name3}    ${pipeline_file_name3}
 
 Create Triggered_task
     [Documentation]    Creates a triggered task for pipeline execution and returns task metadata.
@@ -162,11 +186,12 @@ Create Triggered_task
     ...    (e.g., snowflake_acct, schema_name, table_name)-(optional- can be omitted)
     ...    • Argument 7: ${task_notifications} (Optional) - Dictionary containing notification settings
     ...    (recipients and states for task completion/failure alerts)-(optional- can be omitted)
-    [Tags]    snowflake_demo    regression
+    [Tags]    snowflake_demo    regressionx
     [Template]    Create Triggered Task From Template
 
     ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}    ${GROUNDPLEX_NAME}    ${task_params_set}    ${task_notifications}
-    ${unique_id}_2    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}    ${GROUNDPLEX_NAME}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name2}    ${task_name2}    ${GROUNDPLEX_NAME}    ${task_params_set2}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name3}    ${task_name3}    ${GROUNDPLEX_NAME}    ${task_params_set3}
 
 Execute Triggered Task
     [Documentation]    Executes the triggered task with specified parameters and monitors completion.
@@ -190,6 +215,13 @@ Execute Triggered Task
 
     ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}
     ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}    table_name=DEMO.LIFEEVENTSDATA3
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name2}    ${task_name2}
+
+Execute Triggered Task For All Files
+    [Documentation]    Executes the triggered task with specified parameters
+    [Tags]    snowflake_demo2
+    [Template]    Execute Triggered Task For All Files
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name3}    ${task_name3}    ${upload_files_for_file_reader}
 
 Verify Data In Snowflake Table
     [Documentation]    Verifies data integrity in Snowflake table by querying and validating record counts.
@@ -282,6 +314,7 @@ Check connections
 Connect To Snowflake Cloud DB
     [Documentation]    Test connection using resource keywords
     ...    No need to set env variables - already loaded from .env
+
     # Connect To Snowflake Via DatabaseLibrary
     Connect To Snowflake Via DatabaseLibrary
 
@@ -324,20 +357,51 @@ Export Snowflake Table Data To CSV
     Log    📁 CSV file location: ${output_file}    console=yes
 
 Delete All Files
-    [Documentation]    Deletes uploaded expression library files from the project
-    Log    🗑️ Deleting expression library files...    console=yes
+    [Documentation]    Deletes all files from ${ACCOUNT_LOCATION_PATH}
+    Log    🗑️ Deleting all files...    console=yes
 
-    @{files}=    Create List
-    ...    snowflake_library.expr
-    ...    snowflake_library2.expr
+    ${entries}=    Get Project List    ${ORG_NAME}    ${ACCOUNT_LOCATION_PATH}
 
-    FOR    ${file}    IN    @{files}
-        ${status}    ${response}=    Run Keyword And Ignore Error
-        ...    Delete File    ${ACCOUNT_LOCATION_PATH}/${file}    soft_delete=${False}
+    FOR    ${entry}    IN    @{entries}
+        IF    '${entry}[asset_type]' == 'File'
+            ${filename}=    Set Variable    ${entry}[name]
 
-        IF    '${status}' == 'PASS'
-            Log    ✓ Deleted: ${file}    console=yes
-        ELSE
-            Log    ⚠️ Could not delete: ${file} (may not exist)    console=yes
+            ${status}    ${msg}=    Run Keyword And Ignore Error
+            ...    Delete File    ${ACCOUNT_LOCATION_PATH}/${filename}    soft_delete=${False}
+
+            IF    '${status}' == 'PASS'
+                Log    ✓ Deleted: ${filename}    console=yes
+            ELSE
+                Log    ⚠️ Could not delete: ${filename}    console=yes
+            END
         END
+    END
+
+Execute Triggered Task For All Files
+    [Documentation]    Execute triggered task for every file in the directory
+    [Arguments]
+    ...    ${unique_id}
+    ...    ${PIPELINES_LOCATION_PATH}
+    ...    ${pipeline_name}
+    ...    ${task_name}
+    ...    ${upload_files_path}
+    Log    🚀 Starting execution of triggered task for all files in ${upload_files_path}
+
+    # Get all JSON files from your directory
+    @{json_files}=    List Files In Directory    ${upload_files_path}    pattern=*.json
+
+    Log    Found ${json_files.__len__()} JSON files to process    console=yes
+
+    # Execute task for each file
+    FOR    ${filename}    IN    @{json_files}
+        Log    🚀 Processing: ${filename}    console=yes
+
+        Run Triggered Task With Parameters From Template
+        ...    ${unique_id}
+        ...    ${PIPELINES_LOCATION_PATH}
+        ...    ${pipeline_name}
+        ...    ${task_name}
+        ...    test_json_file=${upload_files_path}/${filename}    # ← FULL PATH
+
+        Log    ✅ Completed: ${filename}    console=yes
     END

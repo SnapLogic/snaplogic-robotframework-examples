@@ -31,8 +31,8 @@ ${task_name}                        Task
 
 &{task_params_set}
 ...                                 snowflake_acct=../shared/${sf_acct}
-...                                 schema_name=DEMO
-...                                 table_name=DEMO.LIFEEVENTSDATA
+...                                 schema_name=PUBLIC
+...                                 table_name=PUBLIC.TEST
 
 # Actual and Expected output file paths for verification
 ${actual_output_file_from_db}       ${CURDIR}/../../test_data/actual_expected_data/actual_output/snowflake/${pipeline_name}_actual_output_from_snowflake_db.csv    # Actual output files for comparison
@@ -44,7 +44,7 @@ End to End Verification Of Snowflake Pipeline
     [Documentation]    End to end test case to verify Snowflake pipeline functionality
     ...    including account creation, pipeline import, task creation, task execution,
     ...    data verification in Snowflake table, and exporting data to CSV for validation.
-    [Tags]    snowflake_demo    end_to_end
+    [Tags]    snowflake_demo_end_to_end    end_to_end
     Clean Table    ${task_params_set}[table_name]    ${task_params_set}[schema_name]
 
     Create Account From Template

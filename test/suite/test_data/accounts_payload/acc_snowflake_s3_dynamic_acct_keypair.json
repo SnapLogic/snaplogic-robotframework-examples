@@ -70,7 +70,7 @@
                 "advancedProperties": {
                     "value": {
                         "maxPoolSize": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_MAX_POOL_SIZE}}"
+                            "value": 3
                         },
                         "urlProperties": {
                             "value": [
@@ -93,28 +93,28 @@
                             ]
                         },
                         "idleConnectionTestPeriod": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_IDLE_TIMEOUT_MINUTES}}"
+                            "value": 5
                         },
                         "maxIdleTime": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_MAX_LIFETIME_MINUTES}}"
+                            "value": 60
                         },
                         "retryAttempts": {
                             "value": 0
                         },
                         "minPoolSize": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_MIN_POOL_SIZE}}"
+                            "value": 3
                         },
                         "acquireIncrement": {
                             "value": 2
                         },
                         "checkoutTimeout": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_CHECKOUT_TIMEOUT_MS}}"
+                            "value": 10000
                         },
                         "fetchSize": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_FETCH_SIZE}}"
+                            "value": 100
                         },
                         "batchSize": {
-                            "value": "{{SNOWFLAKE_KEYPAIR_S3_DYNAMIC_BATCH_SIZE}}"
+                            "value": 1
                         }
                     }
                 }
