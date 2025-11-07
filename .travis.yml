@@ -34,6 +34,8 @@ install: skip
 
 before_script:
   - "echo \"\U0001F50DEnvironment Variables set up and creating .env file:\""
+  # Change to template directory where travis_scripts is located
+  - cd '{{cookiecutter.project_name}}'
   - chmod +x ./travis_scripts/setup_travis_env.sh
   - "./travis_scripts/setup_travis_env.sh"
 
@@ -42,6 +44,8 @@ jobs:
   include:
     - stage: start-services
       script:
+        # Change to template directory where Makefile and scripts are located
+        - cd '{{cookiecutter.project_name}}'
         #  Export Travis environment variables to be used by docker-compose
         - export TRAVIS_COMMIT_AUTHOR_NAME="$(git log -1 --pretty=format:'%an' 2>/dev/null || echo 'CI Build')"
         - export TRAVIS_COMMIT_AUTHOR_EMAIL="$(git log -1 --pretty=format:'%ae')"
