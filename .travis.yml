@@ -1,9 +1,12 @@
 version: "~> 1.0"
 
+# ===== ENVIRONMENT VARIABLES =====
 env:
   global:
+    # Build Configuration
     - HMD_HOME=$TRAVIS_BUILD_DIR
 
+# ===== BUILD ENVIRONMENT =====
 dist: jammy
 group: stable
 language: python
@@ -13,32 +16,56 @@ python:
 services:
   - docker
 
+# ===== BUILD CONFIGURATION =====
 install: skip
 
+# ===== PRE-SETUP =====
 before_script:
   - echo "🔍 Locating generated Cookiecutter project directory..."
-  # Find the subdirectory that contains travis_scripts (which identifies your generated project)
+  # Find subdirectory containing travis_scripts (the generated project)
   - export TEMPLATE_DIR=$(find . -maxdepth 2 -type d -name "travis_scripts" -exec dirname {} \; | head -n 1)
+  - if [ -z "$TEMPLATE_DIR" ]; then echo "❌ Could not find generated project directory with travis_scripts"; exit 1; fi
+  - 'echo "📂 Using template directory: $TEMPLATE_DIR"'
   - cd "$TEMPLATE_DIR"
   - chmod +x ./travis_scripts/setup_travis_env.sh
   - ./travis_scripts/setup_travis_env.sh
 
+# ===== JOBS =====
 jobs:
   include:
     - stage: start-services
       script:
+        - echo "🔁 Re-detecting generated project directory..."
+        - export TEMPLATE_DIR=$(find . -maxdepth 2 -type d -name "travis_scripts" -exec dirname {} \; | head -n 1)
+        - if [ -z "$TEMPLATE_DIR" ]; then echo "❌ Could not find generated project directory with travis_scripts"; exit 1; fi
+        - 'echo "📂 Using template directory: $TEMPLATE_DIR"'
         - cd "$TEMPLATE_DIR"
+
+        # Capture commit info for reporting
         - export TRAVIS_COMMIT_AUTHOR_NAME="$(git log -1 --pretty=format:'%an' 2>/dev/null || echo 'CI Build')"
         - export TRAVIS_COMMIT_AUTHOR_EMAIL="$(git log -1 --pretty=format:'%ae')"
+
+        # Stop preinstalled Postgres (avoid port conflicts)
         - sudo service postgresql stop
+
+        # Docker debugging & environment check
         - chmod +x ./travis_scripts/debug_docker_build.sh
         - ./travis_scripts/debug_docker_build.sh
+
+        # Start all required services (DB, MinIO, Kafka, etc.)
         - make start-services
+
+        # Execute Robot Framework tests with tags
         - make robot-run-all-tests TAGS="oracle sqlserver file_mount postgres_s3 sla_pipeline email2 snowflake_demo" PROJECT_SPACE_SETUP=True
+
+        # Upload test results to TestRail
         - make upload-test-results
+
+        # Notify Slack on completion
         - make slack-notify
       name: Build Docs
 
+# ===== NOTIFICATIONS =====
 notifications:
   slack:
     rooms:

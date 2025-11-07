@@ -64,7 +64,6 @@ def initialize_project_info() -> Tuple[Path, str]:
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     print(f"📁 Project root: {project_root}")
     print(f"📝 Project name: {project_name}")
-    print(f"👤 Author: {{ cookiecutter.author_name }}")
     print(f"🔧 Current working directory: {os.getcwd()}")
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
 
