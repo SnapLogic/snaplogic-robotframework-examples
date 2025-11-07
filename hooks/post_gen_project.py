@@ -482,7 +482,7 @@ def print_final_summary(project_name: str, included_systems: List[str], compose_
     print('   2. make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True  # Create projectspace, launch groundplex and run Robot tests with the "oracle" tag')
     print('   3. make robot-run-all-tests TAGS="oracle"  # For later executions if you already have project space set up, ignore the argument PROJECT_SPACE_SETUP=True')
     print("\n📚 For more commands and tutorials, visit:")
-    print("   https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/Tutorials/03.pipelineExecution_5-step%20quick%20start.md")
+    print("   https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/%7B%7Bcookiecutter.project_name%7D%7D/README/Tutorials/03.pipelineExecution_5-step%20quick%20start.md")
     print("=" * 50 + "\n")
 
 
