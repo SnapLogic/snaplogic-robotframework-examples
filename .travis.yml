@@ -5,6 +5,8 @@ env:
   global:
     # Build Configuration (Keep these as they're Travis-specific)
     - HMD_HOME=$TRAVIS_BUILD_DIR
+    # Set the template directory name as an environment variable
+    - TEMPLATE_DIR="\{\{cookiecutter.project_name\}\}"
 
     # NOTE: All database, service, and messaging configurations
     # are now loaded from env_files/ directory by setup_env.sh
@@ -35,7 +37,7 @@ install: skip
 before_script:
   - "echo \"\U0001F50DEnvironment Variables set up and creating .env file:\""
   # Change to template directory where travis_scripts is located
-  - cd '{{cookiecutter.project_name}}'
+  - cd "$TEMPLATE_DIR"
   - chmod +x ./travis_scripts/setup_travis_env.sh
   - "./travis_scripts/setup_travis_env.sh"
 
@@ -45,7 +47,7 @@ jobs:
     - stage: start-services
       script:
         # Change to template directory where Makefile and scripts are located
-        - cd '{{cookiecutter.project_name}}'
+        - cd "$TEMPLATE_DIR"
         #  Export Travis environment variables to be used by docker-compose
         - export TRAVIS_COMMIT_AUTHOR_NAME="$(git log -1 --pretty=format:'%an' 2>/dev/null || echo 'CI Build')"
         - export TRAVIS_COMMIT_AUTHOR_EMAIL="$(git log -1 --pretty=format:'%ae')"
@@ -56,7 +58,7 @@ jobs:
         - ./travis_scripts/debug_docker_build.sh
         # Start services after debugging
         - make start-services
-        - make robot-run-all-tests TAGS="oracle sqlserver file_mount postgres_s3 sla_pipeline email2" PROJECT_SPACE_SETUP=True
+        - make robot-run-all-tests TAGS="oracle sqlserver file_mount postgres_s3 sla_pipeline email2  snowflake_demo" PROJECT_SPACE_SETUP=True
         - make upload-test-results
         - make slack-notify
 

@@ -7,13 +7,13 @@ This document provides access to the comprehensive test documentation for the Sn
 
 Click the link below to view the interactive HTML documentation directly in your browser:
 
-[**🚀 View POC Demo Documentation**](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/%7B%7Bcookiecutter.project_name%7D%7D/test/suite/pipeline_tests/snowflake/POC_Demo.html)
+[**🚀 View POC Demo Documentation**](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/test/suite/pipeline_tests/snowflake/POC_Demo.html)
 
 ## 📁 File Locations
 
 **GitHub Repository:**
 ```
-https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/%7B%7Bcookiecutter.project_name%7D%7D/test/suite/pipeline_tests/snowflake/POC_Demo.html
+https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/test/suite/pipeline_tests/snowflake/POC_Demo.html
 ```
 
 
