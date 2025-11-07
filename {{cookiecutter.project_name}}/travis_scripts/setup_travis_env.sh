@@ -19,6 +19,19 @@ echo "📦 Running in Travis CI environment (Build #$TRAVIS_BUILD_NUMBER)"
 echo "🌿 Branch: $TRAVIS_BRANCH | Commit: ${TRAVIS_COMMIT:0:8}"
 echo ""
 
+# DEBUG: Show all environment variables related to databases
+echo "🔍 DEBUG: All Travis CI environment variables (filtered for databases):"
+echo "=========================================="
+env | grep -E "^(SNOWFLAKE|ORACLE|POSTGRES|MYSQL|SQLSERVER|DB2)_" | sort | while IFS='=' read -r key value; do
+    if [[ "$key" == *"PASSWORD"* ]]; then
+        echo "  $key=${value:0:3}*** (masked)"
+    else
+        echo "  $key=$value"
+    fi
+done
+echo "=========================================="
+echo ""
+
 # Core required variables for Travis builds(available from Travis settings)
 # These variables are essential for the SnapLogic project to run correctly      
 required_vars=(
@@ -99,6 +112,11 @@ merge_env_files() {
                 local filename=$(basename "$env_file")
                 echo "  📄 Processing: $filename"
                 
+                # DEBUG: Extra notification for Snowflake file
+                if [[ "$filename" == ".env.snowflake" ]]; then
+                    echo "     🎯 SNOWFLAKE FILE DETECTED - Enabling verbose debugging" >&2
+                fi
+                
                 # Add source file comment
                 echo "" >> .env
                 echo "# From: $env_file" >> .env
@@ -116,15 +134,36 @@ merge_env_files() {
                         var_name="${BASH_REMATCH[1]}"
                         var_default="${BASH_REMATCH[2]}"
                         
+                        # DEBUG: Extra verbose output for Snowflake variables
+                        if [[ "$var_name" == SNOWFLAKE_USERNAME || "$var_name" == SNOWFLAKE_PASSWORD ]]; then
+                            echo "" >&2
+                            echo "    🔍 DEBUG: Processing $var_name" >&2
+                            echo "       - Line from file: '$line'" >&2
+                            echo "       - Extracted var_name: '$var_name'" >&2
+                            echo "       - Extracted var_default: '$var_default'" >&2
+                            echo "       - Travis env value: '${!var_name}'" >&2
+                            echo "       - Is Travis value set? [ -n \"${!var_name}\" ] = $([ -n "${!var_name}" ] && echo 'YES' || echo 'NO')" >&2
+                        fi
+                        
                         # Check if Travis has overridden this variable
                         if [ -n "${!var_name}" ]; then
                             # Use Travis-provided value
                             echo "$var_name=${!var_name}" >> .env
                             echo "    ✓ $var_name (using Travis value)" >&2
+                            
+                            # DEBUG: Confirm what was written for Snowflake vars
+                            if [[ "$var_name" == SNOWFLAKE_USERNAME || "$var_name" == SNOWFLAKE_PASSWORD ]]; then
+                                echo "       - ✅ Written to .env: $var_name=${!var_name:0:10}..." >&2
+                            fi
                         else
                             # Use default value from file
                             echo "$var_name=$var_default" >> .env
                             echo "    → $var_name (using default)" >&2
+                            
+                            # DEBUG: Warn if Snowflake variables are using empty defaults
+                            if [[ "$var_name" == SNOWFLAKE_USERNAME || "$var_name" == SNOWFLAKE_PASSWORD ]]; then
+                                echo "       - ⚠️  WARNING: Using empty default for $var_name!" >&2
+                            fi
                         fi
                     fi
                 done < "$env_file"
@@ -143,13 +182,27 @@ merge_env_files() {
     fi
 }
 
+# DEBUG: Check Snowflake variables before processing
+echo ""
+echo "🔍 DEBUG: Snowflake variables in Travis environment:"
+echo "  SNOWFLAKE_USERNAME='$SNOWFLAKE_USERNAME'"
+echo "  SNOWFLAKE_PASSWORD='${SNOWFLAKE_PASSWORD:0:3}***' (masked)"
+echo ""
+
 # Process all env_files directories
 echo ""
 echo "🔄 Merging configuration from env_files directory..."
 
-# Get the script directory to ensure we can find env_files
+# Get the script directory and project root to ensure we can find env_files
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ENV_FILES_DIR="$SCRIPT_DIR/env_files"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+ENV_FILES_DIR="$PROJECT_ROOT/env_files"
+
+echo "🔍 DEBUG: Directory paths:"
+echo "  Script dir: $SCRIPT_DIR"
+echo "  Project root: $PROJECT_ROOT"
+echo "  Env files dir: $ENV_FILES_DIR"
+echo ""
 
 # Process all subdirectories in env_files
 # The env_files directory is part of the repository and should always exist
@@ -197,5 +250,77 @@ for dir in "$ENV_FILES_DIR"/*; do
     fi
 done
 
+# DEBUG: Comprehensive .env file verification
+echo ""
+echo "========================================"
+echo "🔍 DEBUG: FINAL .env FILE VERIFICATION"
+echo "========================================"
+
+if [ -f .env ]; then
+    echo "✅ .env file exists"
+    echo "   File size: $(wc -c < .env) bytes"
+    echo "   Total lines: $(wc -l < .env) lines"
+    echo ""
+    
+    echo "SNOWFLAKE variables in .env:"
+    echo "----------------------------"
+    if grep -q "^SNOWFLAKE_" .env; then
+        grep "^SNOWFLAKE_" .env | while IFS='=' read -r key value; do
+            if [[ "$key" == *"PASSWORD"* ]]; then
+                echo "  $key=${value:0:3}*** (masked, length: ${#value})"
+            else
+                echo "  $key=$value (length: ${#value})"
+            fi
+        done
+    else
+        echo "  ⚠️  NO SNOWFLAKE_* variables found in .env file!"
+        echo ""
+        echo "  Checking if database_accounts section exists in .env:"
+        if grep -q "DATABASE ACCOUNTS" .env; then
+            echo "    ✓ DATABASE ACCOUNTS section found"
+            echo "    Here's what's in that section:"
+            sed -n '/DATABASE ACCOUNTS/,/^# =/p' .env | head -30
+        else
+            echo "    ✗ DATABASE ACCOUNTS section NOT found"
+        fi
+    fi
+else
+    echo "❌ .env file does NOT exist!"
+    exit 1
+fi
+
+echo ""
+echo "Comparing Travis CI env vs .env file:"
+echo "--------------------------------------"
+for var in SNOWFLAKE_USERNAME SNOWFLAKE_PASSWORD SNOWFLAKE_HOSTNAME SNOWFLAKE_DATABASE; do
+    travis_value="${!var}"
+    if [ -n "$travis_value" ]; then
+        if [[ "$var" == *"PASSWORD"* ]]; then
+            echo "  Travis $var: SET (length: ${#travis_value})"
+        else
+            echo "  Travis $var: '$travis_value' (length: ${#travis_value})"
+        fi
+    else
+        echo "  Travis $var: NOT SET"
+    fi
+    
+    if grep -q "^$var=" .env; then
+        env_value=$(grep "^$var=" .env | cut -d'=' -f2-)
+        if [ -n "$env_value" ]; then
+            if [[ "$var" == *"PASSWORD"* ]]; then
+                echo "    .env $var: SET (length: ${#env_value})"
+            else
+                echo "    .env $var: '$env_value' (length: ${#env_value})"
+            fi
+        else
+            echo "    .env $var: EMPTY ❌"
+        fi
+    else
+        echo "    .env $var: MISSING ❌"
+    fi
+    echo ""
+done
+
+echo "========================================"
 echo ""
 echo "🚀 Ready to run tests"
