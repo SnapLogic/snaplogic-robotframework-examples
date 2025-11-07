@@ -1,27 +1,9 @@
 version: "~> 1.0"
 
-# ===== ENVIRONMENT VARIABLES =====
 env:
   global:
-    # Build Configuration (Keep these as they're Travis-specific)
     - HMD_HOME=$TRAVIS_BUILD_DIR
-    # Set the template directory name - no escaping needed in single quotes
-    - TEMPLATE_DIR='{{cookiecutter.project_name}}'
 
-    # NOTE: All database, service, and messaging configurations
-    # are now loaded from env_files/ directory by setup_env.sh
-    #
-    # Sensitive credentials should be set in Travis CI Settings:
-    # - Go to Travis CI > Settings > Environment Variables
-    # - Add variables like SNOWFLAKE_PASSWORD, ORACLE_PASSWORD, etc.
-    #
-    # Default non-sensitive values are in:
-    # - env_files/database_accounts/
-    # - env_files/messaging_service_accounts/
-    # - env_files/mock_service_accounts/
-    # - env_files/groundplex/
-
-# ===== BUILD ENVIRONMENT =====
 dist: jammy
 group: stable
 language: python
@@ -31,40 +13,32 @@ python:
 services:
   - docker
 
-# ===== BUILD CONFIGURATION =====
 install: skip
 
 before_script:
-  - "echo \"\U0001F50DEnvironment Variables set up and creating .env file:\""
-  # Change to template directory where travis_scripts is located
+  - echo "🔍 Locating generated Cookiecutter project directory..."
+  # Find the subdirectory that contains travis_scripts (which identifies your generated project)
+  - export TEMPLATE_DIR=$(find . -maxdepth 2 -type d -name "travis_scripts" -exec dirname {} \; | head -n 1)
   - cd "$TEMPLATE_DIR"
   - chmod +x ./travis_scripts/setup_travis_env.sh
-  - "./travis_scripts/setup_travis_env.sh"
+  - ./travis_scripts/setup_travis_env.sh
 
-# ===== JOBS =====
 jobs:
   include:
     - stage: start-services
       script:
-        # Change to template directory where Makefile and scripts are located
         - cd "$TEMPLATE_DIR"
-        #  Export Travis environment variables to be used by docker-compose
         - export TRAVIS_COMMIT_AUTHOR_NAME="$(git log -1 --pretty=format:'%an' 2>/dev/null || echo 'CI Build')"
         - export TRAVIS_COMMIT_AUTHOR_EMAIL="$(git log -1 --pretty=format:'%ae')"
-        - env | grep TRAVIS
-        - sudo service postgresql stop # stop any running postgres services for more info see SLIM-437
-        # Run Docker build debugging script
+        - sudo service postgresql stop
         - chmod +x ./travis_scripts/debug_docker_build.sh
         - ./travis_scripts/debug_docker_build.sh
-        # Start services after debugging
         - make start-services
-        - make robot-run-all-tests TAGS="oracle sqlserver file_mount postgres_s3 sla_pipeline email2" PROJECT_SPACE_SETUP=True
+        - make robot-run-all-tests TAGS="oracle sqlserver file_mount postgres_s3 sla_pipeline email2 snowflake_demo" PROJECT_SPACE_SETUP=True
         - make upload-test-results
         - make slack-notify
-
       name: Build Docs
 
-# ===== NOTIFICATIONS =====
 notifications:
   slack:
     rooms:
