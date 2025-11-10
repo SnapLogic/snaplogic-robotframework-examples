@@ -16,6 +16,7 @@ ${KAFKA_GROUP_ID}               test-consumer-group
 *** Keywords ***
 Delete Kafka Topic
     [Documentation]    Deletes one or more Kafka topics using built-in admin operations
+    ...    Gracefully handles topics that don't exist (no error thrown)
     ...
     ...    Example:
     ...    | Delete Kafka Topic | test-topic |    # Single topic
@@ -25,9 +26,29 @@ Delete Kafka Topic
     ${count}=    Get Length    ${topic_names}
     IF    ${count} == 0    Fail    No topic names provided to delete
 
-    # Delete topics using built-in Delete Topics keyword
-    Delete Topics    @{topic_names}
-    Log    Successfully deleted ${count} topic(s)
+    # Get existing topics
+    ${existing_topics}=    Get Kafka Topics
+    
+    # Filter to only delete topics that exist
+    @{topics_to_delete}=    Create List
+    FOR    ${topic}    IN    @{topic_names}
+        ${exists}=    Run Keyword And Return Status    Should Contain    ${existing_topics}    ${topic}
+        IF    ${exists}
+            Append To List    ${topics_to_delete}    ${topic}
+            Log    Topic '${topic}' exists - will be deleted
+        ELSE
+            Log    Topic '${topic}' does not exist - skipping    console=yes
+        END
+    END
+    
+    # Only attempt deletion if there are topics to delete
+    ${topics_to_delete_count}=    Get Length    ${topics_to_delete}
+    IF    ${topics_to_delete_count} > 0
+        Delete Topics    @{topics_to_delete}
+        Log    Successfully deleted ${topics_to_delete_count} topic(s)    console=yes
+    ELSE
+        Log    No topics to delete (all topics already non-existent)    console=yes
+    END
 
 Connect To Kafka As Producer
     [Documentation]    Connects to Kafka as a producer
