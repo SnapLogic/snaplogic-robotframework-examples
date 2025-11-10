@@ -1,0 +1,526 @@
+{
+"cyberark":{
+"dev":
+[
+  {
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+  "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-DDP_Snaplogic_Cross_Account_IAM_Dev",
+   "username":"DDP_Snaplogic_Cross_Account_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-DDP_CIS_Cross_Account_IAM_Dev",
+  "username":"DDP_CIS_Cross_Account_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-DDP_CIS_Cross_Account_External_Key_Dev",
+  "username":"DDP_CIS_Cross_Account_External_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-Snowflake_DDP_Load_FR_Dev",
+  "username":"Snowflake_DDP_Load_Password"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-ORDER_SAYE_SIT",
+  "username":"Order_Saye_Password"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-Snowflake_DDP_Report_FR_Dev",
+  "username":"Snowflake_Reporting_Load_Password"
+}, 
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-EDW_DIT",
+  "username":"EDW_User"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-RSA_Private_Key_Dev",
+  "username":"DDP_SNF_RSA_Private_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-RSA_Passphrase_Dev",
+  "username":"DDP_SNF_RSA_Passphrase"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-MSK_Asset_Ingestion_External_Key_Sit",
+  "username":"DDP_MSK_Ingestion_External_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-MSK_Asset_Ingestion_AWS_Role_NP",
+  "username":"DDP_MSK_Asset_Ingestion_AWS_Role"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-MSK_Account_Ingestion_IAM_NP",
+  "username":"DDP_MSK_Process_Lifecycle_Ingestion_AWS_Role"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-MSK_Scheme_Ingestion_IAM_NP",
+  "username":"DDP_MSK_Scheme_Ingestion_AWS_Role"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-Email_Secret_ID_Dev",
+  "username":"DDP_Email_Secret_ID"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-Email_Secret_Key_Dev",
+  "username":"DDP_Email_Secret_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-DDP_MSK_Cross_Account_IAM_NP",
+  "username":"DDP_MSK_Cross_Account_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-DDP_AWS_IAM_NP",
+  "username":"DDP_AWS_IAM_Role"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-DDP_AWS_External_Key_NP",
+  "username":"DDP_AWS_External_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-PensionDashboard_IAM_NP",
+  "username":"PensionDashboard_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-PensionDashboard_External_Key_NP",
+  "username":"PensionDashboard_External_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-Snaplogic_Illustration_IAM_Dev",
+  "username":"DDP_Snaplogic_Illustration_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+  "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-Snaplogic_Payment_In_IAM_Dev",
+  "username":"DDP_Snaplogic_Payment_In_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+  "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-SNAPLOGIC_TOB_UAN_TRANSFER_IAM_Dev",
+  "username":"DDP_SNAPLOGIC_TOB_UAN_TRANSFER_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-FDL_DDP_EDW_USER_Dev",
+  "username":"Snowflake_DDP_EDW"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-CCP_NP",
+  "username":"CCP_Password"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-ADMIN_CDC_Qa",
+  "username":"ADMIN_CDC_Password"
+}
+],
+"sit":
+[
+  {
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+  "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-DDP_Snaplogic_Cross_Account_IAM_Sit",
+   "username":"DDP_Snaplogic_Cross_Account_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-DDP_CIS_Cross_Account_IAM_Sit",
+  "username":"DDP_CIS_Cross_Account_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-DDP_CIS_Cross_Account_External_Key_Sit",
+  "username":"DDP_CIS_Cross_Account_External_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-Snowflake_DDP_Load_FR_Sit",
+  "username":"Snowflake_DDP_Load_Password"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-ORDER_SAYE_SIT",
+  "username":"Order_Saye_Password"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-Snowflake_DDP_Report_FR_Dev",
+  "username":"Snowflake_Reporting_Load_Password"
+}, 
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-EDW_DIT",
+  "username":"EDW_User"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-RSA_Private_Key_Sit",
+  "username":"DDP_SNF_RSA_Private_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-RSA_Passphrase_Sit",
+  "username":"DDP_SNF_RSA_Passphrase"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-MSK_Asset_Ingestion_External_Key_Sit",
+  "username":"DDP_MSK_Ingestion_External_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-MSK_Asset_Ingestion_AWS_Role_NP",
+  "username":"DDP_MSK_Asset_Ingestion_AWS_Role"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-MSK_Account_Ingestion_IAM_NP",
+  "username":"DDP_MSK_Process_Lifecycle_Ingestion_AWS_Role"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-MSK_Scheme_Ingestion_IAM_NP",
+  "username":"DDP_MSK_Scheme_Ingestion_AWS_Role"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-Email_Secret_ID_Sit",
+  "username":"DDP_Email_Secret_ID"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-Email_Secret_Key_Sit",
+  "username":"DDP_Email_Secret_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-DDP_MSK_Cross_Account_IAM_NP",
+  "username":"DDP_MSK_Cross_Account_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-DDP_AWS_IAM_NP",
+  "username":"DDP_AWS_IAM_Role"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-DDP_AWS_External_Key_NP",
+  "username":"DDP_AWS_External_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-PensionDashboard_IAM_NP",
+  "username":"PensionDashboard_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-PensionDashboard_External_Key_NP",
+  "username":"PensionDashboard_External_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-Snaplogic_Illustration_IAM_Sit",
+  "username":"DDP_Snaplogic_Illustration_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+  "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-Snaplogic_Payment_In_IAM_Sit",
+  "username":"DDP_Snaplogic_Payment_In_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+  "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-SNAPLOGIC_TOB_UAN_TRANSFER_IAM_Sit",
+  "username":"DDP_SNAPLOGIC_TOB_UAN_TRANSFER_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-FDL_DDP_EDW_USER_SIT",
+  "username":"Snowflake_DDP_EDW"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-CCP_NP",
+  "username":"CCP_Password"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-ADMIN_CDC_Qa",
+  "username":"ADMIN_CDC_Password"
+}
+],
+"uat":
+[
+  {
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+  "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-DDP_Snaplogic_Cross_Account_IAM_Uat",
+   "username":"DDP_Snaplogic_Cross_Account_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-DDP_CIS_Cross_Account_IAM_Uat",
+  "username":"DDP_CIS_Cross_Account_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-DDP_CIS_Cross_Account_External_Key_Uat",
+  "username":"DDP_CIS_Cross_Account_External_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-Snowflake_DDP_Load_FR_Uat",
+  "username":"Snowflake_DDP_Load_Password"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-ORDER_SAYE_UAT",
+  "username":"Order_Saye_Password"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-EDW_UAT",
+  "username":"EDW_User"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-RSA_Private_Key_Uat",
+  "username":"DDP_SNF_RSA_Private_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-RSA_Passphrase_Uat",
+  "username":"DDP_SNF_RSA_Passphrase"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-MSK_Asset_Ingestion_External_Key_Uat",
+  "username":"DDP_MSK_Ingestion_External_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-MSK_Asset_Ingestion_AWS_Role_NP",
+  "username":"DDP_MSK_Asset_Ingestion_AWS_Role"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-MSK_Account_Ingestion_IAM_NP",
+  "username":"DDP_MSK_Process_Lifecycle_Ingestion_AWS_Role"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-MSK_Scheme_Ingestion_IAM_NP",
+  "username":"DDP_MSK_Scheme_Ingestion_AWS_Role"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-Email_Secret_ID_Uat",
+  "username":"DDP_Email_Secret_ID"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-Email_Secret_Key_Uat",
+  "username":"DDP_Email_Secret_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-DDP_MSK_Cross_Account_IAM_NP",
+  "username":"DDP_MSK_Cross_Account_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-DDP_AWS_IAM_NP",
+  "username":"DDP_AWS_IAM_Role"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-DDP_AWS_External_Key_NP",
+  "username":"DDP_AWS_External_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-PensionDashboard_IAM_NP",
+  "username":"PensionDashboard_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-PensionDashboard_External_Key_NP",
+  "username":"PensionDashboard_External_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-Snaplogic_Illustration_IAM_Uat",
+  "username":"DDP_Snaplogic_Illustration_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+  "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-Snaplogic_Payment_In_IAM_Uat",
+  "username":"DDP_Snaplogic_Payment_In_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+  "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-SNAPLOGIC_TOB_UAN_TRANSFER_IAM_Uat",
+  "username":"DDP_SNAPLOGIC_TOB_UAN_TRANSFER_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-FDL_DDP_EDW_USER_UAT",
+  "username":"Snowflake_DDP_EDW"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-CCP_NP",
+  "username":"CCP_Password"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_NP",
+   "ca_object":"Secrets-LOC_NP_EN_AAA2_NM-ADMIN_CDC_Uat",
+  "username":"ADMIN_CDC_Password"
+}
+],
+"prd":
+[
+  {
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+  "ca_object":"Secrets-LOC_P_EN_AAA2_NM-DDP_Snaplogic_Cross_Account_IAM_Prd",
+   "username":"DDP_Snaplogic_Cross_Account_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+   "ca_object":"Secrets-LOC_P_EN_AAA2_NM-DDP_CIS_Cross_Account_IAM_Prd",
+  "username":"DDP_CIS_Cross_Account_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+   "ca_object":"Secrets-LOC_P_EN_AAA2_NM-DDP_CIS_Cross_Account_External_Key_Prd",
+  "username":"DDP_CIS_Cross_Account_External_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+   "ca_object":"Secrets-LOC_P_EN_AAA2_NM-Snowflake_DDP_Load_FR_Prd",
+  "username":"Snowflake_DDP_Load_Password"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+   "ca_object":"Secrets-LOC_P_EN_AAA2_NM-ORDER_SAYE_Prd",
+  "username":"Order_Saye_Password"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+   "ca_object":"Secrets-LOC_P_EN_AAA2_NM-EDW_PRD",
+  "username":"EDW_User"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+   "ca_object":"Secrets-LOC_P_EN_AAA2_NM-RSA_Private_Key_Prd",
+  "username":"DDP_SNF_RSA_Private_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+   "ca_object":"Secrets-LOC_P_EN_AAA2_NM-RSA_Passphrase_Prd",
+  "username":"DDP_SNF_RSA_Passphrase"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+   "ca_object":"Secrets-LOC_P_EN_AAA2_NM-MSK_Asset_Ingestion_External_Key_Prd",
+  "username":"DDP_MSK_Ingestion_External_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+   "ca_object":"Secrets-LOC_P_EN_AAA2_NM-MSK_Asset_Ingestion_AWS_Role_Prd",
+  "username":"DDP_MSK_Asset_Ingestion_AWS_Role"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+   "ca_object":"Secrets-LOC_P_EN_AAA2_NM-MSK_Account_Ingestion_IAM_Prd",
+  "username":"DDP_MSK_Process_Lifecycle_Ingestion_AWS_Role"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+   "ca_object":"Secrets-LOC_P_EN_AAA2_NM-MSK_Scheme_Ingestion_IAM_Prd",
+  "username":"DDP_MSK_Scheme_Ingestion_AWS_Role"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+   "ca_object":"Secrets-LOC_P_EN_AAA2_NM-Email_Secret_ID_Prd",
+  "username":"DDP_Email_Secret_ID"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+   "ca_object":"Secrets-LOC_P_EN_AAA2_NM-Email_Secret_Key_Prd",
+  "username":"DDP_Email_Secret_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+   "ca_object":"Secrets-LOC_P_EN_AAA2_NM-DDP_MSK_Cross_Account_IAM_Prd",
+  "username":"DDP_MSK_Cross_Account_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+   "ca_object":"Secrets-LOC_P_EN_AAA2_NM-DDP_AWS_IAM_P",
+  "username":"DDP_AWS_IAM_Role"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+   "ca_object":"Secrets-LOC_P_EN_AAA2_NM-DDP_AWS_External_Key_P",
+  "username":"DDP_AWS_External_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+   "ca_object":"Secrets-LOC_P_EN_AAA2_NM-PensionDashboard_IAM_Prd",
+  "username":"PensionDashboard_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+   "ca_object":"Secrets-LOC_P_EN_AAA2_NM-PensionDashboard_External_Key_Prd",
+  "username":"PensionDashboard_External_Key"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+   "ca_object":"Secrets-LOC_P_EN_AAA2_NM-Snaplogic_Illustration_IAM_Prd",
+  "username":"DDP_Snaplogic_Illustration_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+  "ca_object":"Secrets-LOC_P_EN_AAA2_NM-Snaplogic_Payment_In_IAM_Prd",
+  "username":"DDP_Snaplogic_Payment_In_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+  "ca_object":"Secrets-LOC_P_EN_AAA2_NM-SNAPLOGIC_TOB_UAN_TRANSFER_IAM_Prd",
+  "username":"DDP_SNAPLOGIC_TOB_UAN_TRANSFER_IAM"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+   "ca_object":"Secrets-LOC_P_EN_AAA2_NM-FDL_DDP_EDW_USER_Prd",
+  "username":"Snowflake_DDP_EDW"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+   "ca_object":"Secrets-LOC_P_EN_AAA2_NM-CCP_PRD",
+  "username":"CCP_Password"
+},
+{
+  "ca_appid":"APP_CC_GPS-Datalake_P",
+   "ca_object":"Secrets-LOC_P_EN_AAA2_NM-ADMIN_CDC_Prd",
+  "username":"ADMIN_CDC_Password"
+}
+]
+}
+}

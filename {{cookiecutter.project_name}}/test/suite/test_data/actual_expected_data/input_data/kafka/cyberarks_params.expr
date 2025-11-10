@@ -1,0 +1,39 @@
+{
+  "cyberark": {
+    "dev": [
+      {
+        "ca_appid": "APP_MOCK_DEV",
+        "ca_object": "Secrets-Mock-Dev",
+        "username": "mock_user_dev"
+      }
+    ],
+    "sit": [
+      {
+        "ca_appid": "APP_MOCK_SIT",
+        "ca_object": "Secrets-Mock-SIT",
+        "username": "mock_user_sit"
+      }
+    ],
+    "uat": [
+      {
+        "ca_appid": "APP_MOCK_UAT",
+        "ca_object": "Secrets-Mock-UAT",
+        "username": "mock_user_uat"
+      }
+    ],
+    "prd": [
+      {
+        "ca_appid": "APP_MOCK_PRD",
+        "ca_object": "Secrets-Mock-PRD",
+        "username": "mock_user_prd"
+      }
+    ],
+    "migration": [
+      {
+        "ca_appid": "APP_MOCK_MIGRATION",
+        "ca_object": "Secrets-Mock-Migration",
+        "username": "mock_user_migration"
+      }
+    ]
+  }
+}

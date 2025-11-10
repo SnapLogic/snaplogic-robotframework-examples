@@ -1,0 +1,6 @@
+{
+    getOrgName: () => pipe.projectPath.split('/')[1],
+    getOrgId: () => pipe.ruuid.split('_')[0],
+    getOrgEnv: () => this.getOrgName().substr(this.getOrgName().lastIndexOf('-') + 1),
+    getAllOrgs: () => ['fil-prd','fil-uat','fil-sit','fil-dev']
+}
