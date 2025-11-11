@@ -58,16 +58,16 @@ SYSTEM_TO_MAKEFILE = {
 # ------------------------------------------------------
 def initialize_project_info() -> Tuple[Path, str]:
     project_root = Path.cwd()
-    project_name = "{{ cookiecutter.project_name }}"
+    primary_pipeline_name = "{{ cookiecutter.primary_pipeline_name }}"
 
     print("\n🧭 Project Setup Information")
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     print(f"📁 Project root: {project_root}")
-    print(f"📝 Project name: {project_name}")
+    print(f"📝 Project name: {primary_pipeline_name}")
     print(f"🔧 Current working directory: {os.getcwd()}")
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
 
-    return project_root, project_name
+    return project_root, primary_pipeline_name
 
 
 # ------------------------------------------------------
@@ -467,11 +467,11 @@ def cleanup_template_artifacts(project_root: Path):
             except:
                 pass
 
-def print_final_summary(project_name: str, included_systems: List[str], compose_profiles_value: str, project_root: Path):
+def print_final_summary(primary_pipeline_name: str, included_systems: List[str], compose_profiles_value: str, project_root: Path):
     print("\n" + "=" * 50)
     print("🎉 PROJECT CONFIGURATION COMPLETE!")
     print("=" * 50)
-    print(f"📦 Project: {project_name}")
+    print(f"📦 Project: {primary_pipeline_name}")
     print(f"🔧 Systems: {', '.join(included_systems)}")
     print(f"🐳 Docker Profiles: {compose_profiles_value}")
     print(f"📁 Location: {project_root}")
@@ -489,7 +489,7 @@ def print_final_summary(project_name: str, included_systems: List[str], compose_
 # Main
 # ------------------------------------------------------
 def main():
-    project_root, project_name = initialize_project_info()
+    project_root, primary_pipeline_name = initialize_project_info()
     included_systems = validate_systems(get_included_systems())
     compose_profiles_value = update_compose_profiles(project_root, included_systems)
     system_mappings = load_system_mappings(project_root)
@@ -499,7 +499,7 @@ def main():
     remove_empty_directories(project_root)
     # cleanup_root_level_env_file(project_root)
     cleanup_template_artifacts(project_root)
-    print_final_summary(project_name, included_systems, compose_profiles_value, project_root)
+    print_final_summary(primary_pipeline_name, included_systems, compose_profiles_value, project_root)
 
 
 if __name__ == "__main__":
