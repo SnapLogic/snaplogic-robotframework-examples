@@ -1,5 +1,5 @@
 {
-    "project_name": "demo_project",
+    "primary_pipeline_name": "demo_project",
     "included_systems": "oracle,postgres,mysql,sqlserver,db2,teradata,snowflake,salesforce,kafka,activemq,s3,email",
     "_copy_without_render": [
         ".*",
