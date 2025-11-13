@@ -16,7 +16,7 @@ Resource            ../../../resources/sql_table_operations.resource    # Generi
 Resource            ../../test_data/queries/snowflake_queries.resource    # Snowflake SQL queries
 
 Suite Setup         Check connections    # Check if the connection to the snowflake database is successful and snaplex is up
-# Suite Teardown    Tear Down Connections and Files
+Suite Teardown      Tear Down Connections and Files
 
 
 *** Variables ***
