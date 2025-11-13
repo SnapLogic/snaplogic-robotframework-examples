@@ -11,6 +11,7 @@ pymysql # MySQL database driver
 ibm_db # IBM DB2 database driver
 teradatasql # Teradata database driver
 snowflake-connector-python # Snowflake database driver
+cryptography>=3.0.0 # Required for Snowflake key pair authentication
 robotframework-pabot==2.18.0
 # Install kafka-python directly (no need for robotframework-kafkalibrary)
 kafka-python>=2.0.2

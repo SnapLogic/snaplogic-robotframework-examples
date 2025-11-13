@@ -424,7 +424,7 @@ reinstall-snaplogic-common-robot:
 	@echo "🎉 Done! snaplogic-common-robot has been installed and verified."
 
 # Show snaplogic-common-robot version
-show-snaplogic-coommon-robot-version:
+show-snaplogic-common-robot-version:
 	@echo "📦 SnapLogic Common Robot Library Version"
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@if ! docker ps | grep -q snaplogic-test-example-tools-container; then \

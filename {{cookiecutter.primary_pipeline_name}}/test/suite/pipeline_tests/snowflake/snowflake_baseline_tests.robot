@@ -16,7 +16,7 @@ Resource            ../../../resources/sql_table_operations.resource    # Generi
 Resource            ../../test_data/queries/snowflake_queries.resource    # Snowflake SQL queries
 
 Suite Setup         Check connections    # Check if the connection to the snowflake database is successful and snaplex is up
-Suite Teardown      Delete All Files    # Clean up all all files after execution
+# Suite Teardown    Tear Down Connections and Files
 
 
 *** Variables ***
@@ -98,7 +98,7 @@ Create Account
     ...    📝 USAGE EXAMPLES:
     ...    ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_FILE_NAME}    ${sf_acct}
     ...    /org/project/shared    ${SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_FILE_NAME}    prod_snowflake_acct
-    [Tags]    snowflake_demo2
+    [Tags]    snowflake_demo    create_snowflake_account
     [Template]    Create Account From Template
     ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_FILE_NAME}    ${sf_acct}
     ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_S3_DYNAMIC_FILE_NAME}    ${sf_acct2}
@@ -213,17 +213,17 @@ Execute Triggered Task
     [Tags]    snowflake_demo
     [Template]    Run Triggered Task With Parameters From Template
 
-    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}
-    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}    file1=DEMO.LIFEEVENTSDATA3
+    # ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}
+    # ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}    file1=DEMO.LIFEEVENTSDATA3
     ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name2}    ${task_name2}
 
 Execute Triggered Task For All Files
     [Documentation]    Executes the triggered task with specified parameters
-    [Tags]    snowflake_demo2
+    [Tags]    snowflake_demo
     [Template]    Execute Triggered Task For All Files
     ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name3}    ${task_name3}    ${upload_files_for_file_reader}
 
-Verify Data In Snowflake Table
+Verify Data In Snowflake Table For KeyPair Dynamic Pipeline
     [Documentation]    Verifies data integrity in Snowflake table by querying and validating record counts.
     ...    This test case ensures that the pipeline successfully inserted the expected number
     ...    of records into the target Snowflake table.
@@ -241,8 +241,8 @@ Verify Data In Snowflake Table
     [Tags]    snowflake_demo
 
     Capture And Verify Number of records From Snowflake Table
-    ...    ${task_params_set}[table_name]
-    ...    ${task_params_set}[schema_name]
+    ...    ${task_params_set2}[table_name]
+    ...    ${task_params_set2}[schema_name]
     ...    DCEVENTHEADERS_USERID
     ...    2
 
@@ -263,7 +263,7 @@ Export Snowflake Data To CSV
     [Tags]    snowflake_demo
 
     Export Snowflake Table Data To CSV
-    ...    ${task_params_set}[table_name]
+    ...    ${task_params_set2}[table_name]
     ...    DCEVENTHEADERS_USERID
     ...    ${actual_output_file_from_db}
 
@@ -309,14 +309,20 @@ Check connections
     Log    📋 Test ID: ${unique_id}
     # Wait Until Plex Status Is Up    /${ORG_NAME}/${GROUNDPLEX_LOCATION_PATH}/${GROUNDPLEX_NAME}
     Connect To Snowflake Cloud DB
-    Clean Table    ${task_params_set}[table_name]    ${task_params_set}[schema_name]
+    Clean Table    ${task_params_set2}[table_name]    ${task_params_set2}[schema_name]
 
 Connect To Snowflake Cloud DB
     [Documentation]    Test connection using resource keywords
     ...    No need to set env variables - already loaded from .env
 
+    Log    Username: ${SNOWFLAKE_KEYPAIR_USERNAME}    console=yes
+    Log    Account: ${SNOWFLAKE_ACCOUNT_IDENTIFIER}    console=yes
+    Log    Key length: ${SNOWFLAKE_KEYPAIR_PRIVATE_KEY.__len__()}    console=yes
+
+    Should Not Be Equal    ${SNOWFLAKE_KEYPAIR_USERNAME}    ${EMPTY}
+    Should Not Be Equal    ${SNOWFLAKE_ACCOUNT_IDENTIFIER}    ${EMPTY}
     # Connect To Snowflake Via DatabaseLibrary
-    Connect To Snowflake Via DatabaseLibrary
+    Connect To Snowflake Via DatabaseLibrary    keypair
 
 Clean Table
     [Documentation]    Truncates the Snowflake table before test execution to ensure clean state
@@ -405,3 +411,7 @@ Execute Triggered Task For All Files
 
         Log    ✅ Completed: ${filename}    console=yes
     END
+
+Tear Down Connections and Files
+    Delete All Files
+    Disconnect From Snowflake
