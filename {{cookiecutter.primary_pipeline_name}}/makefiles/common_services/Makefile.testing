@@ -229,3 +229,88 @@ sl-import-assets: check-env
 		suite/ && \
 	echo "✅ Assets imported successfully!" || \
 	echo "❌ Import failed. Check the logs for details."
+
+
+
+
+################################################################################
+# Import SLIM-generated Pipelines (.slp) into SnapLogic project
+################################################################################
+# 📥 Import Pipeline(s) to Project
+#   → Automatically uploads ALL .slp files from GENERATIVE_SLP_PIPELINES_PATH
+#   → If PIPELINE_FILE_NAME is specified, uploads only that file
+#   → Optional arguments:
+#     PIPELINE_FILE_NAME                       - Specific pipeline filename (if omitted, uploads ALL .slp files)
+#     PROJECT_PATH                             - Target SnapLogic project path
+#     GENERATIVE_SLP_PIPELINES_PATH - Source directory (default: src/generative_pipelines)
+#     PROJECT_SPACE_SETUP                      - Delete/recreate project space: True/False (default: False)
+#   
+#   → Usage Examples:
+#     
+#     make sl-import-pipeline \
+#         PROJECT_PATH="sl_projectspace/sl_project" \
+#         GENERATIVE_SLP_PIPELINES_PATH="src/generative_pipelines" \
+#         PROJECT_SPACE_SETUP=True
+#
+#     make sl-import-pipeline \
+#         PROJECT_PATH="sl_projectspace/sl_project" \
+#         PROJECT_SPACE_SETUP=True
+
+import-slim-generated-pipelines: check-env
+	@echo "Importing SLIM-generated pipeline(s) into SnapLogic project..."
+	@echo "================================================================="
+
+	$(eval PROJECT_SPACE_SETUP_VAL := $(if $(PROJECT_SPACE_SETUP),$(PROJECT_SPACE_SETUP),False))
+
+	$(eval PROJECT_PATH_VAL := \
+		$(if $(PROJECT_PATH),$(PROJECT_PATH),\
+			$(shell grep -E '^PROJECT_SPACE=' .env | cut -d '=' -f 2)/\
+			$(shell grep -E '^PROJECT_NAME=' .env | cut -d '=' -f 2)))
+
+	$(if $(GENERATIVE_SLP_PIPELINES_PATH),\
+		$(eval RAW_PIPELINE_PATH := $(GENERATIVE_SLP_PIPELINES_PATH)),\
+		$(eval RAW_PIPELINE_PATH := src/generative_pipelines))
+
+	$(if $(filter /app/%,$(RAW_PIPELINE_PATH)),\
+		$(eval NORMALIZED_PIPELINE_PATH := $(RAW_PIPELINE_PATH)),\
+		$(eval NORMALIZED_PIPELINE_PATH := /app/$(RAW_PIPELINE_PATH)))
+
+	@echo "Pipeline directory inside container: $(NORMALIZED_PIPELINE_PATH)"
+
+	@if ! $(DOCKER_COMPOSE) exec -T tools test -d "$(NORMALIZED_PIPELINE_PATH)"; then \
+		echo "ERROR: Directory $(NORMALIZED_PIPELINE_PATH) does not exist."; \
+		exit 1; \
+	fi
+
+	@if [ -n "$(PIPELINE_FILE_NAME)" ]; then \
+		echo "Uploading specific pipeline: $(PIPELINE_FILE_NAME)"; \
+		$(DOCKER_COMPOSE) exec -T -w /app/test tools \
+			robot --include upload_pipeline --outputdir robot_output \
+			"--variable" "PROJECT_SPACE_SETUP:$(PROJECT_SPACE_SETUP_VAL)" \
+			"--variable" "pipeline_file_name:$(PIPELINE_FILE_NAME)" \
+			"--variable" "project_path:$(PROJECT_PATH_VAL)" \
+			"--variable" "GENERATIVE_SLP_PIPELINES_PATH:$(NORMALIZED_PIPELINE_PATH)" \
+			suite/ \
+			|| (echo "Pipeline import failed." && exit 1); \
+	else \
+		echo "Uploading all pipelines from $(NORMALIZED_PIPELINE_PATH)"; \
+		PIPELINE_FILES=$$($(DOCKER_COMPOSE) exec -T tools find $(NORMALIZED_PIPELINE_PATH) -maxdepth 1 -name "*.slp" -type f | xargs -n1 basename); \
+		if [ -z "$$PIPELINE_FILES" ]; then echo "No .slp files found."; exit 1; fi; \
+		TOTAL=$$(echo "$$PIPELINE_FILES" | wc -l); \
+		echo "Total pipelines found: $$TOTAL"; \
+		FAILED=0; \
+		for FILE in $$PIPELINE_FILES; do \
+			echo "Uploading $$FILE"; \
+			if ! $(DOCKER_COMPOSE) exec -T -w /app/test tools \
+				robot --include upload_pipeline --outputdir robot_output \
+				"--variable" "PROJECT_SPACE_SETUP:$(PROJECT_SPACE_SETUP_VAL)" \
+				"--variable" "pipeline_file_name:$$FILE" \
+				"--variable" "project_path:$(PROJECT_PATH_VAL)" \
+				"--variable" "GENERATIVE_SLP_PIPELINES_PATH:$(NORMALIZED_PIPELINE_PATH)" \
+				suite/ ; then \
+					FAILED=$$((FAILED + 1)); \
+				fi; \
+		done; \
+		if [ $$FAILED -eq 0 ]; then echo "All pipelines imported successfully."; \
+		else echo "$$FAILED pipelines failed to import."; fi; \
+	fi

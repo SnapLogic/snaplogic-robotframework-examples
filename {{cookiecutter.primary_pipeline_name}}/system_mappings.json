@@ -4,7 +4,8 @@
     "env_path": "env_files/database_accounts/.env.oracle",
     "makefile_path": "makefiles/database_services/Makefile.oracle",
     "pipeline_path": "src/pipelines/oracle.slp",
-    "tests_path": "test/suite/pipeline_tests/*oracle*"
+    "tests_path": "test/suite/pipeline_tests/*oracle*",
+    "accounts_path": "test/suite/test_data/accounts_payload/acc_oracle.json"
   },
   "postgres": {
     "docker_path": "docker/postgres/**",
@@ -15,21 +16,25 @@
       "src/pipelines/postgres_to_s3_csv.slp",
       "src/pipelines/postgres_to_s3_json.slp"
     ],
-    "tests_path": "test/suite/pipeline_tests/*postgres*"
+    "tests_path": "test/suite/pipeline_tests/*postgres*",
+    "accounts_path": "test/suite/test_data/accounts_payload/acc_postgres.json"
   },
   "mysql": {
     "docker_path": "docker/mysql/**",
     "env_path": "env_files/database_accounts/.env.mysql",
     "makefile_path": "makefiles/database_services/Makefile.mysql",
     "pipeline_path": "src/pipelines/mysql.slp",
-    "tests_path": "test/suite/pipeline_tests/*mysql*"
+    "tests_path": "test/suite/pipeline_tests/*mysql*",
+    "accounts_path": "test/suite/test_data/accounts_payload/acc_mysql.json",
+    "accounts_jar_files": "test/suite/test_data/accounts_jar_files/db2/mysql-connector-j-9.3.0.jar"
   },
   "sqlserver": {
     "docker_path": "docker/sqlserver/**",
     "env_path": "env_files/database_accounts/.env.sqlserver",
     "makefile_path": "makefiles/database_services/Makefile.sqlserver",
     "pipeline_path": "src/pipelines/sqlserver.slp",
-    "tests_path": "test/suite/pipeline_tests/*sqlserver*"
+    "tests_path": "test/suite/pipeline_tests/*sqlserver*",
+    "accounts_path": "test/suite/test_data/accounts_payload/acc_sqlserver.json"
   },
   "db2": {
     "docker_path": "docker/db2/**",
@@ -37,13 +42,17 @@
     "makefile_path": "makefiles/database_services/Makefile.db2",
     "pipeline_path": "src/pipelines/db2.slp",
     "resources_path": "test/resources/db2/**",
-    "tests_path": "test/suite/pipeline_tests/*db2*"
+    "tests_path": "test/suite/pipeline_tests/*db2*",
+    "accounts_path": "test/suite/test_data/accounts_payload/acc_db2.json",
+    "accounts_jar_files": "test/suite/test_data/accounts_jar_files/db2/db2jcc4.jar"
   },
   "teradata": {
     "docker_path": "docker/teradata/**",
     "env_path": "env_files/database_accounts/.env.teradata",
     "makefile_path": "makefiles/database_services/Makefile.teradata",
-    "tests_path": "test/suite/pipeline_tests/*teradata*"
+    "tests_path": "test/suite/pipeline_tests/*teradata*",
+    "accounts_path": "test/suite/test_data/accounts_payload/acc_teradata.json",
+    "accounts_jar_files": "test/suite/test_data/accounts_jar_files/db2/README.md"
   },
   "snowflake": {
     "docker_path": "docker/snowflake-config/**",
@@ -55,17 +64,24 @@
     "pipeline_paths": [
       "src/pipelines/snowflake.slp",
       "src/pipelines/snowflake1.slp",
-      "src/pipelines/snowflake2.slp"
+      "src/pipelines/snowflake2.slp",
+      "src/pipelines/snowflake_keypair.slp"
     ],
     "resources_path": "test/resources/snowflake2/**",
-    "tests_path": "test/suite/pipeline_tests/*snowflake*"
+    "tests_path": "test/suite/pipeline_tests/*snowflake*",
+    "accounts_path": [
+      "test/suite/test_data/accounts_payload/acc_snowflake_s3_db.json",
+      "test/suite/test_data/accounts_payload/acc_snowflake_s3_dynamic_acct_keypair.json",
+      "test/suite/test_data/accounts_payload/acc_snowflake_s3_keypair.json"
+    ]
   },
   "salesforce": {
     "docker_path": "docker/salesforce/**",
     "env_path": "env_files/mock_service_accounts/.env.salesforce",
     "makefile_path": "makefiles/mock_services/Makefile.salesforce",
     "pipeline_path": "src/pipelines/salesforce.slp",
-    "tests_path": "test/suite/pipeline_tests/*salesforce*"
+    "tests_path": "test/suite/pipeline_tests/*salesforce*",
+    "accounts_path": "test/suite/test_data/accounts_payload/acc_salesforce.json"
   },
   "kafka": {
     "docker_path": "docker/kafka/**",
@@ -73,7 +89,8 @@
     "makefile_path": "makefiles/messaging_services/Makefile.kafka",
     "pipeline_path": "src/pipelines/kafka.slp",
     "resources_path": "test/resources/kafka/**",
-    "tests_path": "test/suite/pipeline_tests/*kafka*"
+    "tests_path": "test/suite/pipeline_tests/*kafka*",
+    "accounts_path": "test/suite/test_data/accounts_payload/acc_kafka.json"
   },
   "activemq": {
     "docker_path": "docker/activemq/**",
@@ -81,7 +98,9 @@
     "makefile_path": "makefiles/messaging_services/Makefile.activemq",
     "pipeline_path": "src/pipelines/jmsconsumer.slp",
     "resources_path": "test/resources/jms/**",
-    "tests_path": "test/suite/pipeline_tests/*jms*"
+    "tests_path": "test/suite/pipeline_tests/*jms*",
+    "accounts_path": "test/suite/test_data/accounts_payload/acc_jms.json",
+    "accounts_jar_files": "test/suite/test_data/accounts_jar_files/db2/artemis-jms-client-all-2.6.0.jar"
   },
   "s3": {
     "docker_path": "docker/minio/**",
@@ -92,7 +111,8 @@
       "src/pipelines/postgres_to_s3_json.slp"
     ],
     "resources_path": "test/resources/minio.resource",
-    "tests_path": "test/suite/pipeline_tests/*s3*"
+    "tests_path": "test/suite/pipeline_tests/*s3*",
+    "accounts_path": "test/suite/test_data/accounts_payload/acc_s3.json"
   },
   "mail": {
     "docker_path": "docker/email/**",
@@ -100,32 +120,31 @@
     "makefile_path": "makefiles/mock_services/Makefile.maildev",
     "pipeline_path": "src/pipelines/email.slp",
     "resources_path": "test/resources/email_utils.resource",
-    "tests_path": "test/suite/pipeline_tests/*mail*"
+    "tests_path": "test/suite/pipeline_tests/*mail*",
+    "accounts_path": "test/suite/test_data/accounts_payload/acc_email.json"
   },
   "unwanted": {
     "docker_path": "docker/wip/**",
     "tests_path": "test/suite/pipeline_tests/*sla*",
     "env_paths": ".env",
     "travis_yaml_file": ".travis.yml",
-    "travis_scripts": "travis_scripts/**"
+    "travis_scripts": "travis_scripts/**",
+    "example_pipelines": [
+      "src/pipelines/sla_pipeline.slp",
+      "src/pipelines/child_pipeline1.slp",
+      "src/pipelines/child_pipeline2.slp",
+      "src/pipelines/parent_pipeline1.slp",
+      "src/pipelines/postgres_oracle.slp",
+      "src/pipelines/snowflake_assets_backup.zip",
+      "src/pipelines/swapna-automation-latest_sl_project (2).zip"
+    ]
   },
   "file_mounts": {
-    "pipeline_path": "test/suite/pipeline_tests/filereader_writer_mount_files.slp",
+    "pipeline_paths": [
+      "src/pipelines/filereader_writer_mount_files.slp",
+      "src/pipelines/filereader.slp",
+      "test/suite/pipeline_tests/filereader_writer_mount_files.slp"
+    ],
     "tests_path": "test/suite/pipeline_tests/*file_mount*"
-  },
-  "postgres_oracle": {
-    "docker_paths": [
-      "docker/oracle/**",
-      "docker/postgres/**"
-    ],
-    "env_paths": [
-      "env_files/database_accounts/.env.oracle",
-      "env_files/database_accounts/.env.postgres"
-    ],
-    "makefile_paths": [
-      "makefiles/database_services/Makefile.oracle",
-      "makefiles/database_services/Makefile.postgres"
-    ],
-    "pipeline_path": "src/pipelines/postgres_oracle.slp"
   }
 }

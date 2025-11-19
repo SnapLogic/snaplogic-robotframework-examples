@@ -68,7 +68,7 @@ check-env:
 #   make start-tools-service-only ENV_FILES=".env.qa"           # Uses specific env file
 # NOTE: Use 'start-services' to start all services based on COMPOSE_PROFILES
 # =============================================================================
-:
+start-tools-service-only:
 	@echo "🚀 Starting tools container only..."
 	$(DOCKER_COMPOSE) --profile tools up -d
 	@echo "⏳ Waiting for container to be ready..."

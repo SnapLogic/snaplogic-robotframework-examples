@@ -9,10 +9,12 @@ Suite Setup     Before Suite
 
 
 *** Variables ***
-${ACCOUNT_PAYLOAD_PATH}     ${CURDIR}/test_data/accounts_payload
-${ENV_FILE_PATH}            ${CURDIR}/../../.env
-${ENV_FILES_DIR}            ${CURDIR}/../../env_files
-${PIPELINE_PAYLOAD_PATH}    /app/src/pipelines
+${ACCOUNT_PAYLOAD_PATH}             ${CURDIR}/test_data/accounts_payload
+${ENV_FILE_PATH}                    ${CURDIR}/../../.env
+${ENV_FILES_DIR}                    ${CURDIR}/../../env_files
+# ${PIPELINE_PAYLOAD_PATH}    /app/src/pipelines
+${PIPELINE_PAYLOAD_PATH}            ${CURDIR}/../../src/pipelines
+${GENERATIVE_SLP_PIPELINES_PATH}    ${CURDIR}/../../src/generative_pipelines
 
 
 *** Keywords ***
@@ -40,6 +42,7 @@ Set Up Global Variables
     Set Global Variable    ${ACCOUNT_PAYLOAD_PATH}
     Set Global Variable    ${ENV_FILE_PATH}
     Set Global Variable    ${PIPELINE_PAYLOAD_PATH}
+    Set Global Variable    ${GENERATIVE_SLP_PIPELINES_PATH}
 
     Log To Console    env file path(from init_file):${env_file_path}
 
