@@ -64,7 +64,6 @@ Upload Files With File Protocol
 
     # file_url    destination_path
     # === From Container Mount Points (files exist via mounts) ===
-    # testing the same pattern CAT uses
     file:///opt/snaplogic/test_data/actual_expected_data/expression_libraries/test.expr    ${ACCOUNT_LOCATION_PATH}
     # Similar to CAT tests: /l$11 DEV GEN/.../EAI_Service_DEV/
 
