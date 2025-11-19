@@ -30,7 +30,12 @@ make start-tools-service-only
 
 ## ⚙️ Step 4: Upload Pipeline
 
-Use the below command to Upload pipelines
+Use the below command for Uploading pipelines to existing project space
 ```bash
 make import-slim-generated-pipelines
+```
+
+Use the below command for Uploading pipelines to a new project space
+```bash
+make import-slim-generated-pipelines PROJECT_SPACE_SETUP=True
 ```

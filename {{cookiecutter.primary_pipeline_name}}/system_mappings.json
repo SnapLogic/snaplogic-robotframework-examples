@@ -114,7 +114,7 @@
     "tests_path": "test/suite/pipeline_tests/*s3*",
     "accounts_path": "test/suite/test_data/accounts_payload/acc_s3.json"
   },
-  "mail": {
+  "email": {
     "docker_path": "docker/email/**",
     "env_path": "env_files/mock_service_accounts/.env.email",
     "makefile_path": "makefiles/mock_services/Makefile.maildev",
