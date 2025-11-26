@@ -44,10 +44,10 @@ Get Qualified Table Name
     ...    table_name: Table name (may already include schema)
     ...    schema: Optional schema to prepend (ignored if table_name already has schema)
     [Arguments]    ${table_name}    ${schema}=${EMPTY}
-    
+
     # Check if table_name already contains a schema (has a dot)
     ${has_schema}=    Run Keyword And Return Status    Should Contain    ${table_name}    .
-    
+
     IF    ${has_schema}
         # Table name already includes schema, use as-is
         RETURN    ${table_name}
@@ -73,7 +73,7 @@ Create Table
 
     # Build fully qualified table name if schema is provided
     ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
-    
+
     Log    Creating table: ${qualified_name}    console=yes
 
     # Drop existing table if requested
@@ -142,22 +142,22 @@ Truncate Table If Exists
     [Documentation]    Removes all rows from a table but keeps the table structure
     ...    If table doesn't exist, logs a warning and continues without failing
     ...    Verifies table is empty after successful truncation
-    ...    
+    ...
     ...    Arguments:
     ...    table_name: Table name (can include schema)
     ...    schema: Optional schema name (if not included in table_name)
     ...    verify_empty: Whether to verify table is empty after truncation (default: TRUE)
-    ...    
+    ...
     ...    Returns:
     ...    ${TRUE} if table was truncated successfully
     ...    ${FALSE} if table doesn't exist or truncate failed
-    ...    
+    ...
     ...    Example:
     ...    ${truncated}=    Truncate Table If Exists    employees    schema=public
     ...    IF    ${truncated}
-    ...        Log    Table was cleaned
+    ...    Log    Table was cleaned
     ...    ELSE
-    ...        Log    Table doesn't exist yet
+    ...    Log    Table doesn't exist yet
     ...    END
     [Arguments]    ${table_name}    ${schema}=${EMPTY}    ${verify_empty}=${TRUE}
 
@@ -167,18 +167,18 @@ Truncate Table If Exists
     TRY
         Execute Sql String    TRUNCATE TABLE ${qualified_name}
         Log    ✅ Table ${qualified_name} truncated successfully    console=yes
-        
+
         # Verify table is empty after truncation if requested
         IF    ${verify_empty}
             Log    🔍 Verifying table is empty after truncation...    console=yes
             ${count_after_truncate}=    Get Row Count    ${table_name}    schema=${schema}
-            
+
             Should Be Equal As Integers    ${count_after_truncate}    0
             ...    TRUNCATE operation completed but table still has ${count_after_truncate} rows! Expected 0 rows.
-            
+
             Log    ✅ Verification passed: Table has 0 rows after truncation    console=yes
         END
-        
+
         RETURN    ${TRUE}
     EXCEPT    AS    ${error}
         Log    ⚠️ Could not truncate table ${qualified_name}: ${error}    level=WARN
@@ -197,7 +197,7 @@ Rename Table
 
     ${old_qualified}=    Get Qualified Table Name    ${old_table_name}    ${schema}
     ${new_qualified}=    Get Qualified Table Name    ${new_table_name}    ${schema}
-    
+
     # Standard SQL syntax (works for most databases)
     Execute Sql String    ALTER TABLE ${old_qualified} RENAME TO ${new_qualified}
     Log    Table renamed from ${old_qualified} to ${new_qualified}    console=yes
@@ -247,7 +247,7 @@ Update Table
     [Arguments]    ${table_name}    ${set_clause}    ${where_clause}=${EMPTY}    ${schema}=${EMPTY}
 
     ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
-    
+
     # Check if where_clause is empty
     ${is_empty}=    Run Keyword And Return Status    Should Be Empty    ${where_clause}
 
@@ -273,7 +273,7 @@ Delete From Table
     [Arguments]    ${table_name}    ${where_clause}=${EMPTY}    ${schema}=${EMPTY}
 
     ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
-    
+
     # Check if where_clause is empty
     ${is_empty}=    Run Keyword And Return Status    Should Be Empty    ${where_clause}
 
@@ -314,7 +314,7 @@ Select All From Table
     [Arguments]    ${table_name}    ${columns}=*    ${order_by}=${EMPTY}    ${limit}=${EMPTY}    ${schema}=${EMPTY}
 
     ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
-    
+
     # Build query
     ${query}=    Set Variable    SELECT ${columns} FROM ${qualified_name}
 
@@ -347,10 +347,16 @@ Select Where
     ...    order_by: Optional ORDER BY clause
     ...    limit: Optional LIMIT clause
     ...    schema: Optional schema name (if not included in table_name)
-    [Arguments]    ${table_name}    ${where_clause}    ${columns}=*    ${order_by}=${EMPTY}    ${limit}=${EMPTY}    ${schema}=${EMPTY}
+    [Arguments]
+    ...    ${table_name}
+    ...    ${where_clause}
+    ...    ${columns}=*
+    ...    ${order_by}=${EMPTY}
+    ...    ${limit}=${EMPTY}
+    ...    ${schema}=${EMPTY}
 
     ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
-    
+
     # Build query
     ${query}=    Set Variable    SELECT ${columns} FROM ${qualified_name} WHERE ${where_clause}
 
@@ -383,7 +389,7 @@ Get Row Count
     [Arguments]    ${table_name}    ${where_clause}=${EMPTY}    ${schema}=${EMPTY}
 
     ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
-    
+
     # Check if where_clause is empty
     ${is_empty}=    Run Keyword And Return Status    Should Be Empty    ${where_clause}
 
@@ -407,10 +413,15 @@ Get Column Values
     ...    distinct: Whether to return only distinct values
     ...    where_clause: Optional WHERE condition
     ...    schema: Optional schema name (if not included in table_name)
-    [Arguments]    ${table_name}    ${column_name}    ${distinct}=${FALSE}    ${where_clause}=${EMPTY}    ${schema}=${EMPTY}
+    [Arguments]
+    ...    ${table_name}
+    ...    ${column_name}
+    ...    ${distinct}=${FALSE}
+    ...    ${where_clause}=${EMPTY}
+    ...    ${schema}=${EMPTY}
 
     ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
-    
+
     # Build query with optional DISTINCT
     IF    ${distinct}
         ${select_part}=    Set Variable    SELECT DISTINCT ${column_name}
@@ -1063,7 +1074,7 @@ Compare Table With CSV File
             ${temp_dir}=    Set Variable    /tmp
         END
     END
-    
+
     # Generate file name for actual data - use meaningful name instead of timestamp
     ${table_base_name}=    Set Variable    ${table_name}
     ${table_base_name}=    Replace String    ${table_base_name}    .    _
@@ -1118,7 +1129,12 @@ Verify Table Matches CSV
     ...    ${order_by} - ORDER BY clause for consistent ordering
     ...    ${temp_dir} - Directory for temporary files (optional)
     ...
-    [Arguments]    ${table_name}    ${expected_csv}    ${ignore_order}=${FALSE}    ${order_by}=${EMPTY}    ${temp_dir}=${EMPTY}
+    [Arguments]
+    ...    ${table_name}
+    ...    ${expected_csv}
+    ...    ${ignore_order}=${FALSE}
+    ...    ${order_by}=${EMPTY}
+    ...    ${temp_dir}=${EMPTY}
 
     ${comparison}=    Compare Table With CSV File
     ...    ${table_name}
@@ -1983,3 +1999,41 @@ Build Insert SQL From Dict
     Log    Generated SQL: ${sql}
 
     RETURN    ${sql}
+
+Capture And Verify Number of records From DB Table
+    [Documentation]    Verifies data in Snowflake table by executing a query and comparing results with expected output
+    ...    Table is truncated before pipeline execution to ensure consistent test results
+    ...    Retrieved data is exported to CSV for verification
+    [Arguments]    ${table_name}    ${schema_name}    ${order_by_column}    ${expected_records_count}
+    ${results}=    Select All From Table
+    ...    ${table_name}
+    ...    order_by=${order_by_column}
+    ...    schema=${schema_name}
+
+    ${row_count}=    Get Length    ${results}
+    Should Be Equal As Integers    ${row_count}    ${expected_records_count}
+    Log
+    ...    Retrieved ${row_count} rows from ${table_name} and schema name ${schema_name}
+    ...    console=yes
+
+Export DB Table Data To CSV
+    [Documentation]    Exports data from Snowflake table to a CSV file for verification
+    ...    Retrieved data is exported to CSV for verification
+    [Arguments]    ${table_name}    ${order_by_column}    ${output_file}
+    # ${timestamp}=    Get Time    epoch
+    ${export_result}=    Export Table To CSV
+    ...    ${table_name}
+    ...    ${output_file}
+    ...    include_headers=${TRUE}
+    ...    order_by=${order_by_column}
+
+    Log    ✅ Exported ${export_result}[row_count] rows to ${export_result}[file_path]    console=yes
+    Log    📁 CSV file location: ${output_file}    console=yes
+
+Clean Table
+    [Documentation]    Truncates the Snowflake table before test execution to ensure clean state
+    [Arguments]    ${table_name}    ${schema_name}
+    Log    🧹 Cleaning table before execution    console=yes
+
+    # Truncate the table - verification is automatic (verify_empty=TRUE by default)
+    Truncate Table If Exists    ${table_name}    schema=${schema_name}

@@ -17,40 +17,34 @@ Resource            ../../../resources/sql_table_operations.resource    # Generi
 Resource            ../../test_data/queries/snowflake_queries.resource    # Snowflake SQL queries
 
 Suite Setup         Check connections    # Check if the connection to the snowflake database is successful and snaplex is up
-Suite Teardown      Tear Down Connections and Files
+# Suite Teardown    Tear Down Connections and Files
 
 
 *** Variables ***
-# Dynamic keys to exclude from CSV comparison (timestamps that change between runs)
-@{EXCLUDED_COLUMNS_FOR_COMPARISON}      SnowflakeConnectorPushTime
+${upload_source_files_path}         ${CURDIR}/../../test_data/actual_expected_data/expected_output/snowflake
+${upload_files_for_file_reader}     ${CURDIR}/../../test_data/actual_expected_data/expected_output/file_reader
 ######################### Pipeline1 details ###########################
 
 # Pipeline name and file details
-${pipeline_name}                        snowflake_keypair
-${pipeline_file_name}                   snowflake_keypair.slp
-${sf_acct_keypair}                      ${pipeline_name}_account
+${pipeline_name}                    snowflake_user_password_auth
+${pipeline_file_name}               snowflake_user_password_auth.slp
+${sf_acct_username_password}        ${pipeline_name}_account
 
 # Task Details for created triggered task from the above pipeline
-${task_name}                            Task
-@{notification_states}                  Completed    Failed
+${task_name}                        Task
+@{notification_states}              Completed    Failed
 &{task_notifications}
-...                                     recipients=newemail@gmail.com
-...                                     states=${notification_states}
+...                                 recipients=newemail@gmail.com
+...                                 states=${notification_states}
 
 &{task_params_set}
-...                                     snowflake_acct=../shared/${sf_acct_keypair}
-...                                     schema=PUBLIC
-...                                     table=PUBLIC.TEST_SNAP4
-...                                     destination_hint=BRAZE:Subscription
-...                                     isTest=test
-...                                     test_input_file=test_input_file.json
+...                                 snowflake_acct=../shared/${sf_acct_username_password}
+...                                 schema_name=DEMO
+...                                 table_name=DEMO.LIFEEVENTSDATA
 
 # Actual and Expected output file paths for verification
-${actual_output_file_from_db}           ${CURDIR}/../../test_data/actual_expected_data/actual_output/snowflake/${pipeline_name}_actual_output_from_snowflake_db.csv    # Actual output files for comparison
-
-# Expected files to be taken care by user
-${input_file1}                          ${CURDIR}/../../test_data/actual_expected_data/input_data/snowflake/test_input_file.json
-${expected_output_file1}                ${CURDIR}/../../test_data/actual_expected_data/expected_output/snowflake/snowflake_test_input_data1.csv    # Expected Output file (User have to create it)
+${actual_output_file_from_db}       ${CURDIR}/../../test_data/actual_expected_data/actual_output/snowflake/${pipeline_name}_actual_output_from_snowflake_db.csv    # Actual output files for comparison
+${expected_output_file}             ${CURDIR}/../../test_data/actual_expected_data/expected_output/snowflake/snowflake_inserted_data.csv    # Expected Output file (User have to create it)
 
 
 *** Test Cases ***
@@ -68,11 +62,11 @@ Create Account
     ...    📝 USAGE EXAMPLES:
     ...    ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_FILE_NAME}    ${sf_acct_username_password}
     ...    /org/project/shared    ${SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_FILE_NAME}    prod_snowflake_acct
-    [Tags]    snowflake_demo    create_snowflake_account
+    [Tags]    snowflake_user_password_auth    create_snowflake_account
     [Template]    Create Account From Template
-    ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_S3_DYNAMIC_FILE_NAME}    ${sf_acct_keypair}
+    ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_FILE_NAME}    ${sf_acct_username_password}
 
-Upload test input file
+Upload library expression files
     [Documentation]    Uploads the expression library (.expr file) to the project level shared folder.
     ...    Expression libraries contain reusable custom functions and expressions that can be
     ...    referenced across multiple pipelines in the project.
@@ -81,10 +75,12 @@ Upload test input file
     ...    • Argument 1: Local File Path - The local file path to the expression library file (.expr)
     ...    (e.g., ${CURDIR}/../../test_data/expression_libraries/snowflake/snowflake_library.expr)
     ...    • Argument 2: Destination Path - The destination path in SnapLogic where the file will be uploaded
-    [Tags]    snowflake_demo    upload_expression_library
+    ...    (typically the same as ${ACCOUNT_LOCATION_PATH} for shared resources)
+    [Tags]    snowflake_user_password_auth    upload_expression_library
     [Template]    Upload File Using File Protocol Template
-    # local file path    destination_path in snaplogic
-    ${input_file1}    ${PIPELINES_LOCATION_PATH}
+    # file path    destination_path
+    ${CURDIR}/../../test_data/actual_expected_data/expression_libraries/snowflake/snowflake_library.expr    ${ACCOUNT_LOCATION_PATH}
+    ${CURDIR}/../../test_data/actual_expected_data/expression_libraries/snowflake/snowflake_library2.expr    ${ACCOUNT_LOCATION_PATH}
 
 Import Pipeline
     [Documentation]    Imports Snowflake pipeline files (.slp) into the SnapLogic project space.
@@ -105,9 +101,12 @@ Import Pipeline
     ...    (e.g., snowflake_pl1, data_processor, etl_pipeline)
     ...    • Argument 4: ${pipeline_file_name} - Physical .slp file name to import
     ...    (e.g., snowflake1.slp, pipeline.slp)
-    [Tags]    snowflake_demo
+    ...
+    ...    💡 TO IMPORT MULTIPLE PIPELINES:
+    ...    You can import multiple pipeline files by adding more records to this template.
+    ...    Each record represents one pipeline import operation.
+    [Tags]    snowflake_user_password_auth
     [Template]    Import Pipelines From Template
-
     ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${pipeline_file_name}
 
 Create Triggered_task
@@ -129,7 +128,7 @@ Create Triggered_task
     ...    (e.g., snowflake_acct, schema_name, table_name)-(optional- can be omitted)
     ...    • Argument 7: ${task_notifications} (Optional) - Dictionary containing notification settings
     ...    (recipients and states for task completion/failure alerts)-(optional- can be omitted)
-    [Tags]    snowflake_demo    regressionx
+    [Tags]    snowflake_user_password_auth    regressionx
     [Template]    Create Triggered Task From Template
     ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}    ${GROUNDPLEX_NAME}    ${task_params_set}
 
@@ -150,13 +149,11 @@ Execute Triggered Task
     ...    • Argument 4: ${task_name} - Name of the triggered task to execute
     ...    • Arguments 5+: Optional key=value parameters - Override default task parameters
     ...    (e.g., table_name=DEMO.DIFFERENT_TABLE, schema_name=TEST_SCHEMA)
-    [Tags]    snowflake_demo
+    [Tags]    snowflake_user_password_auth
     [Template]    Run Triggered Task With Parameters From Template
-    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}    test_input_file=test_input_file.json
-    # ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}    test_input_file=test_input_file2.json
-    # ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}    test_input_file=test_input_file3.json
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}
 
-Verify Data In Snowflake Table For Pipeline Having keypair Authentication
+Verify Data In Snowflake Table For Pipeline Having UserName Password Authentication
     [Documentation]    Verifies data integrity in Snowflake table by querying and validating record counts.
     ...    This test case ensures that the pipeline successfully inserted the expected number
     ...    of records into the target Snowflake table.
@@ -171,12 +168,12 @@ Verify Data In Snowflake Table For Pipeline Having keypair Authentication
     ...    • Schema Name: ${task_params_set}[schema_name] - Schema containing the table
     ...    • Order By Column: DCEVENTHEADERS_USERID - Column used for consistent ordering
     ...    • Expected Record Count: 2 - Number of records expected in the table
-    [Tags]    snowflake_demo
+    [Tags]    snowflake_user_password_auth
 
     Capture And Verify Number of records From DB Table
-    ...    ${task_params_set}[table]
-    ...    ${task_params_set}[schema]
-    ...    RECORD_METADATA
+    ...    ${task_params_set}[table_name]
+    ...    ${task_params_set}[schema_name]
+    ...    DCEVENTHEADERS_USERID
     ...    2
 
 Export Snowflake Data To CSV
@@ -187,11 +184,11 @@ Export Snowflake Data To CSV
     ...    • Argument 1: Table Name - ${task_params_set}[table_name] - Source table to export data from
     ...    • Argument 2: Order By Column - DCEVENTHEADERS_USERID - Column for consistent row ordering
     ...    • Argument 3: Output File Path - ${actual_output_file_from_db} - Local path to save CSV file
-    [Tags]    snowflake_demo
+    [Tags]    snowflake_user_password_auth
 
     Export DB Table Data To CSV
-    ...    ${task_params_set}[table]
-    ...    RECORD_METADATA
+    ...    ${task_params_set}[table_name]
+    ...    DCEVENTHEADERS_USERID
     ...    ${actual_output_file_from_db}
 
 Compare Actual vs Expected CSV Output
@@ -203,7 +200,7 @@ Compare Actual vs Expected CSV Output
     ...    • Argument 1: file1_path - Path to the actual output CSV file from Snowflake
     ...    (e.g., ${actual_output_file_from_db})
     ...    • Argument 2: file2_path - Path to the expected output CSV file (baseline)
-    ...    (e.g., ${expected_output_file1})
+    ...    (e.g., ${expected_output_file})
     ...    • Argument 3: ignore_order - Boolean flag to ignore row ordering
     ...    ${TRUE} = Compare without considering row order
     ...    ${FALSE} = Rows must match in exact order
@@ -214,11 +211,11 @@ Compare Actual vs Expected CSV Output
     ...    IDENTICAL = Files must match exactly
     ...    DIFFERENT = Files expected to differ
     ...    SUBSET = File1 is subset of File2
-    [Tags]    snowflake_demo
-    [Template]    Compare CSV Files With Exclusions Template
+    [Tags]    snowflake_user_password_auth
+    [Template]    Compare CSV Files Template
 
-    # Test Data: file1_path    file2_path    exclude_keys    ignore_order    show_details    expected_status
-    ${actual_output_file_from_db}    ${expected_output_file1}    ${EXCLUDED_COLUMNS_FOR_COMPARISON}    ${FALSE}    ${TRUE}    IDENTICAL
+    # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status
+    ${actual_output_file_from_db}    ${expected_output_file}    ${FALSE}    ${TRUE}    IDENTICAL
 
 
 *** Keywords ***
@@ -230,9 +227,9 @@ Check connections
     Log    🔧 Initializing test environment for file mount demonstration
     Log    📋 Test ID: ${unique_id}
     # Wait Until Plex Status Is Up    /${ORG_NAME}/${GROUNDPLEX_LOCATION_PATH}/${GROUNDPLEX_NAME}
-    Connect To Snowflake Via DatabaseLibrary    keypair
-    Clean Table    ${task_params_set}[table]    ${task_params_set}[schema]
+    Connect To Snowflake Via DatabaseLibrary    password
+    Clean Table    ${task_params_set}[table_name]    ${task_params_set}[schema_name]
 
 Tear Down Connections and Files
-    # Delete All Files
+    Delete All Files
     Disconnect From Snowflake

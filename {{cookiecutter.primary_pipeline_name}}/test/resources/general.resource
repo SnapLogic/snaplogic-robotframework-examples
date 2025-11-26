@@ -22,5 +22,26 @@ Get Unique Id
     ...
     ...    *Example:*
     ...    | ${unique_id} | Get Unique Id |
-    ${UNIQUE_ID}    Get Current Date    result_format=%Y%m%d%H%M%S%f
+    ${UNIQUE_ID}=    Get Current Date    result_format=%Y%m%d%H%M%S%f
     RETURN    ${UNIQUE_ID}
+
+Delete All Files
+    [Documentation]    Deletes all files from ${ACCOUNT_LOCATION_PATH}
+    Log    🗑️ Deleting all files...    console=yes
+
+    ${entries}=    Get Project List    ${ORG_NAME}    ${ACCOUNT_LOCATION_PATH}
+
+    FOR    ${entry}    IN    @{entries}
+        IF    '${entry}[asset_type]' == 'File'
+            ${filename}=    Set Variable    ${entry}[name]
+
+            ${status}    ${msg}=    Run Keyword And Ignore Error
+            ...    Delete File    ${ACCOUNT_LOCATION_PATH}/${filename}    soft_delete=${False}
+
+            IF    '${status}' == 'PASS'
+                Log    ✓ Deleted: ${filename}    console=yes
+            ELSE
+                Log    ⚠️ Could not delete: ${filename}    console=yes
+            END
+        END
+    END

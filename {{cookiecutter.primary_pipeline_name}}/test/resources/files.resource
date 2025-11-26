@@ -883,6 +883,422 @@ Compare JSON Files
 
     RETURN    ${comparison_result}
 
+################## CSV COMPARISON WITH EXCLUSIONS ##################
+
+Compare CSV Files With Exclusions
+    [Documentation]    Compares two CSV files while excluding specified JSON keys from comparison.
+    ...    This is useful when CSV files contain JSON data with dynamic fields like timestamps
+    ...    that change between runs (e.g., SnowflakeConnectorPushTime, created_at, updated_at).
+    ...
+    ...    Arguments:
+    ...    ${file1_path}    - Path to the first CSV file (actual output)
+    ...    ${file2_path}    - Path to the second CSV file (expected output)
+    ...    ${exclude_keys}  - List of JSON keys to exclude from comparison
+    ...                       Example: @{exclude}=    SnowflakeConnectorPushTime    created_at
+    ...    ${ignore_order}  - Whether to ignore row order (default: TRUE)
+    ...    ${show_details}  - Whether to show detailed comparison results (default: TRUE)
+    ...
+    ...    Returns:
+    ...    Dictionary with comparison results including status (IDENTICAL/DIFFERENT)
+    ...
+    ...    Example Usage:
+    ...    @{exclude_keys}=    Create List    SnowflakeConnectorPushTime    timestamp
+    ...    ${result}=    Compare CSV Files With Exclusions
+    ...    ...    ${actual_file}
+    ...    ...    ${expected_file}
+    ...    ...    ${exclude_keys}
+    ...    Should Be Equal    ${result}[status]    IDENTICAL
+    ...
+    [Arguments]    ${file1_path}    ${file2_path}    ${exclude_keys}    ${ignore_order}=${TRUE}    ${show_details}=${TRUE}
+
+    Log    \n🔍 Comparing CSV files with exclusions:    console=yes
+    Log    📁 File 1: ${file1_path}    console=yes
+    Log    📁 File 2: ${file2_path}    console=yes
+    Log    🚫 Excluded keys: ${exclude_keys}    console=yes
+
+    # Read both CSV files
+    ${csv1_content}=    Read Csv File To List    ${file1_path}
+    ${csv2_content}=    Read Csv File To List    ${file2_path}
+
+    # Normalize both CSV contents by removing excluded keys from JSON fields
+    ${normalized_csv1}=    Normalize CSV Content With Exclusions    ${csv1_content}    ${exclude_keys}
+    ${normalized_csv2}=    Normalize CSV Content With Exclusions    ${csv2_content}    ${exclude_keys}
+
+    # Initialize comparison result
+    ${comparison_result}=    Create Dictionary
+    ...    status=UNKNOWN
+    ...    file1_path=${file1_path}
+    ...    file2_path=${file2_path}
+    ...    file1_rows=${csv1_content.__len__()}
+    ...    file2_rows=${csv2_content.__len__()}
+    ...    excluded_keys=${exclude_keys}
+    ...    total_differences=0
+    ...    headers_match=${FALSE}
+    ...    row_count_match=${FALSE}
+
+    # Create empty list for differences
+    ${differences_list}=    Create List
+    Set To Dictionary    ${comparison_result}    differences    ${differences_list}
+
+    # Compare row counts
+    ${file1_row_count}=    Get Length    ${normalized_csv1}
+    ${file2_row_count}=    Get Length    ${normalized_csv2}
+
+    IF    ${file1_row_count} == ${file2_row_count}
+        Set To Dictionary    ${comparison_result}    row_count_match=${TRUE}
+    ELSE
+        Set To Dictionary    ${comparison_result}    row_count_match=${FALSE}
+        ${diff}=    Create Dictionary
+        ...    type=ROW_COUNT_MISMATCH
+        ...    file1_count=${file1_row_count}
+        ...    file2_count=${file2_row_count}
+        Append To List    ${comparison_result}[differences]    ${diff}
+    END
+
+    # Compare headers (first row)
+    IF    ${file1_row_count} > 0 and ${file2_row_count} > 0
+        ${header1}=    Get From List    ${normalized_csv1}    0
+        ${header2}=    Get From List    ${normalized_csv2}    0
+        ${headers_equal}=    Evaluate    $header1 == $header2
+
+        Set To Dictionary    ${comparison_result}    headers_match=${headers_equal}
+
+        IF    not ${headers_equal}
+            ${diff}=    Create Dictionary
+            ...    type=HEADER_MISMATCH
+            ...    file1_header=${header1}
+            ...    file2_header=${header2}
+            Append To List    ${comparison_result}[differences]    ${diff}
+        END
+    END
+
+    # Compare data rows
+    ${max_rows}=    Evaluate    max(${file1_row_count}, ${file2_row_count})
+
+    FOR    ${row_index}    IN RANGE    1    ${max_rows}
+        ${has_row1}=    Evaluate    ${row_index} < ${file1_row_count}
+        ${has_row2}=    Evaluate    ${row_index} < ${file2_row_count}
+
+        IF    ${has_row1} and ${has_row2}
+            ${row1}=    Get From List    ${normalized_csv1}    ${row_index}
+            ${row2}=    Get From List    ${normalized_csv2}    ${row_index}
+
+            ${rows_equal}=    Evaluate    $row1 == $row2
+
+            IF    not ${rows_equal}
+                ${diff}=    Create Dictionary
+                ...    type=ROW_CONTENT_MISMATCH
+                ...    row_index=${row_index}
+                ...    file1_row=${row1}
+                ...    file2_row=${row2}
+                Append To List    ${comparison_result}[differences]    ${diff}
+
+                # Compare individual fields for more detail
+                ${field_differences}=    Compare Row Fields With Details    ${row1}    ${row2}    ${row_index}
+                FOR    ${field_diff}    IN    @{field_differences}
+                    Append To List    ${comparison_result}[differences]    ${field_diff}
+                END
+            END
+        ELSE IF    ${has_row1} and not ${has_row2}
+            ${row1}=    Get From List    ${normalized_csv1}    ${row_index}
+            ${diff}=    Create Dictionary
+            ...    type=EXTRA_ROW_IN_FILE1
+            ...    row_index=${row_index}
+            ...    row_content=${row1}
+            Append To List    ${comparison_result}[differences]    ${diff}
+        ELSE IF    not ${has_row1} and ${has_row2}
+            ${row2}=    Get From List    ${normalized_csv2}    ${row_index}
+            ${diff}=    Create Dictionary
+            ...    type=EXTRA_ROW_IN_FILE2
+            ...    row_index=${row_index}
+            ...    row_content=${row2}
+            Append To List    ${comparison_result}[differences]    ${diff}
+        END
+    END
+
+    # If ignore_order is True, check unordered comparison
+    IF    ${ignore_order}
+        ${unordered_match}=    Compare Normalized CSV Ignore Order    ${normalized_csv1}    ${normalized_csv2}
+        Set To Dictionary    ${comparison_result}    unordered_match=${unordered_match}
+    END
+
+    # Set final status
+    ${total_diff}=    Get Length    ${comparison_result}[differences]
+    Set To Dictionary    ${comparison_result}    total_differences=${total_diff}
+
+    IF    ${total_diff} == 0
+        Set To Dictionary    ${comparison_result}    status=IDENTICAL
+        Log    ✅ Files are IDENTICAL (after excluding: ${exclude_keys})    console=yes
+    ELSE
+        Set To Dictionary    ${comparison_result}    status=DIFFERENT
+        Log    ❌ Files are DIFFERENT - Found ${total_diff} differences    console=yes
+    END
+
+    # Log details if requested
+    IF    ${show_details}
+        Log Comparison With Exclusions Details    ${comparison_result}
+    END
+
+    RETURN    ${comparison_result}
+
+Compare CSV Files With Exclusions Template
+    [Documentation]    Template keyword for CSV comparison with exclusions and validation
+    ...    
+    ...    Arguments:
+    ...    ${file1_path}      - Path to actual output CSV file
+    ...    ${file2_path}      - Path to expected output CSV file
+    ...    ${exclude_keys}    - List of JSON keys to exclude (e.g., SnowflakeConnectorPushTime)
+    ...    ${ignore_order}    - Whether to ignore row order
+    ...    ${show_details}    - Whether to show detailed differences
+    ...    ${expected_status} - Expected comparison result (IDENTICAL or DIFFERENT)
+    ...
+    ...    Example Usage in Test Case:
+    ...    @{exclude}=    Create List    SnowflakeConnectorPushTime
+    ...    Compare CSV Files With Exclusions Template
+    ...    ...    ${actual_output_file}
+    ...    ...    ${expected_output_file}
+    ...    ...    ${exclude}
+    ...    ...    ${FALSE}
+    ...    ...    ${TRUE}
+    ...    ...    IDENTICAL
+    ...
+    [Arguments]    ${file1_path}    ${file2_path}    ${exclude_keys}    ${ignore_order}    ${show_details}    ${expected_status}
+
+    Log    📋 Comparing CSV files with exclusions template:    console=yes
+    Log    📁 File 1 (Actual): ${file1_path}    console=yes
+    Log    📁 File 2 (Expected): ${file2_path}    console=yes
+    Log    🚫 Excluded Keys: ${exclude_keys}    console=yes
+    Log    🔄 Ignore Order: ${ignore_order}    console=yes
+    Log    📝 Show Details: ${show_details}    console=yes
+    Log    ✅ Expected Status: ${expected_status}    console=yes
+
+    # Perform the comparison with exclusions
+    ${comparison_result}=    Compare CSV Files With Exclusions
+    ...    ${file1_path}
+    ...    ${file2_path}
+    ...    ${exclude_keys}
+    ...    ignore_order=${ignore_order}
+    ...    show_details=${show_details}
+
+    # Validate the expected status
+    Should Be Equal    ${comparison_result}[status]    ${expected_status}
+    ...    Expected status '${expected_status}' but got '${comparison_result}[status]': ${comparison_result}[status] != ${expected_status}
+
+    # Log success
+    Log    ✅ CSV comparison with exclusions completed - Status: ${comparison_result}[status]    console=yes
+    Log    📈 Total differences found: ${comparison_result}[total_differences]    console=yes
+
+    RETURN    ${comparison_result}
+
+Normalize CSV Content With Exclusions
+    [Documentation]    Normalizes CSV content by removing specified keys from JSON fields.
+    ...    Parses each field that looks like JSON and removes the excluded keys.
+    [Arguments]    ${csv_content}    ${exclude_keys}
+
+    @{normalized_content}=    Create List
+
+    FOR    ${row}    IN    @{csv_content}
+        @{normalized_row}=    Create List
+        FOR    ${field}    IN    @{row}
+            ${normalized_field}=    Normalize Field With Exclusions    ${field}    ${exclude_keys}
+            Append To List    ${normalized_row}    ${normalized_field}
+        END
+        Append To List    ${normalized_content}    ${normalized_row}
+    END
+
+    RETURN    ${normalized_content}
+
+Normalize Field With Exclusions
+    [Documentation]    Normalizes a single field by removing excluded keys if it's JSON.
+    ...    Returns the original field if it's not valid JSON.
+    ...    Uses pure Python for reliable JSON handling.
+    [Arguments]    ${field}    ${exclude_keys}
+
+    # Check if field looks like JSON
+    ${trimmed}=    Strip String    ${field}
+    ${starts_with_brace}=    Evaluate    '''${trimmed}'''.startswith('{')
+    ${ends_with_brace}=    Evaluate    '''${trimmed}'''.endswith('}')
+    ${starts_with_bracket}=    Evaluate    '''${trimmed}'''.startswith('[')
+    ${ends_with_bracket}=    Evaluate    '''${trimmed}'''.endswith(']')
+    
+    ${is_json_object}=    Evaluate    ${starts_with_brace} and ${ends_with_brace}
+    ${is_json_array}=    Evaluate    ${starts_with_bracket} and ${ends_with_bracket}
+    
+    IF    not (${is_json_object} or ${is_json_array})
+        RETURN    ${field}
+    END
+    
+    # Parse JSON, remove keys, and serialize back
+    TRY
+        ${json_data}=    Evaluate    json.loads(r'''${field}''')    modules=json
+        ${cleaned_data}=    Remove Keys From Dict Recursive    ${json_data}    ${exclude_keys}
+        ${result}=    Evaluate    json.dumps($cleaned_data, sort_keys=True)    modules=json
+        RETURN    ${result}
+    EXCEPT    AS    ${error}
+        Log    JSON normalization failed for field: ${error}    level=WARN
+        RETURN    ${field}
+    END
+
+Remove Keys From Dict Recursive
+    [Documentation]    Recursively removes specified keys from a dictionary or list.
+    ...    Handles nested structures.
+    [Arguments]    ${data}    ${exclude_keys}
+    
+    # Build lowercase exclude set
+    @{exclude_lower}=    Create List
+    FOR    ${key}    IN    @{exclude_keys}
+        ${lower}=    Convert To Lower Case    ${key}
+        Append To List    ${exclude_lower}    ${lower}
+    END
+    
+    ${result}=    Process Data Structure    ${data}    ${exclude_lower}
+    RETURN    ${result}
+
+Process Data Structure
+    [Documentation]    Processes a data structure recursively to remove excluded keys
+    [Arguments]    ${data}    ${exclude_keys_lower}
+    
+    ${is_dict}=    Evaluate    isinstance($data, dict)
+    ${is_list}=    Evaluate    isinstance($data, list)
+    
+    IF    ${is_dict}
+        &{new_dict}=    Create Dictionary
+        FOR    ${key}    IN    @{data.keys()}
+            ${key_lower}=    Convert To Lower Case    ${key}
+            ${should_exclude}=    Evaluate    '''${key_lower}''' in $exclude_keys_lower
+            IF    not ${should_exclude}
+                ${value}=    Set Variable    ${data}[${key}]
+                ${processed_value}=    Process Data Structure    ${value}    ${exclude_keys_lower}
+                Set To Dictionary    ${new_dict}    ${key}=${processed_value}
+            END
+        END
+        RETURN    ${new_dict}
+    ELSE IF    ${is_list}
+        @{new_list}=    Create List
+        FOR    ${item}    IN    @{data}
+            ${processed_item}=    Process Data Structure    ${item}    ${exclude_keys_lower}
+            Append To List    ${new_list}    ${processed_item}
+        END
+        RETURN    ${new_list}
+    ELSE
+        RETURN    ${data}
+    END
+
+Remove Keys From JSON Recursive
+    [Documentation]    DEPRECATED - Use Remove Keys From Dict Recursive instead.
+    ...    Kept for backward compatibility.
+    [Arguments]    ${json_data}    ${exclude_keys}
+    
+    ${result}=    Remove Keys From Dict Recursive    ${json_data}    ${exclude_keys}
+    RETURN    ${result}
+
+Compare Normalized CSV Ignore Order
+    [Documentation]    Compares normalized CSV content ignoring row order
+    [Arguments]    ${csv1_content}    ${csv2_content}
+
+    # Skip headers and compare data rows only
+    ${data1}=    Get Slice From List    ${csv1_content}    1
+    ${data2}=    Get Slice From List    ${csv2_content}    1
+
+    # Convert to sets for comparison
+    ${data1_str}=    Evaluate    [str(row) for row in $data1]
+    ${data2_str}=    Evaluate    [str(row) for row in $data2]
+
+    ${set1}=    Evaluate    set($data1_str)
+    ${set2}=    Evaluate    set($data2_str)
+
+    ${sets_equal}=    Evaluate    $set1 == $set2
+
+    RETURN    ${sets_equal}
+
+Compare Row Fields With Details
+    [Documentation]    Compares individual fields between two rows and returns detailed differences
+    [Arguments]    ${row1}    ${row2}    ${row_index}
+
+    ${field_differences}=    Create List
+    ${max_fields}=    Evaluate    max(len($row1), len($row2))
+
+    FOR    ${field_index}    IN RANGE    ${max_fields}
+        ${has_field1}=    Evaluate    ${field_index} < len($row1)
+        ${has_field2}=    Evaluate    ${field_index} < len($row2)
+
+        IF    ${has_field1} and ${has_field2}
+            ${field1}=    Get From List    ${row1}    ${field_index}
+            ${field2}=    Get From List    ${row2}    ${field_index}
+
+            IF    '${field1}' != '${field2}'
+                ${diff}=    Create Dictionary
+                ...    type=FIELD_VALUE_MISMATCH
+                ...    row_index=${row_index}
+                ...    field_index=${field_index}
+                ...    file1_value=${field1}
+                ...    file2_value=${field2}
+                Append To List    ${field_differences}    ${diff}
+            END
+        ELSE IF    ${has_field1} and not ${has_field2}
+            ${field1}=    Get From List    ${row1}    ${field_index}
+            ${diff}=    Create Dictionary
+            ...    type=EXTRA_FIELD_IN_FILE1
+            ...    row_index=${row_index}
+            ...    field_index=${field_index}
+            ...    field_value=${field1}
+            Append To List    ${field_differences}    ${diff}
+        ELSE IF    not ${has_field1} and ${has_field2}
+            ${field2}=    Get From List    ${row2}    ${field_index}
+            ${diff}=    Create Dictionary
+            ...    type=EXTRA_FIELD_IN_FILE2
+            ...    row_index=${row_index}
+            ...    field_index=${field_index}
+            ...    field_value=${field2}
+            Append To List    ${field_differences}    ${diff}
+        END
+    END
+
+    RETURN    ${field_differences}
+
+Log Comparison With Exclusions Details
+    [Documentation]    Logs detailed comparison results for CSV comparison with exclusions
+    [Arguments]    ${comparison_result}
+
+    Log    \n========== CSV COMPARISON WITH EXCLUSIONS DETAILS ==========    console=yes
+    Log    Status: ${comparison_result}[status]    console=yes
+    Log    File 1: ${comparison_result}[file1_path] (${comparison_result}[file1_rows] rows)    console=yes
+    Log    File 2: ${comparison_result}[file2_path] (${comparison_result}[file2_rows] rows)    console=yes
+    Log    Excluded Keys: ${comparison_result}[excluded_keys]    console=yes
+    Log    Headers Match: ${comparison_result}[headers_match]    console=yes
+    Log    Row Count Match: ${comparison_result}[row_count_match]    console=yes
+    Log    Total Differences: ${comparison_result}[total_differences]    console=yes
+
+    IF    ${comparison_result}[total_differences] > 0
+        Log    \n--- DIFFERENCES FOUND ---    console=yes
+        ${diff_count}=    Set Variable    0
+        FOR    ${diff}    IN    @{comparison_result}[differences]
+            ${diff_count}=    Evaluate    ${diff_count} + 1
+            Log    Difference ${diff_count}: ${diff}[type]    console=yes
+
+            IF    '${diff}[type]' == 'HEADER_MISMATCH'
+                Log    \tFile1 Header: ${diff}[file1_header]    console=yes
+                Log    \tFile2 Header: ${diff}[file2_header]    console=yes
+            ELSE IF    '${diff}[type]' == 'ROW_CONTENT_MISMATCH'
+                Log    \tRow ${diff}[row_index]:    console=yes
+                Log    \t\tFile1: ${diff}[file1_row]    console=yes
+                Log    \t\tFile2: ${diff}[file2_row]    console=yes
+            ELSE IF    '${diff}[type]' == 'FIELD_VALUE_MISMATCH'
+                Log    \tRow ${diff}[row_index], Field ${diff}[field_index]:    console=yes
+                Log    \t\tFile1: '${diff}[file1_value]'    console=yes
+                Log    \t\tFile2: '${diff}[file2_value]'    console=yes
+            ELSE IF    '${diff}[type]' == 'ROW_COUNT_MISMATCH'
+                Log    \tFile1 has ${diff}[file1_count] rows, File2 has ${diff}[file2_count] rows    console=yes
+            ELSE
+                Log    \t${diff}    console=yes
+            END
+        END
+    ELSE
+        Log    \n✅ FILES ARE IDENTICAL (after excluding dynamic fields)    console=yes
+    END
+
+    Log    \n========== END COMPARISON DETAILS ==========    console=yes
+
 ################## HELPER KEYWORDS FOR FILE COMPARISON ##################
 
 Compare Row Fields
