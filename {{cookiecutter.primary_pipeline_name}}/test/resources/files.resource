@@ -893,10 +893,10 @@ Compare CSV Files With Exclusions
     ...    Arguments:
     ...    ${file1_path}    - Path to the first CSV file (actual output)
     ...    ${file2_path}    - Path to the second CSV file (expected output)
-    ...    ${exclude_keys}  - List of JSON keys to exclude from comparison
-    ...                       Example: @{exclude}=    SnowflakeConnectorPushTime    created_at
-    ...    ${ignore_order}  - Whether to ignore row order (default: TRUE)
-    ...    ${show_details}  - Whether to show detailed comparison results (default: TRUE)
+    ...    ${exclude_keys}    - List of JSON keys to exclude from comparison
+    ...    Example: @{exclude}=    SnowflakeConnectorPushTime    created_at
+    ...    ${ignore_order}    - Whether to ignore row order (default: TRUE)
+    ...    ${show_details}    - Whether to show detailed comparison results (default: TRUE)
     ...
     ...    Returns:
     ...    Dictionary with comparison results including status (IDENTICAL/DIFFERENT)
@@ -909,7 +909,12 @@ Compare CSV Files With Exclusions
     ...    ...    ${exclude_keys}
     ...    Should Be Equal    ${result}[status]    IDENTICAL
     ...
-    [Arguments]    ${file1_path}    ${file2_path}    ${exclude_keys}    ${ignore_order}=${TRUE}    ${show_details}=${TRUE}
+    [Arguments]
+    ...    ${file1_path}
+    ...    ${file2_path}
+    ...    ${exclude_keys}
+    ...    ${ignore_order}=${TRUE}
+    ...    ${show_details}=${TRUE}
 
     Log    \n🔍 Comparing CSV files with exclusions:    console=yes
     Log    📁 File 1: ${file1_path}    console=yes
@@ -1043,26 +1048,41 @@ Compare CSV Files With Exclusions
 
 Compare CSV Files With Exclusions Template
     [Documentation]    Template keyword for CSV comparison with exclusions and validation
-    ...    
+    ...
     ...    Arguments:
-    ...    ${file1_path}      - Path to actual output CSV file
-    ...    ${file2_path}      - Path to expected output CSV file
-    ...    ${exclude_keys}    - List of JSON keys to exclude (e.g., SnowflakeConnectorPushTime)
+    ...    ${file1_path}    - Path to actual output CSV file
+    ...    ${file2_path}    - Path to expected output CSV file
     ...    ${ignore_order}    - Whether to ignore row order
     ...    ${show_details}    - Whether to show detailed differences
     ...    ${expected_status} - Expected comparison result (IDENTICAL or DIFFERENT)
+    ...    @{exclude_keys}    - (Optional) One or more JSON keys to exclude
     ...
-    ...    Example Usage in Test Case:
-    ...    @{exclude}=    Create List    SnowflakeConnectorPushTime
+    ...    Example Usage - Multiple strings:
     ...    Compare CSV Files With Exclusions Template
-    ...    ...    ${actual_output_file}
-    ...    ...    ${expected_output_file}
-    ...    ...    ${exclude}
-    ...    ...    ${FALSE}
-    ...    ...    ${TRUE}
-    ...    ...    IDENTICAL
+    ...    ...    ${actual_file}    ${expected_file}    ${FALSE}    ${TRUE}    IDENTICAL
+    ...    ...    SnowflakeConnectorPushTime    created_at    updated_at
     ...
-    [Arguments]    ${file1_path}    ${file2_path}    ${exclude_keys}    ${ignore_order}    ${show_details}    ${expected_status}
+    ...    Example Usage - Single string:
+    ...    Compare CSV Files With Exclusions Template
+    ...    ...    ${actual_file}    ${expected_file}    ${FALSE}    ${TRUE}    IDENTICAL
+    ...    ...    SnowflakeConnectorPushTime
+    ...
+    ...    Example Usage - List variable:
+    ...    Compare CSV Files With Exclusions Template
+    ...    ...    ${actual_file}    ${expected_file}    ${FALSE}    ${TRUE}    IDENTICAL
+    ...    ...    @{excluded_columns_for_comparison}
+    ...
+    ...    Example Usage - No exclusions:
+    ...    Compare CSV Files With Exclusions Template
+    ...    ...    ${actual_file}    ${expected_file}    ${FALSE}    ${TRUE}    IDENTICAL
+    ...
+    [Arguments]
+    ...    ${file1_path}
+    ...    ${file2_path}
+    ...    ${ignore_order}
+    ...    ${show_details}
+    ...    ${expected_status}
+    ...    @{exclude_keys}
 
     Log    📋 Comparing CSV files with exclusions template:    console=yes
     Log    📁 File 1 (Actual): ${file1_path}    console=yes
@@ -1081,10 +1101,11 @@ Compare CSV Files With Exclusions Template
     ...    show_details=${show_details}
 
     # Validate the expected status
-    Should Be Equal    ${comparison_result}[status]    ${expected_status}
-    ...    Expected status '${expected_status}' but got '${comparison_result}[status]': ${comparison_result}[status] != ${expected_status}
+    Should Be Equal
+    ...    ${comparison_result}[status]
+    ...    ${expected_status}
+    ...    Expected status '${expected_status}' but got '${comparison_result}[status]'
 
-    # Log success
     Log    ✅ CSV comparison with exclusions completed - Status: ${comparison_result}[status]    console=yes
     Log    📈 Total differences found: ${comparison_result}[total_differences]    console=yes
 
@@ -1120,14 +1141,12 @@ Normalize Field With Exclusions
     ${ends_with_brace}=    Evaluate    '''${trimmed}'''.endswith('}')
     ${starts_with_bracket}=    Evaluate    '''${trimmed}'''.startswith('[')
     ${ends_with_bracket}=    Evaluate    '''${trimmed}'''.endswith(']')
-    
+
     ${is_json_object}=    Evaluate    ${starts_with_brace} and ${ends_with_brace}
     ${is_json_array}=    Evaluate    ${starts_with_bracket} and ${ends_with_bracket}
-    
-    IF    not (${is_json_object} or ${is_json_array})
-        RETURN    ${field}
-    END
-    
+
+    IF    not (${is_json_object} or ${is_json_array})    RETURN    ${field}
+
     # Parse JSON, remove keys, and serialize back
     TRY
         ${json_data}=    Evaluate    json.loads(r'''${field}''')    modules=json
@@ -1143,24 +1162,24 @@ Remove Keys From Dict Recursive
     [Documentation]    Recursively removes specified keys from a dictionary or list.
     ...    Handles nested structures.
     [Arguments]    ${data}    ${exclude_keys}
-    
+
     # Build lowercase exclude set
     @{exclude_lower}=    Create List
     FOR    ${key}    IN    @{exclude_keys}
         ${lower}=    Convert To Lower Case    ${key}
         Append To List    ${exclude_lower}    ${lower}
     END
-    
+
     ${result}=    Process Data Structure    ${data}    ${exclude_lower}
     RETURN    ${result}
 
 Process Data Structure
     [Documentation]    Processes a data structure recursively to remove excluded keys
     [Arguments]    ${data}    ${exclude_keys_lower}
-    
+
     ${is_dict}=    Evaluate    isinstance($data, dict)
     ${is_list}=    Evaluate    isinstance($data, list)
-    
+
     IF    ${is_dict}
         &{new_dict}=    Create Dictionary
         FOR    ${key}    IN    @{data.keys()}
@@ -1188,7 +1207,7 @@ Remove Keys From JSON Recursive
     [Documentation]    DEPRECATED - Use Remove Keys From Dict Recursive instead.
     ...    Kept for backward compatibility.
     [Arguments]    ${json_data}    ${exclude_keys}
-    
+
     ${result}=    Remove Keys From Dict Recursive    ${json_data}    ${exclude_keys}
     RETURN    ${result}
 
