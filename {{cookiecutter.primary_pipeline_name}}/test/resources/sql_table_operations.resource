@@ -1009,9 +1009,7 @@ Format Value For CSV
     ${str_value}=    Convert To String    ${value}
 
     # Handle NULL/None values
-    IF    '${str_value}' == 'None' or '${value}' == '${None}'
-        RETURN    ${EMPTY}
-    END
+    IF    $str_value == 'None' or $value == '${None}'    RETURN    ${EMPTY}
 
     # Check if value needs quoting (contains comma, quote, or newline)
     ${needs_quotes}=    Set Variable    ${FALSE}
