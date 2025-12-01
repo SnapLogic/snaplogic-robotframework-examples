@@ -22,7 +22,7 @@ Suite Teardown      Tear Down Connections and Files
 
 *** Variables ***
 # Dynamic keys to exclude from CSV comparison (timestamps that change between runs)
-@{excluded_columns_for_comparison}      SnowflakeConnectorPushTime
+@{excluded_columns_for_comparison}      SnowflakeConnectorPushTime    event_timestamp
 ######################### Pipeline1 details ###########################
 
 # Pipeline name and file details
@@ -42,7 +42,7 @@ ${actual_output_file1_path_from_db}     ${CURDIR}/../../test_data/actual_expecte
 ${actual_output_file2_path_from_db}     ${CURDIR}/../../test_data/actual_expected_data/actual_output/snowflake/${pipeline_name}_actual_output_file2.csv
 ${actual_output_file3_path_from_db}     ${CURDIR}/../../test_data/actual_expected_data/actual_output/snowflake/${pipeline_name}_actual_output_file3.csv
 
-# Expected input/outputfiles to be included by user
+# Expected input files to be added by user
 ${input_file1_name}                     test_input_file1.json
 ${input_file2_name}                     test_input_file2.json
 ${input_file3_name}                     test_input_file3.json
@@ -50,9 +50,13 @@ ${input_file1_path}                     ${CURDIR}/../../test_data/actual_expecte
 ${input_file2_path}                     ${CURDIR}/../../test_data/actual_expected_data/input_data/snowflake/${input_file2_name}
 ${input_file3_path}                     ${CURDIR}/../../test_data/actual_expected_data/input_data/snowflake/${input_file3_name}
 
-${expected_output_file1_path}           ${CURDIR}/../../test_data/actual_expected_data/expected_output/snowflake/expected_output_file1.csv
-${expected_output_file2_path}           ${CURDIR}/../../test_data/actual_expected_data/expected_output/snowflake/expected_output_file2.csv
-${expected_output_file3_path}           ${CURDIR}/../../test_data/actual_expected_data/expected_output/snowflake/expected_output_file3.csv
+# Expected outputfiles to be added by user#
+${expected_output_file1_name}           expected_output_file1.csv
+${expected_output_file2_name}           expected_output_file2.csv
+${expected_output_file3_name}           expected_output_file3.csv
+${expected_output_file1_path}           ${CURDIR}/../../test_data/actual_expected_data/expected_output/snowflake/${expected_output_file1_name}
+${expected_output_file2_path}           ${CURDIR}/../../test_data/actual_expected_data/expected_output/snowflake/${expected_output_file2_name}
+${expected_output_file3_path}           ${CURDIR}/../../test_data/actual_expected_data/expected_output/snowflake/${expected_output_file3_name}
 
 &{task_params_set}
 ...                                     snowflake_acct=../shared/${sf_acct_keypair}
@@ -232,6 +236,7 @@ Compare Actual vs Expected CSV Output
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status    exclude_columns
     ${actual_output_file1_path_from_db}    ${expected_output_file1_path}    ${FALSE}    ${TRUE}    IDENTICAL    @{excluded_columns_for_comparison}
     ${actual_output_file1_path_from_db}    ${expected_output_file1_path}    ${FALSE}    ${TRUE}    IDENTICAL    SnowflakeConnectorPushTime
+    ${actual_output_file1_path_from_db}    ${expected_output_file1_path}    ${FALSE}    ${TRUE}    IDENTICAL    SnowflakeConnectorPushTime    event_timestamp
 
 
 *** Keywords ***
