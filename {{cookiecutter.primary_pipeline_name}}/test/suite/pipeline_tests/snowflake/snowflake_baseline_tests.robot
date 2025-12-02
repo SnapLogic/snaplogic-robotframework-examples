@@ -252,5 +252,18 @@ Check connections
     Clean Table    ${task_params_set}[table]    ${task_params_set}[schema]
 
 Tear Down Connections and Files
-    # Delete All Files
+    # ================= Delete All pipeline and tasks belonging to Pipelines================
+    @{p1}=    Create List    ${unique_id}    ${pipeline_name}
+    @{p2}=    Create List    ${unique_id2}    ${pipeline_name2}
+    @{pipelines}=    Create List    ${p1}    @{p2}
+
+    # Delete All Tasks For Pipelines    ${pipelines}
+    # Delete Pipelines    ${pipelines}
+
+    # ===================================================================
+
+    Delete All File
+    Delete Task    ${unique_id}    ${pipeline_name}    ${task_name}
+    Delete Pipeline    ${unique_id}    ${pipeline_name}
+
     Disconnect From Snowflake

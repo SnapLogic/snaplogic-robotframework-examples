@@ -45,3 +45,94 @@ Delete All Files
             END
         END
     END
+
+Delete All Tasks For Pipelines
+    [Documentation]    Deletes all tasks for multiple pipelines with different unique_ids.
+    ...
+    ...    *Arguments:*
+    ...    - ``pipelines``: List of [unique_id, pipeline_name] pairs
+    ...    - ``soft_delete``: Optional boolean flag for soft delete (default: true)
+    ...    - ``expected_status``: Expected HTTP status code (default: 200)
+    ...
+    ...    *Returns:*
+    ...    - List of response objects from the API calls
+    ...
+    ...    *Example:*
+    ...    | @{p1}= | Create List | ${ID1} | snowflake_pipeline |
+    ...    | @{p2}= | Create List | ${ID2} | kafka_pipeline |
+    ...    | @{pipelines}= | Create List | ${p1} | ${p2} |
+    ...    | Delete All Tasks For Pipelines | ${pipelines} |
+    [Arguments]    ${pipelines}    ${soft_delete}=true    ${expected_status}=200
+
+    ${all_variables}=    Get Variables
+    @{responses}=    Create List
+    ${total_count}=    Set Variable    0
+
+    FOR    ${pipeline}    IN    @{pipelines}
+        ${unique_id}=    Set Variable    ${pipeline}[0]
+        ${pipeline_name}=    Set Variable    ${pipeline}[1]
+        ${count}=    Set Variable    0
+
+        FOR    ${var_name}    ${var_value}    IN    &{all_variables}
+            ${is_match}=    Run Keyword And Return Status
+            ...    Should Match    ${var_name}    \${${pipeline_name}_*_${unique_id}_snodeid}
+
+            IF    ${is_match}
+                # Extract full task name: pipeline_name_task_name_unique_id
+                ${task_name}=    Replace String    ${var_name}    \${    ${EMPTY}
+                ${task_name}=    Replace String    ${task_name}    }    ${EMPTY}
+                ${task_name}=    Replace String    ${task_name}    _snodeid    ${EMPTY}
+
+                Log    Deleting Task: ${task_name} (snode_id: ${var_value})    console=yes
+                ${response}=    Delete Task Api    ${var_value}    ${soft_delete}    ${expected_status}
+                Append To List    ${responses}    ${response}
+                Log    Successfully deleted Task: ${task_name}    console=yes
+                ${count}=    Evaluate    ${count} + 1
+            END
+        END
+
+        Log    Deleted ${count} task(s) for pipeline: ${pipeline_name}_${unique_id}    console=yes
+        ${total_count}=    Evaluate    ${total_count} + ${count}
+    END
+
+    Log    Total deleted: ${total_count} task(s) for ${pipelines.__len__()} pipeline(s)    console=yes
+    RETURN    ${responses}
+
+Delete Pipelines
+    [Documentation]    Deletes multiple pipelines with different unique_ids.
+    ...
+    ...    *Arguments:*
+    ...    - ``pipelines``: List of [unique_id, pipeline_name] pairs
+    ...    - ``expected_status``: Expected HTTP status code (default: 200)
+    ...
+    ...    *Returns:*
+    ...    - List of response objects from the API calls
+    ...
+    ...    *Example:*
+    ...    | @{p1}= | Create List | ${ID1} | snowflake_pipeline |
+    ...    | @{p2}= | Create List | ${ID2} | kafka_pipeline |
+    ...    | @{pipelines}= | Create List | ${p1} | ${p2} |
+    ...    | Delete Pipelines | ${pipelines} |
+    [Arguments]    ${pipelines}    ${expected_status}=200
+
+    @{responses}=    Create List
+
+    FOR    ${pipeline}    IN    @{pipelines}
+        ${unique_id}=    Set Variable    ${pipeline}[0]
+        ${pipeline_name}=    Set Variable    ${pipeline}[1]
+        ${full_pipeline_name}=    Set Variable    ${pipeline_name}_${unique_id}
+        ${pipeline_snode_id}=    Get Variable Value    ${${full_pipeline_name}_snodeid}
+
+        IF    '${pipeline_snode_id}' != 'None'
+            Log    Deleting Pipeline: ${full_pipeline_name} (snode_id: ${pipeline_snode_id})    console=yes
+            ${response}=    Delete Pipeline Api    ${pipeline_snode_id}    ${expected_status}
+            Append To List    ${responses}    ${response}
+            Log    Successfully deleted Pipeline: ${full_pipeline_name}    console=yes
+        ELSE
+            Log    Pipeline not found: ${full_pipeline_name}    console=yes    level=WARN
+        END
+    END
+
+    ${count}=    Get Length    ${responses}
+    Log    Deleted ${count} pipeline(s)    console=yes
+    RETURN    ${responses}
