@@ -262,7 +262,7 @@ Tear Down Connections and Files
 
     # ===================================================================
 
-    Delete All File
+    # Delete All Files
     Delete Task    ${unique_id}    ${pipeline_name}    ${task_name}
     Delete Pipeline    ${unique_id}    ${pipeline_name}
 
