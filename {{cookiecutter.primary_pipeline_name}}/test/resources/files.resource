@@ -1133,14 +1133,19 @@ Normalize Field With Exclusions
     [Documentation]    Normalizes a single field by removing excluded keys if it's JSON.
     ...    Returns the original field if it's not valid JSON.
     ...    Uses pure Python for reliable JSON handling.
+    ...    Handles CSV-style escaped quotes ("") by converting to standard JSON escaping.
     [Arguments]    ${field}    ${exclude_keys}
 
     # Check if field looks like JSON
     ${trimmed}=    Strip String    ${field}
-    ${starts_with_brace}=    Evaluate    '''${trimmed}'''.startswith('{')
-    ${ends_with_brace}=    Evaluate    '''${trimmed}'''.endswith('}')
-    ${starts_with_bracket}=    Evaluate    '''${trimmed}'''.startswith('[')
-    ${ends_with_bracket}=    Evaluate    '''${trimmed}'''.endswith(']')
+
+    # Handle CSV-style quoted JSON: remove outer quotes if present
+    ${clean}=    Remove CSV Outer Quotes    ${trimmed}
+
+    ${starts_with_brace}=    Evaluate    '''${clean}'''.startswith('{')
+    ${ends_with_brace}=    Evaluate    '''${clean}'''.endswith('}')
+    ${starts_with_bracket}=    Evaluate    '''${clean}'''.startswith('[')
+    ${ends_with_bracket}=    Evaluate    '''${clean}'''.endswith(']')
 
     ${is_json_object}=    Evaluate    ${starts_with_brace} and ${ends_with_brace}
     ${is_json_array}=    Evaluate    ${starts_with_bracket} and ${ends_with_bracket}
@@ -1149,7 +1154,9 @@ Normalize Field With Exclusions
 
     # Parse JSON, remove keys, and serialize back
     TRY
-        ${json_data}=    Evaluate    json.loads(r'''${field}''')    modules=json
+        # Convert CSV-style escaped quotes ("") to standard JSON escaping (\")
+        ${json_str}=    Replace String    ${clean}    ""    \\"
+        ${json_data}=    Evaluate    json.loads(r'''${json_str}''')    modules=json
         ${cleaned_data}=    Remove Keys From Dict Recursive    ${json_data}    ${exclude_keys}
         ${result}=    Evaluate    json.dumps($cleaned_data, sort_keys=True)    modules=json
         RETURN    ${result}
@@ -1157,6 +1164,30 @@ Normalize Field With Exclusions
         Log    JSON normalization failed for field: ${error}    level=WARN
         RETURN    ${field}
     END
+
+Remove CSV Outer Quotes
+    [Documentation]    Removes outer quotes from CSV-style quoted JSON fields.
+    ...    CSV files often wrap JSON in quotes: "{""key"":""value""}"
+    ...    This keyword strips those outer quotes to get: {""key"":""value""}
+    [Arguments]    ${field}
+
+    ${length}=    Get Length    ${field}
+
+    # Check if field starts and ends with a quote
+    IF    ${length} < 2
+        RETURN    ${field}
+    END
+
+    ${first_char}=    Evaluate    '''${field}'''[0]
+    ${last_char}=    Evaluate    '''${field}'''[-1]
+
+    IF    '${first_char}' == '"' and '${last_char}' == '"'
+        # Remove outer quotes
+        ${stripped}=    Evaluate    '''${field}'''[1:-1]
+        RETURN    ${stripped}
+    END
+
+    RETURN    ${field}
 
 Remove Keys From Dict Recursive
     [Documentation]    Recursively removes specified keys from a dictionary or list.
@@ -1231,7 +1262,8 @@ Compare Normalized CSV Ignore Order
     RETURN    ${sets_equal}
 
 Compare Row Fields With Details
-    [Documentation]    Compares individual fields between two rows and returns detailed differences
+    [Documentation]    Compares individual fields between two rows and returns detailed differences.
+    ...                 For JSON fields, it shows the specific keys that differ.
     [Arguments]    ${row1}    ${row2}    ${row_index}
 
     ${field_differences}=    Create List
@@ -1252,6 +1284,11 @@ Compare Row Fields With Details
                 ...    field_index=${field_index}
                 ...    file1_value=${field1}
                 ...    file2_value=${field2}
+
+                # Check if both fields are JSON and get specific key differences
+                ${json_diff}=    Get JSON Field Differences    ${field1}    ${field2}
+                Set To Dictionary    ${diff}    json_key_differences=${json_diff}
+
                 Append To List    ${field_differences}    ${diff}
             END
         ELSE IF    ${has_field1} and not ${has_field2}
@@ -1275,8 +1312,80 @@ Compare Row Fields With Details
 
     RETURN    ${field_differences}
 
+Get JSON Field Differences
+    [Documentation]    Compares two JSON strings and returns the specific keys that differ.
+    ...                 Returns empty list if fields are not valid JSON.
+    ...                 Handles CSV-style escaped quotes ("") by converting to standard JSON escaping.
+    [Arguments]    ${field1}    ${field2}
+
+    ${differences}=    Create List
+
+    # Check if both fields look like JSON objects
+    ${trimmed1}=    Strip String    ${field1}
+    ${trimmed2}=    Strip String    ${field2}
+
+    # Handle CSV-style quoted JSON: remove outer quotes if present
+    ${clean1}=    Remove CSV Outer Quotes    ${trimmed1}
+    ${clean2}=    Remove CSV Outer Quotes    ${trimmed2}
+
+    ${is_json1}=    Evaluate    '''${clean1}'''.startswith('{') and '''${clean1}'''.endswith('}')
+    ${is_json2}=    Evaluate    '''${clean2}'''.startswith('{') and '''${clean2}'''.endswith('}')
+
+    IF    not (${is_json1} and ${is_json2})
+        RETURN    ${differences}
+    END
+
+    TRY
+        # Convert CSV-style escaped quotes ("") to standard JSON escaping (\")
+        ${json_str1}=    Replace String    ${clean1}    ""    \\"
+        ${json_str2}=    Replace String    ${clean2}    ""    \\"
+        ${json1}=    Evaluate    json.loads(r'''${json_str1}''')    modules=json
+        ${json2}=    Evaluate    json.loads(r'''${json_str2}''')    modules=json
+
+        # Get all keys from both JSON objects
+        ${all_keys}=    Evaluate    set($json1.keys()) | set($json2.keys())
+
+        FOR    ${key}    IN    @{all_keys}
+            ${has_key1}=    Evaluate    '''${key}''' in $json1
+            ${has_key2}=    Evaluate    '''${key}''' in $json2
+
+            IF    ${has_key1} and ${has_key2}
+                ${val1}=    Evaluate    $json1.get('''${key}''')
+                ${val2}=    Evaluate    $json2.get('''${key}''')
+                ${values_equal}=    Evaluate    $val1 == $val2
+
+                IF    not ${values_equal}
+                    ${diff_entry}=    Create Dictionary
+                    ...    key=${key}
+                    ...    file1_value=${val1}
+                    ...    file2_value=${val2}
+                    Append To List    ${differences}    ${diff_entry}
+                END
+            ELSE IF    ${has_key1} and not ${has_key2}
+                ${val1}=    Evaluate    $json1.get('''${key}''')
+                ${diff_entry}=    Create Dictionary
+                ...    key=${key}
+                ...    status=ONLY_IN_FILE1
+                ...    file1_value=${val1}
+                Append To List    ${differences}    ${diff_entry}
+            ELSE IF    not ${has_key1} and ${has_key2}
+                ${val2}=    Evaluate    $json2.get('''${key}''')
+                ${diff_entry}=    Create Dictionary
+                ...    key=${key}
+                ...    status=ONLY_IN_FILE2
+                ...    file2_value=${val2}
+                Append To List    ${differences}    ${diff_entry}
+            END
+        END
+    EXCEPT    AS    ${error}
+        Log    Could not parse JSON for detailed comparison: ${error}    level=WARN
+    END
+
+    RETURN    ${differences}
+
 Log Comparison With Exclusions Details
-    [Documentation]    Logs detailed comparison results for CSV comparison with exclusions
+    [Documentation]    Logs detailed comparison results for CSV comparison with exclusions.
+    ...                 Shows specific JSON key differences when fields contain JSON data.
     [Arguments]    ${comparison_result}
 
     Log    \n========== CSV COMPARISON WITH EXCLUSIONS DETAILS ==========    console=yes
@@ -1293,7 +1402,7 @@ Log Comparison With Exclusions Details
         ${diff_count}=    Set Variable    0
         FOR    ${diff}    IN    @{comparison_result}[differences]
             ${diff_count}=    Evaluate    ${diff_count} + 1
-            Log    Difference ${diff_count}: ${diff}[type]    console=yes
+            Log    \nDifference ${diff_count}: ${diff}[type]    console=yes
 
             IF    '${diff}[type]' == 'HEADER_MISMATCH'
                 Log    \tFile1 Header: ${diff}[file1_header]    console=yes
@@ -1304,8 +1413,45 @@ Log Comparison With Exclusions Details
                 Log    \t\tFile2: ${diff}[file2_row]    console=yes
             ELSE IF    '${diff}[type]' == 'FIELD_VALUE_MISMATCH'
                 Log    \tRow ${diff}[row_index], Field ${diff}[field_index]:    console=yes
-                Log    \t\tFile1: '${diff}[file1_value]'    console=yes
-                Log    \t\tFile2: '${diff}[file2_value]'    console=yes
+
+                # Check if we have JSON key differences
+                ${has_json_diff}=    Run Keyword And Return Status
+                ...    Dictionary Should Contain Key    ${diff}    json_key_differences
+
+                IF    ${has_json_diff}
+                    ${json_diffs}=    Get From Dictionary    ${diff}    json_key_differences
+                    ${json_diff_count}=    Get Length    ${json_diffs}
+
+                    IF    ${json_diff_count} > 0
+                        Log    JSON Keys That Differ:    console=yes
+                        FOR    ${json_diff}    IN    @{json_diffs}
+                            ${key}=    Get From Dictionary    ${json_diff}    key
+                            ${has_status}=    Run Keyword And Return Status
+                            ...    Dictionary Should Contain Key    ${json_diff}    status
+
+                            IF    ${has_status}
+                                ${status}=    Get From Dictionary    ${json_diff}    status
+                                IF    '${status}' == 'ONLY_IN_FILE1'
+                                    ${val1}=    Get From Dictionary    ${json_diff}    file1_value
+                                    Log    Key: "${key}" - Only in File1: ${val1}    console=yes
+                                ELSE IF    '${status}' == 'ONLY_IN_FILE2'
+                                    ${val2}=    Get From Dictionary    ${json_diff}    file2_value
+                                    Log    Key: "${key}" - Only in File2: ${val2}    console=yes
+                                END
+                            ELSE
+                                ${val1}=    Get From Dictionary    ${json_diff}    file1_value
+                                ${val2}=    Get From Dictionary    ${json_diff}    file2_value
+                                Log    Key: "${key}" | File1: ${val1} | File2: ${val2}    console=yes
+                            END
+                        END
+                    ELSE
+                        Log    \t\tFile1: '${diff}[file1_value]'    console=yes
+                        Log    \t\tFile2: '${diff}[file2_value]'    console=yes
+                    END
+                ELSE
+                    Log    \t\tFile1: '${diff}[file1_value]'    console=yes
+                    Log    \t\tFile2: '${diff}[file2_value]'    console=yes
+                END
             ELSE IF    '${diff}[type]' == 'ROW_COUNT_MISMATCH'
                 Log    \tFile1 has ${diff}[file1_count] rows, File2 has ${diff}[file2_count] rows    console=yes
             ELSE
