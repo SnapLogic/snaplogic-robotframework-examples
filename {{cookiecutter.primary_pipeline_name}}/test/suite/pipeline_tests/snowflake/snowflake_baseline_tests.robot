@@ -235,8 +235,40 @@ Compare Actual vs Expected CSV Output
 
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status    exclude_columns
     ${actual_output_file1_path_from_db}    ${expected_output_file1_path}    ${FALSE}    ${TRUE}    IDENTICAL    @{excluded_columns_for_comparison}
-    ${actual_output_file1_path_from_db}    ${expected_output_file1_path}    ${FALSE}    ${TRUE}    IDENTICAL    SnowflakeConnectorPushTime
     ${actual_output_file1_path_from_db}    ${expected_output_file1_path}    ${FALSE}    ${TRUE}    IDENTICAL    SnowflakeConnectorPushTime    event_timestamp
+
+Verify Snowflake Pipeline results against each input file sequentially
+    [Documentation]    End to End test case executing the full Snowflake pipeline workflow
+    ...    with multiple input files. Each file is processed sequentially:
+    ...    run pipeline → verify records → export CSV → compare output → clean table.
+    [Tags]    snowflake_multiple_files
+
+    # File 1
+    Execute Pipeline And Verify Output
+    ...    input_file_name=${input_file1_name}
+    ...    expected_file_path=${expected_output_file1_path}
+    ...    actual_file_path=${actual_output_file1_path_from_db}
+    ...    order_by_column=RECORD_METADATA
+    ...    expected_record_count=2
+    ...    excluded_columns=@{excluded_columns_for_comparison}
+
+    # File 2
+    Execute Pipeline And Verify Output
+    ...    input_file_name=${input_file2_name}
+    ...    expected_file_path=${expected_output_file2_path}
+    ...    actual_file_path=${actual_output_file2_path_from_db}
+    ...    order_by_column=RECORD_METADATA
+    ...    expected_record_count=2
+    ...    excluded_columns=@{excluded_columns_for_comparison}
+
+    # File 3
+    Execute Pipeline And Verify Output
+    ...    input_file_name=${input_file3_name}
+    ...    expected_file_path=${expected_output_file3_path}
+    ...    actual_file_path=${actual_output_file3_path_from_db}
+    ...    order_by_column=RECORD_METADATA
+    ...    expected_record_count=2
+    ...    excluded_columns=@{excluded_columns_for_comparison}
 
 
 *** Keywords ***
@@ -251,19 +283,86 @@ Check connections
     Connect To Snowflake Via DatabaseLibrary    keypair
     Clean Table    ${task_params_set}[table]    ${task_params_set}[schema]
 
+Execute Pipeline And Verify Output
+    [Documentation]    Executes pipeline with given input file and verifies output against expected file.
+    ...    This keyword performs the complete end-to-end workflow:
+    ...    1. Runs the triggered task with the specified input file
+    ...    2. Verifies the expected number of records in the database
+    ...    3. Exports the data to CSV
+    ...    4. Compares actual vs expected output (excluding dynamic columns)
+    ...    5. Cleans the table for the next iteration
+    ...
+    ...    Arguments:
+    ...    - input_file: Input JSON file name to pass to the pipeline
+    ...    - expected_file: Path to expected output CSV file
+    ...    - actual_file_path: Path where actual output CSV will be saved
+    ...    - order_by_column: Column to use for ordering in export (default: RECORD_METADATA)
+    ...    - excluded_columns: List of columns to exclude from comparison (default: ${EXCLUDED_COLUMNS_FOR_COMPARISON})
+    ...    - expected_record_count: Number of records expected in the table (default: 2)
+    [Arguments]
+    ...    ${input_file_name}
+    ...    ${expected_file_path}
+    ...    ${actual_file_path}
+    ...    ${order_by_column}=RECORD_METADATA
+    ...    ${expected_record_count}=2
+    ...    ${excluded_columns}=@{EMPTY}
+
+    Log    \n========== Processing: ${input_file_name} ==========    console=yes
+
+    # Step 1: Run the pipeline with the input file
+    Run Triggered Task With Parameters From Template
+    ...    ${unique_id}
+    ...    ${PIPELINES_LOCATION_PATH}
+    ...    ${pipeline_name}
+    ...    ${task_name}
+    ...    test_input_file=${input_file_name}
+
+    # Step 2: Verify record count in database
+    Capture And Verify Number of records From DB Table
+    ...    ${task_params_set}[table]
+    ...    ${task_params_set}[schema]
+    ...    ${order_by_column}
+    ...    ${expected_record_count}
+
+    # Step 3: Export data to CSV
+    Export DB Table Data To CSV
+    ...    ${task_params_set}[table]
+    ...    ${order_by_column}
+    ...    ${actual_file_path}
+
+    # Step 4: Compare actual vs expected output
+    Compare CSV Files With Exclusions Template
+    ...    ${actual_file_path}
+    ...    ${expected_file_path}
+    ...    ${FALSE}
+    ...    ${TRUE}
+    ...    IDENTICAL
+    ...    @{excluded_columns}
+
+    # Step 5: Clean table for next iteration
+    Clean Table    ${task_params_set}[table]    ${task_params_set}[schema]
+
+    Log    ✅ Completed processing: ${input_file_name}    console=yes
+
 Tear Down Connections and Files
     # ================= Delete All pipeline and tasks belonging to Pipelines================
-    @{p1}=    Create List    ${unique_id}    ${pipeline_name}
-    @{p2}=    Create List    ${unique_id2}    ${pipeline_name2}
-    @{pipelines}=    Create List    ${p1}    @{p2}
+    # @{p1}=    Create List    ${unique_id}    ${pipeline_name}
+    # @{p2}=    Create List    ${unique_id2}    ${pipeline_name2}
+    # @{pipelines}=    Create List    ${p1}    @{p2}
 
     # Delete All Tasks For Pipelines    ${pipelines}
     # Delete Pipelines    ${pipelines}
 
     # ===================================================================
 
-    # Delete All Files
-    Delete Task    ${unique_id}    ${pipeline_name}    ${task_name}
-    Delete Pipeline    ${unique_id}    ${pipeline_name}
+    # Delete Task    ${unique_id}    ${pipeline_name}    ${task_name}
+    # Delete Pipeline    ${unique_id}    ${pipeline_name}
+    # Delete Account By Name And Path    ${sf_acct_keypair}    ${ACCOUNT_LOCATION_PATH}
 
+    Delete All Files By Path    ${ACCOUNT_LOCATION_PATH}
+    Delete All Files By Path    ${PIPELINES_LOCATION_PATH}
+    Delete All Accounts By Path    ${ACCOUNT_LOCATION_PATH}
+    Delete All Pipelines By Path    ${PIPELINES_LOCATION_PATH}
+    Delete All Tasks By Path    ${PIPELINES_LOCATION_PATH}
+    Delete All Dirs By Path    ${PIPELINES_LOCATION_PATH}
     Disconnect From Snowflake

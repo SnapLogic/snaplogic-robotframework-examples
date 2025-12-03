@@ -25,27 +25,6 @@ Get Unique Id
     ${UNIQUE_ID}=    Get Current Date    result_format=%Y%m%d%H%M%S%f
     RETURN    ${UNIQUE_ID}
 
-Delete All Files
-    [Documentation]    Deletes all files from ${ACCOUNT_LOCATION_PATH}
-    Log    🗑️ Deleting all files...    console=yes
-
-    ${entries}=    Get Project List    ${ORG_NAME}    ${ACCOUNT_LOCATION_PATH}
-
-    FOR    ${entry}    IN    @{entries}
-        IF    '${entry}[asset_type]' == 'File'
-            ${filename}=    Set Variable    ${entry}[name]
-
-            ${status}    ${msg}=    Run Keyword And Ignore Error
-            ...    Delete File    ${ACCOUNT_LOCATION_PATH}/${filename}    soft_delete=${False}
-
-            IF    '${status}' == 'PASS'
-                Log    ✓ Deleted: ${filename}    console=yes
-            ELSE
-                Log    ⚠️ Could not delete: ${filename}    console=yes
-            END
-        END
-    END
-
 Delete All Tasks For Pipelines
     [Documentation]    Deletes all tasks for multiple pipelines with different unique_ids.
     ...
@@ -136,3 +115,61 @@ Delete Pipelines
     ${count}=    Get Length    ${responses}
     Log    Deleted ${count} pipeline(s)    console=yes
     RETURN    ${responses}
+
+Delete Assets
+    [Documentation]    Deletes all assets of a specified type from the given path.
+    ...
+    ...    *Arguments:*
+    ...    - ``path``: Path to the location containing assets to delete
+    ...    - ``asset_type``: Type of asset to delete (File, Account, Pipeline, etc.)
+    ...
+    ...    *Returns:*
+    ...    - None
+    ...
+    ...    *Example:*
+    ...    | Delete Assets | my-org/project-space/files | File |
+    ...    | Delete Assets | my-org/project-space/accounts | Account |
+    ...    | Delete Assets | my-org/project-space/pipelines | Pipeline |
+    [Arguments]    ${path}    ${asset_type}
+    Log    🗑️ Deleting all ${asset_type}s from ${path}...    console=yes
+
+    ${entries}=    Get Project List    ${ORG_NAME}    ${path}
+
+    FOR    ${entry}    IN    @{entries}
+        IF    '${entry}[asset_type]' == '${asset_type}'
+            ${asset_name}=    Set Variable    ${entry}[name]
+
+            ${status}    ${msg}=    Run Keyword And Ignore Error
+            ...    Delete Asset    ${path}    ${asset_name}    ${asset_type}
+
+            IF    '${status}' == 'PASS'
+                Log    ✓ Deleted ${asset_type}: ${asset_name}    console=yes
+            ELSE
+                Log    ⚠️ Could not delete ${asset_type}: ${asset_name}    console=yes
+            END
+        END
+    END
+
+Delete Asset
+    [Documentation]    Deletes a single asset based on its type [To be completed]
+    ...
+    ...    *Arguments:*
+    ...    - ``path``: Path where the asset is located
+    ...    - ``asset_name``: Name of the asset to delete
+    ...    - ``asset_type``: Type of asset (File, Account, Pipeline, etc.)
+    ...
+    ...    *Returns:*
+    ...    - None
+    ...
+    ...    *Example:*
+    ...    | Delete Asset | my-org/project | my_file.txt | File |
+    [Arguments]    ${path}    ${asset_name}    ${asset_type}
+    IF    '${asset_type}' == 'File'
+        Delete File    ${path}/${asset_name}    soft_delete=${False}
+    ELSE IF    '${asset_type}' == 'Account'
+        Delete Account By Name And Path    ${asset_name}    ${path}
+    ELSE IF    '${asset_type}' == 'Pipeline'
+        Delete Pipeline By Name And Path    ${asset_name}    ${path}
+    ELSE
+        Fail    ❌ Unsupported asset type: ${asset_type}
+    END
