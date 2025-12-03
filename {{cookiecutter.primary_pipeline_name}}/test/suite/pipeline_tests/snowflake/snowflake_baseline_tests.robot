@@ -130,11 +130,6 @@ Create Triggered_task
     [Documentation]    Creates a triggered task for pipeline execution and returns task metadata.
     ...    Triggered tasks are scheduled or on-demand pipeline executions configured with
     ...    specific parameters and notification settings.
-    ...
-    ...    📋 PREREQUISITES:
-    ...    • unique_id - Generated from Import Pipelines test case
-    ...    • pipeline_snodeid - Created during pipeline import
-    ...
     ...    📋 ARGUMENT DETAILS:
     ...    • Argument 1: ${unique_id} - Unique identifier for test execution (generated in suite setup)
     ...    • Argument 2: ${PIPELINES_LOCATION_PATH} - SnapLogic path where pipelines are stored
@@ -145,9 +140,11 @@ Create Triggered_task
     ...    (e.g., snowflake_acct, schema_name, table_name)-(optional- can be omitted)
     ...    • Argument 7: ${task_notifications} (Optional) - Dictionary containing notification settings
     ...    (recipients and states for task completion/failure alerts)-(optional- can be omitted)
+    ...    • Argument 8: ${execution_timeout} (Optional) - Timeout in seconds for task execution
     [Tags]    snowflake_demo    snowflake_multiple_files
     [Template]    Create Triggered Task From Template
-    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}    ${GROUNDPLEX_NAME}    ${task_params_set}
+
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}    ${GROUNDPLEX_NAME}    ${task_params_set}    execution_timeout=300
 
 Execute Triggered Task
     [Documentation]    Executes the triggered task with specified parameters and monitors completion.
