@@ -1174,9 +1174,7 @@ Remove CSV Outer Quotes
     ${length}=    Get Length    ${field}
 
     # Check if field starts and ends with a quote
-    IF    ${length} < 2
-        RETURN    ${field}
-    END
+    IF    ${length} < 2    RETURN    ${field}
 
     ${first_char}=    Evaluate    '''${field}'''[0]
     ${last_char}=    Evaluate    '''${field}'''[-1]
@@ -1263,7 +1261,7 @@ Compare Normalized CSV Ignore Order
 
 Compare Row Fields With Details
     [Documentation]    Compares individual fields between two rows and returns detailed differences.
-    ...                 For JSON fields, it shows the specific keys that differ.
+    ...    For JSON fields, it shows the specific keys that differ.
     [Arguments]    ${row1}    ${row2}    ${row_index}
 
     ${field_differences}=    Create List
@@ -1313,156 +1311,307 @@ Compare Row Fields With Details
     RETURN    ${field_differences}
 
 Get JSON Field Differences
-    [Documentation]    Compares two JSON strings and returns the specific keys that differ.
-    ...                 Returns empty list if fields are not valid JSON.
-    ...                 Handles CSV-style escaped quotes ("") by converting to standard JSON escaping.
+    [Documentation]    Compares two JSON/dict strings and returns the specific keys that differ.
+    ...    Recursively compares nested objects to find leaf-level differences.
     [Arguments]    ${field1}    ${field2}
 
     ${differences}=    Create List
 
-    # Check if both fields look like JSON objects
     ${trimmed1}=    Strip String    ${field1}
     ${trimmed2}=    Strip String    ${field2}
 
-    # Handle CSV-style quoted JSON: remove outer quotes if present
     ${clean1}=    Remove CSV Outer Quotes    ${trimmed1}
     ${clean2}=    Remove CSV Outer Quotes    ${trimmed2}
 
-    ${is_json1}=    Evaluate    '''${clean1}'''.startswith('{') and '''${clean1}'''.endswith('}')
-    ${is_json2}=    Evaluate    '''${clean2}'''.startswith('{') and '''${clean2}'''.endswith('}')
+    ${is_dict1}=    Evaluate    '''${clean1}'''.startswith('{') and '''${clean1}'''.endswith('}')
+    ${is_dict2}=    Evaluate    '''${clean2}'''.startswith('{') and '''${clean2}'''.endswith('}')
 
-    IF    not (${is_json1} and ${is_json2})
-        RETURN    ${differences}
-    END
+    IF    not (${is_dict1} and ${is_dict2})    RETURN    ${differences}
 
     TRY
-        # Convert CSV-style escaped quotes ("") to standard JSON escaping (\")
-        ${json_str1}=    Replace String    ${clean1}    ""    \\"
-        ${json_str2}=    Replace String    ${clean2}    ""    \\"
-        ${json1}=    Evaluate    json.loads(r'''${json_str1}''')    modules=json
-        ${json2}=    Evaluate    json.loads(r'''${json_str2}''')    modules=json
+        # Try ast.literal_eval first (handles Python dict format with single quotes)
+        ${dict1}=    Evaluate    ast.literal_eval(r'''${clean1}''')    modules=ast
+        ${dict2}=    Evaluate    ast.literal_eval(r'''${clean2}''')    modules=ast
+        ${differences}=    Find Nested Differences    ${dict1}    ${dict2}    ${EMPTY}
+    EXCEPT
+        TRY
+            # Fall back to JSON parsing
+            ${json_str1}=    Replace String    ${clean1}    ""    \\"
+            ${json_str2}=    Replace String    ${clean2}    ""    \\"
+            ${dict1}=    Evaluate    json.loads(r'''${json_str1}''')    modules=json
+            ${dict2}=    Evaluate    json.loads(r'''${json_str2}''')    modules=json
+            ${differences}=    Find Nested Differences    ${dict1}    ${dict2}    ${EMPTY}
+        EXCEPT    AS    ${error}
+            Log    Could not parse for detailed comparison: ${error}    level=WARN
+        END
+    END
 
-        # Get all keys from both JSON objects
-        ${all_keys}=    Evaluate    set($json1.keys()) | set($json2.keys())
+    RETURN    ${differences}
 
-        FOR    ${key}    IN    @{all_keys}
-            ${has_key1}=    Evaluate    '''${key}''' in $json1
-            ${has_key2}=    Evaluate    '''${key}''' in $json2
+Find Nested Differences
+    [Documentation]    Recursively compares two dictionaries and returns leaf-level differences.
+    [Arguments]    ${dict1}    ${dict2}    ${parent_key}
 
-            IF    ${has_key1} and ${has_key2}
-                ${val1}=    Evaluate    $json1.get('''${key}''')
-                ${val2}=    Evaluate    $json2.get('''${key}''')
+    ${differences}=    Create List
+
+    # Get all keys from both dicts
+    ${all_keys}=    Evaluate
+    ...    set($dict1.keys() if isinstance($dict1, dict) else []) | set($dict2.keys() if isinstance($dict2, dict) else [])
+
+    FOR    ${key}    IN    @{all_keys}
+        # Build the full key path
+        IF    '${parent_key}' == ''
+            ${full_key}=    Set Variable    ${key}
+        ELSE
+            ${full_key}=    Set Variable    ${parent_key}.${key}
+        END
+
+        ${has_key1}=    Evaluate    '''${key}''' in $dict1 if isinstance($dict1, dict) else False
+        ${has_key2}=    Evaluate    '''${key}''' in $dict2 if isinstance($dict2, dict) else False
+
+        IF    ${has_key1} and ${has_key2}
+            ${val1}=    Evaluate    $dict1.get('''${key}''')
+            ${val2}=    Evaluate    $dict2.get('''${key}''')
+
+            # Check if both values are dicts - recurse if so
+            ${is_dict1}=    Evaluate    isinstance($val1, dict)
+            ${is_dict2}=    Evaluate    isinstance($val2, dict)
+
+            IF    ${is_dict1} and ${is_dict2}
+                # Recursively compare nested dicts
+                ${nested_diffs}=    Find Nested Differences    ${val1}    ${val2}    ${full_key}
+                FOR    ${nested_diff}    IN    @{nested_diffs}
+                    Append To List    ${differences}    ${nested_diff}
+                END
+            ELSE
+                # Compare leaf values
                 ${values_equal}=    Evaluate    $val1 == $val2
-
                 IF    not ${values_equal}
                     ${diff_entry}=    Create Dictionary
-                    ...    key=${key}
+                    ...    key=${full_key}
                     ...    file1_value=${val1}
                     ...    file2_value=${val2}
                     Append To List    ${differences}    ${diff_entry}
                 END
-            ELSE IF    ${has_key1} and not ${has_key2}
-                ${val1}=    Evaluate    $json1.get('''${key}''')
-                ${diff_entry}=    Create Dictionary
-                ...    key=${key}
-                ...    status=ONLY_IN_FILE1
-                ...    file1_value=${val1}
-                Append To List    ${differences}    ${diff_entry}
-            ELSE IF    not ${has_key1} and ${has_key2}
-                ${val2}=    Evaluate    $json2.get('''${key}''')
-                ${diff_entry}=    Create Dictionary
-                ...    key=${key}
-                ...    status=ONLY_IN_FILE2
-                ...    file2_value=${val2}
-                Append To List    ${differences}    ${diff_entry}
             END
+        ELSE IF    ${has_key1} and not ${has_key2}
+            ${val1}=    Evaluate    $dict1.get('''${key}''')
+            ${diff_entry}=    Create Dictionary
+            ...    key=${full_key}
+            ...    status=ONLY_IN_FILE1
+            ...    file1_value=${val1}
+            Append To List    ${differences}    ${diff_entry}
+        ELSE IF    not ${has_key1} and ${has_key2}
+            ${val2}=    Evaluate    $dict2.get('''${key}''')
+            ${diff_entry}=    Create Dictionary
+            ...    key=${full_key}
+            ...    status=ONLY_IN_FILE2
+            ...    file2_value=${val2}
+            Append To List    ${differences}    ${diff_entry}
         END
-    EXCEPT    AS    ${error}
-        Log    Could not parse JSON for detailed comparison: ${error}    level=WARN
     END
 
     RETURN    ${differences}
 
 Log Comparison With Exclusions Details
     [Documentation]    Logs detailed comparison results for CSV comparison with exclusions.
-    ...                 Shows specific JSON key differences when fields contain JSON data.
+    ...    Handles JSON fields, simple fields, and structural differences.
+    ...    Updates status to IDENTICAL if no unique differences found.
     [Arguments]    ${comparison_result}
 
-    Log    \n========== CSV COMPARISON WITH EXCLUSIONS DETAILS ==========    console=yes
+    # Count unique field differences first
+    @{unique_keys}=    Create List
+    FOR    ${diff}    IN    @{comparison_result}[differences]
+        IF    '${diff}[type]' == 'FIELD_VALUE_MISMATCH'
+            ${has_json_diff}=    Run Keyword And Return Status
+            ...    Dictionary Should Contain Key    ${diff}    json_key_differences
+            IF    ${has_json_diff}
+                ${json_diffs}=    Get From Dictionary    ${diff}    json_key_differences
+                ${json_diff_count}=    Get Length    ${json_diffs}
+                IF    ${json_diff_count} > 0
+                    FOR    ${json_diff}    IN    @{json_diffs}
+                        ${key}=    Get From Dictionary    ${json_diff}    key
+                        ${exists}=    Evaluate    '''${key}''' in $unique_keys
+                        IF    not ${exists}
+                            Append To List    ${unique_keys}    ${key}
+                        END
+                    END
+                ELSE
+                    ${field_key}=    Set Variable    Row${diff}[row_index]_Field${diff}[field_index]
+                    ${exists}=    Evaluate    '''${field_key}''' in $unique_keys
+                    IF    not ${exists}
+                        Append To List    ${unique_keys}    ${field_key}
+                    END
+                END
+            ELSE
+                ${field_key}=    Set Variable    Row${diff}[row_index]_Field${diff}[field_index]
+                ${exists}=    Evaluate    '''${field_key}''' in $unique_keys
+                IF    not ${exists}
+                    Append To List    ${unique_keys}    ${field_key}
+                END
+            END
+        ELSE IF    '${diff}[type]' == 'ROW_COUNT_MISMATCH'
+            ${exists}=    Evaluate    'ROW_COUNT' in $unique_keys
+            IF    not ${exists}    Append To List    ${unique_keys}    ROW_COUNT
+        ELSE IF    '${diff}[type]' == 'HEADER_MISMATCH'
+            ${exists}=    Evaluate    'HEADERS' in $unique_keys
+            IF    not ${exists}    Append To List    ${unique_keys}    HEADERS
+        ELSE IF    '${diff}[type]' == 'EXTRA_ROW_IN_FILE1'
+            ${row_key}=    Set Variable    EXTRA_ROW_ACTUAL_${diff}[row_index]
+            ${exists}=    Evaluate    '''${row_key}''' in $unique_keys
+            IF    not ${exists}
+                Append To List    ${unique_keys}    ${row_key}
+            END
+        ELSE IF    '${diff}[type]' == 'EXTRA_ROW_IN_FILE2'
+            ${row_key}=    Set Variable    EXTRA_ROW_EXPECTED_${diff}[row_index]
+            ${exists}=    Evaluate    '''${row_key}''' in $unique_keys
+            IF    not ${exists}
+                Append To List    ${unique_keys}    ${row_key}
+            END
+        ELSE IF    '${diff}[type]' == 'EXTRA_FIELD_IN_FILE1'
+            ${field_key}=    Set Variable    EXTRA_FIELD_ACTUAL_Row${diff}[row_index]_Field${diff}[field_index]
+            ${exists}=    Evaluate    '''${field_key}''' in $unique_keys
+            IF    not ${exists}
+                Append To List    ${unique_keys}    ${field_key}
+            END
+        ELSE IF    '${diff}[type]' == 'EXTRA_FIELD_IN_FILE2'
+            ${field_key}=    Set Variable    EXTRA_FIELD_EXPECTED_Row${diff}[row_index]_Field${diff}[field_index]
+            ${exists}=    Evaluate    '''${field_key}''' in $unique_keys
+            IF    not ${exists}
+                Append To List    ${unique_keys}    ${field_key}
+            END
+        END
+        # Skip ROW_CONTENT_MISMATCH - it's a parent-level diff, details are in FIELD_VALUE_MISMATCH
+    END
+    ${unique_count}=    Get Length    ${unique_keys}
+
+    # Update status based on unique differences count
+    IF    ${unique_count} == 0
+        Set To Dictionary    ${comparison_result}    status=IDENTICAL
+        Set To Dictionary    ${comparison_result}    total_differences=0
+    ELSE
+        Set To Dictionary    ${comparison_result}    total_differences=${unique_count}
+    END
+
+    Log    \n========== CSV COMPARISON SUMMARY ==========    console=yes
     Log    Status: ${comparison_result}[status]    console=yes
-    Log    File 1: ${comparison_result}[file1_path] (${comparison_result}[file1_rows] rows)    console=yes
-    Log    File 2: ${comparison_result}[file2_path] (${comparison_result}[file2_rows] rows)    console=yes
     Log    Excluded Keys: ${comparison_result}[excluded_keys]    console=yes
-    Log    Headers Match: ${comparison_result}[headers_match]    console=yes
-    Log    Row Count Match: ${comparison_result}[row_count_match]    console=yes
-    Log    Total Differences: ${comparison_result}[total_differences]    console=yes
+    Log    Unique Field Differences: ${unique_count}    console=yes
 
-    IF    ${comparison_result}[total_differences] > 0
-        Log    \n--- DIFFERENCES FOUND ---    console=yes
-        ${diff_count}=    Set Variable    0
+    IF    ${unique_count} > 0
+        Log    \nFIELD DIFFERENCES:    console=yes
+
+        @{logged_keys}=    Create List
+
         FOR    ${diff}    IN    @{comparison_result}[differences]
-            ${diff_count}=    Evaluate    ${diff_count} + 1
-            Log    \nDifference ${diff_count}: ${diff}[type]    console=yes
-
-            IF    '${diff}[type]' == 'HEADER_MISMATCH'
-                Log    \tFile1 Header: ${diff}[file1_header]    console=yes
-                Log    \tFile2 Header: ${diff}[file2_header]    console=yes
-            ELSE IF    '${diff}[type]' == 'ROW_CONTENT_MISMATCH'
-                Log    \tRow ${diff}[row_index]:    console=yes
-                Log    \t\tFile1: ${diff}[file1_row]    console=yes
-                Log    \t\tFile2: ${diff}[file2_row]    console=yes
-            ELSE IF    '${diff}[type]' == 'FIELD_VALUE_MISMATCH'
-                Log    \tRow ${diff}[row_index], Field ${diff}[field_index]:    console=yes
-
-                # Check if we have JSON key differences
+            IF    '${diff}[type]' == 'FIELD_VALUE_MISMATCH'
                 ${has_json_diff}=    Run Keyword And Return Status
                 ...    Dictionary Should Contain Key    ${diff}    json_key_differences
 
+                ${json_diff_count}=    Set Variable    0
                 IF    ${has_json_diff}
                     ${json_diffs}=    Get From Dictionary    ${diff}    json_key_differences
                     ${json_diff_count}=    Get Length    ${json_diffs}
+                END
 
-                    IF    ${json_diff_count} > 0
-                        Log    JSON Keys That Differ:    console=yes
-                        FOR    ${json_diff}    IN    @{json_diffs}
-                            ${key}=    Get From Dictionary    ${json_diff}    key
-                            ${has_status}=    Run Keyword And Return Status
-                            ...    Dictionary Should Contain Key    ${json_diff}    status
+                IF    ${json_diff_count} > 0
+                    FOR    ${json_diff}    IN    @{json_diffs}
+                        ${key}=    Get From Dictionary    ${json_diff}    key
 
-                            IF    ${has_status}
-                                ${status}=    Get From Dictionary    ${json_diff}    status
-                                IF    '${status}' == 'ONLY_IN_FILE1'
-                                    ${val1}=    Get From Dictionary    ${json_diff}    file1_value
-                                    Log    Key: "${key}" - Only in File1: ${val1}    console=yes
-                                ELSE IF    '${status}' == 'ONLY_IN_FILE2'
-                                    ${val2}=    Get From Dictionary    ${json_diff}    file2_value
-                                    Log    Key: "${key}" - Only in File2: ${val2}    console=yes
-                                END
-                            ELSE
+                        ${already_logged}=    Evaluate    '''${key}''' in $logged_keys
+                        IF    ${already_logged}    CONTINUE
+
+                        Append To List    ${logged_keys}    ${key}
+
+                        ${has_status}=    Run Keyword And Return Status
+                        ...    Dictionary Should Contain Key    ${json_diff}    status
+
+                        IF    ${has_status}
+                            ${status}=    Get From Dictionary    ${json_diff}    status
+                            IF    '${status}' == 'ONLY_IN_FILE1'
                                 ${val1}=    Get From Dictionary    ${json_diff}    file1_value
+                                Log    \nField: ${key}    console=yes
+                                Log    Actual: ${val1}    console=yes
+                                Log    Expected: (not present)    console=yes
+                            ELSE IF    '${status}' == 'ONLY_IN_FILE2'
                                 ${val2}=    Get From Dictionary    ${json_diff}    file2_value
-                                Log    Key: "${key}" | File1: ${val1} | File2: ${val2}    console=yes
+                                Log    \nField: ${key}    console=yes
+                                Log    Actual: (not present)    console=yes
+                                Log    Expected: ${val2}    console=yes
                             END
+                        ELSE
+                            ${val1}=    Get From Dictionary    ${json_diff}    file1_value
+                            ${val2}=    Get From Dictionary    ${json_diff}    file2_value
+                            Log    \nField: ${key}    console=yes
+                            Log    Actual: ${val1}    console=yes
+                            Log    Expected: ${val2}    console=yes
                         END
-                    ELSE
-                        Log    \t\tFile1: '${diff}[file1_value]'    console=yes
-                        Log    \t\tFile2: '${diff}[file2_value]'    console=yes
                     END
                 ELSE
-                    Log    \t\tFile1: '${diff}[file1_value]'    console=yes
-                    Log    \t\tFile2: '${diff}[file2_value]'    console=yes
+                    ${field_key}=    Set Variable    Row${diff}[row_index]_Field${diff}[field_index]
+                    ${already_logged}=    Evaluate    '''${field_key}''' in $logged_keys
+                    IF    not ${already_logged}
+                        Append To List    ${logged_keys}    ${field_key}
+                        Log    \nRow: ${diff}[row_index], Field: ${diff}[field_index]    console=yes
+                        Log    Actual: ${diff}[file1_value]    console=yes
+                        Log    Expected: ${diff}[file2_value]    console=yes
+                    END
                 END
             ELSE IF    '${diff}[type]' == 'ROW_COUNT_MISMATCH'
-                Log    \tFile1 has ${diff}[file1_count] rows, File2 has ${diff}[file2_count] rows    console=yes
-            ELSE
-                Log    \t${diff}    console=yes
+                ${already_logged}=    Evaluate    'ROW_COUNT' in $logged_keys
+                IF    not ${already_logged}
+                    Append To List    ${logged_keys}    ROW_COUNT
+                    Log    \nRow Count Mismatch    console=yes
+                    Log    Actual: ${diff}[file1_count] rows    console=yes
+                    Log    Expected: ${diff}[file2_count] rows    console=yes
+                END
+            ELSE IF    '${diff}[type]' == 'HEADER_MISMATCH'
+                ${already_logged}=    Evaluate    'HEADERS' in $logged_keys
+                IF    not ${already_logged}
+                    Append To List    ${logged_keys}    HEADERS
+                    Log    \nHeader Mismatch    console=yes
+                    Log    Actual: ${diff}[file1_header]    console=yes
+                    Log    Expected: ${diff}[file2_header]    console=yes
+                END
+            ELSE IF    '${diff}[type]' == 'EXTRA_ROW_IN_FILE1'
+                ${row_key}=    Set Variable    EXTRA_ROW_ACTUAL_${diff}[row_index]
+                ${already_logged}=    Evaluate    '''${row_key}''' in $logged_keys
+                IF    not ${already_logged}
+                    Append To List    ${logged_keys}    ${row_key}
+                    Log    \nExtra Row in Actual (Row ${diff}[row_index])    console=yes
+                    Log    Content: ${diff}[row_content]    console=yes
+                END
+            ELSE IF    '${diff}[type]' == 'EXTRA_ROW_IN_FILE2'
+                ${row_key}=    Set Variable    EXTRA_ROW_EXPECTED_${diff}[row_index]
+                ${already_logged}=    Evaluate    '''${row_key}''' in $logged_keys
+                IF    not ${already_logged}
+                    Append To List    ${logged_keys}    ${row_key}
+                    Log    \nMissing Row (Expected Row ${diff}[row_index])    console=yes
+                    Log    Content: ${diff}[row_content]    console=yes
+                END
+            ELSE IF    '${diff}[type]' == 'EXTRA_FIELD_IN_FILE1'
+                ${field_key}=    Set Variable    EXTRA_FIELD_ACTUAL_Row${diff}[row_index]_Field${diff}[field_index]
+                ${already_logged}=    Evaluate    '''${field_key}''' in $logged_keys
+                IF    not ${already_logged}
+                    Append To List    ${logged_keys}    ${field_key}
+                    Log    \nExtra Field in Actual (Row ${diff}[row_index], Field ${diff}[field_index])    console=yes
+                    Log    Value: ${diff}[field_value]    console=yes
+                END
+            ELSE IF    '${diff}[type]' == 'EXTRA_FIELD_IN_FILE2'
+                ${field_key}=    Set Variable    EXTRA_FIELD_EXPECTED_Row${diff}[row_index]_Field${diff}[field_index]
+                ${already_logged}=    Evaluate    '''${field_key}''' in $logged_keys
+                IF    not ${already_logged}
+                    Append To List    ${logged_keys}    ${field_key}
+                    Log    \nMissing Field (Expected Row ${diff}[row_index], Field ${diff}[field_index])    console=yes
+                    Log    Value: ${diff}[field_value]    console=yes
+                END
             END
         END
     ELSE
-        Log    \n✅ FILES ARE IDENTICAL (after excluding dynamic fields)    console=yes
+        Log    \nFILES ARE IDENTICAL (after excluding dynamic fields)    console=yes
     END
 
-    Log    \n========== END COMPARISON DETAILS ==========    console=yes
+    Log    \n============================================    console=yes
 
 ################## HELPER KEYWORDS FOR FILE COMPARISON ##################
 
