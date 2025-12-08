@@ -928,13 +928,14 @@ Compare CSV Files With Exclusions
     ...    ${show_details}=${TRUE}
     ...    ${match_key}=${None}
 
+    # Check if match_key is actually set (not None or string 'None')
+    ${is_match_key_set}=    Evaluate    $match_key is not None and str($match_key) != 'None'
+
     Log    \n🔍 Comparing CSV files with exclusions:    console=yes
     Log    📁 File 1: ${file1_path}    console=yes
     Log    📁 File 2: ${file2_path}    console=yes
     Log    🚫 Excluded keys: ${exclude_keys}    console=yes
-    IF    '${match_key}' != '${None}'
-        Log    🔑 Match Key: ${match_key}    console=yes
-    END
+    IF    ${is_match_key_set}    Log    🔑 Match Key: ${match_key}    console=yes
 
     # Read both CSV files
     ${csv1_content}=    Read Csv File To List    ${file1_path}
@@ -994,13 +995,17 @@ Compare CSV Files With Exclusions
     END
 
     # Choose comparison method based on match_key
-    IF    '${match_key}' != '${None}'
+    IF    ${is_match_key_set}
         # Key-based matching
         Log    🔑 Using key-based matching with key: ${match_key}    console=yes
+        IF    not ${ignore_order}
+            Log    📍 Row order will also be verified (ignore_order=${FALSE})    console=yes
+        END
         ${key_based_differences}=    Compare CSV With Key Matching
         ...    ${normalized_csv1}
         ...    ${normalized_csv2}
         ...    ${match_key}
+        ...    ${ignore_order}
         FOR    ${diff}    IN    @{key_based_differences}
             Append To List    ${comparison_result}[differences]    ${diff}
         END
@@ -1099,6 +1104,16 @@ Compare CSV Files With Exclusions Template
     ...    @{exclude_keys}    - (Optional) One or more JSON keys to exclude
     ...    &{options}    - (Optional) Additional options like match_key=headers.profile_id
     ...
+    ...    Example Usage - Without match_key (set-based):
+    ...    Compare CSV Files With Exclusions Template
+    ...    ...    ${actual_file}    ${expected_file}    ${TRUE}    ${TRUE}    IDENTICAL
+    ...    ...    SnowflakeConnectorPushTime    event_timestamp
+    ...
+    ...    Example Usage - With match_key at the end:
+    ...    Compare CSV Files With Exclusions Template
+    ...    ...    ${actual_file}    ${expected_file}    ${TRUE}    ${TRUE}    IDENTICAL
+    ...    ...    SnowflakeConnectorPushTime    event_timestamp    match_key=headers.profile_id
+    ...
     [Arguments]
     ...    ${file1_path}
     ...    ${file2_path}
@@ -1111,6 +1126,9 @@ Compare CSV Files With Exclusions Template
     # Extract match_key from options (if provided)
     ${match_key}=    Evaluate    $options.get('match_key', None)
 
+    # Check if match_key is actually set (not None or string 'None')
+    ${is_match_key_set}=    Evaluate    $match_key is not None and str($match_key) != 'None'
+
     Log    📋 Comparing CSV files with exclusions template:    console=yes
     Log    📁 File 1 (Actual): ${file1_path}    console=yes
     Log    📁 File 2 (Expected): ${file2_path}    console=yes
@@ -1118,9 +1136,7 @@ Compare CSV Files With Exclusions Template
     Log    🔄 Ignore Order: ${ignore_order}    console=yes
     Log    📝 Show Details: ${show_details}    console=yes
     Log    ✅ Expected Status: ${expected_status}    console=yes
-    IF    '${match_key}' != 'None'
-        Log    🔑 Match Key: ${match_key}    console=yes
-    END
+    IF    ${is_match_key_set}    Log    🔑 Match Key: ${match_key}    console=yes
 
     # Perform the comparison with exclusions
     ${comparison_result}=    Compare CSV Files With Exclusions
@@ -1296,7 +1312,8 @@ Compare CSV With Key Matching
     [Documentation]    Compares CSV rows by matching them using a specific key field.
     ...    Instead of comparing by position, rows are matched by the value of the match_key.
     ...    This allows comparing files where rows may be in different order but should match by ID.
-    [Arguments]    ${csv1_content}    ${csv2_content}    ${match_key}
+    ...    When ignore_order=${FALSE}, also verifies that matched rows are at the same position.
+    [Arguments]    ${csv1_content}    ${csv2_content}    ${match_key}    ${ignore_order}=${TRUE}
 
     ${differences}=    Create List
 
@@ -1304,7 +1321,7 @@ Compare CSV With Key Matching
     ${data1}=    Get Slice From List    ${csv1_content}    1
     ${data2}=    Get Slice From List    ${csv2_content}    1
 
-    # Build lookup dictionaries by match_key
+    # Build lookup dictionaries by match_key (now includes row index)
     ${file1_by_key}=    Build Row Lookup By Key    ${data1}    ${match_key}
     ${file2_by_key}=    Build Row Lookup By Key    ${data2}    ${match_key}
 
@@ -1317,10 +1334,29 @@ Compare CSV With Key Matching
         ${in_file2}=    Evaluate    '''${key_value}''' in $file2_by_key
 
         IF    ${in_file1} and ${in_file2}
-            # Both files have this key - compare the rows
-            ${row1}=    Get From Dictionary    ${file1_by_key}    ${key_value}
-            ${row2}=    Get From Dictionary    ${file2_by_key}    ${key_value}
+            # Both files have this key - get row info (includes index)
+            ${row_info1}=    Get From Dictionary    ${file1_by_key}    ${key_value}
+            ${row_info2}=    Get From Dictionary    ${file2_by_key}    ${key_value}
 
+            ${row1}=    Get From Dictionary    ${row_info1}    row
+            ${row2}=    Get From Dictionary    ${row_info2}    row
+            ${index1}=    Get From Dictionary    ${row_info1}    index
+            ${index2}=    Get From Dictionary    ${row_info2}    index
+
+            # Check row order if ignore_order is FALSE
+            IF    not ${ignore_order}
+                IF    ${index1} != ${index2}
+                    ${diff}=    Create Dictionary
+                    ...    type=ROW_ORDER_MISMATCH
+                    ...    match_key=${match_key}
+                    ...    key_value=${key_value}
+                    ...    file1_position=${index1}
+                    ...    file2_position=${index2}
+                    Append To List    ${differences}    ${diff}
+                END
+            END
+
+            # Compare row content
             ${rows_equal}=    Evaluate    $row1 == $row2
 
             IF    not ${rows_equal}
@@ -1332,7 +1368,8 @@ Compare CSV With Key Matching
             END
         ELSE IF    ${in_file1} and not ${in_file2}
             # Row only in file1 (actual)
-            ${row1}=    Get From Dictionary    ${file1_by_key}    ${key_value}
+            ${row_info1}=    Get From Dictionary    ${file1_by_key}    ${key_value}
+            ${row1}=    Get From Dictionary    ${row_info1}    row
             ${diff}=    Create Dictionary
             ...    type=UNMATCHED_ROW_IN_FILE1
             ...    match_key=${match_key}
@@ -1341,7 +1378,8 @@ Compare CSV With Key Matching
             Append To List    ${differences}    ${diff}
         ELSE IF    not ${in_file1} and ${in_file2}
             # Row only in file2 (expected)
-            ${row2}=    Get From Dictionary    ${file2_by_key}    ${key_value}
+            ${row_info2}=    Get From Dictionary    ${file2_by_key}    ${key_value}
+            ${row2}=    Get From Dictionary    ${row_info2}    row
             ${diff}=    Create Dictionary
             ...    type=UNMATCHED_ROW_IN_FILE2
             ...    match_key=${match_key}
@@ -1354,17 +1392,44 @@ Compare CSV With Key Matching
     RETURN    ${differences}
 
 Build Row Lookup By Key
-    [Documentation]    Builds a dictionary mapping match_key values to their rows.
+    [Documentation]    Builds a dictionary mapping match_key values to their rows and positions.
     ...    Searches all columns (which may contain JSON) for the match_key.
+    ...    Fails with clear error if match_key is not found in all rows.
+    ...    Returns: {key_value: {"row": row_data, "index": row_index}}
     [Arguments]    ${rows}    ${match_key}
 
     &{lookup}=    Create Dictionary
+    ${keys_found}=    Set Variable    ${0}
+    ${total_rows}=    Get Length    ${rows}
+    ${row_index}=    Set Variable    ${0}
 
     FOR    ${row}    IN    @{rows}
         ${key_value}=    Extract Key Value From Row    ${row}    ${match_key}
         IF    '${key_value}' != '${None}'
-            Set To Dictionary    ${lookup}    ${key_value}=${row}
+            # Store both row data and its index
+            &{row_info}=    Create Dictionary    row=${row}    index=${row_index}
+            Set To Dictionary    ${lookup}    ${key_value}=${row_info}
+            ${keys_found}=    Evaluate    ${keys_found} + 1
         END
+        ${row_index}=    Evaluate    ${row_index} + 1
+    END
+
+    # Fail if no keys found in any row
+    IF    ${keys_found} == 0
+        Fail
+        ...    ❌ match_key '${match_key}' not found in any row. Please check:\n
+        ...    1. Is the field name correct?\n
+        ...    2. Is it nested? Use dot notation: headers.profile_id\n
+        ...    3. Does the field exist in your CSV data?
+    END
+
+    # Fail if match_key not found in all rows (partial match = incomplete comparison)
+    IF    ${keys_found} < ${total_rows}
+        ${missing_count}=    Evaluate    ${total_rows} - ${keys_found}
+        Fail
+        ...    ❌ match_key '${match_key}' not found in ${missing_count} of ${total_rows} rows.\n
+        ...    All rows must contain the match_key for accurate comparison.\n
+        ...    Rows without match_key will not be compared, leading to incorrect results.
     END
 
     RETURN    ${lookup}
@@ -1713,6 +1778,12 @@ Log Comparison With Exclusions Details
             IF    not ${exists}
                 Append To List    ${unique_keys}    ${row_key}
             END
+        ELSE IF    '${diff}[type]' == 'ROW_ORDER_MISMATCH'
+            ${order_key}=    Set Variable    ORDER_MISMATCH_${diff}[key_value]
+            ${exists}=    Evaluate    '''${order_key}''' in $unique_keys
+            IF    not ${exists}
+                Append To List    ${unique_keys}    ${order_key}
+            END
         END
         # Skip ROW_CONTENT_MISMATCH - it's a parent-level diff, details are in FIELD_VALUE_MISMATCH
     END
@@ -1728,9 +1799,9 @@ Log Comparison With Exclusions Details
 
     Log    \n========== CSV COMPARISON SUMMARY ==========    console=yes
     Log    Status: ${comparison_result}[status]    console=yes
-    IF    '${match_key}' != '${None}'
-        Log    Match Key: ${match_key}    console=yes
-    END
+    # Check if match_key is actually set (not None or string 'None')
+    ${is_match_key_set}=    Evaluate    $match_key is not None and str($match_key) != 'None'
+    IF    ${is_match_key_set}    Log    Match Key: ${match_key}    console=yes
     Log    Excluded Keys: ${comparison_result}[excluded_keys]    console=yes
     Log    Unique Field Differences: ${unique_count}    console=yes
 
@@ -1877,6 +1948,15 @@ Log Comparison With Exclusions Details
                     Append To List    ${logged_keys}    ${row_key}
                     Log    \nMissing Row in Actual (${diff}[match_key] = ${diff}[key_value])    console=yes
                     Log    This row exists in expected but not in actual    console=yes
+                END
+            ELSE IF    '${diff}[type]' == 'ROW_ORDER_MISMATCH'
+                ${order_key}=    Set Variable    ORDER_MISMATCH_${diff}[key_value]
+                ${already_logged}=    Evaluate    '''${order_key}''' in $logged_keys
+                IF    not ${already_logged}
+                    Append To List    ${logged_keys}    ${order_key}
+                    Log    \n📍 Row Order Mismatch (${diff}[match_key] = ${diff}[key_value])    console=yes
+                    Log    Position in Actual: Row ${diff}[file1_position]    console=yes
+                    Log    Position in Expected: Row ${diff}[file2_position]    console=yes
                 END
             END
         END

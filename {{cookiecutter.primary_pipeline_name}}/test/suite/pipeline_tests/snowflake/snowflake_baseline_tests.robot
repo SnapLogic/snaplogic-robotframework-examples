@@ -240,8 +240,8 @@ Compare Actual vs Expected CSV Output
     [Tags]    snowflake_demo
     [Template]    Compare CSV Files With Exclusions Template
 
-    # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status    exclude_columns
-    ${actual_output_file1_path_from_db}    ${expected_output_file1_path}    ${FALSE}    ${TRUE}    IDENTICAL    @{excluded_columns_for_comparison}    match_key=headers.profile_id
+    # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status    exclude_columns    match_key=headers.profile_id
+    ${actual_output_file1_path_from_db}    ${expected_output_file1_path}    ${TRUE}    ${TRUE}    IDENTICAL    @{excluded_columns_for_comparison}    match_key=headers.profile_id
 
 Verify Snowflake Pipeline results against each input file sequentially
     [Documentation]    End to End test case executing the full Snowflake pipeline workflow
