@@ -7,6 +7,7 @@ Documentation       Resource file for CSV/JSON file operations and comparisons
 ...                 • File comparison and validation
 ...                 • Enhanced templates with auto-detection
 ...                 • JSON schema validation and manipulation
+...                 • Key-based row matching for CSV comparison
 
 # Standard Libraries for file operations
 Library             OperatingSystem    # File system operations
@@ -897,11 +898,14 @@ Compare CSV Files With Exclusions
     ...    Example: @{exclude}=    SnowflakeConnectorPushTime    created_at
     ...    ${ignore_order}    - Whether to ignore row order (default: TRUE)
     ...    ${show_details}    - Whether to show detailed comparison results (default: TRUE)
+    ...    ${match_key}    - (Optional) JSON path to use for matching rows between files
+    ...    Example: headers.profile_id or entityId
+    ...    When provided, rows are matched by this key instead of position/set comparison
     ...
     ...    Returns:
     ...    Dictionary with comparison results including status (IDENTICAL/DIFFERENT)
     ...
-    ...    Example Usage:
+    ...    Example Usage (without match_key - uses set-based comparison):
     ...    @{exclude_keys}=    Create List    SnowflakeConnectorPushTime    timestamp
     ...    ${result}=    Compare CSV Files With Exclusions
     ...    ...    ${actual_file}
@@ -909,17 +913,28 @@ Compare CSV Files With Exclusions
     ...    ...    ${exclude_keys}
     ...    Should Be Equal    ${result}[status]    IDENTICAL
     ...
+    ...    Example Usage (with match_key - matches rows by specific field):
+    ...    ${result}=    Compare CSV Files With Exclusions
+    ...    ...    ${actual_file}
+    ...    ...    ${expected_file}
+    ...    ...    ${exclude_keys}
+    ...    ...    match_key=headers.profile_id
+    ...
     [Arguments]
     ...    ${file1_path}
     ...    ${file2_path}
     ...    ${exclude_keys}
     ...    ${ignore_order}=${TRUE}
     ...    ${show_details}=${TRUE}
+    ...    ${match_key}=${None}
 
     Log    \n🔍 Comparing CSV files with exclusions:    console=yes
     Log    📁 File 1: ${file1_path}    console=yes
     Log    📁 File 2: ${file2_path}    console=yes
     Log    🚫 Excluded keys: ${exclude_keys}    console=yes
+    IF    '${match_key}' != '${None}'
+        Log    🔑 Match Key: ${match_key}    console=yes
+    END
 
     # Read both CSV files
     ${csv1_content}=    Read Csv File To List    ${file1_path}
@@ -937,6 +952,7 @@ Compare CSV Files With Exclusions
     ...    file1_rows=${csv1_content.__len__()}
     ...    file2_rows=${csv2_content.__len__()}
     ...    excluded_keys=${exclude_keys}
+    ...    match_key=${match_key}
     ...    total_differences=0
     ...    headers_match=${FALSE}
     ...    row_count_match=${FALSE}
@@ -977,54 +993,79 @@ Compare CSV Files With Exclusions
         END
     END
 
-    # Compare data rows
-    ${max_rows}=    Evaluate    max(${file1_row_count}, ${file2_row_count})
-
-    FOR    ${row_index}    IN RANGE    1    ${max_rows}
-        ${has_row1}=    Evaluate    ${row_index} < ${file1_row_count}
-        ${has_row2}=    Evaluate    ${row_index} < ${file2_row_count}
-
-        IF    ${has_row1} and ${has_row2}
-            ${row1}=    Get From List    ${normalized_csv1}    ${row_index}
-            ${row2}=    Get From List    ${normalized_csv2}    ${row_index}
-
-            ${rows_equal}=    Evaluate    $row1 == $row2
-
-            IF    not ${rows_equal}
-                ${diff}=    Create Dictionary
-                ...    type=ROW_CONTENT_MISMATCH
-                ...    row_index=${row_index}
-                ...    file1_row=${row1}
-                ...    file2_row=${row2}
-                Append To List    ${comparison_result}[differences]    ${diff}
-
-                # Compare individual fields for more detail
-                ${field_differences}=    Compare Row Fields With Details    ${row1}    ${row2}    ${row_index}
-                FOR    ${field_diff}    IN    @{field_differences}
-                    Append To List    ${comparison_result}[differences]    ${field_diff}
-                END
-            END
-        ELSE IF    ${has_row1} and not ${has_row2}
-            ${row1}=    Get From List    ${normalized_csv1}    ${row_index}
-            ${diff}=    Create Dictionary
-            ...    type=EXTRA_ROW_IN_FILE1
-            ...    row_index=${row_index}
-            ...    row_content=${row1}
-            Append To List    ${comparison_result}[differences]    ${diff}
-        ELSE IF    not ${has_row1} and ${has_row2}
-            ${row2}=    Get From List    ${normalized_csv2}    ${row_index}
-            ${diff}=    Create Dictionary
-            ...    type=EXTRA_ROW_IN_FILE2
-            ...    row_index=${row_index}
-            ...    row_content=${row2}
+    # Choose comparison method based on match_key
+    IF    '${match_key}' != '${None}'
+        # Key-based matching
+        Log    🔑 Using key-based matching with key: ${match_key}    console=yes
+        ${key_based_differences}=    Compare CSV With Key Matching
+        ...    ${normalized_csv1}
+        ...    ${normalized_csv2}
+        ...    ${match_key}
+        FOR    ${diff}    IN    @{key_based_differences}
             Append To List    ${comparison_result}[differences]    ${diff}
         END
-    END
+    ELSE
+        # Original positional comparison
+        ${max_rows}=    Evaluate    max(${file1_row_count}, ${file2_row_count})
 
-    # If ignore_order is True, check unordered comparison
-    IF    ${ignore_order}
-        ${unordered_match}=    Compare Normalized CSV Ignore Order    ${normalized_csv1}    ${normalized_csv2}
-        Set To Dictionary    ${comparison_result}    unordered_match=${unordered_match}
+        FOR    ${row_index}    IN RANGE    1    ${max_rows}
+            ${has_row1}=    Evaluate    ${row_index} < ${file1_row_count}
+            ${has_row2}=    Evaluate    ${row_index} < ${file2_row_count}
+
+            IF    ${has_row1} and ${has_row2}
+                ${row1}=    Get From List    ${normalized_csv1}    ${row_index}
+                ${row2}=    Get From List    ${normalized_csv2}    ${row_index}
+
+                ${rows_equal}=    Evaluate    $row1 == $row2
+
+                IF    not ${rows_equal}
+                    ${diff}=    Create Dictionary
+                    ...    type=ROW_CONTENT_MISMATCH
+                    ...    row_index=${row_index}
+                    ...    file1_row=${row1}
+                    ...    file2_row=${row2}
+                    Append To List    ${comparison_result}[differences]    ${diff}
+
+                    # Compare individual fields for more detail
+                    ${field_differences}=    Compare Row Fields With Details    ${row1}    ${row2}    ${row_index}
+                    FOR    ${field_diff}    IN    @{field_differences}
+                        Append To List    ${comparison_result}[differences]    ${field_diff}
+                    END
+                END
+            ELSE IF    ${has_row1} and not ${has_row2}
+                ${row1}=    Get From List    ${normalized_csv1}    ${row_index}
+                ${diff}=    Create Dictionary
+                ...    type=EXTRA_ROW_IN_FILE1
+                ...    row_index=${row_index}
+                ...    row_content=${row1}
+                Append To List    ${comparison_result}[differences]    ${diff}
+            ELSE IF    not ${has_row1} and ${has_row2}
+                ${row2}=    Get From List    ${normalized_csv2}    ${row_index}
+                ${diff}=    Create Dictionary
+                ...    type=EXTRA_ROW_IN_FILE2
+                ...    row_index=${row_index}
+                ...    row_content=${row2}
+                Append To List    ${comparison_result}[differences]    ${diff}
+            END
+        END
+
+        # If ignore_order is True and no match_key, check unordered comparison
+        IF    ${ignore_order}
+            ${unordered_match}=    Compare Normalized CSV Ignore Order    ${normalized_csv1}    ${normalized_csv2}
+            Set To Dictionary    ${comparison_result}    unordered_match=${unordered_match}
+
+            # If unordered match is True, clear row content differences since order doesn't matter
+            IF    ${unordered_match}
+                @{structural_differences}=    Create List
+                FOR    ${diff}    IN    @{comparison_result}[differences]
+                    IF    '${diff}[type]' == 'ROW_COUNT_MISMATCH' or '${diff}[type]' == 'HEADER_MISMATCH'
+                        Append To List    ${structural_differences}    ${diff}
+                    END
+                END
+                Set To Dictionary    ${comparison_result}    differences=${structural_differences}
+                Log    ℹ️ Rows match when ignoring order - cleared positional differences    console=yes
+            END
+        END
     END
 
     # Set final status
@@ -1056,25 +1097,7 @@ Compare CSV Files With Exclusions Template
     ...    ${show_details}    - Whether to show detailed differences
     ...    ${expected_status} - Expected comparison result (IDENTICAL or DIFFERENT)
     ...    @{exclude_keys}    - (Optional) One or more JSON keys to exclude
-    ...
-    ...    Example Usage - Multiple strings:
-    ...    Compare CSV Files With Exclusions Template
-    ...    ...    ${actual_file}    ${expected_file}    ${FALSE}    ${TRUE}    IDENTICAL
-    ...    ...    SnowflakeConnectorPushTime    created_at    updated_at
-    ...
-    ...    Example Usage - Single string:
-    ...    Compare CSV Files With Exclusions Template
-    ...    ...    ${actual_file}    ${expected_file}    ${FALSE}    ${TRUE}    IDENTICAL
-    ...    ...    SnowflakeConnectorPushTime
-    ...
-    ...    Example Usage - List variable:
-    ...    Compare CSV Files With Exclusions Template
-    ...    ...    ${actual_file}    ${expected_file}    ${FALSE}    ${TRUE}    IDENTICAL
-    ...    ...    @{excluded_columns_for_comparison}
-    ...
-    ...    Example Usage - No exclusions:
-    ...    Compare CSV Files With Exclusions Template
-    ...    ...    ${actual_file}    ${expected_file}    ${FALSE}    ${TRUE}    IDENTICAL
+    ...    &{options}    - (Optional) Additional options like match_key=headers.profile_id
     ...
     [Arguments]
     ...    ${file1_path}
@@ -1083,6 +1106,10 @@ Compare CSV Files With Exclusions Template
     ...    ${show_details}
     ...    ${expected_status}
     ...    @{exclude_keys}
+    ...    &{options}
+
+    # Extract match_key from options (if provided)
+    ${match_key}=    Evaluate    $options.get('match_key', None)
 
     Log    📋 Comparing CSV files with exclusions template:    console=yes
     Log    📁 File 1 (Actual): ${file1_path}    console=yes
@@ -1091,6 +1118,9 @@ Compare CSV Files With Exclusions Template
     Log    🔄 Ignore Order: ${ignore_order}    console=yes
     Log    📝 Show Details: ${show_details}    console=yes
     Log    ✅ Expected Status: ${expected_status}    console=yes
+    IF    '${match_key}' != 'None'
+        Log    🔑 Match Key: ${match_key}    console=yes
+    END
 
     # Perform the comparison with exclusions
     ${comparison_result}=    Compare CSV Files With Exclusions
@@ -1099,6 +1129,7 @@ Compare CSV Files With Exclusions Template
     ...    ${exclude_keys}
     ...    ignore_order=${ignore_order}
     ...    show_details=${show_details}
+    ...    match_key=${match_key}
 
     # Validate the expected status
     Should Be Equal
@@ -1259,6 +1290,174 @@ Compare Normalized CSV Ignore Order
 
     RETURN    ${sets_equal}
 
+################## KEY-BASED ROW MATCHING ##################
+
+Compare CSV With Key Matching
+    [Documentation]    Compares CSV rows by matching them using a specific key field.
+    ...    Instead of comparing by position, rows are matched by the value of the match_key.
+    ...    This allows comparing files where rows may be in different order but should match by ID.
+    [Arguments]    ${csv1_content}    ${csv2_content}    ${match_key}
+
+    ${differences}=    Create List
+
+    # Skip headers - get data rows only
+    ${data1}=    Get Slice From List    ${csv1_content}    1
+    ${data2}=    Get Slice From List    ${csv2_content}    1
+
+    # Build lookup dictionaries by match_key
+    ${file1_by_key}=    Build Row Lookup By Key    ${data1}    ${match_key}
+    ${file2_by_key}=    Build Row Lookup By Key    ${data2}    ${match_key}
+
+    # Get all unique keys from both files
+    ${all_keys}=    Evaluate    set($file1_by_key.keys()) | set($file2_by_key.keys())
+
+    # Compare rows by key
+    FOR    ${key_value}    IN    @{all_keys}
+        ${in_file1}=    Evaluate    '''${key_value}''' in $file1_by_key
+        ${in_file2}=    Evaluate    '''${key_value}''' in $file2_by_key
+
+        IF    ${in_file1} and ${in_file2}
+            # Both files have this key - compare the rows
+            ${row1}=    Get From Dictionary    ${file1_by_key}    ${key_value}
+            ${row2}=    Get From Dictionary    ${file2_by_key}    ${key_value}
+
+            ${rows_equal}=    Evaluate    $row1 == $row2
+
+            IF    not ${rows_equal}
+                # Get detailed field differences
+                ${field_diffs}=    Compare Matched Rows    ${row1}    ${row2}    ${match_key}    ${key_value}
+                FOR    ${diff}    IN    @{field_diffs}
+                    Append To List    ${differences}    ${diff}
+                END
+            END
+        ELSE IF    ${in_file1} and not ${in_file2}
+            # Row only in file1 (actual)
+            ${row1}=    Get From Dictionary    ${file1_by_key}    ${key_value}
+            ${diff}=    Create Dictionary
+            ...    type=UNMATCHED_ROW_IN_FILE1
+            ...    match_key=${match_key}
+            ...    key_value=${key_value}
+            ...    row_content=${row1}
+            Append To List    ${differences}    ${diff}
+        ELSE IF    not ${in_file1} and ${in_file2}
+            # Row only in file2 (expected)
+            ${row2}=    Get From Dictionary    ${file2_by_key}    ${key_value}
+            ${diff}=    Create Dictionary
+            ...    type=UNMATCHED_ROW_IN_FILE2
+            ...    match_key=${match_key}
+            ...    key_value=${key_value}
+            ...    row_content=${row2}
+            Append To List    ${differences}    ${diff}
+        END
+    END
+
+    RETURN    ${differences}
+
+Build Row Lookup By Key
+    [Documentation]    Builds a dictionary mapping match_key values to their rows.
+    ...    Searches all columns (which may contain JSON) for the match_key.
+    [Arguments]    ${rows}    ${match_key}
+
+    &{lookup}=    Create Dictionary
+
+    FOR    ${row}    IN    @{rows}
+        ${key_value}=    Extract Key Value From Row    ${row}    ${match_key}
+        IF    '${key_value}' != '${None}'
+            Set To Dictionary    ${lookup}    ${key_value}=${row}
+        END
+    END
+
+    RETURN    ${lookup}
+
+Extract Key Value From Row
+    [Documentation]    Extracts the value of a key from a CSV row.
+    ...    The key can be a simple key or a nested path like "headers.profile_id".
+    ...    Searches through all columns (which may contain JSON).
+    [Arguments]    ${row}    ${match_key}
+
+    # Split the match_key into parts (e.g., "headers.profile_id" -> ["headers", "profile_id"])
+    ${key_parts}=    Split String    ${match_key}    .
+
+    # Search each field in the row
+    FOR    ${field}    IN    @{row}
+        ${value}=    Extract Value From Field    ${field}    ${key_parts}
+        IF    '${value}' != '${None}'    RETURN    ${value}
+    END
+
+    RETURN    ${None}
+
+Extract Value From Field
+    [Documentation]    Extracts a value from a field using the key path.
+    ...    Handles JSON fields and nested paths.
+    [Arguments]    ${field}    ${key_parts}
+
+    ${trimmed}=    Strip String    ${field}
+    ${clean}=    Remove CSV Outer Quotes    ${trimmed}
+
+    # Check if field looks like JSON
+    ${is_json}=    Evaluate    '''${clean}'''.startswith('{') and '''${clean}'''.endswith('}')
+
+    IF    not ${is_json}    RETURN    ${None}
+
+    TRY
+        # Parse JSON
+        ${json_str}=    Replace String    ${clean}    ""    \\"
+        ${data}=    Evaluate    json.loads(r'''${json_str}''')    modules=json
+
+        # Navigate to the value using key_parts
+        ${current}=    Set Variable    ${data}
+        FOR    ${key}    IN    @{key_parts}
+            ${is_dict}=    Evaluate    isinstance($current, dict)
+            IF    not ${is_dict}    RETURN    ${None}
+
+            ${has_key}=    Evaluate    '''${key}''' in $current
+            IF    not ${has_key}    RETURN    ${None}
+
+            ${current}=    Evaluate    $current.get('''${key}''')
+        END
+
+        # Convert to string for consistent comparison
+        ${result}=    Convert To String    ${current}
+        RETURN    ${result}
+    EXCEPT
+        RETURN    ${None}
+    END
+
+Compare Matched Rows
+    [Documentation]    Compares two rows that were matched by key and returns field differences.
+    [Arguments]    ${row1}    ${row2}    ${match_key}    ${key_value}
+
+    ${differences}=    Create List
+    ${max_fields}=    Evaluate    max(len($row1), len($row2))
+
+    FOR    ${field_index}    IN RANGE    ${max_fields}
+        ${has_field1}=    Evaluate    ${field_index} < len($row1)
+        ${has_field2}=    Evaluate    ${field_index} < len($row2)
+
+        IF    ${has_field1} and ${has_field2}
+            ${field1}=    Get From List    ${row1}    ${field_index}
+            ${field2}=    Get From List    ${row2}    ${field_index}
+
+            IF    '${field1}' != '${field2}'
+                # Get JSON field differences for detailed reporting
+                ${json_diffs}=    Get JSON Field Differences    ${field1}    ${field2}
+
+                ${diff}=    Create Dictionary
+                ...    type=FIELD_VALUE_MISMATCH
+                ...    match_key=${match_key}
+                ...    key_value=${key_value}
+                ...    field_index=${field_index}
+                ...    file1_value=${field1}
+                ...    file2_value=${field2}
+                ...    json_key_differences=${json_diffs}
+
+                Append To List    ${differences}    ${diff}
+            END
+        END
+    END
+
+    RETURN    ${differences}
+
 Compare Row Fields With Details
     [Documentation]    Compares individual fields between two rows and returns detailed differences.
     ...    For JSON fields, it shows the specific keys that differ.
@@ -1415,9 +1614,17 @@ Find Nested Differences
 
 Log Comparison With Exclusions Details
     [Documentation]    Logs detailed comparison results for CSV comparison with exclusions.
-    ...    Handles JSON fields, simple fields, and structural differences.
+    ...    Handles JSON fields, simple fields, key-based matching, and structural differences.
     ...    Updates status to IDENTICAL if no unique differences found.
     [Arguments]    ${comparison_result}
+
+    # Check if match_key was used
+    ${has_match_key}=    Run Keyword And Return Status
+    ...    Dictionary Should Contain Key    ${comparison_result}    match_key
+    ${match_key}=    Set Variable    ${None}
+    IF    ${has_match_key}
+        ${match_key}=    Get From Dictionary    ${comparison_result}    match_key
+    END
 
     # Count unique field differences first
     @{unique_keys}=    Create List
@@ -1437,14 +1644,28 @@ Log Comparison With Exclusions Details
                         END
                     END
                 ELSE
-                    ${field_key}=    Set Variable    Row${diff}[row_index]_Field${diff}[field_index]
+                    # Simple field (non-JSON) - count by row_index.field_index or key_value.field_index
+                    ${has_key_value}=    Run Keyword And Return Status
+                    ...    Dictionary Should Contain Key    ${diff}    key_value
+                    IF    ${has_key_value}
+                        ${field_key}=    Set Variable    ${diff}[key_value]_Field${diff}[field_index]
+                    ELSE
+                        ${field_key}=    Set Variable    Row${diff}[row_index]_Field${diff}[field_index]
+                    END
                     ${exists}=    Evaluate    '''${field_key}''' in $unique_keys
                     IF    not ${exists}
                         Append To List    ${unique_keys}    ${field_key}
                     END
                 END
             ELSE
-                ${field_key}=    Set Variable    Row${diff}[row_index]_Field${diff}[field_index]
+                # No json_key_differences key - simple field
+                ${has_key_value}=    Run Keyword And Return Status
+                ...    Dictionary Should Contain Key    ${diff}    key_value
+                IF    ${has_key_value}
+                    ${field_key}=    Set Variable    ${diff}[key_value]_Field${diff}[field_index]
+                ELSE
+                    ${field_key}=    Set Variable    Row${diff}[row_index]_Field${diff}[field_index]
+                END
                 ${exists}=    Evaluate    '''${field_key}''' in $unique_keys
                 IF    not ${exists}
                     Append To List    ${unique_keys}    ${field_key}
@@ -1480,6 +1701,18 @@ Log Comparison With Exclusions Details
             IF    not ${exists}
                 Append To List    ${unique_keys}    ${field_key}
             END
+        ELSE IF    '${diff}[type]' == 'UNMATCHED_ROW_IN_FILE1'
+            ${row_key}=    Set Variable    UNMATCHED_ACTUAL_${diff}[key_value]
+            ${exists}=    Evaluate    '''${row_key}''' in $unique_keys
+            IF    not ${exists}
+                Append To List    ${unique_keys}    ${row_key}
+            END
+        ELSE IF    '${diff}[type]' == 'UNMATCHED_ROW_IN_FILE2'
+            ${row_key}=    Set Variable    UNMATCHED_EXPECTED_${diff}[key_value]
+            ${exists}=    Evaluate    '''${row_key}''' in $unique_keys
+            IF    not ${exists}
+                Append To List    ${unique_keys}    ${row_key}
+            END
         END
         # Skip ROW_CONTENT_MISMATCH - it's a parent-level diff, details are in FIELD_VALUE_MISMATCH
     END
@@ -1495,6 +1728,9 @@ Log Comparison With Exclusions Details
 
     Log    \n========== CSV COMPARISON SUMMARY ==========    console=yes
     Log    Status: ${comparison_result}[status]    console=yes
+    IF    '${match_key}' != '${None}'
+        Log    Match Key: ${match_key}    console=yes
+    END
     Log    Excluded Keys: ${comparison_result}[excluded_keys]    console=yes
     Log    Unique Field Differences: ${unique_count}    console=yes
 
@@ -1514,7 +1750,12 @@ Log Comparison With Exclusions Details
                     ${json_diff_count}=    Get Length    ${json_diffs}
                 END
 
+                # Check if this is from key-based matching
+                ${has_key_value}=    Run Keyword And Return Status
+                ...    Dictionary Should Contain Key    ${diff}    key_value
+
                 IF    ${json_diff_count} > 0
+                    # JSON field - show nested key differences
                     FOR    ${json_diff}    IN    @{json_diffs}
                         ${key}=    Get From Dictionary    ${json_diff}    key
 
@@ -1526,33 +1767,49 @@ Log Comparison With Exclusions Details
                         ${has_status}=    Run Keyword And Return Status
                         ...    Dictionary Should Contain Key    ${json_diff}    status
 
+                        # Log context for key-based matching
+                        IF    ${has_key_value}
+                            Log    \nMatched Row (${diff}[match_key] = ${diff}[key_value]):    console=yes
+                        END
+
                         IF    ${has_status}
                             ${status}=    Get From Dictionary    ${json_diff}    status
                             IF    '${status}' == 'ONLY_IN_FILE1'
                                 ${val1}=    Get From Dictionary    ${json_diff}    file1_value
-                                Log    \nField: ${key}    console=yes
+                                Log    Field: ${key}    console=yes
                                 Log    Actual: ${val1}    console=yes
                                 Log    Expected: (not present)    console=yes
                             ELSE IF    '${status}' == 'ONLY_IN_FILE2'
                                 ${val2}=    Get From Dictionary    ${json_diff}    file2_value
-                                Log    \nField: ${key}    console=yes
+                                Log    Field: ${key}    console=yes
                                 Log    Actual: (not present)    console=yes
                                 Log    Expected: ${val2}    console=yes
                             END
                         ELSE
                             ${val1}=    Get From Dictionary    ${json_diff}    file1_value
                             ${val2}=    Get From Dictionary    ${json_diff}    file2_value
-                            Log    \nField: ${key}    console=yes
+                            Log    Field: ${key}    console=yes
                             Log    Actual: ${val1}    console=yes
                             Log    Expected: ${val2}    console=yes
                         END
                     END
                 ELSE
-                    ${field_key}=    Set Variable    Row${diff}[row_index]_Field${diff}[field_index]
+                    # Simple field - show row/field difference
+                    IF    ${has_key_value}
+                        ${field_key}=    Set Variable    ${diff}[key_value]_Field${diff}[field_index]
+                    ELSE
+                        ${field_key}=    Set Variable    Row${diff}[row_index]_Field${diff}[field_index]
+                    END
                     ${already_logged}=    Evaluate    '''${field_key}''' in $logged_keys
                     IF    not ${already_logged}
                         Append To List    ${logged_keys}    ${field_key}
-                        Log    \nRow: ${diff}[row_index], Field: ${diff}[field_index]    console=yes
+                        IF    ${has_key_value}
+                            Log
+                            ...    \nMatched Row (${diff}[match_key] = ${diff}[key_value]), Field: ${diff}[field_index]
+                            ...    console=yes
+                        ELSE
+                            Log    \nRow: ${diff}[row_index], Field: ${diff}[field_index]    console=yes
+                        END
                         Log    Actual: ${diff}[file1_value]    console=yes
                         Log    Expected: ${diff}[file2_value]    console=yes
                     END
@@ -1604,6 +1861,22 @@ Log Comparison With Exclusions Details
                     Append To List    ${logged_keys}    ${field_key}
                     Log    \nMissing Field (Expected Row ${diff}[row_index], Field ${diff}[field_index])    console=yes
                     Log    Value: ${diff}[field_value]    console=yes
+                END
+            ELSE IF    '${diff}[type]' == 'UNMATCHED_ROW_IN_FILE1'
+                ${row_key}=    Set Variable    UNMATCHED_ACTUAL_${diff}[key_value]
+                ${already_logged}=    Evaluate    '''${row_key}''' in $logged_keys
+                IF    not ${already_logged}
+                    Append To List    ${logged_keys}    ${row_key}
+                    Log    \nUnmatched Row in Actual (${diff}[match_key] = ${diff}[key_value])    console=yes
+                    Log    This row exists in actual but not in expected    console=yes
+                END
+            ELSE IF    '${diff}[type]' == 'UNMATCHED_ROW_IN_FILE2'
+                ${row_key}=    Set Variable    UNMATCHED_EXPECTED_${diff}[key_value]
+                ${already_logged}=    Evaluate    '''${row_key}''' in $logged_keys
+                IF    not ${already_logged}
+                    Append To List    ${logged_keys}    ${row_key}
+                    Log    \nMissing Row in Actual (${diff}[match_key] = ${diff}[key_value])    console=yes
+                    Log    This row exists in expected but not in actual    console=yes
                 END
             END
         END

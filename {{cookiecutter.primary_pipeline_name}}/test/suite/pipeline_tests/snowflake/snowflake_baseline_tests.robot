@@ -22,7 +22,11 @@ Suite Teardown      Tear Down Connections and Files
 
 *** Variables ***
 # Dynamic keys to exclude from CSV comparison (timestamps that change between runs)
-@{excluded_columns_for_comparison}      SnowflakeConnectorPushTime    event_timestamp
+@{excluded_columns_for_comparison}
+...                                     SnowflakeConnectorPushTime
+...                                     unique_event_id
+...                                     event_timestamp
+...                                     /MARKETING-NOTIFICATIONS/CONTENT
 ######################### Pipeline1 details ###########################
 
 # Pipeline name and file details
@@ -38,9 +42,12 @@ ${task_name}                            Task
 ...                                     states=${notification_states}
 
 # Actual output file is automatcally created after the execution of pipeline
-${actual_output_file1_path_from_db}     ${CURDIR}/../../test_data/actual_expected_data/actual_output/snowflake/${pipeline_name}_actual_output_file1.csv
-${actual_output_file2_path_from_db}     ${CURDIR}/../../test_data/actual_expected_data/actual_output/snowflake/${pipeline_name}_actual_output_file2.csv
-${actual_output_file3_path_from_db}     ${CURDIR}/../../test_data/actual_expected_data/actual_output/snowflake/${pipeline_name}_actual_output_file3.csv
+${actual_output_file1_name}             ${pipeline_name}_actual_output_file1.csv
+${actual_output_file2_name}             ${pipeline_name}_actual_output_file2.csv
+${actual_output_file3_name}             ${pipeline_name}_actual_output_file3.csv
+${actual_output_file1_path_from_db}     ${CURDIR}/../../test_data/actual_expected_data/actual_output/snowflake/${actual_output_file1_name}
+${actual_output_file2_path_from_db}     ${CURDIR}/../../test_data/actual_expected_data/actual_output/snowflake/${actual_output_file2_name}
+${actual_output_file3_path_from_db}     ${CURDIR}/../../test_data/actual_expected_data/actual_output/snowflake/${actual_output_file3_name}
 
 # Expected input files to be added by user
 ${input_file1_name}                     test_input_file1.json
@@ -51,7 +58,7 @@ ${input_file2_path}                     ${CURDIR}/../../test_data/actual_expecte
 ${input_file3_path}                     ${CURDIR}/../../test_data/actual_expected_data/input_data/snowflake/${input_file3_name}
 
 # Expected outputfiles to be added by user#
-${expected_output_file1_name}           expected_output_file1.csv
+${expected_output_file1_name}           expected_output.csv
 ${expected_output_file2_name}           expected_output_file2.csv
 ${expected_output_file3_name}           expected_output_file3.csv
 ${expected_output_file1_path}           ${CURDIR}/../../test_data/actual_expected_data/expected_output/snowflake/${expected_output_file1_name}
@@ -231,8 +238,7 @@ Compare Actual vs Expected CSV Output
     [Template]    Compare CSV Files With Exclusions Template
 
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status    exclude_columns
-    ${actual_output_file1_path_from_db}    ${expected_output_file1_path}    ${FALSE}    ${TRUE}    IDENTICAL    @{excluded_columns_for_comparison}
-    ${actual_output_file1_path_from_db}    ${expected_output_file1_path}    ${FALSE}    ${TRUE}    IDENTICAL    SnowflakeConnectorPushTime    event_timestamp
+    ${actual_output_file1_path_from_db}    ${expected_output_file1_path}    ${TRUE}    ${TRUE}    IDENTICAL    @{excluded_columns_for_comparison}    match_key=headers.profile_id
 
 Verify Snowflake Pipeline results against each input file sequentially
     [Documentation]    End to End test case executing the full Snowflake pipeline workflow
@@ -356,10 +362,10 @@ Tear Down Connections and Files
     # Delete Pipeline    ${unique_id}    ${pipeline_name}
     # Delete Account By Name And Path    ${sf_acct_keypair}    ${ACCOUNT_LOCATION_PATH}
 
-    Delete All Files By Path    ${ACCOUNT_LOCATION_PATH}
-    Delete All Files By Path    ${PIPELINES_LOCATION_PATH}
-    Delete All Accounts By Path    ${ACCOUNT_LOCATION_PATH}
-    Delete All Pipelines By Path    ${PIPELINES_LOCATION_PATH}
-    Delete All Tasks By Path    ${PIPELINES_LOCATION_PATH}
-    Delete All Dirs By Path    ${PIPELINES_LOCATION_PATH}
+    # Delete All Files By Path    ${ACCOUNT_LOCATION_PATH}
+    # Delete All Files By Path    ${PIPELINES_LOCATION_PATH}
+    # Delete All Accounts By Path    ${ACCOUNT_LOCATION_PATH}
+    # Delete All Pipelines By Path    ${PIPELINES_LOCATION_PATH}
+    # Delete All Tasks By Path    ${PIPELINES_LOCATION_PATH}
+    # Delete All Dirs By Path    ${PIPELINES_LOCATION_PATH}
     Disconnect From Snowflake
