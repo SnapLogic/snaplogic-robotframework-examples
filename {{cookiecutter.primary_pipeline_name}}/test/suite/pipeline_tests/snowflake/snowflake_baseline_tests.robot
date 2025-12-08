@@ -41,14 +41,6 @@ ${task_name}                            Task
 ...                                     recipients=newemail@gmail.com
 ...                                     states=${notification_states}
 
-# Actual output file is automatcally created after the execution of pipeline
-${actual_output_file1_name}             ${pipeline_name}_actual_output_file1.csv
-${actual_output_file2_name}             ${pipeline_name}_actual_output_file2.csv
-${actual_output_file3_name}             ${pipeline_name}_actual_output_file3.csv
-${actual_output_file1_path_from_db}     ${CURDIR}/../../test_data/actual_expected_data/actual_output/snowflake/${actual_output_file1_name}
-${actual_output_file2_path_from_db}     ${CURDIR}/../../test_data/actual_expected_data/actual_output/snowflake/${actual_output_file2_name}
-${actual_output_file3_path_from_db}     ${CURDIR}/../../test_data/actual_expected_data/actual_output/snowflake/${actual_output_file3_name}
-
 # Expected input files to be added by user
 ${input_file1_name}                     test_input_file1.json
 ${input_file2_name}                     test_input_file2.json
@@ -57,8 +49,19 @@ ${input_file1_path}                     ${CURDIR}/../../test_data/actual_expecte
 ${input_file2_path}                     ${CURDIR}/../../test_data/actual_expected_data/input_data/snowflake/${input_file2_name}
 ${input_file3_path}                     ${CURDIR}/../../test_data/actual_expected_data/input_data/snowflake/${input_file3_name}
 
+# Actual output file is automatcally created after the execution of pipeline
+# ${actual_output_file1_name}    snaplogic_integration_test.slp_actual_output_from_snowflake_db.csv
+${actual_output_file1_name}             ${pipeline_name}_actual_output_file1.csv
+${actual_output_file2_name}             ${pipeline_name}_actual_output_file2.csv
+${actual_output_file3_name}             ${pipeline_name}_actual_output_file3.csv
+${actual_output_file1_path_from_db}     ${CURDIR}/../../test_data/actual_expected_data/actual_output/snowflake/${actual_output_file1_name}
+${actual_output_file2_path_from_db}     ${CURDIR}/../../test_data/actual_expected_data/actual_output/snowflake/${actual_output_file2_name}
+${actual_output_file3_path_from_db}     ${CURDIR}/../../test_data/actual_expected_data/actual_output/snowflake/${actual_output_file3_name}
+
 # Expected outputfiles to be added by user#
-${expected_output_file1_name}           expected_output.csv
+# ${expected_output_file1_name}    expected_output.csv
+# ${expected_output_file1_name}    expected_output_exchanged_rows.csv
+${expected_output_file1_name}           expected_output_file1.csv
 ${expected_output_file2_name}           expected_output_file2.csv
 ${expected_output_file3_name}           expected_output_file3.csv
 ${expected_output_file1_path}           ${CURDIR}/../../test_data/actual_expected_data/expected_output/snowflake/${expected_output_file1_name}
@@ -238,7 +241,7 @@ Compare Actual vs Expected CSV Output
     [Template]    Compare CSV Files With Exclusions Template
 
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status    exclude_columns
-    ${actual_output_file1_path_from_db}    ${expected_output_file1_path}    ${TRUE}    ${TRUE}    IDENTICAL    @{excluded_columns_for_comparison}    match_key=headers.profile_id
+    ${actual_output_file1_path_from_db}    ${expected_output_file1_path}    ${FALSE}    ${TRUE}    IDENTICAL    @{excluded_columns_for_comparison}    match_key=headers.profile_id
 
 Verify Snowflake Pipeline results against each input file sequentially
     [Documentation]    End to End test case executing the full Snowflake pipeline workflow
