@@ -1503,7 +1503,8 @@ Compare Matched Rows
             ${field1}=    Get From List    ${row1}    ${field_index}
             ${field2}=    Get From List    ${row2}    ${field_index}
 
-            IF    '${field1}' != '${field2}'
+            ${fields_equal}=    Evaluate    $field1 == $field2
+            IF    not ${fields_equal}
                 # Get JSON field differences for detailed reporting
                 ${json_diffs}=    Get JSON Field Differences    ${field1}    ${field2}
 
@@ -1539,7 +1540,8 @@ Compare Row Fields With Details
             ${field1}=    Get From List    ${row1}    ${field_index}
             ${field2}=    Get From List    ${row2}    ${field_index}
 
-            IF    '${field1}' != '${field2}'
+            ${fields_equal}=    Evaluate    $field1 == $field2
+            IF    not ${fields_equal}
                 ${diff}=    Create Dictionary
                 ...    type=FIELD_VALUE_MISMATCH
                 ...    row_index=${row_index}
@@ -1680,6 +1682,7 @@ Find Nested Differences
 Log Comparison With Exclusions Details
     [Documentation]    Logs detailed comparison results for CSV comparison with exclusions.
     ...    Handles JSON fields, simple fields, key-based matching, and structural differences.
+    ...    Counts differences per row+field combination, not just by field name.
     ...    Updates status to IDENTICAL if no unique differences found.
     [Arguments]    ${comparison_result}
 
@@ -1691,103 +1694,149 @@ Log Comparison With Exclusions Details
         ${match_key}=    Get From Dictionary    ${comparison_result}    match_key
     END
 
-    # Count unique field differences first
-    @{unique_keys}=    Create List
+    # Count unique field differences (per row+field, not just field name)
+    @{unique_diffs}=    Create List
+    @{diff_details}=    Create List    # Store details for logging
+
     FOR    ${diff}    IN    @{comparison_result}[differences]
         IF    '${diff}[type]' == 'FIELD_VALUE_MISMATCH'
             ${has_json_diff}=    Run Keyword And Return Status
             ...    Dictionary Should Contain Key    ${diff}    json_key_differences
+
+            # Get row identifier (either key_value for key-based or row_index for positional)
+            ${has_key_value}=    Run Keyword And Return Status
+            ...    Dictionary Should Contain Key    ${diff}    key_value
+            IF    ${has_key_value}
+                ${row_id}=    Set Variable    ${diff}[key_value]
+            ELSE
+                ${row_id}=    Set Variable    Row${diff}[row_index]
+            END
+
             IF    ${has_json_diff}
                 ${json_diffs}=    Get From Dictionary    ${diff}    json_key_differences
                 ${json_diff_count}=    Get Length    ${json_diffs}
                 IF    ${json_diff_count} > 0
                     FOR    ${json_diff}    IN    @{json_diffs}
                         ${key}=    Get From Dictionary    ${json_diff}    key
-                        ${exists}=    Evaluate    '''${key}''' in $unique_keys
+                        # Unique key = row_id + field_name
+                        ${unique_key}=    Set Variable    ${row_id}::${key}
+                        ${exists}=    Evaluate    '''${unique_key}''' in $unique_diffs
                         IF    not ${exists}
-                            Append To List    ${unique_keys}    ${key}
+                            Append To List    ${unique_diffs}    ${unique_key}
+                            # Store detail for logging
+                            &{detail}=    Create Dictionary
+                            ...    row_id=${row_id}
+                            ...    field=${key}
+                            ...    json_diff=${json_diff}
+                            ...    has_key_value=${has_key_value}
+                            ...    diff=${diff}
+                            Append To List    ${diff_details}    ${detail}
                         END
                     END
                 ELSE
-                    # Simple field (non-JSON) - count by row_index.field_index or key_value.field_index
-                    ${has_key_value}=    Run Keyword And Return Status
-                    ...    Dictionary Should Contain Key    ${diff}    key_value
-                    IF    ${has_key_value}
-                        ${field_key}=    Set Variable    ${diff}[key_value]_Field${diff}[field_index]
-                    ELSE
-                        ${field_key}=    Set Variable    Row${diff}[row_index]_Field${diff}[field_index]
-                    END
-                    ${exists}=    Evaluate    '''${field_key}''' in $unique_keys
+                    # Simple field (non-JSON)
+                    ${unique_key}=    Set Variable    ${row_id}::Field${diff}[field_index]
+                    ${exists}=    Evaluate    '''${unique_key}''' in $unique_diffs
                     IF    not ${exists}
-                        Append To List    ${unique_keys}    ${field_key}
+                        Append To List    ${unique_diffs}    ${unique_key}
+                        &{detail}=    Create Dictionary
+                        ...    row_id=${row_id}
+                        ...    field=Field${diff}[field_index]
+                        ...    is_simple=${TRUE}
+                        ...    has_key_value=${has_key_value}
+                        ...    diff=${diff}
+                        Append To List    ${diff_details}    ${detail}
                     END
                 END
             ELSE
                 # No json_key_differences key - simple field
-                ${has_key_value}=    Run Keyword And Return Status
-                ...    Dictionary Should Contain Key    ${diff}    key_value
-                IF    ${has_key_value}
-                    ${field_key}=    Set Variable    ${diff}[key_value]_Field${diff}[field_index]
-                ELSE
-                    ${field_key}=    Set Variable    Row${diff}[row_index]_Field${diff}[field_index]
-                END
-                ${exists}=    Evaluate    '''${field_key}''' in $unique_keys
+                ${unique_key}=    Set Variable    ${row_id}::Field${diff}[field_index]
+                ${exists}=    Evaluate    '''${unique_key}''' in $unique_diffs
                 IF    not ${exists}
-                    Append To List    ${unique_keys}    ${field_key}
+                    Append To List    ${unique_diffs}    ${unique_key}
+                    &{detail}=    Create Dictionary
+                    ...    row_id=${row_id}
+                    ...    field=Field${diff}[field_index]
+                    ...    is_simple=${TRUE}
+                    ...    has_key_value=${has_key_value}
+                    ...    diff=${diff}
+                    Append To List    ${diff_details}    ${detail}
                 END
             END
         ELSE IF    '${diff}[type]' == 'ROW_COUNT_MISMATCH'
-            ${exists}=    Evaluate    'ROW_COUNT' in $unique_keys
-            IF    not ${exists}    Append To List    ${unique_keys}    ROW_COUNT
+            ${exists}=    Evaluate    'ROW_COUNT' in $unique_diffs
+            IF    not ${exists}
+                Append To List    ${unique_diffs}    ROW_COUNT
+                &{detail}=    Create Dictionary    type=ROW_COUNT_MISMATCH    diff=${diff}
+                Append To List    ${diff_details}    ${detail}
+            END
         ELSE IF    '${diff}[type]' == 'HEADER_MISMATCH'
-            ${exists}=    Evaluate    'HEADERS' in $unique_keys
-            IF    not ${exists}    Append To List    ${unique_keys}    HEADERS
+            ${exists}=    Evaluate    'HEADERS' in $unique_diffs
+            IF    not ${exists}
+                Append To List    ${unique_diffs}    HEADERS
+                &{detail}=    Create Dictionary    type=HEADER_MISMATCH    diff=${diff}
+                Append To List    ${diff_details}    ${detail}
+            END
         ELSE IF    '${diff}[type]' == 'EXTRA_ROW_IN_FILE1'
             ${row_key}=    Set Variable    EXTRA_ROW_ACTUAL_${diff}[row_index]
-            ${exists}=    Evaluate    '''${row_key}''' in $unique_keys
+            ${exists}=    Evaluate    '''${row_key}''' in $unique_diffs
             IF    not ${exists}
-                Append To List    ${unique_keys}    ${row_key}
+                Append To List    ${unique_diffs}    ${row_key}
+                &{detail}=    Create Dictionary    type=EXTRA_ROW_IN_FILE1    diff=${diff}
+                Append To List    ${diff_details}    ${detail}
             END
         ELSE IF    '${diff}[type]' == 'EXTRA_ROW_IN_FILE2'
             ${row_key}=    Set Variable    EXTRA_ROW_EXPECTED_${diff}[row_index]
-            ${exists}=    Evaluate    '''${row_key}''' in $unique_keys
+            ${exists}=    Evaluate    '''${row_key}''' in $unique_diffs
             IF    not ${exists}
-                Append To List    ${unique_keys}    ${row_key}
+                Append To List    ${unique_diffs}    ${row_key}
+                &{detail}=    Create Dictionary    type=EXTRA_ROW_IN_FILE2    diff=${diff}
+                Append To List    ${diff_details}    ${detail}
             END
         ELSE IF    '${diff}[type]' == 'EXTRA_FIELD_IN_FILE1'
             ${field_key}=    Set Variable    EXTRA_FIELD_ACTUAL_Row${diff}[row_index]_Field${diff}[field_index]
-            ${exists}=    Evaluate    '''${field_key}''' in $unique_keys
+            ${exists}=    Evaluate    '''${field_key}''' in $unique_diffs
             IF    not ${exists}
-                Append To List    ${unique_keys}    ${field_key}
+                Append To List    ${unique_diffs}    ${field_key}
+                &{detail}=    Create Dictionary    type=EXTRA_FIELD_IN_FILE1    diff=${diff}
+                Append To List    ${diff_details}    ${detail}
             END
         ELSE IF    '${diff}[type]' == 'EXTRA_FIELD_IN_FILE2'
             ${field_key}=    Set Variable    EXTRA_FIELD_EXPECTED_Row${diff}[row_index]_Field${diff}[field_index]
-            ${exists}=    Evaluate    '''${field_key}''' in $unique_keys
+            ${exists}=    Evaluate    '''${field_key}''' in $unique_diffs
             IF    not ${exists}
-                Append To List    ${unique_keys}    ${field_key}
+                Append To List    ${unique_diffs}    ${field_key}
+                &{detail}=    Create Dictionary    type=EXTRA_FIELD_IN_FILE2    diff=${diff}
+                Append To List    ${diff_details}    ${detail}
             END
         ELSE IF    '${diff}[type]' == 'UNMATCHED_ROW_IN_FILE1'
             ${row_key}=    Set Variable    UNMATCHED_ACTUAL_${diff}[key_value]
-            ${exists}=    Evaluate    '''${row_key}''' in $unique_keys
+            ${exists}=    Evaluate    '''${row_key}''' in $unique_diffs
             IF    not ${exists}
-                Append To List    ${unique_keys}    ${row_key}
+                Append To List    ${unique_diffs}    ${row_key}
+                &{detail}=    Create Dictionary    type=UNMATCHED_ROW_IN_FILE1    diff=${diff}
+                Append To List    ${diff_details}    ${detail}
             END
         ELSE IF    '${diff}[type]' == 'UNMATCHED_ROW_IN_FILE2'
             ${row_key}=    Set Variable    UNMATCHED_EXPECTED_${diff}[key_value]
-            ${exists}=    Evaluate    '''${row_key}''' in $unique_keys
+            ${exists}=    Evaluate    '''${row_key}''' in $unique_diffs
             IF    not ${exists}
-                Append To List    ${unique_keys}    ${row_key}
+                Append To List    ${unique_diffs}    ${row_key}
+                &{detail}=    Create Dictionary    type=UNMATCHED_ROW_IN_FILE2    diff=${diff}
+                Append To List    ${diff_details}    ${detail}
             END
         ELSE IF    '${diff}[type]' == 'ROW_ORDER_MISMATCH'
             ${order_key}=    Set Variable    ORDER_MISMATCH_${diff}[key_value]
-            ${exists}=    Evaluate    '''${order_key}''' in $unique_keys
+            ${exists}=    Evaluate    '''${order_key}''' in $unique_diffs
             IF    not ${exists}
-                Append To List    ${unique_keys}    ${order_key}
+                Append To List    ${unique_diffs}    ${order_key}
+                &{detail}=    Create Dictionary    type=ROW_ORDER_MISMATCH    diff=${diff}
+                Append To List    ${diff_details}    ${detail}
             END
         END
         # Skip ROW_CONTENT_MISMATCH - it's a parent-level diff, details are in FIELD_VALUE_MISMATCH
     END
-    ${unique_count}=    Get Length    ${unique_keys}
+    ${unique_count}=    Get Length    ${unique_diffs}
 
     # Update status based on unique differences count
     IF    ${unique_count} == 0
@@ -1803,165 +1852,104 @@ Log Comparison With Exclusions Details
     ${is_match_key_set}=    Evaluate    $match_key is not None and str($match_key) != 'None'
     IF    ${is_match_key_set}    Log    Match Key: ${match_key}    console=yes
     Log    Excluded Keys: ${comparison_result}[excluded_keys]    console=yes
-    Log    Unique Field Differences: ${unique_count}    console=yes
+    Log    Total Differences: ${unique_count}    console=yes
 
     IF    ${unique_count} > 0
         Log    \nFIELD DIFFERENCES:    console=yes
 
-        @{logged_keys}=    Create List
+        FOR    ${detail}    IN    @{diff_details}
+            ${has_type}=    Run Keyword And Return Status
+            ...    Dictionary Should Contain Key    ${detail}    type
 
-        FOR    ${diff}    IN    @{comparison_result}[differences]
-            IF    '${diff}[type]' == 'FIELD_VALUE_MISMATCH'
-                ${has_json_diff}=    Run Keyword And Return Status
-                ...    Dictionary Should Contain Key    ${diff}    json_key_differences
+            IF    ${has_type}
+                ${detail_type}=    Get From Dictionary    ${detail}    type
+                ${diff}=    Get From Dictionary    ${detail}    diff
 
-                ${json_diff_count}=    Set Variable    0
-                IF    ${has_json_diff}
-                    ${json_diffs}=    Get From Dictionary    ${diff}    json_key_differences
-                    ${json_diff_count}=    Get Length    ${json_diffs}
-                END
-
-                # Check if this is from key-based matching
-                ${has_key_value}=    Run Keyword And Return Status
-                ...    Dictionary Should Contain Key    ${diff}    key_value
-
-                IF    ${json_diff_count} > 0
-                    # JSON field - show nested key differences
-                    FOR    ${json_diff}    IN    @{json_diffs}
-                        ${key}=    Get From Dictionary    ${json_diff}    key
-
-                        ${already_logged}=    Evaluate    '''${key}''' in $logged_keys
-                        IF    ${already_logged}    CONTINUE
-
-                        Append To List    ${logged_keys}    ${key}
-
-                        ${has_status}=    Run Keyword And Return Status
-                        ...    Dictionary Should Contain Key    ${json_diff}    status
-
-                        # Log context for key-based matching
-                        IF    ${has_key_value}
-                            Log    \nMatched Row (${diff}[match_key] = ${diff}[key_value]):    console=yes
-                        END
-
-                        IF    ${has_status}
-                            ${status}=    Get From Dictionary    ${json_diff}    status
-                            IF    '${status}' == 'ONLY_IN_FILE1'
-                                ${val1}=    Get From Dictionary    ${json_diff}    file1_value
-                                Log    Field: ${key}    console=yes
-                                Log    Actual: ${val1}    console=yes
-                                Log    Expected: (not present)    console=yes
-                            ELSE IF    '${status}' == 'ONLY_IN_FILE2'
-                                ${val2}=    Get From Dictionary    ${json_diff}    file2_value
-                                Log    Field: ${key}    console=yes
-                                Log    Actual: (not present)    console=yes
-                                Log    Expected: ${val2}    console=yes
-                            END
-                        ELSE
-                            ${val1}=    Get From Dictionary    ${json_diff}    file1_value
-                            ${val2}=    Get From Dictionary    ${json_diff}    file2_value
-                            Log    Field: ${key}    console=yes
-                            Log    Actual: ${val1}    console=yes
-                            Log    Expected: ${val2}    console=yes
-                        END
-                    END
-                ELSE
-                    # Simple field - show row/field difference
-                    IF    ${has_key_value}
-                        ${field_key}=    Set Variable    ${diff}[key_value]_Field${diff}[field_index]
-                    ELSE
-                        ${field_key}=    Set Variable    Row${diff}[row_index]_Field${diff}[field_index]
-                    END
-                    ${already_logged}=    Evaluate    '''${field_key}''' in $logged_keys
-                    IF    not ${already_logged}
-                        Append To List    ${logged_keys}    ${field_key}
-                        IF    ${has_key_value}
-                            Log
-                            ...    \nMatched Row (${diff}[match_key] = ${diff}[key_value]), Field: ${diff}[field_index]
-                            ...    console=yes
-                        ELSE
-                            Log    \nRow: ${diff}[row_index], Field: ${diff}[field_index]    console=yes
-                        END
-                        Log    Actual: ${diff}[file1_value]    console=yes
-                        Log    Expected: ${diff}[file2_value]    console=yes
-                    END
-                END
-            ELSE IF    '${diff}[type]' == 'ROW_COUNT_MISMATCH'
-                ${already_logged}=    Evaluate    'ROW_COUNT' in $logged_keys
-                IF    not ${already_logged}
-                    Append To List    ${logged_keys}    ROW_COUNT
-                    Log    \nRow Count Mismatch    console=yes
+                IF    '${detail_type}' == 'ROW_COUNT_MISMATCH'
+                    Log    \n📊 Row Count Mismatch    console=yes
                     Log    Actual: ${diff}[file1_count] rows    console=yes
                     Log    Expected: ${diff}[file2_count] rows    console=yes
-                END
-            ELSE IF    '${diff}[type]' == 'HEADER_MISMATCH'
-                ${already_logged}=    Evaluate    'HEADERS' in $logged_keys
-                IF    not ${already_logged}
-                    Append To List    ${logged_keys}    HEADERS
-                    Log    \nHeader Mismatch    console=yes
+                ELSE IF    '${detail_type}' == 'HEADER_MISMATCH'
+                    Log    \n📋 Header Mismatch    console=yes
                     Log    Actual: ${diff}[file1_header]    console=yes
                     Log    Expected: ${diff}[file2_header]    console=yes
-                END
-            ELSE IF    '${diff}[type]' == 'EXTRA_ROW_IN_FILE1'
-                ${row_key}=    Set Variable    EXTRA_ROW_ACTUAL_${diff}[row_index]
-                ${already_logged}=    Evaluate    '''${row_key}''' in $logged_keys
-                IF    not ${already_logged}
-                    Append To List    ${logged_keys}    ${row_key}
-                    Log    \nExtra Row in Actual (Row ${diff}[row_index])    console=yes
+                ELSE IF    '${detail_type}' == 'EXTRA_ROW_IN_FILE1'
+                    Log    \n➕ Extra Row in Actual (Row ${diff}[row_index])    console=yes
                     Log    Content: ${diff}[row_content]    console=yes
-                END
-            ELSE IF    '${diff}[type]' == 'EXTRA_ROW_IN_FILE2'
-                ${row_key}=    Set Variable    EXTRA_ROW_EXPECTED_${diff}[row_index]
-                ${already_logged}=    Evaluate    '''${row_key}''' in $logged_keys
-                IF    not ${already_logged}
-                    Append To List    ${logged_keys}    ${row_key}
-                    Log    \nMissing Row (Expected Row ${diff}[row_index])    console=yes
+                ELSE IF    '${detail_type}' == 'EXTRA_ROW_IN_FILE2'
+                    Log    \n➖ Missing Row (Expected Row ${diff}[row_index])    console=yes
                     Log    Content: ${diff}[row_content]    console=yes
-                END
-            ELSE IF    '${diff}[type]' == 'EXTRA_FIELD_IN_FILE1'
-                ${field_key}=    Set Variable    EXTRA_FIELD_ACTUAL_Row${diff}[row_index]_Field${diff}[field_index]
-                ${already_logged}=    Evaluate    '''${field_key}''' in $logged_keys
-                IF    not ${already_logged}
-                    Append To List    ${logged_keys}    ${field_key}
-                    Log    \nExtra Field in Actual (Row ${diff}[row_index], Field ${diff}[field_index])    console=yes
+                ELSE IF    '${detail_type}' == 'EXTRA_FIELD_IN_FILE1'
+                    Log
+                    ...    \n➕ Extra Field in Actual (Row ${diff}[row_index], Field ${diff}[field_index])
+                    ...    console=yes
                     Log    Value: ${diff}[field_value]    console=yes
-                END
-            ELSE IF    '${diff}[type]' == 'EXTRA_FIELD_IN_FILE2'
-                ${field_key}=    Set Variable    EXTRA_FIELD_EXPECTED_Row${diff}[row_index]_Field${diff}[field_index]
-                ${already_logged}=    Evaluate    '''${field_key}''' in $logged_keys
-                IF    not ${already_logged}
-                    Append To List    ${logged_keys}    ${field_key}
-                    Log    \nMissing Field (Expected Row ${diff}[row_index], Field ${diff}[field_index])    console=yes
+                ELSE IF    '${detail_type}' == 'EXTRA_FIELD_IN_FILE2'
+                    Log
+                    ...    \n➖ Missing Field (Expected Row ${diff}[row_index], Field ${diff}[field_index])
+                    ...    console=yes
                     Log    Value: ${diff}[field_value]    console=yes
-                END
-            ELSE IF    '${diff}[type]' == 'UNMATCHED_ROW_IN_FILE1'
-                ${row_key}=    Set Variable    UNMATCHED_ACTUAL_${diff}[key_value]
-                ${already_logged}=    Evaluate    '''${row_key}''' in $logged_keys
-                IF    not ${already_logged}
-                    Append To List    ${logged_keys}    ${row_key}
-                    Log    \nUnmatched Row in Actual (${diff}[match_key] = ${diff}[key_value])    console=yes
+                ELSE IF    '${detail_type}' == 'UNMATCHED_ROW_IN_FILE1'
+                    Log    \n➕ Unmatched Row in Actual (${diff}[match_key] = ${diff}[key_value])    console=yes
                     Log    This row exists in actual but not in expected    console=yes
-                END
-            ELSE IF    '${diff}[type]' == 'UNMATCHED_ROW_IN_FILE2'
-                ${row_key}=    Set Variable    UNMATCHED_EXPECTED_${diff}[key_value]
-                ${already_logged}=    Evaluate    '''${row_key}''' in $logged_keys
-                IF    not ${already_logged}
-                    Append To List    ${logged_keys}    ${row_key}
-                    Log    \nMissing Row in Actual (${diff}[match_key] = ${diff}[key_value])    console=yes
+                ELSE IF    '${detail_type}' == 'UNMATCHED_ROW_IN_FILE2'
+                    Log    \n➖ Missing Row in Actual (${diff}[match_key] = ${diff}[key_value])    console=yes
                     Log    This row exists in expected but not in actual    console=yes
-                END
-            ELSE IF    '${diff}[type]' == 'ROW_ORDER_MISMATCH'
-                ${order_key}=    Set Variable    ORDER_MISMATCH_${diff}[key_value]
-                ${already_logged}=    Evaluate    '''${order_key}''' in $logged_keys
-                IF    not ${already_logged}
-                    Append To List    ${logged_keys}    ${order_key}
+                ELSE IF    '${detail_type}' == 'ROW_ORDER_MISMATCH'
                     Log    \n📍 Row Order Mismatch (${diff}[match_key] = ${diff}[key_value])    console=yes
                     Log    Position in Actual: Row ${diff}[file1_position]    console=yes
                     Log    Position in Expected: Row ${diff}[file2_position]    console=yes
                 END
+            ELSE
+                # Field value mismatch (JSON or simple)
+                ${row_id}=    Get From Dictionary    ${detail}    row_id
+                ${field}=    Get From Dictionary    ${detail}    field
+                ${diff}=    Get From Dictionary    ${detail}    diff
+                ${has_key_value}=    Get From Dictionary    ${detail}    has_key_value
+
+                ${is_simple}=    Run Keyword And Return Status
+                ...    Dictionary Should Contain Key    ${detail}    is_simple
+
+                IF    ${has_key_value}
+                    Log    \n🔑 Row (${diff}[match_key] = ${row_id}):    console=yes
+                ELSE
+                    Log    \n📍 ${row_id}:    console=yes
+                END
+
+                IF    ${is_simple}
+                    Log    Field: ${field}    console=yes
+                    Log    Actual: ${diff}[file1_value]    console=yes
+                    Log    Expected: ${diff}[file2_value]    console=yes
+                ELSE
+                    ${json_diff}=    Get From Dictionary    ${detail}    json_diff
+                    ${has_status}=    Run Keyword And Return Status
+                    ...    Dictionary Should Contain Key    ${json_diff}    status
+
+                    IF    ${has_status}
+                        ${status}=    Get From Dictionary    ${json_diff}    status
+                        IF    '${status}' == 'ONLY_IN_FILE1'
+                            ${val1}=    Get From Dictionary    ${json_diff}    file1_value
+                            Log    Field: ${field}    console=yes
+                            Log    Actual: ${val1}    console=yes
+                            Log    Expected: (not present)    console=yes
+                        ELSE IF    '${status}' == 'ONLY_IN_FILE2'
+                            ${val2}=    Get From Dictionary    ${json_diff}    file2_value
+                            Log    Field: ${field}    console=yes
+                            Log    Actual: (not present)    console=yes
+                            Log    Expected: ${val2}    console=yes
+                        END
+                    ELSE
+                        ${val1}=    Get From Dictionary    ${json_diff}    file1_value
+                        ${val2}=    Get From Dictionary    ${json_diff}    file2_value
+                        Log    Field: ${field}    console=yes
+                        Log    Actual: ${val1}    console=yes
+                        Log    Expected: ${val2}    console=yes
+                    END
+                END
             END
         END
     ELSE
-        Log    \nFILES ARE IDENTICAL (after excluding dynamic fields)    console=yes
+        Log    \n✅ FILES ARE IDENTICAL (after excluding dynamic fields)    console=yes
     END
 
     Log    \n============================================    console=yes
@@ -1983,7 +1971,8 @@ Compare Row Fields
             ${field1}=    Get From List    ${row1}    ${field_index}
             ${field2}=    Get From List    ${row2}    ${field_index}
 
-            IF    '${field1}' != '${field2}'
+            ${fields_equal}=    Evaluate    $field1 == $field2
+            IF    not ${fields_equal}
                 ${diff}=    Create Dictionary
                 ...    type=FIELD_VALUE_MISMATCH
                 ...    row_index=${row_index}
