@@ -1,0 +1,51 @@
+RECORD_METADATA,RECORD_CONTENT
+"{
+  ""SnowflakeConnectorPushTime"": 999,
+  ""offset"": 1001,
+  ""entityId"": ""entity-001""
+}","{
+  ""/MARKETING-NOTIFICATIONS/CONTENT"": true,
+  ""lastUpdatedBy"": ""user001"",
+  ""lastUpdatedTime"": ""2025-12-01T10:00:00.000Z""
+}"
+"{
+  ""SnowflakeConnectorPushTime"": 888,
+  ""offset"": 1002,
+  ""entityId"": ""entity-002"",
+  ""missingInActual"": ""expected_only_field""
+}","{
+  ""/MARKETING-NOTIFICATIONS/CONTENT"": false,
+  ""lastUpdatedBy"": ""user002"",
+  ""lastUpdatedTime"": ""2025-12-01T10:00:01.000Z""
+}"
+"{
+  ""SnowflakeConnectorPushTime"": 777,
+  ""offset"": 1003,
+  ""entityId"": ""entity-003""
+}","{
+  ""/MARKETING-NOTIFICATIONS/CONTENT"": true,
+  ""lastUpdatedBy"": ""user003"",
+  ""lastUpdatedTime"": ""2025-12-01T10:00:02.000Z"",
+  ""nestedObject"": {
+    ""key1"": ""different_value"",
+    ""key2"": 999
+  }
+}"
+"{
+  ""SnowflakeConnectorPushTime"": 666,
+  ""offset"": 1004,
+  ""entityId"": ""entity-004""
+}","{
+  ""/MARKETING-NOTIFICATIONS/CONTENT"": true,
+  ""lastUpdatedBy"": ""different_user"",
+  ""lastUpdatedTime"": ""2025-12-01T10:00:03.000Z""
+}"
+"{
+  ""SnowflakeConnectorPushTime"": 555,
+  ""offset"": 1006,
+  ""entityId"": ""entity-006-only-in-expected""
+}","{
+  ""/MARKETING-NOTIFICATIONS/CONTENT"": false,
+  ""lastUpdatedBy"": ""user006"",
+  ""lastUpdatedTime"": ""2025-12-01T10:00:05.000Z""
+}"

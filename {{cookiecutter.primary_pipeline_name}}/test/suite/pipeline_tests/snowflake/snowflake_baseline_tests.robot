@@ -237,11 +237,16 @@ Compare Actual vs Expected CSV Output
     ...    IDENTICAL = Files must match exactly
     ...    DIFFERENT = Files expected to differ
     ...    SUBSET = File1 is subset of File2
-    [Tags]    snowflake_demo
+    [Tags]    snowflake_demo2
     [Template]    Compare CSV Files With Exclusions Template
 
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status    exclude_columns    match_key=headers.profile_id
-    ${actual_output_file1_path_from_db}    ${expected_output_file1_path}    ${TRUE}    ${TRUE}    IDENTICAL    @{excluded_columns_for_comparison}    match_key=headers.profile_id
+
+    ${actual_output_file1_path_from_db}    ${expected_output_file1_path}    ${FALSE}    ${TRUE}    IDENTICAL    @{excluded_columns_for_comparison}
+    # ${actual_output_file1_path_from_db}    ${expected_output_file1_path}    ${FALSE}    ${TRUE}    IDENTICAL    @{excluded_columns_for_comparison}
+
+    # ${actual_output_file1_path_from_db}    ${expected_output_file2_path}    ${TRUE}    ${TRUE}    IDENTICAL    @{excluded_columns_for_comparison}    match_key=entityId
+    # ${actual_output_file1_path_from_db}    ${expected_output_file2_path}    ${FALSE}    ${TRUE}    IDENTICAL    @{excluded_columns_for_comparison}
 
 Verify Snowflake Pipeline results against each input file sequentially
     [Documentation]    End to End test case executing the full Snowflake pipeline workflow

@@ -1,0 +1,17 @@
+RECORD_METADATA,RECORD_CONTENT
+"{
+  ""offset"": 1001,
+  ""entityId"": ""entity-001""
+}","{
+  ""status"": false,
+  ""lastUpdatedBy"": ""different_user"",
+  ""count"": 999
+}"
+"{
+  ""offset"": 1002,
+  ""entityId"": ""entity-002""
+}","{
+  ""status"": true,
+  ""lastUpdatedBy"": ""another_user"",
+  ""count"": 888
+}"

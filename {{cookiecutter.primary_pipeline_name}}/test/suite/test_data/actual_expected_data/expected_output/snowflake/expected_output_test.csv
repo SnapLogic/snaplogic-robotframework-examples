@@ -1,0 +1,64 @@
+RECORD_METADATA,RECORD_CONTENT
+"{
+  ""SnowflakeConnectorPushTime"": 1,
+  ""offset"": 335328,
+  ""entityId"": ""3ae6deb4-295d-3277-b71d-556e2822fa51""
+}","{
+  ""/MARKETING-NOTIFICATIONS/CONTENT"": false,
+  ""lastUpdatedBy"": ""9411826599278901"",
+  ""lastUpdatedTime"": ""2025-12-01T21:34:51.754Z""
+}"
+"{
+  ""SnowflakeConnectorPushTime"": 2,
+  ""offset"": 335329,
+  ""entityId"": ""3ae6deb4-295d-3277-b71d-556e2822fa52""
+}","{
+  ""/MARKETING-NOTIFICATIONS/CONTENT"": false,
+  ""lastUpdatedBy"": ""9411826599278902"",
+  ""lastUpdatedTime"": ""2025-12-01T21:34:51.755Z""
+}"
+"{
+  ""SnowflakeConnectorPushTime"": 3,
+  ""offset"": 335330,
+  ""entityId"": ""3ae6deb4-295d-3277-b71d-556e2822fa53""
+}","{
+  ""/MARKETING-NOTIFICATIONS/CONTENT"": false,
+  ""lastUpdatedBy"": ""9411826599278903"",
+  ""lastUpdatedTime"": ""2025-12-01T21:34:51.756Z""
+}"
+"{
+  ""SnowflakeConnectorPushTime"": 4,
+  ""offset"": 335331,
+  ""entityId"": ""3ae6deb4-295d-3277-b71d-556e2822fa54""
+}","{
+  ""/MARKETING-NOTIFICATIONS/CONTENT"": false,
+  ""lastUpdatedBy"": ""9411826599278904"",
+  ""lastUpdatedTime"": ""2025-12-01T21:34:51.757Z""
+}"
+"{
+  ""SnowflakeConnectorPushTime"": 5,
+  ""offset"": 335332,
+  ""entityId"": ""3ae6deb4-295d-3277-b71d-556e2822fa55""
+}","{
+  ""/MARKETING-NOTIFICATIONS/CONTENT"": false,
+  ""lastUpdatedBy"": ""9411826599278905"",
+  ""lastUpdatedTime"": ""2025-12-01T21:34:51.758Z""
+}"
+"{
+  ""SnowflakeConnectorPushTime"": 6,
+  ""offset"": 335333,
+  ""entityId"": ""3ae6deb4-295d-3277-b71d-556e2822fa56""
+}","{
+  ""/MARKETING-NOTIFICATIONS/CONTENT"": false,
+  ""lastUpdatedBy"": ""9411826599278906"",
+  ""lastUpdatedTime"": ""2025-12-01T21:34:51.759Z""
+}"
+"{
+  ""SnowflakeConnectorPushTime"": 7,
+  ""offset"": 335334,
+  ""entityId"": ""3ae6deb4-295d-3277-b71d-556e2822fa57""
+}","{
+  ""/MARKETING-NOTIFICATIONS/CONTENT"": false,
+  ""lastUpdatedBy"": ""9411826599278907"",
+  ""lastUpdatedTime"": ""2025-12-01T21:34:51.760Z""
+}"

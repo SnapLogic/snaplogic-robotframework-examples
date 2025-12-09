@@ -1,0 +1,19 @@
+RECORD_METADATA,RECORD_CONTENT
+"{
+  ""offset"": 1001,
+  ""entityId"": ""entity-001""
+}","{
+  ""lastUpdatedBy"": ""user001""
+}"
+"{
+  ""offset"": 1002,
+  ""entityId"": ""entity-002""
+}","{
+  ""lastUpdatedBy"": ""user002""
+}"
+"{
+  ""offset"": 1003,
+  ""entityId"": ""entity-003-only-in-actual""
+}","{
+  ""lastUpdatedBy"": ""user003""
+}"

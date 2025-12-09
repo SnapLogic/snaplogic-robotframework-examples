@@ -1,0 +1,25 @@
+RECORD_METADATA,RECORD_CONTENT
+"{
+  ""offset"": 1001,
+  ""entityId"": ""entity-001""
+}","{
+  ""lastUpdatedBy"": ""user001"",
+  ""nestedObject"": {
+    ""key1"": ""different_value"",
+    ""key2"": 999,
+    ""innerNested"": {
+      ""a"": false,
+      ""b"": ""world""
+    }
+  }
+}"
+"{
+  ""offset"": 1002,
+  ""entityId"": ""entity-002""
+}","{
+  ""lastUpdatedBy"": ""user002"",
+  ""nestedObject"": {
+    ""key1"": ""same_value"",
+    ""key2"": 200
+  }
+}"
