@@ -18,7 +18,7 @@ RECORD_METADATA,RECORD_CONTENT
   ""lastUpdatedTime"": ""2025-12-01T21:34:51.755Z""
 }"
 "{
-  ""SnowflakeConnectorPushTime"": 3,
+  ""SnowflakeConnectorPushTime"": 30,
   ""offset"": 335330,
   ""entityId"": ""3ae6deb4-295d-3277-b71d-556e2822fa53""
 }","{

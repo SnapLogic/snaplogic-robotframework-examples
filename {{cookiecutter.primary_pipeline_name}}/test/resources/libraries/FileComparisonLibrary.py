@@ -203,7 +203,8 @@ class FileComparisonLibrary:
         else:
             # No match_key - use positional or set-based comparison
             # First do positional comparison to find all differences
-            differences = self._compare_csv_ordered(normalized_csv1, normalized_csv2)
+            # Pass exclude_keys so row matching can ignore dynamic fields
+            differences = self._compare_csv_ordered(normalized_csv1, normalized_csv2, exclude_keys)
             result['differences'].extend(differences)
 
             # If ignore_order is True, check unordered comparison
@@ -529,11 +530,24 @@ class FileComparisonLibrary:
     def _compare_csv_ordered(
         self,
         csv1: List[List[str]],
-        csv2: List[List[str]]
+        csv2: List[List[str]],
+        exclude_keys: List[str] = None
     ) -> List[Dict[str, Any]]:
-        """Compare CSV content in order."""
+        """Compare CSV content in order with detailed field-level differences.
+
+        Also finds matching rows between files to show where each row can be found.
+        """
         differences = []
         max_rows = max(len(csv1), len(csv2))
+
+        # Build a lookup of file2 rows for finding matches
+        # Key is a normalized string representation of the row (excluding dynamic fields)
+        file2_row_lookup = {}
+        for idx in range(1, len(csv2)):
+            row_key = self._get_row_key_for_matching(csv2[idx], exclude_keys)
+            if row_key not in file2_row_lookup:
+                file2_row_lookup[row_key] = []
+            file2_row_lookup[row_key].append(idx)
 
         for row_index in range(1, max_rows):  # Skip header
             has_row1 = row_index < len(csv1)
@@ -541,12 +555,36 @@ class FileComparisonLibrary:
 
             if has_row1 and has_row2:
                 if csv1[row_index] != csv2[row_index]:
-                    differences.append({
+                    diff = {
                         'type': 'ROW_CONTENT_MISMATCH',
                         'row_index': row_index,
                         'file1_row': csv1[row_index],
                         'file2_row': csv2[row_index]
-                    })
+                    }
+                    # Get detailed field-level differences for clear output
+                    field_diffs = self._compare_row_fields_with_details(
+                        csv1[row_index], csv2[row_index], row_index
+                    )
+                    if field_diffs:
+                        diff['field_differences'] = field_diffs
+
+                    # Find where this row from file1 exists in file2 (if anywhere)
+                    # Row indices start at 1 (header is 0), so use directly as data row number
+                    row1_key = self._get_row_key_for_matching(csv1[row_index], exclude_keys)
+                    if row1_key in file2_row_lookup:
+                        matching_rows_in_file2 = file2_row_lookup[row1_key]
+                        diff['file1_row_matches_file2_rows'] = matching_rows_in_file2  # Already 1-based data row numbers
+
+                    # Find where this row from file2 exists in file1 (if anywhere)
+                    row2_key = self._get_row_key_for_matching(csv2[row_index], exclude_keys)
+                    file1_matches = []
+                    for idx in range(1, len(csv1)):
+                        if self._get_row_key_for_matching(csv1[idx], exclude_keys) == row2_key:
+                            file1_matches.append(idx)  # idx is already 1-based data row number
+                    if file1_matches:
+                        diff['file2_row_matches_file1_rows'] = file1_matches
+
+                    differences.append(diff)
             elif has_row1:
                 differences.append({
                     'type': 'EXTRA_ROW_IN_FILE1',
@@ -561,6 +599,26 @@ class FileComparisonLibrary:
                 })
 
         return differences
+
+    def _get_row_key_for_matching(self, row: List[str], exclude_keys: List[str] = None) -> str:
+        """Generate a key for row matching by normalizing JSON content and excluding dynamic fields."""
+        if not exclude_keys:
+            exclude_keys = []
+
+        normalized_parts = []
+        for cell in row:
+            try:
+                # Try to parse as JSON and remove excluded keys
+                data = json.loads(cell)
+                if isinstance(data, dict):
+                    filtered = {k: v for k, v in data.items() if k not in exclude_keys}
+                    normalized_parts.append(json.dumps(filtered, sort_keys=True))
+                else:
+                    normalized_parts.append(json.dumps(data, sort_keys=True))
+            except (json.JSONDecodeError, TypeError):
+                normalized_parts.append(cell)
+
+        return '|||'.join(normalized_parts)
 
     def _compare_csv_by_key(
         self,
@@ -1103,6 +1161,12 @@ class FileComparisonLibrary:
                     # ROW_CONTENT_MISMATCH - handle both with and without field_differences
                     key_value = diff.get('key_value', '')
                     match_key_name = diff.get('match_key', '')
+                    # row_index starts at 1 (skips header at index 0), use directly as data row number
+                    row_num = diff.get('row_index', 0)
+
+                    # Check for row matching info (shows where this row exists in the other file)
+                    file1_matches_file2 = diff.get('file1_row_matches_file2_rows', [])
+                    file2_matches_file1 = diff.get('file2_row_matches_file1_rows', [])
 
                     if 'field_differences' in diff and diff['field_differences']:
                         for fd in diff['field_differences']:
@@ -1111,12 +1175,18 @@ class FileComparisonLibrary:
                             if has_json_diff:
                                 for jd in fd['json_key_differences']:
                                     key = jd.get('path', jd.get('key', 'unknown'))
-                                    if key in logged_keys:
+                                    # Use row-specific unique key to avoid skipping same field in different rows
+                                    unique_key = f"{row_num}::{key}" if not key_value else f"{key_value}::{key}"
+                                    if unique_key in logged_keys:
                                         continue
-                                    logged_keys.append(key)
+                                    logged_keys.append(unique_key)
 
                                     logger.console("")
-                                    logger.console(f"Matched Row ({match_key_name} = {key_value}):")
+                                    # Show Row# for positional matching, key=value for key-based matching
+                                    if key_value and match_key_name:
+                                        logger.console(f"Row ({match_key_name} = {key_value}):")
+                                    else:
+                                        logger.console(f"Row{row_num}:")
 
                                     jd_type = jd.get('type', 'VALUE_MISMATCH')
                                     if jd_type == 'VALUE_MISMATCH':
@@ -1133,26 +1203,43 @@ class FileComparisonLibrary:
                                         logger.console(f"Expected: {jd.get('value', '')}")
                             else:
                                 # Simple field difference without JSON details
-                                field_key = f"Field{fd.get('field_index', 0)}"
+                                field_key = f"{row_num}::Field{fd.get('field_index', 0)}" if not key_value else f"{key_value}::Field{fd.get('field_index', 0)}"
                                 if field_key not in logged_keys:
                                     logged_keys.append(field_key)
                                     logger.console("")
-                                    logger.console(f"Matched Row ({match_key_name} = {key_value}):")
+                                    if key_value and match_key_name:
+                                        logger.console(f"Row ({match_key_name} = {key_value}):")
+                                    else:
+                                        logger.console(f"Row{row_num}:")
                                     logger.console(f"Field: Column {fd.get('field_index', 0)}")
                                     logger.console(f"Actual: {fd.get('file1_value', '')[:200] if fd.get('file1_value') else ''}")
                                     logger.console(f"Expected: {fd.get('file2_value', '')[:200] if fd.get('file2_value') else ''}")
+
+                        # Show row matching info after field differences (once per row)
+                        # Only show where the actual row matches in expected file
+                        match_key_log = f"ROW_MATCH_INFO_{row_num}"
+                        if match_key_log not in logged_keys:
+                            logged_keys.append(match_key_log)
+                            if file1_matches_file2:
+                                logger.console(f"  --- Row Matching Info ---")
+                                logger.console(f"  Actual Row [{row_num}] matches Expected Row {file1_matches_file2}")
                     else:
                         # ROW_CONTENT_MISMATCH without field_differences - show row-level diff
-                        row_key = f"ROW_MISMATCH_{key_value or diff.get('row_index', 'unknown')}"
+                        row_key = f"ROW_MISMATCH_{key_value or row_num}"
                         if row_key not in logged_keys:
                             logged_keys.append(row_key)
                             logger.console("")
-                            if key_value:
-                                logger.console(f"Matched Row ({match_key_name} = {key_value}):")
+                            if key_value and match_key_name:
+                                logger.console(f"Row ({match_key_name} = {key_value}):")
                             else:
-                                logger.console(f"Row {diff.get('row_index', 'unknown')}:")
+                                logger.console(f"Row{row_num}:")
                             logger.console(f"Actual: {str(diff.get('file1_row', ''))[:300]}")
                             logger.console(f"Expected: {str(diff.get('file2_row', ''))[:300]}")
+
+                            # Show row matching info - only where actual row matches in expected file
+                            if file1_matches_file2:
+                                logger.console(f"  --- Row Matching Info ---")
+                                logger.console(f"  Actual Row [{row_num}] matches Expected Row {file1_matches_file2}")
 
                 elif diff['type'] == 'ROW_COUNT_MISMATCH':
                     if 'ROW_COUNT' not in logged_keys:
