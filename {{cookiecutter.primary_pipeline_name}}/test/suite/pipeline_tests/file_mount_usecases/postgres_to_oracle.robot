@@ -16,7 +16,7 @@ Library             CSVLibrary
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource    # SnapLogic API keywords
 Resource            ../../test_data/queries/postgres_queries.resource
 Resource            ../../test_data/queries/oracle_queries.resource
-Resource            ../../../resources/files.resource    # CSV/JSON file operations
+Resource            ../../../resources/common/files.resource    # CSV/JSON file operations
 
 Suite Setup         Initialize Test Environment
 # Suite Teardown    Drop Tables in Postgres DB

@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation       Optimized resource file for CSV/JSON file operations and comparisons.
 ...                 This resource file uses standard Robot Framework libraries
-...                 with a custom FileComparisonLibrary for comparison with exclusions.
+...                 with a custom file_comparison_library for comparison with exclusions.
 ...
 ...                 Contains keywords for:
 ...                 - CSV/JSON file loading and validation
@@ -12,7 +12,7 @@ Documentation       Optimized resource file for CSV/JSON file operations and com
 ...                 - Key-based row matching for CSV comparison
 
 # Custom Library for comparison operations (not available in standard libraries)
-Library             libraries/FileComparisonLibrary.py
+Library             ../../libraries/common/FileComparisonLibrary.py
 # Standard Libraries
 Library             OperatingSystem
 Library             Collections
@@ -22,7 +22,7 @@ Library             CSVLibrary
 Library             DatabaseLibrary
 # Other Resource Files
 Resource            general.resource
-Resource            database.resource
+Resource            sql_table_operations.resource
 
 
 *** Keywords ***

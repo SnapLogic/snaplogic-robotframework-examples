@@ -9,11 +9,11 @@ Documentation       Snowflake Database Integration Tests
 
 Library             Collections
 Library             OperatingSystem
-Resource            ../../../resources/snowflake2/snowflake_keywords_databaselib.resource    # For Snowflake connection
+Resource            ../../../resources/snowflake/snowflake_keywords_databaselib.resource    # For Snowflake connection
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource
-Resource            ../../../resources/files.resource
-Resource            ../../../resources/general.resource
-Resource            ../../../resources/sql_table_operations.resource    # Generic SQL operations
+Resource            ../../../resources/common/files.resource
+Resource            ../../../resources/common/general.resource
+Resource            ../../../resources/common/sql_table_operations.resource    # Generic SQL operations
 Resource            ../../test_data/queries/snowflake_queries.resource    # Snowflake SQL queries
 
 Suite Setup         Check connections    # Check if the connection to the snowflake database is successful and snaplex is up
@@ -105,7 +105,7 @@ Upload test input file
     ...    • Argument 1: Local File Path - The local file path to the expression library file (.expr)
     ...    (e.g., ${CURDIR}/../../test_data/expression_libraries/snowflake/snowflake_library.expr)
     ...    • Argument 2: Destination Path - The destination path in SnapLogic where the file will be uploaded
-    [Tags]    snowflake_demo    snowflake_multiple_files
+    [Tags]    snowflake_demo2    snowflake_multiple_files
     [Template]    Upload File Using File Protocol Template
     # local file path    destination_path in snaplogic
     ${input_file1_path}    ${PIPELINES_LOCATION_PATH}
@@ -237,7 +237,7 @@ Compare Actual vs Expected CSV Output
     ...    IDENTICAL = Files must match exactly
     ...    DIFFERENT = Files expected to differ
     ...    SUBSET = File1 is subset of File2
-    [Tags]    snowflake_demo2
+    [Tags]    snowflake_demo
     [Template]    Compare CSV Files With Exclusions Template
 
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status    exclude_columns    match_key=headers.profile_id

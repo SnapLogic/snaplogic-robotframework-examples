@@ -5,7 +5,7 @@ Documentation       Kafka utility keywords for Robot Framework tests
 Library             Collections
 Library             String
 Library             BuiltIn
-Library             kafka_library.py
+Library             ../../libraries/kafka/kafka_library.py
 
 
 *** Variables ***
@@ -28,7 +28,7 @@ Delete Kafka Topic
 
     # Get existing topics
     ${existing_topics}=    Get Kafka Topics
-    
+
     # Filter to only delete topics that exist
     @{topics_to_delete}=    Create List
     FOR    ${topic}    IN    @{topic_names}
@@ -40,7 +40,7 @@ Delete Kafka Topic
             Log    Topic '${topic}' does not exist - skipping    console=yes
         END
     END
-    
+
     # Only attempt deletion if there are topics to delete
     ${topics_to_delete_count}=    Get Length    ${topics_to_delete}
     IF    ${topics_to_delete_count} > 0

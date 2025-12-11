@@ -13,7 +13,7 @@ Library             teradatasql    # Teradata specific operations
 Library             DependencyLibrary
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource    # SnapLogic API keywords from installed package
 Resource            ../../test_data/queries/teradata_queries.resource    # Teradata queries
-Resource            ../../../resources/files.resource    # CSV/JSON file operations
+Resource            ../../../resources/common/files.resource    # CSV/JSON file operations
 
 Suite Setup         Check connections    # Check if the connection to the Teradata database is successful and snaplex is up
 

@@ -12,7 +12,7 @@ Library             DatabaseLibrary    # Generic database operations
 Library             pymysql    # MySQL specific operations
 Library             DependencyLibrary
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource    # SnapLogic API keywords from installed package
-Resource            ../../../resources/files.resource    # CSV/JSON file operations
+Resource            ../../../resources/common/files.resource    # CSV/JSON file operations
 
 Suite Setup         Check connections    # Check if the connection to the MySQL database is successful and snaplex is up
 

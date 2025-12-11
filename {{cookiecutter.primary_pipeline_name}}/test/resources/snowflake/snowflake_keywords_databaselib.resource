@@ -9,7 +9,7 @@ Library             OperatingSystem
 Library             Collections
 Library             String
 Library             BuiltIn
-Library             ./SnowflakeConnection.py    #    Helper for private key processing
+Library             ../../libraries/snowflake/SnowflakeConnection.py    #    Helper for private key processing
 
 
 *** Variables ***

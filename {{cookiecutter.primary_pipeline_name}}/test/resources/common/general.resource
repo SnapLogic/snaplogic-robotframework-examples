@@ -9,8 +9,7 @@ Library             OperatingSystem
 Library             JSONLibrary
 Library             RequestsLibrary
 Resource            files.resource
-Resource            database.resource
-Resource            minio.resource
+Resource            sql_table_operations.resource
 
 
 *** Keywords ***

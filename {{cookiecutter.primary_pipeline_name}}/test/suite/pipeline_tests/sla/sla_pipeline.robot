@@ -9,7 +9,7 @@ Documentation       Test Suite for Oracle Database Integration with Pipeline Tas
 # Standard Libraries
 Library             OperatingSystem    # File system operations
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource    # SnapLogic API keywords from installed package
-Resource            ../../../resources/files.resource    # CSV/JSON file operations
+Resource            ../../../resources/common/files.resource    # CSV/JSON file operations
 
 Suite Setup         Check connections    # Check if the connection to the Oracle database is successful and snaplex is up
 

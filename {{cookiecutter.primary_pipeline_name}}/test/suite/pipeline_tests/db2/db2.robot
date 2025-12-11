@@ -12,8 +12,8 @@ Library             DatabaseLibrary    # Generic database operations
 Library             DependencyLibrary
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource    # SnapLogic API keywords from installed package
 Resource            ../../test_data/queries/db2_queries.resource    # DB2 queries
-Resource            ../../../resources/files.resource    # CSV/JSON file operations
-Library             ../../../resources/db2/db2_connection.py
+Resource            ../../../resources/common/files.resource    # CSV/JSON file operations
+Library             ../../../libraries/db2/db2_connection.py
 
 Suite Setup         Check connections    # Check if the connection to the DB2 database is successful and snaplex is up
 

@@ -14,7 +14,7 @@ Documentation       Advanced JMS JSON Message Testing Suite with ActiveMQ Artemi
 # Resource    ../../../resources/jms.resource
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/jms.resource
-Resource            ../../../resources/files.resource
+Resource            ../../../resources/common/files.resource
 Library             OperatingSystem
 Library             String
 Library             Collections

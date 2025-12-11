@@ -10,8 +10,8 @@ Library             JSONLibrary
 Library             DateTime
 Library             OperatingSystem
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource
-Resource            ../../../resources/files.resource
-Resource            ../../../resources/email_utils.resource
+Resource            ../../../resources/common/files.resource
+Resource            ../../../resources/mail-mockservice/email_utils.resource
 
 Suite Setup         Initialize Variables
 

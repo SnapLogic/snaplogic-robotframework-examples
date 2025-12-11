@@ -5,10 +5,10 @@ Documentation       Snowflake Database Integration Tests
 
 Library             Collections
 Library             OperatingSystem
-Resource            ../../../resources/snowflake2/snowflake_keywords_databaselib.resource    # For Snowflake connection
+Resource            ../../../resources/snowflake/snowflake_keywords_databaselib.resource    # For Snowflake connection
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource
-Resource            ../../../resources/files.resource
-Resource            ../../../resources/sql_table_operations.resource    # Generic SQL operations
+Resource            ../../../resources/common/files.resource
+Resource            ../../../resources/common/sql_table_operations.resource    # Generic SQL operations
 Resource            ../../test_data/queries/snowflake_queries.resource    # Snowflake SQL queries
 
 Suite Setup         Check connections    # Check if the connection to the MySQL database is successful and snaplex is up
