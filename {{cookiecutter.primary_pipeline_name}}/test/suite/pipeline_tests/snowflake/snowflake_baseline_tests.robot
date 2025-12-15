@@ -105,7 +105,7 @@ Upload test input file
     ...    • Argument 1: Local File Path - The local file path to the expression library file (.expr)
     ...    (e.g., ${CURDIR}/../../test_data/expression_libraries/snowflake/snowflake_library.expr)
     ...    • Argument 2: Destination Path - The destination path in SnapLogic where the file will be uploaded
-    [Tags]    snowflake_demo2    snowflake_multiple_files
+    [Tags]    snowflake_demo    snowflake_multiple_files
     [Template]    Upload File Using File Protocol Template
     # local file path    destination_path in snaplogic
     ${input_file1_path}    ${PIPELINES_LOCATION_PATH}

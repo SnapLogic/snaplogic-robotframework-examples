@@ -67,7 +67,8 @@
       "src/pipelines/snowflake2.slp",
       "src/pipelines/snowflake_keypair.slp"
     ],
-    "resources_path": "test/resources/snowflake2/**",
+    "resources_path": "test/resources/snowflake/**",
+    "libraries_path": "test/libraries/snowflake/**",
     "tests_path": "test/suite/pipeline_tests/*snowflake*",
     "accounts_path": [
       "test/suite/test_data/accounts_payload/acc_snowflake_s3_db.json",
@@ -89,6 +90,7 @@
     "makefile_path": "makefiles/messaging_services/Makefile.kafka",
     "pipeline_path": "src/pipelines/kafka.slp",
     "resources_path": "test/resources/kafka/**",
+    "libraries_path": "test/libraries/kafka/**",
     "tests_path": "test/suite/pipeline_tests/*kafka*",
     "accounts_path": "test/suite/test_data/accounts_payload/acc_kafka.json"
   },
@@ -98,6 +100,7 @@
     "makefile_path": "makefiles/messaging_services/Makefile.activemq",
     "pipeline_path": "src/pipelines/jmsconsumer.slp",
     "resources_path": "test/resources/jms/**",
+    "libraries_path": "test/libraries/jms/**",
     "tests_path": "test/suite/pipeline_tests/*jms*",
     "accounts_path": "test/suite/test_data/accounts_payload/acc_jms.json",
     "accounts_jar_files": "test/suite/test_data/accounts_jar_files/db2/artemis-jms-client-all-2.6.0.jar"
@@ -110,7 +113,7 @@
       "src/pipelines/postgres_to_s3_csv.slp",
       "src/pipelines/postgres_to_s3_json.slp"
     ],
-    "resources_path": "test/resources/minio.resource",
+    "resources_path": "test/resources/minio/**",
     "tests_path": "test/suite/pipeline_tests/*s3*",
     "accounts_path": "test/suite/test_data/accounts_payload/acc_s3.json"
   },
@@ -119,7 +122,7 @@
     "env_path": "env_files/mock_service_accounts/.env.email",
     "makefile_path": "makefiles/mock_services/Makefile.maildev",
     "pipeline_path": "src/pipelines/email.slp",
-    "resources_path": "test/resources/email_utils.resource",
+    "resources_path": "test/resources/main-mockservices/**",
     "tests_path": "test/suite/pipeline_tests/*mail*",
     "accounts_path": "test/suite/test_data/accounts_payload/acc_email.json"
   },
