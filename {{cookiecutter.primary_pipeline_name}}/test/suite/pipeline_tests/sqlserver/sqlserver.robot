@@ -14,6 +14,7 @@ Library             DependencyLibrary
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource    # SnapLogic API keywords from installed package
 Resource            ../../test_data/queries/sqlserver_queries.resource    # SQL Server queries
 Resource            ../../../resources/common/files.resource    # CSV/JSON file operations
+Resource            ../../../resources/common/database.resource
 
 Suite Setup         Check connections    # Check if the connection to the SQL Server database is successful and snaplex is up
 
