@@ -42,6 +42,7 @@
     "makefile_path": "makefiles/database_services/Makefile.db2",
     "pipeline_path": "src/pipelines/db2.slp",
     "resources_path": "test/resources/db2/**",
+    "libraries_path": "test/libraries/db2/**",
     "tests_path": "test/suite/pipeline_tests/*db2*",
     "accounts_path": "test/suite/test_data/accounts_payload/acc_db2.json",
     "accounts_jar_files": "test/suite/test_data/accounts_jar_files/db2/db2jcc4.jar"
@@ -58,7 +59,8 @@
     "docker_path": "docker/snowflake-config/**",
     "env_paths": [
       "env_files/database_accounts/.env.snowflake",
-      "env_files/database_accounts/.env.snowflake_s3_keypair"
+      "env_files/database_accounts/.env.snowflake_s3_keypair",
+      "env_files/database_accounts/.env.snowflake_s3_dynamic_keypair"
     ],
     "makefile_path": "makefiles/database_services/Makefile.snowflake",
     "pipeline_paths": [
@@ -140,7 +142,9 @@
       "src/pipelines/postgres_oracle.slp",
       "src/pipelines/snowflake_assets_backup.zip",
       "src/pipelines/swapna-automation-latest_sl_project (2).zip"
-    ]
+    ],
+    "backup_files": "**/*.backup",
+    "pyc_files": "**/*.pyc"
   },
   "file_mounts": {
     "pipeline_paths": [
