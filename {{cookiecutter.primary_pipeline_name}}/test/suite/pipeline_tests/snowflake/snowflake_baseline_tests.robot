@@ -92,9 +92,9 @@ Create Account
     ...    📝 USAGE EXAMPLES:
     ...    ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_FILE_NAME}    ${sf_acct_username_password}
     ...    /org/project/shared    ${SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_FILE_NAME}    prod_snowflake_acct
-    [Tags]    snowflake_demo    snowflake_multiple_files
+    [Tags]    snowflake_demo2    snowflake_multiple_files
     [Template]    Create Account From Template
-    ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_S3_DYNAMIC_FILE_NAME}    ${sf_acct_keypair}
+    ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_S3_DYNAMIC_FILE_NAME}    ${sf_acct_keypair}    overwrite_if_exists=${TRUE}
 
 Upload test input file
     [Documentation]    Uploads the expression library (.expr file) to the project level shared folder.
