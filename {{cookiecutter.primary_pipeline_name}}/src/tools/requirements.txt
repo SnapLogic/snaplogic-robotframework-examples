@@ -1,17 +1,21 @@
-#integration test requirements
+# Integration test requirements
+# Note: snaplogic-common-robot includes: robotframework, robotframework-requests,
+# robotframework-databaselibrary, robotframework-pabot, robotframework-jsonlibrary,
+# robotframework-csvlibrary, requests, boto3, and more.
+
 snaplogic-common-robot
-robotframework-databaselibrary
+
+# Database drivers (not included in snaplogic-common-robot)
 oracledb  # Oracle database driver
-psycopg2-binary # PostgreSQL database driver
-minio # MinIO client
-stomp.py # STOMP protocol client for JMS testing
-requests # HTTP client for ActiveMQ management API
-pymssql # Microsoft SQL Server database driver
-pymysql # MySQL database driver
-ibm_db # IBM DB2 database driver
-teradatasql # Teradata database driver
-snowflake-connector-python # Snowflake database driver
-cryptography>=3.0.0 # Required for Snowflake key pair authentication
-robotframework-pabot==2.18.0
-# Install kafka-python directly (no need for robotframework-kafkalibrary)
-kafka-python>=2.0.2
+psycopg2-binary  # PostgreSQL database driver
+pymssql  # Microsoft SQL Server database driver
+pymysql  # MySQL database driver
+ibm_db  # IBM DB2 database driver
+teradatasql  # Teradata database driver
+snowflake-connector-python  # Snowflake database driver
+cryptography>=3.0.0  # Required for Snowflake key pair authentication
+
+# Additional clients (not included in snaplogic-common-robot)
+minio  # MinIO/S3 client
+kafka-python>=2.0.2  # Kafka client
+stomp-py>=8.0.0  # STOMP protocol client (ActiveMQ, Artemis, RabbitMQ)
