@@ -36,6 +36,7 @@ ${sf_acct_keypair}                      ${pipeline_name}_account
 
 # Task Details for created triggered task from the above pipeline
 ${task_name}                            Task
+${ultra_task_name}                      Ultra_Task
 @{notification_states}                  Completed    Failed
 &{task_notifications}
 ...                                     recipients=newemail@gmail.com
@@ -131,7 +132,7 @@ Import Pipeline
     ...    (e.g., snowflake_pl1, data_processor, etl_pipeline)
     ...    • Argument 4: ${pipeline_file_name} - Physical .slp file name to import
     ...    (e.g., snowflake1.slp, pipeline.slp)
-    [Tags]    snowflake_demo    snowflake_multiple_files
+    [Tags]    snowflake_demo2    snowflake_multiple_files
     [Template]    Import Pipelines From Template
 
     ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${pipeline_file_name}
@@ -155,6 +156,30 @@ Create Triggered_task
     [Template]    Create Triggered Task From Template
 
     ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task_name}    ${GROUNDPLEX_NAME}    ${task_params_set}    execution_timeout=300
+
+Create Ultra_task
+    [Documentation]    Creates an ultra task (always-on task) for pipeline execution and returns task metadata.
+    ...    Ultra tasks are always-on pipeline executions with watchdog configuration for high availability.
+    ...    They include settings for max failures, max in-flight executions, and watchdog instances.
+    ...    📋 ARGUMENT DETAILS:
+    ...    • Argument 1: ${unique_id} - Unique identifier for test execution (generated in suite setup)
+    ...    • Argument 2: ${PIPELINES_LOCATION_PATH} - SnapLogic path where pipelines are stored
+    ...    • Argument 3: ${pipeline_name} - Name of the pipeline to create task for
+    ...    • Argument 4: ${ultra_task_name} - Name to assign to the ultra task
+    ...    • Argument 5: ${GROUNDPLEX_NAME} - Name of the Snaplex where task will execute (optional- can be omitted)
+    ...    • Argument 6: ${task_params_set} - Dictionary of parameters to pass to pipeline execution
+    ...    (e.g., snowflake_acct, schema_name, table_name)-(optional- can be omitted)
+    ...    • Argument 7: ${task_notifications} (Optional) - Dictionary containing notification settings
+    ...    (recipients and states for task completion/failure alerts)-(optional- can be omitted)
+    ...    • Argument 8: ${llfeed_token} (Optional) - Token for llfeed authentication
+    ...    • Argument 9: ${watchdog_instances} (Optional) - Number of watchdog instances (default: 1)
+    ...    • Argument 10: ${watchdog_per} (Optional) - Watchdog scope PLEX or NODE (default: PLEX)
+    ...    • Argument 11: ${max_failures} (Optional) - Maximum failures allowed (default: 10)
+    ...    • Argument 12: ${max_in_flight} (Optional) - Maximum in-flight executions (default: 200)
+    [Tags]    snowflake_demo2    snowflake_ultra_task
+    [Template]    Create Ultra Task From Template
+
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${ultra_task_name}    ${GROUNDPLEX_NAME}    ${task_params_set}    watchdog_instances=1    max_failures=10    max_in_flight=200
 
 Execute Triggered Task
     [Documentation]    Executes the triggered task with specified parameters and monitors completion.
