@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SnapLogic Robot Framework - Complete Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #29B5E8;
+            --secondary-color: #0C5776;
+            --snaplogic-dark: #0C5776;
+            --snaplogic-navy: #0a4a63;
+            --snaplogic-blue: #29B5E8;
+            --snaplogic-light-blue: #5ccbf0;
+            --snaplogic-accent: #29B5E8;
+            --snaplogic-pale: #e6f7fc;
+            --snaplogic-gray: #64748b;
+            --snaplogic-success: #28a745;
+            --snaplogic-warning: #ffc107;
+            --snaplogic-error: #dc3545;
+            --light-bg: #f8f9fa;
+            --border-color: #dee2e6;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            padding: 60px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="white" stroke-width="0.5" opacity="0.1"/></svg>');
+            animation: rotate 30s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -50%;
+            left: -50%;
+            width: 100%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(41, 181, 232, 0.1) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .logo-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            display: block;
+            position: relative;
+        }
+
+        .header h1 {
+            color: #ffffff;
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .header .subtitle {
+            color: var(--snaplogic-accent);
+            font-size: 1.2rem;
+            font-weight: 500;
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .header .description {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1rem;
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .content {
+            padding: 50px 40px;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            color: var(--snaplogic-dark);
+            margin-bottom: 30px;
+            text-align: center;
+            position: relative;
+            padding-bottom: 15px;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border-radius: 2px;
+        }
+
+        .tutorials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .tutorial-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 35px;
+            border: 2px solid #e2e8f0;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            display: block;
+        }
+
+        .tutorial-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            transform: scaleX(0);
+            transition: transform 0.4s ease;
+        }
+
+        .tutorial-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 50px rgba(41, 181, 232, 0.2);
+            border-color: var(--primary-color);
+        }
+
+        .tutorial-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .tutorial-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: #fff;
+            font-size: 1.3rem;
+            font-weight: 700;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(41, 181, 232, 0.3);
+        }
+
+        .tutorial-card h3 {
+            font-size: 1.4rem;
+            color: var(--snaplogic-dark);
+            margin-bottom: 12px;
+        }
+
+        .tutorial-card p {
+            color: var(--snaplogic-gray);
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .tutorial-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--snaplogic-blue);
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .tutorial-card:hover .tutorial-link {
+            gap: 12px;
+            color: var(--snaplogic-accent);
+        }
+
+        .tutorial-link::after {
+            content: '→';
+            transition: transform 0.3s ease;
+        }
+
+        .tutorial-card:hover .tutorial-link::after {
+            transform: translateX(4px);
+        }
+
+        /* Quick Links Section */
+        .quick-links {
+            margin-top: 60px;
+            padding: 40px;
+            background: var(--snaplogic-pale);
+            border-radius: 20px;
+        }
+
+        .quick-links h2 {
+            font-size: 1.5rem;
+            color: var(--snaplogic-dark);
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .quick-links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .quick-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px 20px;
+            background: #fff;
+            border-radius: 12px;
+            text-decoration: none;
+            color: var(--snaplogic-dark);
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .quick-link:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 5px 20px rgba(41, 181, 232, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .quick-link-icon {
+            font-size: 1.3rem;
+        }
+
+        /* Reference Card */
+        .reference-card {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border-radius: 20px;
+            padding: 35px;
+            margin-top: 40px;
+            color: #fff;
+            box-shadow: 0 15px 40px rgba(41, 181, 232, 0.3);
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .reference-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -30%;
+            width: 80%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .reference-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .reference-card p {
+            opacity: 0.9;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .reference-card a {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 25px;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 30px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+        }
+
+        .reference-card a:hover {
+            background: #fff;
+            color: var(--secondary-color);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .snaplogic-logo {
+            display: inline-block;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 40px 25px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .logo-icon {
+                font-size: 3rem;
+            }
+
+            .content {
+                padding: 30px 25px;
+            }
+
+            .tutorials-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tutorial-card {
+                padding: 25px;
+            }
+
+            .quick-links {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <span class="logo-icon">🤖</span>
+            <h1>SnapLogic Robot Framework</h1>
+            <p class="subtitle">Complete End-to-End Workflow Guide</p>
+            <p class="description">Your comprehensive guide to mastering test automation with SnapLogic Robot Framework</p>
+        </div>
+
+        <div class="content">
+            <!-- GitHub HTML Preview Notice -->
+            <div style="background: linear-gradient(135deg, #e6f7fc, #d1f0fa); border-radius: 12px; padding: 20px 25px; margin-bottom: 30px; border-left: 4px solid #29B5E8; display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                <span style="font-size: 1.5rem;">💡</span>
+                <div style="flex: 1; min-width: 200px;">
+                    <strong style="color: #0C5776; display: block; margin-bottom: 5px;">Viewing on GitHub?</strong>
+                    <span style="color: #64748b; font-size: 0.95rem;">For proper HTML formatting, use the link below:</span>
+                </div>
+                <a href="https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/Tutorials/HTML%20DOCS/Robotframework_end_to_end_workflow_steps.html" target="_blank" style="background: linear-gradient(135deg, #29B5E8, #0C5776); color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.9rem; white-space: nowrap; transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 15px rgba(41,181,232,0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                    🔗 Open in HTML Preview
+                </a>
+            </div>
+
+            <h2 class="section-title">Tutorial Guides</h2>
+
+            <div class="tutorials-grid">
+                <a href="01_prerequisites.html" class="tutorial-card">
+                    <div class="tutorial-number">01</div>
+                    <h3>Prerequisites</h3>
+                    <p>Get started with the essential knowledge and tools needed for Robot Framework automation, including Git, Docker, and Makefiles.</p>
+                    <span class="tutorial-link">Start Learning</span>
+                </a>
+
+                <a href="02_architecture_overview.html" class="tutorial-card">
+                    <div class="tutorial-number">02</div>
+                    <h3>Architecture Overview</h3>
+                    <p>Understand the overall testing architecture including CI/CD pipeline, Robot Framework, Docker infrastructure, and SnapLogic Platform.</p>
+                    <span class="tutorial-link">Start Learning</span>
+                </a>
+
+                <a href="03_vscode_setup_guide.html" class="tutorial-card">
+                    <div class="tutorial-number">03</div>
+                    <h3>VS Code Setup Guide</h3>
+                    <p>Configure Visual Studio Code for Robot Framework development with extensions, Python environment, and code navigation.</p>
+                    <span class="tutorial-link">Start Learning</span>
+                </a>
+
+                <a href="04_configuration_setup.html" class="tutorial-card">
+                    <div class="tutorial-number">04</div>
+                    <h3>Configuration Setup</h3>
+                    <p>Complete setup guide covering pipeline preparation, Groundplex configuration, account setup, and test configuration.</p>
+                    <span class="tutorial-link">Start Learning</span>
+                </a>
+
+                <a href="05_pipeline_execution_quickstart.html" class="tutorial-card">
+                    <div class="tutorial-number">05</div>
+                    <h3>Pipeline Execution Quick Start</h3>
+                    <p>Get your SnapLogic Robot Framework testing environment up and running in minutes with this 5-step guide.</p>
+                    <span class="tutorial-link">Start Learning</span>
+                </a>
+
+                <a href="06_testing_phases.html" class="tutorial-card">
+                    <div class="tutorial-number">06</div>
+                    <h3>Testing Phases</h3>
+                    <p>Understand the complete testing lifecycle from development through production deployment, including test data preparation and CI/CD execution.</p>
+                    <span class="tutorial-link">Start Learning</span>
+                </a>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="quick-links">
+                <h2>🔗 Quick Navigation</h2>
+                <div class="quick-links-grid">
+                    <a href="01_prerequisites.html" class="quick-link">
+                        <span class="quick-link-icon">📋</span>
+                        Prerequisites
+                    </a>
+                    <a href="02_architecture_overview.html" class="quick-link">
+                        <span class="quick-link-icon">🏗️</span>
+                        Architecture Overview
+                    </a>
+                    <a href="03_vscode_setup_guide.html" class="quick-link">
+                        <span class="quick-link-icon">💻</span>
+                        VS Code Setup
+                    </a>
+                    <a href="04_configuration_setup.html" class="quick-link">
+                        <span class="quick-link-icon">⚙️</span>
+                        Configuration Setup
+                    </a>
+                    <a href="05_pipeline_execution_quickstart.html" class="quick-link">
+                        <span class="quick-link-icon">🚀</span>
+                        5-Step Quick Start
+                    </a>
+                    <a href="06_testing_phases.html" class="quick-link">
+                        <span class="quick-link-icon">🔄</span>
+                        Testing Phases
+                    </a>
+                    <a href="https://robotframework.org/" class="quick-link">
+                        <span class="quick-link-icon">🤖</span>
+                        Robot Framework Docs
+                    </a>
+                </div>
+            </div>
+
+            <!-- Reference Card -->
+            <div class="reference-card">
+                <h3>📹 Video Demo Available</h3>
+                <p>Watch the complete framework overview to get started quickly</p>
+                <a href="https://drive.google.com/file/d/1fhLUj0frIsar3jouTnNUDZkjI80aFOYo/view?usp=drive_link">
+                    🎬 Watch Architectural Demo
+                </a>
+            </div>
+
+            <!-- Blog Reference Card -->
+            <div class="reference-card" style="background: linear-gradient(135deg, var(--snaplogic-navy) 0%, var(--snaplogic-blue) 100%);">
+                <h3>📝 Official Blog Post</h3>
+                <p>Learn more about SnapLogic Test Automation with Robot Framework</p>
+                <a href="https://www.snaplogic.com/blog/snaplogic-test-automation-robot-framework">
+                    📖 Read the Blog
+                </a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <span class="snaplogic-logo">SnapLogic</span><br>
+            Robot Framework Examples
+        </div>
+    </div>
+</body>
+</html>

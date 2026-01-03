@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>05. Pipeline Execution Quick Start - SnapLogic Robot Framework</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #29B5E8;
+            --secondary-color: #0C5776;
+            --snaplogic-dark: #0C5776;
+            --snaplogic-navy: #0a4a63;
+            --snaplogic-blue: #29B5E8;
+            --snaplogic-light-blue: #5ccbf0;
+            --snaplogic-accent: #29B5E8;
+            --snaplogic-pale: #e6f7fc;
+            --snaplogic-gray: #64748b;
+            --snaplogic-success: #10b981;
+            --snaplogic-warning: #f59e0b;
+            --snaplogic-error: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        /* Navigation Bar */
+        .nav-bar {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .nav-brand-text {
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-brand-sub {
+            color: var(--snaplogic-accent);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .nav-link {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .nav-link:hover {
+            background: rgba(41, 181, 232, 0.2);
+            border-color: var(--snaplogic-accent);
+        }
+
+        .nav-link.active {
+            background: var(--snaplogic-blue);
+            border-color: var(--snaplogic-accent);
+        }
+
+        .nav-link.home {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .nav-link.home:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--snaplogic-accent);
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="white" stroke-width="0.5" opacity="0.1"/></svg>');
+            animation: rotate 30s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .header h1 {
+            color: #ffffff;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .header .subtitle {
+            color: var(--snaplogic-accent);
+            font-size: 1rem;
+            font-weight: 500;
+            position: relative;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            color: var(--snaplogic-dark);
+            margin-bottom: 20px;
+            margin-top: 40px;
+            position: relative;
+            padding-bottom: 15px;
+        }
+
+        .section-title:first-of-type {
+            margin-top: 0;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border-radius: 2px;
+        }
+
+        .intro-text {
+            font-size: 1.1rem;
+            color: var(--snaplogic-gray);
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--snaplogic-pale);
+            border-radius: 10px;
+            border-left: 4px solid var(--snaplogic-blue);
+        }
+
+        .intro-text a {
+            color: var(--snaplogic-blue);
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .intro-text a:hover {
+            color: var(--snaplogic-dark);
+            text-decoration: underline;
+        }
+
+        .info-box {
+            background: var(--snaplogic-pale);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 4px solid var(--snaplogic-blue);
+        }
+
+        .info-box.warning {
+            background: #fef3c7;
+            border-left-color: var(--snaplogic-warning);
+        }
+
+        .info-box.success {
+            background: #d1fae5;
+            border-left-color: var(--snaplogic-success);
+        }
+
+        .info-box strong {
+            color: var(--snaplogic-dark);
+        }
+
+        .step-card {
+            background: #fff;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 25px;
+            border: 1px solid #e2e8f0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .step-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: linear-gradient(180deg, var(--primary-color), var(--secondary-color));
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .step-number {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .step-title {
+            font-size: 1.5rem;
+            color: var(--snaplogic-dark);
+            font-weight: 600;
+        }
+
+        .step-content h4 {
+            font-size: 1.1rem;
+            color: var(--snaplogic-navy);
+            margin: 20px 0 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .step-content p {
+            color: var(--snaplogic-gray);
+            margin-bottom: 15px;
+        }
+
+        .step-content ul, .step-content ol {
+            color: var(--snaplogic-gray);
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+
+        .step-content li {
+            margin-bottom: 8px;
+        }
+
+        .code-block {
+            background: var(--snaplogic-dark);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+
+        .code-block code {
+            color: #e2e8f0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            white-space: pre;
+        }
+
+        .code-block .comment {
+            color: #6b7280;
+        }
+
+        .code-block .variable {
+            color: var(--snaplogic-accent);
+        }
+
+        .code-block .value {
+            color: #10b981;
+        }
+
+        .case-card {
+            background: #fff;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+        }
+
+        .case-card:hover {
+            border-color: var(--snaplogic-blue);
+            box-shadow: 0 10px 30px rgba(41, 181, 232, 0.1);
+        }
+
+        .case-card h4 {
+            font-size: 1.2rem;
+            color: var(--snaplogic-blue);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .case-card p {
+            color: var(--snaplogic-gray);
+            margin-bottom: 15px;
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, var(--snaplogic-pale), #fff);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            border: 1px solid var(--snaplogic-blue);
+        }
+
+        .result-card h4 {
+            font-size: 1.2rem;
+            color: var(--snaplogic-dark);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .result-card ul {
+            list-style: none;
+            margin: 0;
+        }
+
+        .result-card li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+            color: var(--snaplogic-gray);
+        }
+
+        .result-card li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--snaplogic-success);
+            font-weight: bold;
+        }
+
+        .reference-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+
+        .reference-link {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .reference-link:hover {
+            border-color: var(--snaplogic-blue);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(41, 181, 232, 0.15);
+        }
+
+        .reference-link-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .reference-link-content h5 {
+            color: var(--snaplogic-dark);
+            font-size: 1rem;
+            margin-bottom: 5px;
+        }
+
+        .reference-link-content p {
+            color: var(--snaplogic-gray);
+            font-size: 0.85rem;
+            margin: 0;
+        }
+
+        .page-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 2px solid #e2e8f0;
+        }
+
+        .page-nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 25px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: #fff;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(41, 181, 232, 0.3);
+        }
+
+        .page-nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(41, 181, 232, 0.4);
+        }
+
+        .page-nav-btn.prev {
+            background: var(--snaplogic-pale);
+            color: var(--snaplogic-blue);
+            box-shadow: none;
+            border: 2px solid var(--snaplogic-blue);
+        }
+
+        .page-nav-btn.prev:hover {
+            background: var(--snaplogic-blue);
+            color: #fff;
+        }
+
+        .page-nav-btn.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .snaplogic-logo {
+            display: inline-block;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .success-banner {
+            background: linear-gradient(135deg, var(--snaplogic-success), #059669);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+            color: #fff;
+            text-align: center;
+        }
+
+        .success-banner h3 {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+        }
+
+        .success-banner p {
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .nav-bar {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .nav-links {
+                justify-content: center;
+            }
+
+            .header {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .content {
+                padding: 25px 20px;
+            }
+
+            .step-card {
+                padding: 20px;
+            }
+
+            .step-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .page-navigation {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .page-nav-btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .reference-links {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Navigation Bar -->
+        <nav class="nav-bar">
+            <a href="Robotframework_end_to_end_workflow_steps.html" class="nav-brand">
+                <div>
+                    <span class="nav-brand-text">SnapLogic Robot Framework</span><br>
+                    <span class="nav-brand-sub">Tutorial Series</span>
+                </div>
+            </a>
+            <div class="nav-links">
+                <a href="Robotframework_end_to_end_workflow_steps.html" class="nav-link home">Home</a>
+                <a href="01_prerequisites.html" class="nav-link">01. Prerequisites</a>
+                <a href="02_architecture_overview.html" class="nav-link">02. Architecture</a>
+                <a href="03_vscode_setup_guide.html" class="nav-link">03. VS Code</a>
+                <a href="04_configuration_setup.html" class="nav-link">04. Configuration</a>
+                <a href="05_pipeline_execution_quickstart.html" class="nav-link active">05. Quick Start</a>
+                <a href="06_testing_phases.html" class="nav-link">06. Testing Phases</a>
+            </div>
+        </nav>
+
+        <div class="header">
+            <h1>Pipeline Execution: 5-Step Quick Start</h1>
+            <p class="subtitle">Get your SnapLogic Robot Framework testing environment up and running in minutes</p>
+        </div>
+
+        <div class="content">
+            <p class="intro-text">
+                This guide walks you through the essential 5 steps to set up and execute your first Robot Framework test against SnapLogic pipelines. Follow these steps to quickly get started with automated testing.
+            </p>
+
+            <!-- Step 1 -->
+            <div class="step-card">
+                <div class="step-header">
+                    <div class="step-number">1</div>
+                    <h3 class="step-title">Install Docker Desktop</h3>
+                </div>
+                <div class="step-content">
+                    <p>Download and install Docker Desktop for your operating system, start it, and verify the installation:</p>
+                    <div class="code-block">
+                        <code>docker --version</code>
+                    </div>
+                    <div class="info-box warning">
+                        <strong>For Windows Users:</strong> Follow the additional instructions for running Docker commands with WSL. See the <a href="../How To Guides/infra_setup_guides/windows_wsl_vscode_setup.md">Windows WSL VS Code Setup Guide</a> for essential setup instructions.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="step-card">
+                <div class="step-header">
+                    <div class="step-number">2</div>
+                    <h3 class="step-title">Clone the Repository</h3>
+                </div>
+                <div class="step-content">
+                    <p>Create a working directory and clone the GitHub repository:</p>
+                    <div class="code-block">
+                        <code>git clone https://github.com/SnapLogic/snaplogic-robotframework-examples</code>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="step-card">
+                <div class="step-header">
+                    <div class="step-number">3</div>
+                    <h3 class="step-title">Open Project</h3>
+                </div>
+                <div class="step-content">
+                    <p>Download VS Code (or any preferred IDE) and open the project folder, or work directly from terminal:</p>
+                    <div class="code-block">
+                        <code><span class="comment"># Change the directory to {{cookiecutter.project_name}}</span>
+eval $(make change-dir)
+<span class="comment"># Directory is changed to {{cookiecutter.project_name}}</span></code>
+                    </div>
+                    <p style="text-align: center; font-weight: 600; color: var(--snaplogic-dark); margin: 15px 0;"><strong>OR</strong></p>
+                    <div class="code-block">
+                        <code>cd {{cookiecutter.project_name}}</code>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="step-card">
+                <div class="step-header">
+                    <div class="step-number">4</div>
+                    <h3 class="step-title">Configure Environment</h3>
+                </div>
+                <div class="step-content">
+                    <p>Create a new <code>.env</code> file at the project root level and configure your credentials:</p>
+                    <div class="code-block">
+                        <code><span class="comment"># Copy the example environment file</span>
+cp .env.example .env</code>
+                    </div>
+                    <p>Then edit the <code>.env</code> file with your actual SnapLogic credentials, organization details, and project settings.</p>
+                    <div class="info-box warning">
+                        <strong>Important:</strong> Make sure to delete all inline comments in the <code>.env</code> file when copying from <code>.env.example</code>.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 5 -->
+            <div class="step-card">
+                <div class="step-header">
+                    <div class="step-number">5</div>
+                    <h3 class="step-title">Build and Execute</h3>
+                </div>
+                <div class="step-content">
+                    <p>Build your test environment using make commands. Choose one of the following cases based on your setup:</p>
+
+                    <div class="case-card">
+                        <h4>Case 1: Using Framework-Managed Groundplex (Local)</h4>
+                        <p>This option creates and manages a Groundplex for you automatically:</p>
+                        <div class="code-block">
+                            <code><span class="comment"># Build the Docker containers for all services</span>
+make start-services
+
+<span class="comment"># Or run only tools service for external accounts</span>
+make start-tools-service-only
+
+<span class="comment"># Run tests with project space setup</span>
+make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True
+
+<span class="comment"># For later executions (project space already exists)</span>
+make robot-run-all-tests TAGS="oracle"</code>
+                        </div>
+                    </div>
+
+                    <div class="case-card">
+                        <h4>Case 2: Using Existing Groundplex</h4>
+                        <p>If you want to use a different/existing Groundplex and skip creation:</p>
+                        <div class="code-block">
+                            <code><span class="comment"># Build the Docker containers</span>
+make start-services
+
+<span class="comment"># Run tests using existing Groundplex</span>
+make robot-run-tests-no-gp TAGS="oracle" PROJECT_SPACE_SETUP=True
+
+<span class="comment"># For later executions</span>
+make robot-run-tests-no-gp TAGS="oracle"</code>
+                        </div>
+                        <div class="info-box">
+                            <strong>Note:</strong> When using <code>robot-run-tests-no-gp</code>, ensure your <code>.env</code> file has the correct <code>GROUNDPLEX_NAME</code> pointing to your existing Groundplex.
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <strong>Clean Start:</strong> When you get the latest code with changes to requirement files or compose files, run:
+                        <div class="code-block" style="margin-top: 10px;">
+                            <code>make clean-start
+<span class="comment"># or</span>
+make clean-start-tools</code>
+                        </div>
+                    </div>
+
+                    <div class="info-box warning">
+                        <strong>Build Time:</strong> This creates a containerized environment with Robot Framework and all testing dependencies. The build process takes about 2-3 minutes.
+                    </div>
+                </div>
+            </div>
+
+            <div class="success-banner">
+                <h3>You're All Set!</h3>
+                <p>Your SnapLogic Robot Framework testing environment is ready to go.</p>
+            </div>
+
+            <!-- What Happens After Execution -->
+            <h2 class="section-title">What Happens After Execution</h2>
+
+            <div class="result-card">
+                <h4>Services Started</h4>
+                <ul>
+                    <li><strong>Groundplex</strong> is launched for SnapLogic pipeline execution</li>
+                    <li><strong>Oracle Database</strong> is started</li>
+                    <li><strong>PostgreSQL Database</strong> is started</li>
+                    <li><strong>MinIO</strong> (S3-compatible object store) is started and pre-configured</li>
+                </ul>
+            </div>
+
+            <div class="result-card">
+                <h4>Tests Are Executed</h4>
+                <ul>
+                    <li>Robot Framework tests run - look for green "PASS" messages</li>
+                    <li>Accounts are created in SnapLogic Org</li>
+                    <li>ProjectSpace is created (existing ones with same name are deleted)</li>
+                    <li>Project is created</li>
+                    <li>Pipeline is imported</li>
+                    <li>Triggered task is created and executed</li>
+                </ul>
+            </div>
+
+            <div class="result-card">
+                <h4>Test Reports Generated</h4>
+                <ul>
+                    <li><strong>Location:</strong> <code>../snaplogic-robotframework-examples/test/robot_output</code></li>
+                    <li><strong>report.html</strong> - Comprehensive test execution report with pass/fail status</li>
+                    <li><strong>log.html</strong> - Detailed execution logs with step-by-step information</li>
+                    <li><strong>output.xml</strong> - XML output for integration with CI/CD tools</li>
+                </ul>
+            </div>
+
+            <!-- Understanding Robot Framework Commands -->
+            <h2 class="section-title">Understanding Robot Framework Commands</h2>
+            <p style="color: var(--snaplogic-gray); margin-bottom: 20px;">For a deeper understanding of the Robot Framework testing process and available commands:</p>
+
+            <div class="reference-links">
+                <a href="../How To Guides/robot_framework_guides/robot_framework_test_execution_flow.md" class="reference-link">
+                    <span class="reference-link-icon">📋</span>
+                    <div class="reference-link-content">
+                        <h5>Test Execution Flow</h5>
+                        <p>Learn how Robot Framework tests are structured and executed in our testing pipeline</p>
+                    </div>
+                </a>
+                <a href="../How To Guides/robot_framework_guides/robot_tests_make_commands.md" class="reference-link">
+                    <span class="reference-link-icon">⚙️</span>
+                    <div class="reference-link-content">
+                        <h5>Make Commands Guide</h5>
+                        <p>Comprehensive reference for all available make commands, parameters, and usage examples</p>
+                    </div>
+                </a>
+                <a href="../How To Guides/robot_framework_guides/snaplogic_common_robot_library_guide.md" class="reference-link">
+                    <span class="reference-link-icon">📚</span>
+                    <div class="reference-link-content">
+                        <h5>SnapLogic Robot Library</h5>
+                        <p>Explore the SnapLogic-specific Robot Framework library with reusable keywords</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Page Navigation -->
+            <div class="page-navigation">
+                <a href="04_pre_execution_setup.html" class="page-nav-btn prev">← Previous: Pre-Execution Setup</a>
+                <span class="page-nav-btn disabled">Next →</span>
+            </div>
+        </div>
+
+        <div class="footer">
+            <span class="snaplogic-logo">SnapLogic</span><br>
+            Robot Framework Examples
+        </div>
+    </div>
+</body>
+</html>

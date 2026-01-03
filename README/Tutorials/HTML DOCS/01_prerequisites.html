@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>01. Prerequisites - SnapLogic Robot Framework</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #29B5E8;
+            --secondary-color: #0C5776;
+            --snaplogic-dark: #0C5776;
+            --snaplogic-navy: #0a4a63;
+            --snaplogic-blue: #29B5E8;
+            --snaplogic-light-blue: #5ccbf0;
+            --snaplogic-accent: #29B5E8;
+            --snaplogic-pale: #e6f7fc;
+            --snaplogic-gray: #64748b;
+            --snaplogic-success: #28a745;
+            --snaplogic-warning: #ffc107;
+            --snaplogic-error: #dc3545;
+            --light-bg: #f8f9fa;
+            --border-color: #dee2e6;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        /* Navigation Bar */
+        .nav-bar {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .nav-brand-text {
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-brand-sub {
+            color: var(--snaplogic-accent);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .nav-link {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .nav-link:hover {
+            background: rgba(0, 163, 224, 0.2);
+            border-color: var(--snaplogic-accent);
+        }
+
+        .nav-link.active {
+            background: var(--snaplogic-blue);
+            border-color: var(--snaplogic-accent);
+        }
+
+        .nav-link.home {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .nav-link.home:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--snaplogic-accent);
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="white" stroke-width="0.5" opacity="0.1"/></svg>');
+            animation: rotate 30s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .header h1 {
+            color: #ffffff;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .header .subtitle {
+            color: var(--snaplogic-accent);
+            font-size: 1rem;
+            font-weight: 500;
+            position: relative;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .reference-card {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border-radius: 15px;
+            padding: 25px 30px;
+            margin-bottom: 40px;
+            color: #fff;
+            box-shadow: 0 10px 30px rgba(41, 181, 232, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .reference-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .reference-card strong {
+            display: block;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            opacity: 0.9;
+        }
+
+        .reference-card a {
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-decoration: none;
+            border-bottom: 2px solid rgba(255,255,255,0.5);
+            transition: border-color 0.3s ease;
+        }
+
+        .reference-card a:hover {
+            border-color: #fff;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            color: var(--snaplogic-dark);
+            margin-bottom: 20px;
+            position: relative;
+            padding-bottom: 15px;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--snaplogic-blue), var(--snaplogic-accent));
+            border-radius: 2px;
+        }
+
+        .intro-text {
+            font-size: 1.1rem;
+            color: var(--snaplogic-gray);
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--snaplogic-pale);
+            border-radius: 10px;
+            border-left: 4px solid var(--snaplogic-blue);
+        }
+
+        .intro-text a {
+            color: var(--snaplogic-blue);
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .intro-text a:hover {
+            color: var(--snaplogic-dark);
+            text-decoration: underline;
+        }
+
+        .knowledge-grid {
+            display: grid;
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .knowledge-card {
+            background: #fff;
+            border-radius: 15px;
+            padding: 30px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .knowledge-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--snaplogic-blue), var(--snaplogic-accent));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .knowledge-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 102, 204, 0.15);
+            border-color: transparent;
+        }
+
+        .knowledge-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .knowledge-card h3 {
+            font-size: 1.4rem;
+            color: var(--snaplogic-dark);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .knowledge-card .icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+            color: #fff;
+        }
+
+        .knowledge-card.git .icon {
+            background: linear-gradient(135deg, var(--snaplogic-navy) 0%, var(--snaplogic-blue) 100%);
+        }
+
+        .knowledge-card.docker .icon {
+            background: linear-gradient(135deg, var(--snaplogic-blue) 0%, var(--snaplogic-accent) 100%);
+        }
+
+        .knowledge-card.robot .icon {
+            background: linear-gradient(135deg, var(--snaplogic-dark) 0%, var(--snaplogic-navy) 100%);
+        }
+
+        .knowledge-card.make .icon {
+            background: linear-gradient(135deg, var(--snaplogic-light-blue) 0%, var(--snaplogic-blue) 100%);
+        }
+
+        .knowledge-card.ide .icon {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        }
+
+        .knowledge-card p {
+            color: var(--snaplogic-gray);
+            margin-bottom: 20px;
+            font-size: 1rem;
+        }
+
+        .links-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .resource-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            background: var(--snaplogic-pale);
+            color: var(--snaplogic-blue);
+            text-decoration: none;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .resource-link:hover {
+            background: linear-gradient(135deg, var(--snaplogic-blue), var(--snaplogic-accent));
+            color: #fff;
+            transform: scale(1.05);
+            border-color: transparent;
+        }
+
+        .resource-link::before {
+            content: '📚';
+        }
+
+        /* Next Page Navigation */
+        .page-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 2px solid #e2e8f0;
+        }
+
+        .page-nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 25px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: #fff;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(41, 181, 232, 0.3);
+        }
+
+        .page-nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(41, 181, 232, 0.4);
+        }
+
+        .page-nav-btn.prev {
+            background: var(--snaplogic-pale);
+            color: var(--secondary-color);
+            box-shadow: none;
+            border: 2px solid var(--primary-color);
+        }
+
+        .page-nav-btn.prev:hover {
+            background: var(--primary-color);
+            color: #fff;
+        }
+
+        .page-nav-btn.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .snaplogic-logo {
+            display: inline-block;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 768px) {
+            .nav-bar {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .nav-links {
+                justify-content: center;
+            }
+
+            .header {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 1.6rem;
+            }
+
+            .content {
+                padding: 25px;
+            }
+
+            .knowledge-card {
+                padding: 20px;
+            }
+
+            .knowledge-card h3 {
+                font-size: 1.2rem;
+            }
+
+            .page-navigation {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .page-nav-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Navigation Bar -->
+        <nav class="nav-bar">
+            <a href="Robotframework_end_to_end_workflow_steps.html" class="nav-brand">
+                <div>
+                    <div class="nav-brand-text">SnapLogic Robot Framework</div>
+                    <div class="nav-brand-sub">End-to-End Workflow Guide</div>
+                </div>
+            </a>
+            <div class="nav-links">
+                <a href="Robotframework_end_to_end_workflow_steps.html" class="nav-link home">🏠 Home</a>
+                <a href="01_prerequisites.html" class="nav-link active">01. Prerequisites</a>
+                <a href="02_architecture_overview.html" class="nav-link">02. Architecture</a>
+                <a href="03_vscode_setup_guide.html" class="nav-link">03. VS Code</a>
+                <a href="04_configuration_setup.html" class="nav-link">04. Configuration</a>
+                <a href="05_pipeline_execution_quickstart.html" class="nav-link">05. Quick Start</a>
+                <a href="06_testing_phases.html" class="nav-link">06. Testing Phases</a>
+            </div>
+        </nav>
+
+        <div class="header">
+            <h1>01. Prerequisites</h1>
+            <p class="subtitle">Getting Started with Robot Automation Framework</p>
+        </div>
+
+        <div class="content">
+            <div class="reference-card">
+                <strong>Reference Demo Recording</strong>
+                <a href="https://drive.google.com/file/d/1Ub-bQtmNfL_BiXGMb2k3ocRMGjfn0mhf/view?usp=drive_link">
+                    Snaplogic Test Example Framework Overview →
+                </a>
+            </div>
+
+            <h2 class="section-title">Pre-requisite Knowledge</h2>
+
+            <div class="intro-text">
+                To make the most of this automation framework, we recommend having a basic understanding of the following technologies. Also, make sure to go through the
+                <a href="04_pre_execution_setup.html">
+                    pre_execution_setup_requirements
+                </a> documentation.
+            </div>
+
+            <div class="knowledge-grid">
+                <div class="knowledge-card git">
+                    <h3>
+                        <span class="icon">🔀</span>
+                        Git &amp; Version Control
+                    </h3>
+                    <p>Understand basic Git commands and version control concepts for cloning repositories, managing branches, and tracking changes.</p>
+                    <div class="links-container">
+                        <a href="https://guides.github.com/introduction/git-handbook/" class="resource-link">Git Handbook</a>
+                        <a href="https://www.atlassian.com/git/tutorials/what-is-version-control" class="resource-link">Git Tutorial for Beginners</a>
+                    </div>
+                </div>
+
+                <div class="knowledge-card docker">
+                    <h3>
+                        <span class="icon">🐳</span>
+                        Docker &amp; Containers
+                    </h3>
+                    <p>Understand how containerized environments work and how Docker is used to manage services.</p>
+                    <div class="links-container">
+                        <a href="https://docs.docker.com/get-started/" class="resource-link">Docker 101 Tutorial</a>
+                    </div>
+                </div>
+
+                <div class="knowledge-card robot">
+                    <h3>
+                        <span class="icon">🤖</span>
+                        Robot Framework
+                    </h3>
+                    <p>Familiarize yourself with this open-source test automation framework. It's used for writing and executing the tests in this project.</p>
+                    <div class="links-container">
+                        <a href="https://robotframework.org/" class="resource-link">Robot Framework Introduction</a>
+                    </div>
+                </div>
+
+                <div class="knowledge-card make">
+                    <h3>
+                        <span class="icon">⚙️</span>
+                        Make &amp; Makefiles
+                    </h3>
+                    <p>Learn how make commands work and how Makefiles are structured. This project uses Makefile targets extensively to manage tasks.</p>
+                    <div class="links-container">
+                        <a href="https://makefiletutorial.com/" class="resource-link">Makefile Tutorial</a>
+                    </div>
+                </div>
+
+                <div class="knowledge-card ide">
+                    <h3>
+                        <span class="icon">💻</span>
+                        IDE / Terminal Setup
+                    </h3>
+                    <p>You can use any IDE or terminal of your choice to execute Robot Framework tests. If you prefer using VS Code, refer to our setup guide for configuring Robot Framework extensions and environment.</p>
+                    <div class="links-container">
+                        <a href="../How%20To%20Guides/infra_setup_guides/vscode/vscode_robot_framework_setup_guide.md" class="resource-link">VS Code Robot Framework Setup Guide</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page Navigation -->
+            <div class="page-navigation">
+                <span class="page-nav-btn prev disabled">← Previous</span>
+                <a href="02_architecture_overview.html" class="page-nav-btn next">Next: Architecture Overview →</a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <span class="snaplogic-logo">SnapLogic</span><br>
+            Robot Framework Examples
+        </div>
+    </div>
+</body>
+</html>
