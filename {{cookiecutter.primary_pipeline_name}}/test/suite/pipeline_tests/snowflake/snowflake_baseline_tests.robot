@@ -132,7 +132,7 @@ Import Pipeline
     ...    (e.g., snowflake_pl1, data_processor, etl_pipeline)
     ...    • Argument 4: ${pipeline_file_name} - Physical .slp file name to import
     ...    (e.g., snowflake1.slp, pipeline.slp)
-    [Tags]    snowflake_demo2    snowflake_multiple_files
+    [Tags]    snowflake_demo    snowflake_multiple_files
     [Template]    Import Pipelines From Template
 
     ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${pipeline_file_name}
@@ -176,7 +176,7 @@ Create Ultra_task
     ...    • Argument 10: ${watchdog_per} (Optional) - Watchdog scope PLEX or NODE (default: PLEX)
     ...    • Argument 11: ${max_failures} (Optional) - Maximum failures allowed (default: 10)
     ...    • Argument 12: ${max_in_flight} (Optional) - Maximum in-flight executions (default: 200)
-    [Tags]    snowflake_demo2    snowflake_ultra_task
+    [Tags]    snowflake_demo    snowflake_ultra_task
     [Template]    Create Ultra Task From Template
 
     ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${ultra_task_name}    ${GROUNDPLEX_NAME}    ${task_params_set}    watchdog_instances=1    max_failures=10    max_in_flight=200
