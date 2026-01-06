@@ -23,6 +23,8 @@ Library             DatabaseLibrary
 # Other Resource Files
 Resource            general.resource
 Resource            sql_table_operations.resource
+# SnapLogic API keywords for file upload operations
+Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource
 
 
 *** Keywords ***
@@ -304,21 +306,35 @@ Compare JSON Files Template
 ################## FILE PROTOCOL TEMPLATES ##################
 
 Upload File Using File Protocol Template
-    [Documentation]    Template keyword to upload files using file:/// protocol URLs.
+    [Documentation]    Template keyword to upload files to SnapLogic using file:/// protocol URLs.
+    ...    Reads the source file from local filesystem and uploads it to SnapLogic.
+    ...    Supports both file:// prefixed URLs and regular file paths.
+    ...
+    ...    Arguments:
+    ...    - file_url: Local file path (with or without file:// prefix)
+    ...    - destination_path: SnapLogic destination path (e.g., project_space/project_name)
+    ...
+    ...    Example:
+    ...    | Upload File Using File Protocol Template | ${CURDIR}/data/test.json | ${PIPELINES_LOCATION_PATH} |
+    ...    | Upload File Using File Protocol Template | file://${CURDIR}/data/test.json | ${PIPELINES_LOCATION_PATH} |
     [Arguments]    ${file_url}    ${destination_path}
 
-    # Extract path from file:// URL
+    # Extract path from file:// URL (handles both with and without prefix)
     ${source_path}=    Evaluate    '${file_url}'.replace('file://', '')
     ${path}    ${filename}=    Split Path    ${source_path}
 
-    Log    Uploading from file URL: ${file_url}
-    Log    Source path: ${source_path}
-    Log    File name: ${filename}
-    Log    Destination: ${destination_path}
+    Log    Uploading from file URL: ${file_url}    console=yes
+    Log    Source path: ${source_path}    console=yes
+    Log    File name: ${filename}    console=yes
+    Log    Destination in SnapLogic: ${destination_path}    console=yes
 
-    # Copy file to destination
-    Copy File    ${source_path}    ${destination_path}
-    Log    File uploaded successfully
+    # Verify source file exists
+    File Should Exist    ${source_path}    Source file not found: ${source_path}
+
+    # Upload file to SnapLogic using the snaplogic_common_robot keyword
+    Upload Files To SnapLogic From Template    ${path}    ${filename}    ${destination_path}
+
+    Log    ✅ File uploaded successfully to SnapLogic: ${destination_path}/${filename}    console=yes
 
 List Files Using File Protocol Template
     [Documentation]    Template keyword to list files in directory using file:/// protocol URL.

@@ -92,7 +92,7 @@ Create oracle table for DB Operations
     ...    • Table structure matches expected schema (name, role, salary columns)
     ...    • Oracle database connection is established and functional
     ...    • No SQL syntax or permission errors occur
-    [Tags]    postgres_oracle    create_tables    target_setup    oracle    regression
+    [Tags]    postgres_oracle    create_tables    target_setup    regression
     # Drop table if exists (ignore error if table doesn't exist)
     Run Keyword And Ignore Error    Execute SQL On Database    ${DROP_TABLE_EMPLOYEES}    oracle
     # Create table

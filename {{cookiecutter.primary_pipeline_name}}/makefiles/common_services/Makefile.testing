@@ -27,7 +27,7 @@ robot-run-tests: check-env
 		$(INCLUDES) \
 		--outputdir robot_output suite/ && \
 	echo "✅ Tests completed successfully!" || \
-	echo "❌ Some tests failed. Check the logs for details."
+	{ echo "❌ Some tests failed. Check the logs for details."; exit 1; }
 
 # =============================================================================
 # 🧪 End-to-End Robot Test Workflow (including environment setup)
@@ -41,7 +41,7 @@ robot-run-all-tests: check-env
 		echo ":========= [Phase 1] Running createplex tests ========================================="; \
 		$(MAKE) robot-run-tests TAGS="createplex" PROJECT_SPACE_SETUP=True || { \
 			echo "❌ createplex test failed, checking if error is due to active Snaplex nodes..."; \
-			if ls robot_output/log-*.html 2>/dev/null | head -1 | xargs grep -q "cannot be deleted while it contains active nodes" 2>/dev/null; then \
+			if grep -rq "cannot be deleted while it contains active nodes" test/robot_output/log-*.html 2>/dev/null; then \
 				echo "🛑 Active Groundplex nodes detected — killing Groundplex and retrying to create project space and plex..."; \
 				$(MAKE) stop-groundplex; \
 				echo "⏳ Waiting 60 seconds for nodes to deregister from SnapLogic Cloud..."; \
@@ -72,6 +72,43 @@ robot-run-all-tests: check-env
 	echo ":========== [Phase 3] Running user-defined robot tests... =========="; \
 	$(MAKE) robot-run-tests TAGS="$(TAGS)" PROJECT_SPACE_SETUP=False
 
+
+# =============================================================================
+# 🛑 Kill Snaplex JCC and shutdown groundplex container (with retries)
+# =============================================================================
+stop-groundplex:
+	@echo "🛑 Attempting to stop JCC inside snaplogic-groundplex container..."
+	docker exec snaplogic-groundplex /bin/bash -c "cd /opt/snaplogic/bin && sh jcc.sh stop" || true
+
+	@echo "🔁 Waiting for JCC to fully shut down (up to 20 attempts, 10s interval)..."
+	@attempt=1; \
+	while [ $$attempt -le 20 ]; do \
+		echo "⏱️ Attempt $$attempt..."; \
+		container_status=$$(docker inspect -f '{{.State.Status}}' snaplogic-groundplex 2>/dev/null); \
+		if [ "$$container_status" != "running" ]; then \
+			echo "✅ Container is already stopped."; \
+			break; \
+		else \
+			status=$$(docker exec snaplogic-groundplex /bin/bash -c "cd /opt/snaplogic/bin && sh jcc.sh status" 2>&1); \
+			echo "🔍 JCC Status: $$status"; \
+			echo "$$status" | grep -q "PID file not found" && break; \
+			echo "⌛ JCC still shutting down. Retrying in 10s..."; \
+		fi; \
+		sleep 10; \
+		attempt=$$((attempt + 1)); \
+	done; \
+	if [ $$attempt -gt 20 ]; then \
+		echo "❌ JCC failed to stop cleanly after 20 attempts."; \
+		exit 1; \
+	else \
+		echo "✅ JCC shutdown confirmed."; \
+	fi
+
+	@echo "🧹 Bringing down container using Docker Compose profile 'gp'..."
+	$(DOCKER_COMPOSE) --profile gp down --remove-orphans
+
+	@echo "✅ Groundplex successfully stopped and cleaned up."
+
 # =============================================================================
 # 🧪 Robot Test Workflow WITHOUT Groundplex Launch
 #  → Use this when Groundplex is already running or not needed for your tests
@@ -91,7 +128,7 @@ robot-run-tests-no-gp: check-env
 		echo ":========= [Phase 1] Creating Project Space ========================================="; \
 		$(MAKE) robot-run-tests TAGS="verify_project_space_exists" PROJECT_SPACE_SETUP=True || { \
 			echo "❌ Project space creation failed, checking if error is due to active Snaplex nodes..."; \
-			if ls robot_output/log-*.html 2>/dev/null | head -1 | xargs grep -q "cannot be deleted while it contains active nodes" 2>/dev/null; then \
+			if grep -rq "cannot be deleted while it contains active nodes" test/robot_output/log-*.html 2>/dev/null; then \
 				echo "🛑 Active Groundplex nodes detected — cannot delete and create new project space..."; \
 			else \
 				echo "❌ project space creation failed for a different reason."; \

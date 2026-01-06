@@ -93,7 +93,7 @@ Create Account
     ...    📝 USAGE EXAMPLES:
     ...    ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_FILE_NAME}    ${sf_acct_username_password}
     ...    /org/project/shared    ${SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_FILE_NAME}    prod_snowflake_acct
-    [Tags]    snowflake_demo2    snowflake_multiple_files
+    [Tags]    snowflake_demo    snowflake_demo2    snowflake_multiple_files
     [Template]    Create Account From Template
     ${ACCOUNT_LOCATION_PATH}    ${SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_S3_DYNAMIC_FILE_NAME}    ${sf_acct_keypair}    overwrite_if_exists=${TRUE}
 
@@ -106,12 +106,14 @@ Upload test input file
     ...    • Argument 1: Local File Path - The local file path to the expression library file (.expr)
     ...    (e.g., ${CURDIR}/../../test_data/expression_libraries/snowflake/snowflake_library.expr)
     ...    • Argument 2: Destination Path - The destination path in SnapLogic where the file will be uploaded
-    [Tags]    snowflake_demo    snowflake_multiple_files
+    [Tags]    snowflake_demo    snowflake_demo2    snowflake_multiple_files
     [Template]    Upload File Using File Protocol Template
     # local file path    destination_path in snaplogic
     ${input_file1_path}    ${PIPELINES_LOCATION_PATH}
     ${input_file2_path}    ${PIPELINES_LOCATION_PATH}
     ${input_file3_path}    ${PIPELINES_LOCATION_PATH}
+    ${CURDIR}/../../test_data/actual_expected_data/expression_libraries/snowflake/snowflake_library.expr    ${ACCOUNT_LOCATION_PATH}
+    file://${CURDIR}/../../test_data/actual_expected_data/expression_libraries/snowflake/snowflake_library2.expr    ${ACCOUNT_LOCATION_PATH}
 
 Import Pipeline
     [Documentation]    Imports Snowflake pipeline files (.slp) into the SnapLogic project space.
@@ -132,7 +134,7 @@ Import Pipeline
     ...    (e.g., snowflake_pl1, data_processor, etl_pipeline)
     ...    • Argument 4: ${pipeline_file_name} - Physical .slp file name to import
     ...    (e.g., snowflake1.slp, pipeline.slp)
-    [Tags]    snowflake_demo    snowflake_multiple_files
+    [Tags]    snowflake_demo    snowflake_demo3    snowflake_multiple_files
     [Template]    Import Pipelines From Template
 
     ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${pipeline_file_name}
