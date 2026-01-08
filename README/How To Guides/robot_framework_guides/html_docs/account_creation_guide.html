@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SnapLogic Account Creation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 10px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #9b59b6;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        h2 {
+            color: #9b59b6;
+            margin: 30px 0 15px 0;
+            padding: 10px 15px;
+            background: #f3e5f5;
+            border-left: 4px solid #9b59b6;
+            border-radius: 0 5px 5px 0;
+        }
+        h3 {
+            color: #2980b9;
+            margin: 20px 0 10px 0;
+        }
+        h4 {
+            color: #27ae60;
+            margin: 15px 0 8px 0;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .highlight-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .highlight-box h3 {
+            color: white;
+            margin-top: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+        }
+        th {
+            background: #9b59b6;
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ecf0f1;
+            vertical-align: top;
+        }
+        tr:hover {
+            background: #f8f9fa;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        .code-box {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px 20px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-size: 0.9em;
+            white-space: pre-wrap;
+        }
+        .code-box pre {
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            white-space: pre;
+            color: inherit;
+        }
+        .code-box .variable {
+            color: #f39c12;
+        }
+        .code-box .value {
+            color: #2ecc71;
+        }
+        .code-box .comment {
+            color: #95a5a6;
+        }
+        .code-box .keyword {
+            color: #e74c3c;
+        }
+        .code-box .jinja {
+            color: #e91e63;
+            font-weight: bold;
+        }
+        .jinja-var {
+            background: #3d5a73;
+            color: #e91e63;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+        .directory-tree {
+            background: #263238;
+            color: #aed581;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.8;
+            overflow-x: auto;
+        }
+        .directory-tree pre {
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            white-space: pre;
+        }
+        .directory-tree .folder {
+            color: #81d4fa;
+        }
+        .directory-tree .file {
+            color: #fff59d;
+        }
+        .directory-tree .comment {
+            color: #78909c;
+        }
+        .note {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .warning {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .danger {
+            background: #ffebee;
+            border-left: 4px solid #f44336;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .success {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        .badge-docker {
+            background: #0db7ed;
+            color: white;
+        }
+        .badge-external {
+            background: #e74c3c;
+            color: white;
+        }
+        .badge-supported {
+            background: #27ae60;
+            color: white;
+        }
+        .badge-coming {
+            background: #95a5a6;
+            color: white;
+        }
+        .toc {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .toc h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .toc ul {
+            list-style: none;
+            margin: 0;
+        }
+        .toc li {
+            margin: 8px 0;
+        }
+        .toc a {
+            color: #9b59b6;
+            text-decoration: none;
+        }
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        code {
+            background: #ecf0f1;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .flow-diagram {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        .flow-diagram pre {
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .account-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .account-card .name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .account-card .files {
+            font-size: 0.85em;
+            color: #666;
+        }
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+        }
+        .scenario-box {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+        }
+        .scenario-box.docker {
+            border-color: #0db7ed;
+        }
+        .scenario-box.external {
+            border-color: #e74c3c;
+        }
+        .scenario-box h4 {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SnapLogic Account Creation Guide</h1>
+        <p class="subtitle">How to Create and Configure Database & Service Accounts</p>
+
+        <!-- Table of Contents -->
+        <div class="toc">
+            <h3>Table of Contents</h3>
+            <ul>
+                <li><a href="#overview">1. Overview</a></li>
+                <li><a href="#how-it-works">2. How Account Creation Works</a></li>
+                <li><a href="#supported-accounts">3. Supported Account Types</a></li>
+                <li><a href="#file-structure">4. File Structure</a></li>
+                <li><a href="#payload-templates">5. Payload Templates with Jinja Variables</a></li>
+                <li><a href="#usage-scenarios">6. Usage Scenarios</a></li>
+                <li><a href="#workflow">7. Step-by-Step Workflow for Creating Account Test Cases</a></li>
+                <li><a href="#test-example">8. Test Case Reference</a></li>
+                <li><a href="#adding-accounts">9. Adding New Account Types</a></li>
+            </ul>
+        </div>
+
+        <!-- Section 1: Overview -->
+        <div id="overview" class="card">
+            <h2>1. Overview</h2>
+            <p>In SnapLogic, accounts store connection credentials and configuration for external systems (databases, cloud services, messaging systems, etc.). This framework automates account creation using JSON payload templates with dynamic variables.</p>
+
+            <div class="highlight-box">
+                <h3>Key Concepts</h3>
+                <ul>
+                    <li><strong>Payload Files:</strong> JSON templates defining account structure with placeholder variables</li>
+                    <li><strong>Environment Files:</strong> Configuration files containing variable values</li>
+                    <li><strong>Jinja Variables:</strong> <code class="jinja-var">&#123;&#123;VARIABLE_NAME&#125;&#125;</code> placeholders replaced at runtime</li>
+                    <li><strong>JAR Files:</strong> Required JDBC drivers for certain database accounts</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 2: How It Works -->
+        <div id="how-it-works" class="card">
+            <h2>2. How Account Creation Works</h2>
+
+            <div class="flow-diagram">
+                <pre>
+    ┌─────────────────────┐     ┌─────────────────────┐     ┌─────────────────────┐
+    │   Environment       │     │   Payload Template  │     │   SnapLogic API     │
+    │   Variables         │     │   (JSON with Jinja) │     │   Account Creation  │
+    │   (.env files)      │     │                     │     │                     │
+    └──────────┬──────────┘     └──────────┬──────────┘     └──────────┬──────────┘
+               │                           │                           │
+               │  POSTGRES_HOST=...        │  "hostname": "&#123;&#123;...&#125;&#125;"   │
+               │  POSTGRES_USER=...        │  "username": "&#123;&#123;...&#125;&#125;"   │
+               │  POSTGRES_PASSWORD=...    │  "password": "&#123;&#123;...&#125;&#125;"   │
+               │                           │                           │
+               └───────────────┬───────────┘                           │
+                               │                                       │
+                               ▼                                       │
+                    ┌─────────────────────┐                           │
+                    │   Variable          │                           │
+                    │   Substitution      │                           │
+                    │   (Jinja Rendering) │                           │
+                    └──────────┬──────────┘                           │
+                               │                                       │
+                               │  Final JSON with                      │
+                               │  actual values                        │
+                               │                                       │
+                               └───────────────────────────────────────┘
+                                               │
+                                               ▼
+                                    ┌─────────────────────┐
+                                    │   Account Created   │
+                                    │   in SnapLogic      │
+                                    └─────────────────────┘
+                </pre>
+            </div>
+
+            <h3>Process Steps</h3>
+            <ol>
+                <li><strong>Load Environment Variables:</strong> Values loaded from <code>.env</code> files during test initialization</li>
+                <li><strong>Read Payload Template:</strong> JSON file with <code class="jinja-var">&#123;&#123;VARIABLE_NAME&#125;&#125;</code> placeholders</li>
+                <li><strong>Variable Substitution:</strong> Jinja templating replaces placeholders with actual values</li>
+                <li><strong>API Call:</strong> Final JSON sent to SnapLogic API to create the account</li>
+            </ol>
+        </div>
+
+        <!-- Section 3: Supported Accounts -->
+        <div id="supported-accounts" class="card">
+            <h2>3. Supported Account Types</h2>
+            <p>The framework currently supports the following account types. More will be added over time.</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Account Type</th>
+                        <th>Payload File</th>
+                        <th>Env File</th>
+                        <th>JAR Required</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>PostgreSQL</strong></td>
+                        <td><code>acc_postgres.json</code></td>
+                        <td><code>.env.postgres</code></td>
+                        <td>No</td>
+                        <td><span class="badge badge-supported">Supported</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>MySQL</strong></td>
+                        <td><code>acc_mysql.json</code></td>
+                        <td><code>.env.mysql</code></td>
+                        <td>Yes</td>
+                        <td><span class="badge badge-supported">Supported</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Oracle</strong></td>
+                        <td><code>acc_oracle.json</code></td>
+                        <td><code>.env.oracle</code></td>
+                        <td>No</td>
+                        <td><span class="badge badge-supported">Supported</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>SQL Server</strong></td>
+                        <td><code>acc_sqlserver.json</code></td>
+                        <td><code>.env.sqlserver</code></td>
+                        <td>No</td>
+                        <td><span class="badge badge-supported">Supported</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Snowflake</strong></td>
+                        <td><code>acc_snowflake_s3_db.json</code></td>
+                        <td><code>.env.snowflake</code></td>
+                        <td>No</td>
+                        <td><span class="badge badge-supported">Supported</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Snowflake (Key Pair)</strong></td>
+                        <td><code>acc_snowflake_s3_keypair.json</code></td>
+                        <td><code>.env.snowflake_s3_keypair</code></td>
+                        <td>No</td>
+                        <td><span class="badge badge-supported">Supported</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>DB2</strong></td>
+                        <td><code>acc_db2.json</code></td>
+                        <td><code>.env.db2</code></td>
+                        <td>Yes</td>
+                        <td><span class="badge badge-supported">Supported</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Teradata</strong></td>
+                        <td><code>acc_teradata.json</code></td>
+                        <td><code>.env.teradata</code></td>
+                        <td>Yes</td>
+                        <td><span class="badge badge-supported">Supported</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Kafka</strong></td>
+                        <td><code>acc_kafka.json</code></td>
+                        <td><code>.env.kafka</code></td>
+                        <td>No</td>
+                        <td><span class="badge badge-supported">Supported</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>JMS</strong></td>
+                        <td><code>acc_jms.json</code></td>
+                        <td><code>.env.jms</code></td>
+                        <td>Yes</td>
+                        <td><span class="badge badge-supported">Supported</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>S3 / MinIO</strong></td>
+                        <td><code>acc_s3.json</code></td>
+                        <td><code>.env.s3</code></td>
+                        <td>No</td>
+                        <td><span class="badge badge-supported">Supported</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Email</strong></td>
+                        <td><code>acc_email.json</code></td>
+                        <td><code>.env.email</code></td>
+                        <td>No</td>
+                        <td><span class="badge badge-supported">Supported</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Salesforce</strong></td>
+                        <td><code>acc_salesforce.json</code></td>
+                        <td><code>.env.salesforce</code></td>
+                        <td>No</td>
+                        <td><span class="badge badge-supported">Supported</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="note">
+                <strong>Note:</strong> Support for more account types will be added continuously. Check the <code>accounts_payload</code> directory for the latest available templates.
+            </div>
+        </div>
+
+        <!-- Section 4: File Structure -->
+        <div id="file-structure" class="card">
+            <h2>4. File Structure</h2>
+
+            <h3>Account Payload Files</h3>
+            <div class="directory-tree">
+<pre><span class="folder">test/suite/test_data/</span>
+<span class="folder">├── accounts_payload/</span>                          <span class="comment"># JSON payload templates</span>
+<span class="file">│   ├── acc_postgres.json</span>                     <span class="comment"># PostgreSQL account</span>
+<span class="file">│   ├── acc_mysql.json</span>                        <span class="comment"># MySQL account</span>
+<span class="file">│   ├── acc_oracle.json</span>                       <span class="comment"># Oracle account</span>
+<span class="file">│   ├── acc_sqlserver.json</span>                    <span class="comment"># SQL Server account</span>
+<span class="file">│   ├── acc_snowflake_s3_db.json</span>              <span class="comment"># Snowflake (password auth)</span>
+<span class="file">│   ├── acc_snowflake_s3_keypair.json</span>         <span class="comment"># Snowflake (key pair auth)</span>
+<span class="file">│   ├── acc_db2.json</span>                          <span class="comment"># DB2 account</span>
+<span class="file">│   ├── acc_teradata.json</span>                     <span class="comment"># Teradata account</span>
+<span class="file">│   ├── acc_kafka.json</span>                        <span class="comment"># Kafka account</span>
+<span class="file">│   ├── acc_jms.json</span>                          <span class="comment"># JMS account</span>
+<span class="file">│   ├── acc_s3.json</span>                           <span class="comment"># S3/MinIO account</span>
+<span class="file">│   ├── acc_email.json</span>                        <span class="comment"># Email account</span>
+<span class="file">│   └── acc_salesforce.json</span>                   <span class="comment"># Salesforce account</span>
+│
+<span class="folder">└── accounts_jar_files/</span>                        <span class="comment"># JDBC drivers (if required)</span>
+    <span class="folder">├── db2/</span>                                  <span class="comment"># DB2 JDBC driver</span>
+    <span class="folder">├── mysql/</span>                                <span class="comment"># MySQL JDBC driver</span>
+    <span class="folder">├── jms/</span>                                  <span class="comment"># JMS driver</span>
+    <span class="folder">└── teradata/</span>                             <span class="comment"># Teradata JDBC driver</span></pre>
+            </div>
+
+            <h3>Environment Files</h3>
+            <div class="directory-tree">
+<pre><span class="folder">env_files/</span>
+<span class="folder">├── database_accounts/</span>                         <span class="comment"># Database credentials</span>
+<span class="file">│   ├── .env.postgres</span>                        <span class="comment"># PostgreSQL config</span>
+<span class="file">│   ├── .env.mysql</span>                           <span class="comment"># MySQL config</span>
+<span class="file">│   ├── .env.oracle</span>                          <span class="comment"># Oracle config</span>
+<span class="file">│   ├── .env.sqlserver</span>                       <span class="comment"># SQL Server config</span>
+<span class="file">│   ├── .env.snowflake</span>                       <span class="comment"># Snowflake config</span>
+<span class="file">│   ├── .env.snowflake_s3_keypair</span>            <span class="comment"># Snowflake key pair config</span>
+<span class="file">│   ├── .env.db2</span>                             <span class="comment"># DB2 config</span>
+<span class="file">│   └── .env.teradata</span>                        <span class="comment"># Teradata config</span>
+│
+<span class="folder">├── messaging_service_accounts/</span>                <span class="comment"># Messaging services</span>
+<span class="file">│   ├── .env.kafka</span>                           <span class="comment"># Kafka broker config</span>
+<span class="file">│   └── .env.jms</span>                              <span class="comment"># JMS config</span>
+│
+<span class="folder">└── mock_service_accounts/</span>                     <span class="comment"># Mock/cloud services</span>
+    <span class="file">├── .env.s3</span>                               <span class="comment"># S3/MinIO config</span>
+    <span class="file">├── .env.salesforce</span>                       <span class="comment"># Salesforce config</span>
+    <span class="file">└── .env.email</span>                             <span class="comment"># Email config</span></pre>
+            </div>
+        </div>
+
+        <!-- Section 5: Payload Templates -->
+        <div id="payload-templates" class="card">
+            <h2>5. Payload Templates with Jinja Variables</h2>
+            <p>Payload files use Jinja-style variables (<code class="jinja-var">&#123;&#123;VARIABLE_NAME&#125;&#125;</code>) that are replaced with actual values from environment files at runtime.</p>
+
+            <h3>Example: PostgreSQL Payload Template</h3>
+            <div class="code-box">
+<pre>{
+    "path": "<span class="jinja">&#123;&#123;ACCOUNT_LOCATION_PATH&#125;&#125;</span>",
+    "duplicate_check": false,
+    "account": {
+        "class_fqid": "com-snaplogic-snap-api-sql-accounts-postgresdatabaseaccount...",
+        "property_map": {
+            "settings": {
+                "connectionProperties": {
+                    "value": {
+                        "hostname": {
+                            "value": "<span class="jinja">&#123;&#123;POSTGRES_HOST&#125;&#125;</span>"
+                        },
+                        "databaseName": {
+                            "value": "<span class="jinja">&#123;&#123;POSTGRES_DATABASE&#125;&#125;</span>"
+                        },
+                        "username": {
+                            "value": "<span class="jinja">&#123;&#123;POSTGRES_USER&#125;&#125;</span>"
+                        },
+                        "password": {
+                            "value": "<span class="jinja">&#123;&#123;POSTGRES_PASSWORD&#125;&#125;</span>"
+                        }
+                    }
+                }
+            },
+            "info": {
+                "label": {
+                    "value": "<span class="jinja">&#123;&#123;POSTGRES_ACCOUNT_NAME&#125;&#125;</span>"
+                }
+            }
+        }
+    }
+}</pre>
+            </div>
+
+            <h3>Corresponding Environment File (.env.postgres)</h3>
+            <div class="code-box">
+<pre><span class="comment"># ============================================</span>
+<span class="comment"># POSTGRESQL DATABASE ACCOUNT</span>
+<span class="comment"># ============================================</span>
+
+<span class="comment"># Account payload file reference</span>
+<span class="variable">POSTGRES_ACCOUNT_PAYLOAD_FILE_NAME</span>=<span class="value">acc_postgres.json</span>
+
+<span class="comment"># Account name displayed in SnapLogic</span>
+<span class="variable">POSTGRES_ACCOUNT_NAME</span>=<span class="value">postgres_acc</span>
+
+<span class="comment"># Connection configuration</span>
+<span class="variable">POSTGRES_HOST</span>=<span class="value">postgres-db</span>
+<span class="variable">POSTGRES_DATABASE</span>=<span class="value">snaplogic</span>
+<span class="variable">POSTGRES_PORT</span>=<span class="value">5435</span>
+<span class="variable">POSTGRES_USER</span>=<span class="value">snaplogic</span>
+<span class="variable">POSTGRES_PASSWORD</span>=<span class="value">snaplogic</span></pre>
+            </div>
+        </div>
+
+        <!-- Section 6: Usage Scenarios -->
+        <div id="usage-scenarios" class="card">
+            <h2>6. Usage Scenarios</h2>
+            <p>There are two primary ways to use account configurations:</p>
+
+            <div class="two-column">
+                <div class="scenario-box docker">
+                    <h4><span class="badge badge-docker">Docker Services</span> Using Dockerized Services</h4>
+                    <p>The framework includes Docker Compose configurations that spin up isolated database/service containers locally.</p>
+
+                    <ul>
+                        <li>Credentials in <code>env_files/</code> are pre-configured for Docker services</li>
+                        <li>These credentials are <strong>NOT sensitive</strong> - they're for local Docker containers</li>
+                        <li>Safe to commit to version control</li>
+                    </ul>
+
+                    <div class="success" style="margin-top: 15px;">
+                        <strong>When to use:</strong> Testing locally, CI/CD pipelines, development environments
+                    </div>
+                </div>
+
+                <div class="scenario-box external">
+                    <h4><span class="badge badge-external">External Systems</span> Using Your Own Credentials</h4>
+                    <p>Connect to your own external database instances or cloud services with your credentials.</p>
+
+                    <ul>
+                        <li>Copy variables from <code>env_files/.env.*</code> to root <code>.env</code> file</li>
+                        <li>Update with your actual credentials</li>
+                        <li>Root <code>.env</code> is <strong>NOT committed</strong> to git (.gitignore)</li>
+                    </ul>
+
+                    <div class="danger" style="margin-top: 15px;">
+                        <strong>Security:</strong> Never commit sensitive credentials! Use root <code>.env</code> file only.
+                    </div>
+                </div>
+            </div>
+
+            <h3>How to Use Your Own Credentials</h3>
+            <ol>
+                <li><strong>Identify the account type</strong> you want to configure (e.g., Snowflake)</li>
+                <li><strong>Find the corresponding env file</strong> in <code>env_files/database_accounts/</code></li>
+                <li><strong>Copy all variables</strong> from that file to your root <code>.env</code> file</li>
+                <li><strong>Update the values</strong> with your actual credentials</li>
+                <li><strong>Run tests</strong> - root <code>.env</code> has highest precedence and will override</li>
+            </ol>
+
+            <div class="tip" style="background: #e0e0e0; border-left: 4px solid #616161; padding: 15px 20px; margin: 20px 0; border-radius: 0 8px 8px 0; color: #212121;">
+                <strong style="color: #212121;">Tip: No Need to Copy the Payload File Name Variable</strong>
+                <p style="margin: 10px 0 0 0; color: #212121;">You <strong>don't need to copy</strong> the <code style="background: #bdbdbd; color: #212121;">*_PAYLOAD_FILE_NAME</code> variable (e.g., <code style="background: #bdbdbd; color: #e91e63; font-weight: bold;">POSTGRES_ACCOUNT_PAYLOAD_FILE_NAME</code>, <code style="background: #bdbdbd; color: #e91e63; font-weight: bold;">SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_FILE_NAME</code>) to your root <code style="background: #bdbdbd; color: #212121;">.env</code> file.</p>
+                <p style="margin: 10px 0 0 0; color: #212121;">The payload file name remains the <strong>same regardless of your credentials</strong>. Whether you use Docker services or your own external credentials, the payload template structure doesn't change - only the credential values inside it do. The framework automatically uses the payload file defined in <code style="background: #bdbdbd; color: #212121;">env_files/</code>.</p>
+            </div>
+
+            <h3>Example: Using Your Own Snowflake Account</h3>
+            <div class="code-box">
+<pre><span class="comment"># Copy these from env_files/database_accounts/.env.snowflake_s3_keypair</span>
+<span class="comment"># to your root .env file and update with your values:</span>
+
+<span class="variable">SNOWFLAKE_KEYPAIR_ACCOUNT_NAME</span>=<span class="value">my_production_snowflake</span>
+<span class="variable">SNOWFLAKE_KEYPAIR_HOSTNAME</span>=<span class="value">mycompany.snowflakecomputing.com</span>
+<span class="variable">SNOWFLAKE_KEYPAIR_USERNAME</span>=<span class="value">my_username</span>
+<span class="variable">SNOWFLAKE_KEYPAIR_DATABASE</span>=<span class="value">PRODUCTION_DB</span>
+<span class="variable">SNOWFLAKE_KEYPAIR_WAREHOUSE</span>=<span class="value">COMPUTE_WH</span>
+<span class="variable">SNOWFLAKE_KEYPAIR_PRIVATE_KEY</span>=<span class="value">-----BEGIN ENCRYPTED PRIVATE KEY-----...</span>
+<span class="variable">SNOWFLAKE_KEYPAIR_PRIVATE_KEY_PASSPHRASE</span>=<span class="value">your_passphrase</span>
+
+<span class="comment"># S3 Configuration (if using external stages)</span>
+<span class="variable">SNOWFLAKE_KEYPAIR_S3_BUCKET</span>=<span class="value">my-data-bucket</span>
+<span class="variable">SNOWFLAKE_KEYPAIR_S3_ACCESS_KEY_ID</span>=<span class="value">AKIAXXXXXXXXXXXXXXXX</span>
+<span class="variable">SNOWFLAKE_KEYPAIR_S3_SECRET_KEY</span>=<span class="value">your_secret_key</span></pre>
+            </div>
+
+            <div class="warning">
+                <strong>Important:</strong> The root <code>.env</code> file has the <strong>highest precedence</strong>. Any variables defined there will override values from <code>env_files/</code> subdirectories.
+            </div>
+        </div>
+
+        <!-- Section 7: Step-by-Step Workflow -->
+        <div id="workflow" class="card">
+            <h2>7. Step-by-Step Workflow for Creating Account Test Cases</h2>
+            <p>Follow this workflow when creating a new account test case. The key is to <strong>always check the environment file first</strong> to understand what variables are needed.</p>
+
+            <div class="highlight-box">
+                <h3>Workflow Overview</h3>
+                <ol style="margin-left: 20px;">
+                    <li><strong>Step 1:</strong> Identify the account type you need</li>
+                    <li><strong>Step 2:</strong> Find and review the corresponding .env file</li>
+                    <li><strong>Step 3:</strong> Understand the required variables</li>
+                    <li><strong>Step 4:</strong> Update variable values (in env file or root .env)</li>
+                    <li><strong>Step 5:</strong> Create the Robot Framework test case</li>
+                </ol>
+            </div>
+
+            <h3>Step 1: Identify the Account Type</h3>
+            <p>Determine which account type you need based on your pipeline requirements:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>If your pipeline connects to...</th>
+                        <th>You need account type...</th>
+                        <th>Env file location</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Oracle Database</td>
+                        <td>Oracle</td>
+                        <td><code>env_files/database_accounts/.env.oracle</code></td>
+                    </tr>
+                    <tr>
+                        <td>PostgreSQL Database</td>
+                        <td>PostgreSQL</td>
+                        <td><code>env_files/database_accounts/.env.postgres</code></td>
+                    </tr>
+                    <tr>
+                        <td>Snowflake (Password)</td>
+                        <td>Snowflake</td>
+                        <td><code>env_files/database_accounts/.env.snowflake</code></td>
+                    </tr>
+                    <tr>
+                        <td>Snowflake (Key Pair + S3)</td>
+                        <td>Snowflake Key Pair</td>
+                        <td><code>env_files/database_accounts/.env.snowflake_s3_keypair</code></td>
+                    </tr>
+                    <tr>
+                        <td>Kafka</td>
+                        <td>Kafka</td>
+                        <td><code>env_files/messaging_service_accounts/.env.kafka</code></td>
+                    </tr>
+                    <tr>
+                        <td>S3 / MinIO</td>
+                        <td>S3</td>
+                        <td><code>env_files/mock_service_accounts/.env.s3</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Step 2: Review the Environment File</h3>
+            <p>Open the corresponding <code>.env</code> file to see all available variables. This is <strong>critical</strong> - the env file documents exactly what the account needs.</p>
+
+            <div class="success">
+                <strong>Example:</strong> For Snowflake Key Pair account, open <code>env_files/database_accounts/.env.snowflake_s3_keypair</code>
+            </div>
+
+            <div class="code-box">
+<pre><span class="comment"># ============================================================================</span>
+<span class="comment">#                      SNOWFLAKE DATABASE ACCOUNT - KEY PAIR AUTHENTICATION</span>
+<span class="comment"># ============================================================================</span>
+
+<span class="comment"># Account payload file name</span>
+<span class="variable">SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_FILE_NAME</span>=<span class="value">acc_snowflake_s3_keypair.json</span>
+
+<span class="comment"># Account Label</span>
+<span class="variable">SNOWFLAKE_KEYPAIR_ACCOUNT_NAME</span>=<span class="value">SNOWFLAKE_KEYPAIR_acct</span>
+
+<span class="comment"># Authentication Configuration</span>
+<span class="variable">SNOWFLAKE_KEYPAIR_AUTHENTICATION_TYPE</span>=<span class="value">Key Pair</span>
+<span class="variable">SNOWFLAKE_KEYPAIR_USERNAME</span>=<span class="value">your_username</span>
+<span class="comment"># SNOWFLAKE_KEYPAIR_PRIVATE_KEY=-----BEGIN ENCRYPTED PRIVATE KEY-----...</span>
+<span class="comment"># SNOWFLAKE_KEYPAIR_PRIVATE_KEY_PASSPHRASE=</span>
+
+<span class="comment"># Connection Configuration</span>
+<span class="variable">SNOWFLAKE_KEYPAIR_HOSTNAME</span>=<span class="value">your_account.snowflakecomputing.com</span>
+<span class="variable">SNOWFLAKE_ACCOUNT_IDENTIFIER</span>=<span class="value">your_account</span>
+
+<span class="comment"># Database Configuration</span>
+<span class="variable">SNOWFLAKE_KEYPAIR_DATABASE</span>=<span class="value">YOUR_DB</span>
+<span class="variable">SNOWFLAKE_KEYPAIR_WAREHOUSE</span>=<span class="value">YOUR_WH</span>
+<span class="variable">SNOWFLAKE_KEYPAIR_SCHEMA</span>=<span class="value"></span>
+<span class="variable">SNOWFLAKE_KEYPAIR_ROLE</span>=<span class="value">SYSADMIN</span>
+
+<span class="comment"># S3 Configuration (External Stages)</span>
+<span class="variable">SNOWFLAKE_KEYPAIR_S3_BUCKET</span>=<span class="value"></span>
+<span class="variable">SNOWFLAKE_KEYPAIR_S3_ACCESS_KEY_ID</span>=<span class="value"></span>
+<span class="variable">SNOWFLAKE_KEYPAIR_S3_SECRET_KEY</span>=<span class="value"></span></pre>
+            </div>
+
+            <h3>Step 3: Understand the Required Variables</h3>
+            <p>The env file tells you:</p>
+            <ul>
+                <li><strong>Payload file name:</strong> <code>*_PAYLOAD_FILE_NAME</code> - references the JSON template</li>
+                <li><strong>Account name:</strong> <code>*_ACCOUNT_NAME</code> - how the account appears in SnapLogic</li>
+                <li><strong>Connection details:</strong> hostname, port, database, etc.</li>
+                <li><strong>Authentication:</strong> username, password, or key pair credentials</li>
+                <li><strong>Optional settings:</strong> S3 staging, URL properties, etc.</li>
+            </ul>
+
+            <div class="note">
+                <strong>Variable Naming Convention:</strong>
+                <ul>
+                    <li>All variables use <strong>UPPERCASE</strong> with underscores</li>
+                    <li>Variables start with the account type prefix (e.g., <code>SNOWFLAKE_KEYPAIR_</code>, <code>ORACLE_</code>, <code>POSTGRES_</code>)</li>
+                    <li>Commented variables (starting with <code>#</code>) are optional or contain sensitive data</li>
+                </ul>
+            </div>
+
+            <h3>Step 4: Update Variable Values</h3>
+            <p>You have two options for updating variable values:</p>
+
+            <div class="two-column">
+                <div class="scenario-box docker">
+                    <h4><span class="badge badge-docker">Option A</span> Edit the env file directly</h4>
+                    <p>For Docker-based testing or when values are not sensitive:</p>
+                    <ol>
+                        <li>Open the env file (e.g., <code>.env.snowflake_s3_keypair</code>)</li>
+                        <li>Update the values directly</li>
+                        <li>Save the file</li>
+                    </ol>
+                    <div class="note" style="margin-top: 10px;">
+                        <strong>Use when:</strong> Local Docker testing, non-sensitive credentials
+                    </div>
+                </div>
+
+                <div class="scenario-box external">
+                    <h4><span class="badge badge-external">Option B</span> Override in root .env file</h4>
+                    <p>For production credentials or sensitive data:</p>
+                    <ol>
+                        <li>Copy variables from the env file to root <code>.env</code></li>
+                        <li>Update with your actual values</li>
+                        <li>Root <code>.env</code> overrides everything</li>
+                    </ol>
+                    <div class="danger" style="margin-top: 10px;">
+                        <strong>Use when:</strong> Real credentials, production testing (never commit!)
+                    </div>
+                </div>
+            </div>
+
+            <h3>Step 5: Create the Robot Framework Test Case</h3>
+            <p>Now create the test case using the variables from the env file:</p>
+
+            <div class="code-box">
+<pre><span class="keyword">Create Snowflake Key Pair Account</span>
+    [Documentation]    Creates a Snowflake account using key pair authentication.
+    ...    Variables are loaded from env_files/database_accounts/.env.snowflake_s3_keypair
+    ...    or overridden in root .env file.
+    [Tags]    snowflake    account_setup    keypair
+    [Template]    Create Account From Template
+    <span class="variable">${ACCOUNT_LOCATION_PATH}</span>    <span class="variable">${SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_FILE_NAME}</span>    <span class="variable">${SNOWFLAKE_KEYPAIR_ACCOUNT_NAME}</span>    overwrite_if_exists=<span class="variable">${TRUE}</span></pre>
+            </div>
+
+            <div class="success">
+                <strong>Key Points:</strong>
+                <ul>
+                    <li>The <code>${SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_FILE_NAME}</code> variable comes from the env file</li>
+                    <li>The <code>${SNOWFLAKE_KEYPAIR_ACCOUNT_NAME}</code> variable comes from the env file</li>
+                    <li>All Jinja variables in the payload template are automatically substituted</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 8: Test Example -->
+        <div id="test-example" class="card">
+            <h2>8. Test Case Reference</h2>
+            <p>Here's how accounts are created in test cases:</p>
+
+            <h3>Robot Framework Test Case</h3>
+            <div class="code-box">
+<pre><span class="keyword">Create Account</span>
+    [Documentation]    Creates a Snowflake account in the project space.
+    ...    Uses the Create Account From Template keyword to set up
+    ...    account credentials for subsequent pipeline operations.
+    ...
+    ...    Arguments:
+    ...    - <span class="variable">${ACCOUNT_LOCATION_PATH}</span>: Path where account is created
+    ...    - <span class="variable">${SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_FILE_NAME}</span>: JSON payload file
+    ...    - <span class="variable">${sf_acct_keypair}</span>: Account name in SnapLogic
+    [Tags]    snowflake_demo
+    [Template]    Create Account From Template
+    <span class="variable">${ACCOUNT_LOCATION_PATH}</span>    <span class="variable">${SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_FILE_NAME}</span>    <span class="variable">${sf_acct_keypair}</span>    overwrite_if_exists=<span class="variable">${TRUE}</span></pre>
+            </div>
+
+            <h3>Template Keyword Arguments</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Argument</th>
+                        <th>Description</th>
+                        <th>Example</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>${ACCOUNT_LOCATION_PATH}</code></td>
+                        <td>SnapLogic path where account will be created</td>
+                        <td><code>/org/project/shared</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>Payload File Name</code></td>
+                        <td>JSON template file from accounts_payload/</td>
+                        <td><code>acc_snowflake_s3_keypair.json</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>Account Name</code></td>
+                        <td>Name displayed in SnapLogic Manager</td>
+                        <td><code>snowflake_keypair_acct</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>overwrite_if_exists</code></td>
+                        <td>Replace existing account with same name</td>
+                        <td><code>${TRUE}</code> or <code>${FALSE}</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Section 9: Adding New Accounts -->
+        <div id="adding-accounts" class="card">
+            <h2>9. Adding New Account Types</h2>
+            <p>To add support for a new account type:</p>
+
+            <h3>Step 1: Create Payload Template</h3>
+            <ol>
+                <li>Create a new JSON file in <code>test/suite/test_data/accounts_payload/</code></li>
+                <li>Use SnapLogic's account export feature to get the base structure</li>
+                <li>Replace hardcoded values with Jinja variables: <code class="jinja-var">&#123;&#123;VARIABLE_NAME&#125;&#125;</code></li>
+                <li>Name the file following the pattern: <code>acc_[account_type].json</code></li>
+            </ol>
+
+            <h3>Step 2: Create Environment File</h3>
+            <ol>
+                <li>Create a new <code>.env.[account_type]</code> file in appropriate <code>env_files/</code> subdirectory</li>
+                <li>Define all variables used in the payload template</li>
+                <li>Add comments explaining each variable</li>
+                <li>Include a reference to the payload file name</li>
+            </ol>
+
+            <h3>Step 3: Add JAR Files (if needed)</h3>
+            <ol>
+                <li>Create a subdirectory in <code>accounts_jar_files/</code></li>
+                <li>Add required JDBC driver JAR files</li>
+                <li>Update payload template to reference the JAR location</li>
+            </ol>
+
+            <div class="note">
+                <strong>Tip:</strong> Create an account and Export an existing account payload from SnapLogic to get the correct JSON structure, then replace values with Jinja variables.
+            </div>
+        </div>
+
+        <!-- Quick Reference -->
+        <div class="card">
+            <h2>Quick Reference</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Scenario</th>
+                        <th>Action</th>
+                        <th>File to Modify</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Use Dockerized services (default)</td>
+                        <td>No changes needed</td>
+                        <td>Uses <code>env_files/.env.*</code></td>
+                    </tr>
+                    <tr>
+                        <td>Use your own database credentials</td>
+                        <td>Copy variables, update values</td>
+                        <td>Root <code>.env</code> file</td>
+                    </tr>
+                    <tr>
+                        <td>Add new account type</td>
+                        <td>Create payload + env file</td>
+                        <td><code>accounts_payload/</code> + <code>env_files/</code></td>
+                    </tr>
+                    <tr>
+                        <td>Change account structure</td>
+                        <td>Modify JSON template</td>
+                        <td><code>accounts_payload/*.json</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <footer style="text-align: center; margin-top: 40px; padding: 20px; color: #666; border-top: 1px solid #ddd;">
+            <p>Generated for SnapLogic Robot Framework Examples Project</p>
+            <p style="font-size: 0.9em;">Last Updated: January 2026</p>
+        </footer>
+    </div>
+</body>
+</html>

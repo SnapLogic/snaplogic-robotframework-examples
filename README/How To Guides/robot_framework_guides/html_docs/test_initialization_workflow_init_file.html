@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot Framework Test Initialization Workflow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 10px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #27ae60;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        h2 {
+            color: #27ae60;
+            margin: 30px 0 15px 0;
+            padding: 10px 15px;
+            background: #e8f5e9;
+            border-left: 4px solid #27ae60;
+            border-radius: 0 5px 5px 0;
+        }
+        h3 {
+            color: #2980b9;
+            margin: 20px 0 10px 0;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .flow-container {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+        .flow-step {
+            display: flex;
+            align-items: flex-start;
+            margin: 15px 0;
+            position: relative;
+        }
+        .step-number {
+            background: #27ae60;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+            margin-right: 15px;
+        }
+        .step-content {
+            flex: 1;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid #27ae60;
+        }
+        .step-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        .step-desc {
+            color: #666;
+            font-size: 0.95em;
+        }
+        .connector {
+            position: absolute;
+            left: 17px;
+            top: 36px;
+            width: 2px;
+            height: calc(100% + 15px);
+            background: #27ae60;
+        }
+        .flow-step:last-child .connector {
+            display: none;
+        }
+        .code-box {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px 20px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-size: 0.9em;
+            white-space: pre-wrap;
+        }
+        .code-box pre {
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            white-space: pre;
+            color: inherit;
+        }
+        .code-box .keyword {
+            color: #e74c3c;
+        }
+        .code-box .string {
+            color: #2ecc71;
+        }
+        .code-box .comment {
+            color: #95a5a6;
+        }
+        .code-box .variable {
+            color: #f39c12;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+        }
+        th {
+            background: #27ae60;
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ecf0f1;
+            vertical-align: top;
+        }
+        tr:hover {
+            background: #f8f9fa;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        .file-path {
+            background: #ecf0f1;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            color: #2c3e50;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        .badge-high {
+            background: #e74c3c;
+            color: white;
+        }
+        .badge-medium {
+            background: #f39c12;
+            color: white;
+        }
+        .badge-low {
+            background: #3498db;
+            color: white;
+        }
+        .note {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .warning {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .success {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .directory-tree {
+            background: #263238;
+            color: #aed581;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.8;
+            overflow-x: auto;
+        }
+        .directory-tree pre {
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            white-space: pre;
+        }
+        .directory-tree .folder {
+            color: #81d4fa;
+        }
+        .directory-tree .file {
+            color: #fff59d;
+        }
+        .directory-tree .comment {
+            color: #78909c;
+        }
+        .toc {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .toc h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .toc ul {
+            list-style: none;
+            margin: 0;
+        }
+        .toc li {
+            margin: 8px 0;
+        }
+        .toc a {
+            color: #27ae60;
+            text-decoration: none;
+        }
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        .diagram-box {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        .diagram-box pre {
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            margin: 0;
+        }
+        ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        code {
+            background: #ecf0f1;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Robot Framework Test Initialization Workflow</h1>
+        <p class="subtitle">Understanding How Tests Start and Environment Gets Configured</p>
+
+        <!-- Table of Contents -->
+        <div class="toc">
+            <h3>Table of Contents</h3>
+            <ul>
+                <li><a href="#overview">1. Overview</a></li>
+                <li><a href="#execution-flow">2. Execution Flow</a></li>
+                <li><a href="#init-file">3. The __init__.robot File</a></li>
+                <li><a href="#env-loading">4. Environment File Loading</a></li>
+                <li><a href="#setup-keywords">5. Setup Keywords</a></li>
+                <li><a href="#variable-scopes">6. Variable Scopes</a></li>
+                <li><a href="#file-structure">7. File Structure</a></li>
+            </ul>
+        </div>
+
+        <!-- Section 1: Overview -->
+        <div id="overview" class="card">
+            <h2>1. Overview</h2>
+            <p>When Robot Framework tests start execution, a specific initialization sequence occurs to set up the test environment. This document explains the complete workflow from test launch to test execution.</p>
+
+            <div class="diagram-box">
+                <pre>
+    +------------------+     +------------------+     +------------------+
+    |  Robot Framework |     |  __init__.robot  |     |   Test Suites    |
+    |      Starts      | --> |    Executes      | --> |     Execute      |
+    +------------------+     +------------------+     +------------------+
+                                     |
+                                     v
+                        +------------------------+
+                        |     Suite Setup:       |
+                        |    "Before Suite"      |
+                        +------------------------+
+                                     |
+            +------------------------+------------------------+
+            |                        |                        |
+            v                        v                        v
+    +---------------+      +------------------+     +------------------+
+    | Load Env Vars |      | Validate Env Vars|     | Set Up Global    |
+    | from .env     |      | (Required Vars)  |     | Variables        |
+    +---------------+      +------------------+     +------------------+
+            |                        |                        |
+            +------------------------+------------------------+
+                                     |
+                                     v
+                        +------------------------+
+                        |  Project Set Up:       |
+                        |  - Authenticate API    |
+                        |  - Create/Delete Space |
+                        |  - Create Accounts     |
+                        +------------------------+
+                </pre>
+            </div>
+        </div>
+
+        <!-- Section 2: Execution Flow -->
+        <div id="execution-flow" class="card">
+            <h2>2. Execution Flow</h2>
+            <p>Here's the step-by-step sequence when tests start:</p>
+
+            <div class="flow-container">
+                <div class="flow-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Robot Framework Starts</div>
+                        <div class="step-desc">The <code>robot</code> command is executed (via Make target or directly). Robot Framework begins processing the test suite directory.</div>
+                    </div>
+                    <div class="connector"></div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Process *** Settings *** Section</div>
+                        <div class="step-desc">Robot Framework reads the Settings section of each file, importing libraries, resources, and identifying Suite Setup declarations.</div>
+                    </div>
+                    <div class="connector"></div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Execute __init__.robot</div>
+                        <div class="step-desc">The <span class="file-path">test/suite/__init__.robot</span> file is automatically detected and executed ONCE before all test suites in the directory.</div>
+                    </div>
+                    <div class="connector"></div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Run Suite Setup: "Before Suite"</div>
+                        <div class="step-desc">The <code>Before Suite</code> keyword defined in __init__.robot executes, which triggers all initialization steps.</div>
+                    </div>
+                    <div class="connector"></div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <div class="step-title">Load Environment Variables</div>
+                        <div class="step-desc">All <code>.env</code> files are loaded from the <code>env_files/</code> directory and root, with root having highest precedence.</div>
+                    </div>
+                    <div class="connector"></div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="step-number">6</div>
+                    <div class="step-content">
+                        <div class="step-title">Validate Environment Variables</div>
+                        <div class="step-desc">Required variables (URL, ORG_ADMIN_USER, ORG_ADMIN_PASSWORD, etc.) are validated. Suite fails if any are missing.</div>
+                    </div>
+                    <div class="connector"></div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="step-number">7</div>
+                    <div class="step-content">
+                        <div class="step-title">Set Up Global Variables</div>
+                        <div class="step-desc">Path variables and other configuration are made globally available to all test cases using <code>Set Global Variable</code>.</div>
+                    </div>
+                    <div class="connector"></div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="step-number">8</div>
+                    <div class="step-content">
+                        <div class="step-title">Project Set Up</div>
+                        <div class="step-desc">Authenticates with SnapLogic API, optionally deletes/creates project space, and sets up required accounts based on <code>PROJECT_SPACE_SETUP</code> flag.</div>
+                    </div>
+                    <div class="connector"></div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="step-number">9</div>
+                    <div class="step-content">
+                        <div class="step-title">Test Cases Execute</div>
+                        <div class="step-desc">Individual test cases run with access to all global variables and configured environment.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: The __init__.robot File -->
+        <div id="init-file" class="card">
+            <h2>3. The __init__.robot File</h2>
+            <p>The <code>__init__.robot</code> file is a special Robot Framework file that runs once before all tests in its directory.</p>
+
+            <h3>File Location</h3>
+            <p><span class="file-path">test/suite/__init__.robot</span></p>
+
+            <h3>Structure</h3>
+            <div class="code-box">
+<span class="comment">*** Settings ***</span>
+<span class="keyword">Library</span>           OperatingSystem
+<span class="keyword">Library</span>           BuiltIn
+<span class="keyword">Library</span>           Process
+<span class="keyword">Library</span>           JSONLibrary
+<span class="keyword">Resource</span>          snaplogic_common_robot/.../snaplogic_keywords.resource
+
+<span class="comment">*** Variables ***</span>
+<span class="variable">${env_file_path}</span>           <span class="string">${CURDIR}/../../.env</span>
+<span class="variable">${account_payload_path}</span>    <span class="string">${CURDIR}/test_data/accounts_payload</span>
+<span class="variable">${pipeline_payload_path}</span>   <span class="string">${CURDIR}/test_data/pipelines</span>
+
+<span class="comment">*** Keywords ***</span>
+<span class="keyword">Suite Setup</span>       Before Suite
+
+<span class="keyword">Before Suite</span>
+    Log To Console    env_file_path is:<span class="variable">${env_file_path}</span>
+    Load Environment Variables
+    Validate Environment Variables
+    Set Up Global Variables
+    Project Set Up-Delete Project Space-Create New Project space-Create Accounts
+            </div>
+
+            <div class="note">
+                <strong>Key Point:</strong> The <code>__init__.robot</code> file runs automatically when Robot Framework discovers it in a test directory. It's executed ONCE before any test suites in that directory.
+            </div>
+        </div>
+
+        <!-- Section 4: Environment File Loading -->
+        <div id="env-loading" class="card">
+            <h2>4. Environment File Loading</h2>
+            <p>Environment variables are loaded from multiple <code>.env</code> files with a specific precedence order.</p>
+
+            <h3>Loading Order (Precedence)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>Location</th>
+                        <th>Precedence</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td><code>env_files/*.env*</code></td>
+                        <td><span class="badge badge-low">Lowest</span></td>
+                        <td>Files in env_files root directory</td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td><code>env_files/database_accounts/</code></td>
+                        <td><span class="badge badge-low">Low</span></td>
+                        <td>Database-specific credentials (.env.snowflake, .env.postgres, etc.)</td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td><code>env_files/groundplex/</code></td>
+                        <td><span class="badge badge-medium">Medium</span></td>
+                        <td>Groundplex port configurations</td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td><code>env_files/messaging_service_accounts/</code></td>
+                        <td><span class="badge badge-medium">Medium</span></td>
+                        <td>Kafka, JMS configurations</td>
+                    </tr>
+                    <tr>
+                        <td>5</td>
+                        <td><code>env_files/mock_service_accounts/</code></td>
+                        <td><span class="badge badge-medium">Medium</span></td>
+                        <td>S3, Salesforce mock configurations</td>
+                    </tr>
+                    <tr>
+                        <td>6</td>
+                        <td><code>.env</code> (root)</td>
+                        <td><span class="badge badge-high">Highest</span></td>
+                        <td>Root .env file - overrides all others</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="warning">
+                <strong>Important:</strong> Variables defined in the root <code>.env</code> file will OVERRIDE any variables with the same name from <code>env_files/</code> subdirectories.
+            </div>
+
+            <h3>Directory Structure</h3>
+            <div class="directory-tree">
+<pre><span class="folder">Project Root/</span>
+<span class="file">├── .env</span>                                   <span class="comment"># ROOT - HIGHEST PRECEDENCE</span>
+<span class="folder">└── env_files/</span>                              <span class="comment"># LOWER PRECEDENCE</span>
+    <span class="folder">├── groundplex/</span>
+    <span class="file">│   └── .env.ports</span>                      <span class="comment"># GROUNDPLEX_API_PORT, GROUNDPLEX_JCC_PORT</span>
+    <span class="folder">├── database_accounts/</span>
+    <span class="file">│   ├── .env.snowflake</span>                  <span class="comment"># Snowflake credentials</span>
+    <span class="file">│   ├── .env.postgres</span>                   <span class="comment"># PostgreSQL credentials</span>
+    <span class="file">│   ├── .env.mysql</span>                      <span class="comment"># MySQL credentials</span>
+    <span class="file">│   ├── .env.oracle</span>                     <span class="comment"># Oracle credentials</span>
+    <span class="file">│   ├── .env.sqlserver</span>                  <span class="comment"># SQL Server credentials</span>
+    <span class="file">│   ├── .env.db2</span>                        <span class="comment"># DB2 credentials</span>
+    <span class="file">│   └── .env.teradata</span>                   <span class="comment"># Teradata credentials</span>
+    <span class="folder">├── messaging_service_accounts/</span>
+    <span class="file">│   ├── .env.kafka</span>                      <span class="comment"># Kafka broker config</span>
+    <span class="file">│   └── .env.jms</span>                        <span class="comment"># JMS queue config</span>
+    <span class="folder">└── mock_service_accounts/</span>
+        <span class="file">├── .env.s3</span>                         <span class="comment"># S3/MinIO credentials</span>
+        <span class="file">├── .env.salesforce</span>                 <span class="comment"># Salesforce mock config</span>
+        <span class="file">└── .env.email</span>                      <span class="comment"># Email service config</span></pre>
+            </div>
+
+            <h3>JSON Auto-Detection</h3>
+            <p>The environment loader automatically detects and parses JSON values:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Value Type</th>
+                        <th>Robot Variable Type</th>
+                        <th>Example</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>JSON Dictionary</td>
+                        <td><code>&{dict_variable}</code></td>
+                        <td><code>CONFIG={"host":"localhost","port":8080}</code></td>
+                    </tr>
+                    <tr>
+                        <td>JSON Array</td>
+                        <td><code>@{list_variable}</code></td>
+                        <td><code>SERVERS=["server1","server2","server3"]</code></td>
+                    </tr>
+                    <tr>
+                        <td>String/Primitive</td>
+                        <td><code>${VARIABLE}</code></td>
+                        <td><code>USERNAME=admin</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Section 5: Setup Keywords -->
+        <div id="setup-keywords" class="card">
+            <h2>5. Setup Keywords</h2>
+            <p>These keywords execute during the <code>Before Suite</code> setup:</p>
+
+            <h3>5.1 Load Environment Variables</h3>
+            <div class="code-box">
+<span class="keyword">Load Environment Variables</span>
+    <span class="comment"># Lists files in env_files/ root</span>
+    <span class="comment"># Loads each .env* file found</span>
+    <span class="comment"># Recursively processes subdirectories</span>
+    <span class="comment"># Finally loads root .env (highest precedence)</span>
+    Log To Console    Loading environment variables...
+    <span class="variable">@{env_files}</span>=    List Files In Directory    <span class="variable">${env_files_dir}</span>    pattern=.env*
+    FOR    <span class="variable">${file}</span>    IN    <span class="variable">@{env_files}</span>
+        Load Single Env File    <span class="variable">${env_files_dir}/${file}</span>
+    END
+    <span class="comment"># Load root .env last (highest precedence)</span>
+    Load Single Env File    <span class="variable">${env_file_path}</span>
+            </div>
+
+            <h3>5.2 Validate Environment Variables</h3>
+            <div class="code-box">
+<span class="keyword">Validate Environment Variables</span>
+    <span class="variable">@{required_vars}</span>=    Create List
+    ...    URL
+    ...    ORG_ADMIN_USER
+    ...    ORG_ADMIN_PASSWORD
+    ...    ORG_NAME
+    ...    PROJECT_SPACE
+    ...    PROJECT_NAME
+    ...    GROUNDPLEX_NAME
+
+    FOR    <span class="variable">${var}</span>    IN    <span class="variable">@{required_vars}</span>
+        <span class="variable">${value}</span>=    Get Environment Variable    <span class="variable">${var}</span>    default=NOT_SET
+        Should Not Be Equal    <span class="variable">${value}</span>    NOT_SET
+        ...    msg=Required environment variable <span class="variable">${var}</span> is not set!
+    END
+            </div>
+
+            <h3>5.3 Set Up Global Variables</h3>
+            <div class="code-box">
+<span class="keyword">Set Up Global Variables</span>
+    Set Global Variable    <span class="variable">${account_payload_path}</span>
+    Set Global Variable    <span class="variable">${env_file_path}</span>
+    Set Global Variable    <span class="variable">${pipeline_payload_path}</span>
+    Set Global Variable    <span class="variable">${generative_slp_pipelines_path}</span>
+            </div>
+
+            <h3>5.4 Project Set Up</h3>
+            <div class="code-box">
+<span class="keyword">Project Set Up-Delete Project Space-Create New Project space-Create Accounts</span>
+    <span class="comment"># Calls Set Up Data from snaplogic_keywords.resource</span>
+    Set Up Data
+    ...    url=<span class="variable">${URL}</span>
+    ...    org_admin_user=<span class="variable">${ORG_ADMIN_USER}</span>
+    ...    org_admin_password=<span class="variable">${ORG_ADMIN_PASSWORD}</span>
+    ...    org_name=<span class="variable">${ORG_NAME}</span>
+    ...    project_space=<span class="variable">${PROJECT_SPACE}</span>
+    ...    project_name=<span class="variable">${PROJECT_NAME}</span>
+    ...    account_payload_path=<span class="variable">${account_payload_path}</span>
+    ...    project_space_setup=<span class="variable">${PROJECT_SPACE_SETUP}</span>
+            </div>
+
+            <div class="success">
+                <strong>What Set Up Data Does:</strong>
+                <ul>
+                    <li>Authenticates with SnapLogic API</li>
+                    <li>Retrieves organization snode ID</li>
+                    <li>If <code>PROJECT_SPACE_SETUP=True</code>: Deletes existing project space and creates new one</li>
+                    <li>Creates required accounts from payload files</li>
+                    <li>Sets <code>ORG_SNODE_ID</code> as global variable</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 6: Variable Scopes -->
+        <div id="variable-scopes" class="card">
+            <h2>6. Variable Scopes</h2>
+            <p>Understanding how variables are scoped in the test framework:</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Variable Type</th>
+                        <th>Set By</th>
+                        <th>Accessible In</th>
+                        <th>Scope</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>OS Environment Variables</td>
+                        <td><code>Set Environment Variable</code></td>
+                        <td>Any subprocess, system calls</td>
+                        <td>Process-wide</td>
+                    </tr>
+                    <tr>
+                        <td>Robot Scalar <code>${VAR}</code></td>
+                        <td><code>Set Global Variable</code></td>
+                        <td>All test cases & keywords</td>
+                        <td>Suite-wide</td>
+                    </tr>
+                    <tr>
+                        <td>Robot Dictionary <code>&{VAR}</code></td>
+                        <td>Auto-parsed from JSON</td>
+                        <td>All test cases & keywords</td>
+                        <td>Suite-wide</td>
+                    </tr>
+                    <tr>
+                        <td>Robot List <code>@{VAR}</code></td>
+                        <td>Auto-parsed from JSON</td>
+                        <td>All test cases & keywords</td>
+                        <td>Suite-wide</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Variable Lifecycle</h3>
+            <div class="diagram-box">
+                <pre>
+    .env Files                Robot Variables              Test Cases
+    =========                 ===============              ==========
+
+    KEY=value      -->    Set Environment Variable    -->   %{KEY}
+                          Set Global Variable ${KEY}  -->   ${KEY}
+
+    JSON_DICT={...} -->   &{json_dict}                -->   &{json_dict}[key]
+
+    JSON_LIST=[...] -->   @{json_list}                -->   @{json_list}[0]
+                </pre>
+            </div>
+        </div>
+
+        <!-- Section 7: File Structure -->
+        <div id="file-structure" class="card">
+            <h2>7. File Structure</h2>
+            <p>Key files involved in the initialization workflow:</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="file-path">test/suite/__init__.robot</span></td>
+                        <td>Main initialization file - runs once before all tests</td>
+                    </tr>
+                    <tr>
+                        <td><span class="file-path">.env</span></td>
+                        <td>Root environment file (highest precedence)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="file-path">env_files/</span></td>
+                        <td>Directory containing service-specific .env files</td>
+                    </tr>
+                    <tr>
+                        <td><span class="file-path">test/suite/test_data/accounts_payload/</span></td>
+                        <td>JSON payloads for creating SnapLogic accounts</td>
+                    </tr>
+                    <tr>
+                        <td><span class="file-path">snaplogic_keywords.resource</span></td>
+                        <td>SnapLogic API keywords (provides Set Up Data)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Complete Initialization File Path</h3>
+            <div class="code-box">
+<pre>test/
+└── suite/
+    ├── <span class="string">__init__.robot</span>                    <span class="comment"># Suite Setup runs here</span>
+    ├── test_data/
+    │   └── accounts_payload/             <span class="comment"># Account JSON files</span>
+    └── pipeline_tests/
+        └── snowflake/
+            └── snowflake_baseline_tests.robot</pre>
+            </div>
+        </div>
+
+        <footer style="text-align: center; margin-top: 40px; padding: 20px; color: #666; border-top: 1px solid #ddd;">
+            <p>Generated for SnapLogic Robot Framework Examples Project</p>
+            <p style="font-size: 0.9em;">Last Updated: January 2026</p>
+        </footer>
+    </div>
+</body>
+</html>

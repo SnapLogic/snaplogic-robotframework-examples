@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot Framework Make Targets - Test Execution Commands</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #3498db;
+        }
+        h2 {
+            color: #2980b9;
+            margin: 30px 0 15px 0;
+            padding: 10px 15px;
+            background: #ecf0f1;
+            border-left: 4px solid #3498db;
+            border-radius: 0 5px 5px 0;
+        }
+        h3 {
+            color: #27ae60;
+            margin: 20px 0 10px 0;
+        }
+        .target-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .usage-box {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px 20px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        .usage-box code {
+            color: #2ecc71;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+        }
+        th {
+            background: #3498db;
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ecf0f1;
+            vertical-align: top;
+        }
+        tr:hover {
+            background: #f8f9fa;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        .phase {
+            display: inline-block;
+            background: #9b59b6;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            margin-right: 5px;
+        }
+        .true-case {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+        }
+        .false-case {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+        }
+        .error-case {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        .badge-true {
+            background: #28a745;
+            color: white;
+        }
+        .badge-false {
+            background: #ffc107;
+            color: #333;
+        }
+        .badge-action {
+            background: #17a2b8;
+            color: white;
+        }
+        .badge-skip {
+            background: #6c757d;
+            color: white;
+        }
+        .flow-diagram {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .flow-step {
+            display: inline-block;
+            background: white;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin: 5px;
+            font-weight: 500;
+        }
+        .flow-arrow {
+            color: #3498db;
+            font-size: 1.5em;
+            margin: 0 10px;
+        }
+        .comparison-table th {
+            background: #2c3e50;
+        }
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        .note {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .warning {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        .toc {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .toc h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .toc ul {
+            list-style: none;
+            margin: 0;
+        }
+        .toc li {
+            margin: 8px 0;
+        }
+        .toc a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .toc a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Robot Framework Make Targets</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 30px;">
+            Test Execution Commands Reference
+        </p>
+
+        <!-- Table of Contents -->
+        <div class="toc">
+            <h3>Table of Contents</h3>
+            <ul>
+                <li><a href="#understanding-tags">1. Understanding Robot Framework Tags</a></li>
+                <li><a href="#robot-run-all-tests">2. robot-run-all-tests</a></li>
+                <li><a href="#robot-run-tests-no-gp">3. robot-run-tests-no-gp</a></li>
+                <li><a href="#comparison">4. Comparison Table</a></li>
+                <li><a href="#when-to-use">5. When to Use Which Target</a></li>
+            </ul>
+        </div>
+
+        <!-- Understanding Robot Framework Tags -->
+        <div id="understanding-tags" class="target-card">
+            <h2>1. Understanding Robot Framework Tags</h2>
+            <p>Tags are a powerful feature in Robot Framework that allow you to categorize, filter, and selectively run test cases. Understanding tags is essential before using the make targets, as the <code>TAGS</code> parameter determines which tests will be executed.</p>
+
+            <h3>What Are Tags?</h3>
+            <div class="note">
+                <ul>
+                    <li><strong>Labels for Test Cases:</strong> Tags are simple text labels attached to test cases that help categorize and identify them</li>
+                    <li><strong>Filter Mechanism:</strong> Tags allow you to selectively include or exclude test cases during execution</li>
+                    <li><strong>No Pre-definition Required:</strong> Tags don't need to be declared anywhere - just use them directly in your test cases</li>
+                    <li><strong>Case Insensitive:</strong> Tags are case-insensitive (<code>SMOKE</code>, <code>smoke</code>, and <code>Smoke</code> are treated the same)</li>
+                </ul>
+            </div>
+
+            <h3>How Tags Are Defined in Test Cases</h3>
+            <p>Tags are defined using the <code>[Tags]</code> setting within a test case:</p>
+            <div class="usage-box">
+<code>*** Test Cases ***</code><br>
+Create Triggered Task<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Documentation]&nbsp;&nbsp;&nbsp;&nbsp;Creates a triggered task for pipeline execution<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #f39c12;">[Tags]</span>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #2ecc71;">snowflake_demo</span>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #2ecc71;">task_creation</span>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #2ecc71;">smoke</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Template]&nbsp;&nbsp;&nbsp;&nbsp;Create Triggered Task From Template<br>
+&nbsp;&nbsp;&nbsp;&nbsp;${unique_id}&nbsp;&nbsp;&nbsp;&nbsp;${PIPELINES_LOCATION_PATH}&nbsp;&nbsp;&nbsp;&nbsp;${pipeline_name}&nbsp;&nbsp;&nbsp;&nbsp;${task_name}
+            </div>
+
+            <h3>Using Tags with Make Commands</h3>
+            <p>The <code>TAGS</code> parameter in make commands filters which tests to run:</p>
+            <div class="usage-box">
+<code># Run only tests with 'snowflake_demo' tag</code><br>
+make robot-run-all-tests TAGS="snowflake_demo"<br><br>
+
+<code># Run tests with 'smoke' tag</code><br>
+make robot-run-all-tests TAGS="smoke"<br><br>
+
+<code># Run tests with multiple tags (OR logic - runs if ANY tag matches)</code><br>
+make robot-run-all-tests TAGS="snowflake_demo OR postgres_demo"<br><br>
+
+<code># Run tests with multiple tags (AND logic - runs only if ALL tags match)</code><br>
+make robot-run-all-tests TAGS="snowflake_demo AND task_creation"<br><br>
+
+<code># Exclude tests with specific tag</code><br>
+make robot-run-all-tests TAGS="NOT cleanup"
+            </div>
+
+            <h3>Common Tag Naming Conventions</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tag Type</th>
+                        <th>Examples</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Feature Tags</strong></td>
+                        <td><code>snowflake_demo</code>, <code>postgres_demo</code>, <code>oracle</code></td>
+                        <td>Identify tests for specific features or database integrations</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Action Tags</strong></td>
+                        <td><code>task_creation</code>, <code>task_execution</code>, <code>account</code></td>
+                        <td>Categorize by the type of operation being tested</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Priority Tags</strong></td>
+                        <td><code>smoke</code>, <code>regression</code>, <code>critical</code></td>
+                        <td>Indicate test importance or execution frequency</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Setup Tags</strong></td>
+                        <td><code>setup</code>, <code>cleanup</code>, <code>teardown</code>, <code>createplex</code></td>
+                        <td>Mark setup and cleanup test cases</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Verification Tags</strong></td>
+                        <td><code>verify_project_space_exists</code></td>
+                        <td>Tests that verify environment state</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Special Tags Used by This Framework</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tag</th>
+                        <th>Used By</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>createplex</code></td>
+                        <td><code>robot-run-all-tests</code></td>
+                        <td>Creates project space and Snaplex when PROJECT_SPACE_SETUP=True</td>
+                    </tr>
+                    <tr>
+                        <td><code>verify_project_space_exists</code></td>
+                        <td>Both targets</td>
+                        <td>Verifies project space exists or creates it (based on PROJECT_SPACE_SETUP)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="warning">
+                <strong>Important:</strong> When running tests, always specify the appropriate TAGS to run only the tests you need. Running without TAGS may execute all tests in the suite, which could take significant time.
+            </div>
+        </div>
+
+        <!-- robot-run-all-tests -->
+        <div id="robot-run-all-tests" class="target-card">
+            <h2>2. robot-run-all-tests</h2>
+            <p>End-to-End Robot Test Workflow including full environment setup with Groundplex.</p>
+
+            <h3>Usage</h3>
+            <div class="usage-box">
+                <code>make robot-run-all-tests TAGS="your_tags" PROJECT_SPACE_SETUP=True|False</code>
+            </div>
+
+            <h3>Execution Flow</h3>
+            <div class="flow-diagram">
+                <span class="flow-step">Phase 1: Project Space</span>
+                <span class="flow-arrow">→</span>
+                <span class="flow-step">Phase 2: Launch Groundplex</span>
+                <span class="flow-arrow">→</span>
+                <span class="flow-step">Phase 2.1: Travis Permissions</span>
+                <span class="flow-arrow">→</span>
+                <span class="flow-step">Phase 3: Run Tests</span>
+            </div>
+
+            <h3>Behavior Based on PROJECT_SPACE_SETUP</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">Setting</th>
+                        <th style="width: 25%;">Phase</th>
+                        <th style="width: 60%;">Behavior</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- PROJECT_SPACE_SETUP=True -->
+                    <tr class="true-case">
+                        <td rowspan="6"><span class="badge badge-true">True</span></td>
+                        <td><span class="phase">Phase 1</span> Create Project Space & Plex</td>
+                        <td>
+                            <strong>Runs:</strong> <code>robot-run-tests TAGS="createplex" PROJECT_SPACE_SETUP=True</code>
+                            <ul>
+                                <li>Deletes existing project space (if exists)</li>
+                                <li>Creates new project space</li>
+                                <li>Creates Snaplex (plex) inside project space</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr class="true-case">
+                        <td><span class="phase">Phase 1</span> Error Handling</td>
+                        <td>
+                            <strong>If createplex fails due to "active Snaplex nodes":</strong>
+                            <ul>
+                                <li>Runs <code>stop-groundplex</code> to kill JCC and stop container</li>
+                                <li>Waits 60 seconds for nodes to deregister</li>
+                                <li>Retries createplex test</li>
+                                <li>Exits with error if retry fails</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr class="true-case">
+                        <td><span class="phase">Phase 2</span> Launch Groundplex</td>
+                        <td>
+                            <strong>Runs:</strong> <code>launch-groundplex</code>
+                            <ul>
+                                <li>Starts Docker containers using COMPOSE_PROFILES</li>
+                                <li>Launches the Groundplex container</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr class="true-case">
+                        <td><span class="phase">Phase 2.1</span> Travis Permissions</td>
+                        <td>
+                            <strong>Only on Travis CI:</strong> Sets <code>chmod 777</code> on test data directories so Docker containers can read/write files during test execution.
+                        </td>
+                    </tr>
+                    <tr class="true-case">
+                        <td><span class="phase">Phase 3</span> Run Tests</td>
+                        <td>
+                            <strong>Runs:</strong> <code>robot-run-tests TAGS="$(TAGS)" PROJECT_SPACE_SETUP=False</code>
+                            <ul>
+                                <li>Executes user-specified tests with the provided TAGS</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr class="true-case">
+                        <td colspan="2"><strong>Use Case:</strong> Fresh environment setup, CI/CD pipelines, first-time setup</td>
+                    </tr>
+
+                    <!-- PROJECT_SPACE_SETUP=False -->
+                    <tr class="false-case">
+                        <td rowspan="5"><span class="badge badge-false">False</span><br>(Default)</td>
+                        <td><span class="phase">Phase 1</span> Verify Project Space</td>
+                        <td>
+                            <strong>Runs:</strong> <code>robot-run-tests TAGS="verify_project_space_exists" PROJECT_SPACE_SETUP=False</code>
+                            <ul>
+                                <li>Skips project space creation</li>
+                                <li>Only verifies that project space already exists</li>
+                                <li>Exits with error if project space doesn't exist</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr class="false-case">
+                        <td><span class="phase">Phase 2</span> Launch Groundplex</td>
+                        <td>
+                            <strong>Runs:</strong> <code>launch-groundplex</code>
+                            <ul>
+                                <li>Starts Docker containers using COMPOSE_PROFILES</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr class="false-case">
+                        <td><span class="phase">Phase 2.1</span> Travis Permissions</td>
+                        <td>
+                            <strong>Only on Travis CI:</strong> Sets <code>chmod 777</code> on test data directories so Docker containers can read/write files during test execution.
+                        </td>
+                    </tr>
+                    <tr class="false-case">
+                        <td><span class="phase">Phase 3</span> Run Tests</td>
+                        <td>
+                            <strong>Runs:</strong> <code>robot-run-tests TAGS="$(TAGS)" PROJECT_SPACE_SETUP=False</code>
+                        </td>
+                    </tr>
+                    <tr class="false-case">
+                        <td colspan="2"><strong>Use Case:</strong> Subsequent test runs, when project space already exists</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="note">
+                <strong>Note:</strong> This target always launches Groundplex in Phase 2, regardless of PROJECT_SPACE_SETUP value.
+            </div>
+        </div>
+
+        <!-- robot-run-tests-no-gp -->
+        <div id="robot-run-tests-no-gp" class="target-card">
+            <h2>3. robot-run-tests-no-gp</h2>
+            <p>Robot Test Workflow <strong>WITHOUT</strong> Groundplex Launch. Use when Groundplex is already running or not needed.</p>
+
+            <h3>Usage</h3>
+            <div class="usage-box">
+                <code>make robot-run-tests-no-gp TAGS="your_tags" PROJECT_SPACE_SETUP=True|False</code>
+            </div>
+
+            <h3>Execution Flow</h3>
+            <div class="flow-diagram">
+                <span class="flow-step">Phase 1: Project Space</span>
+                <span class="flow-arrow">→</span>
+                <span class="flow-step" style="background: #f8f9fa; border-style: dashed;">Phase 2: SKIPPED</span>
+                <span class="flow-arrow">→</span>
+                <span class="flow-step">Phase 2.1: Travis Permissions</span>
+                <span class="flow-arrow">→</span>
+                <span class="flow-step">Phase 3: Run Tests</span>
+            </div>
+
+            <h3>Behavior Based on PROJECT_SPACE_SETUP</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">Setting</th>
+                        <th style="width: 25%;">Phase</th>
+                        <th style="width: 60%;">Behavior</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- PROJECT_SPACE_SETUP=True -->
+                    <tr class="true-case">
+                        <td rowspan="5"><span class="badge badge-true">True</span></td>
+                        <td><span class="phase">Phase 1</span> Create Project Space Only</td>
+                        <td>
+                            <strong>Runs:</strong> <code>robot-run-tests TAGS="verify_project_space_exists" PROJECT_SPACE_SETUP=True</code>
+                            <ul>
+                                <li>Deletes existing project space (if exists)</li>
+                                <li>Creates new project space</li>
+                                <li><strong>Does NOT create Snaplex/Plex</strong></li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr class="true-case">
+                        <td><span class="phase">Phase 1</span> Error Handling</td>
+                        <td>
+                            <strong>If fails due to "active Snaplex nodes":</strong>
+                            <ul>
+                                <li>Logs warning about active nodes</li>
+                                <li><strong>Does NOT attempt to stop Groundplex</strong></li>
+                                <li>User must manually resolve</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr class="true-case">
+                        <td><span class="phase">Phase 2</span> Groundplex</td>
+                        <td>
+                            <span class="badge badge-skip">SKIPPED</span>
+                            <ul>
+                                <li>No Groundplex/Plex operations performed</li>
+                                <li>Assumes Groundplex is already running if needed</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr class="true-case">
+                        <td><span class="phase">Phase 2.1</span> Travis Permissions</td>
+                        <td>
+                            <strong>Only on Travis CI:</strong> Sets <code>chmod 777</code> on test data directories so Docker containers can read/write files during test execution.
+                        </td>
+                    </tr>
+                    <tr class="true-case">
+                        <td><span class="phase">Phase 3</span> Run Tests</td>
+                        <td>
+                            <strong>Runs:</strong> <code>robot-run-tests TAGS="$(TAGS)" PROJECT_SPACE_SETUP=False</code>
+                        </td>
+                    </tr>
+
+                    <!-- PROJECT_SPACE_SETUP=False -->
+                    <tr class="false-case">
+                        <td rowspan="4"><span class="badge badge-false">False</span><br>(Default)</td>
+                        <td><span class="phase">Phase 1</span> Verify Project Space</td>
+                        <td>
+                            <strong>Runs:</strong> <code>robot-run-tests TAGS="verify_project_space_exists" PROJECT_SPACE_SETUP=False</code>
+                            <ul>
+                                <li>Skips project space creation</li>
+                                <li>Only verifies that project space exists</li>
+                                <li>Exits with error if project space doesn't exist</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr class="false-case">
+                        <td><span class="phase">Phase 2</span> Groundplex</td>
+                        <td>
+                            <span class="badge badge-skip">SKIPPED</span>
+                        </td>
+                    </tr>
+                    <tr class="false-case">
+                        <td><span class="phase">Phase 2.1</span> Travis Permissions</td>
+                        <td>
+                            <strong>Only on Travis CI:</strong> Sets <code>chmod 777</code> on test data directories so Docker containers can read/write files during test execution.
+                        </td>
+                    </tr>
+                    <tr class="false-case">
+                        <td><span class="phase">Phase 3</span> Run Tests</td>
+                        <td>
+                            <strong>Runs:</strong> <code>robot-run-tests TAGS="$(TAGS)" PROJECT_SPACE_SETUP=False</code>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="warning">
+                <strong>Warning:</strong> This target does NOT launch Groundplex. Ensure Groundplex is already running if your tests require it.
+            </div>
+        </div>
+
+        <!-- Comparison Table -->
+        <div id="comparison" class="target-card">
+            <h2>4. Comparison Table</h2>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>robot-run-all-tests</th>
+                        <th>robot-run-tests-no-gp</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Creates Project Space</strong></td>
+                        <td>Yes (when PROJECT_SPACE_SETUP=True)</td>
+                        <td>Yes (when PROJECT_SPACE_SETUP=True)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Creates Snaplex/Plex</strong></td>
+                        <td>Yes (when PROJECT_SPACE_SETUP=True)</td>
+                        <td><span class="highlight">No - Never creates plex</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Launches Groundplex Container</strong></td>
+                        <td>Yes - Always</td>
+                        <td><span class="highlight">No - Never launches</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Auto-retry on Active Nodes Error</strong></td>
+                        <td>Yes - Stops GP, waits 60s, retries</td>
+                        <td><span class="highlight">No - Only logs warning</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Verifies Project Space Exists</strong></td>
+                        <td>Yes (when PROJECT_SPACE_SETUP=False)</td>
+                        <td>Yes (when PROJECT_SPACE_SETUP=False)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Travis CI Permissions</strong></td>
+                        <td>Yes (Phase 2.1)</td>
+                        <td>Yes (Phase 2.1)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Runs User Tests</strong></td>
+                        <td>Yes (Phase 3)</td>
+                        <td>Yes (Phase 3)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Typical Execution Time</strong></td>
+                        <td>Longer (includes GP startup)</td>
+                        <td>Shorter (skips GP operations)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- When to Use -->
+        <div id="when-to-use" class="target-card">
+            <h2>5. When to Use Which Target</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Scenario</th>
+                        <th>Recommended Target</th>
+                        <th>PROJECT_SPACE_SETUP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>First time setup / Fresh environment</td>
+                        <td><code>robot-run-all-tests</code></td>
+                        <td><span class="badge badge-true">True</span></td>
+                    </tr>
+                    <tr>
+                        <td>CI/CD pipeline - full workflow</td>
+                        <td><code>robot-run-all-tests</code></td>
+                        <td><span class="badge badge-true">True</span></td>
+                    </tr>
+                    <tr>
+                        <td>Running tests after initial setup</td>
+                        <td><code>robot-run-all-tests</code></td>
+                        <td><span class="badge badge-false">False</span></td>
+                    </tr>
+                    <tr>
+                        <td>Groundplex already running externally</td>
+                        <td><code>robot-run-tests-no-gp</code></td>
+                        <td><span class="badge badge-false">False</span></td>
+                    </tr>
+                    <tr>
+                        <td>Tests don't need Groundplex</td>
+                        <td><code>robot-run-tests-no-gp</code></td>
+                        <td><span class="badge badge-false">False</span></td>
+                    </tr>
+                    <tr>
+                        <td>Quick test iteration (GP already up)</td>
+                        <td><code>robot-run-tests-no-gp</code></td>
+                        <td><span class="badge badge-false">False</span></td>
+                    </tr>
+                    <tr>
+                        <td>Create project space only (no plex needed)</td>
+                        <td><code>robot-run-tests-no-gp</code></td>
+                        <td><span class="badge badge-true">True</span></td>
+                    </tr>
+                    <tr>
+                        <td>Reset project space with new plex</td>
+                        <td><code>robot-run-all-tests</code></td>
+                        <td><span class="badge badge-true">True</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Quick Reference Commands</h3>
+            <div class="usage-box">
+                <code># Full setup with new project space and plex</code><br>
+                make robot-run-all-tests TAGS="snowflake_demo" PROJECT_SPACE_SETUP=True<br><br>
+
+                <code># Run tests using existing project space (launch GP)</code><br>
+                make robot-run-all-tests TAGS="snowflake_demo"<br><br>
+
+                <code># Run tests when GP is already running</code><br>
+                make robot-run-tests-no-gp TAGS="snowflake_demo"<br><br>
+
+                <code># Create project space only (no plex, no GP launch)</code><br>
+                make robot-run-tests-no-gp TAGS="oracle" PROJECT_SPACE_SETUP=True
+            </div>
+        </div>
+
+        <!-- Technical Note: robot-run-tests -->
+        <div id="robot-run-tests" class="target-card" style="background: #f8f9fa; border: 2px dashed #6c757d;">
+            <h2 style="background: #6c757d; color: white; border-left-color: #495057;">5. Technical Note: robot-run-tests (Base Target)</h2>
+
+            <p><code>robot-run-tests</code> is the <strong>underlying base target</strong> that both <code>robot-run-all-tests</code> and <code>robot-run-tests-no-gp</code> call internally to execute Robot Framework tests.</p>
+
+            <h3>Usage (Direct)</h3>
+            <div class="usage-box">
+                <code>make robot-run-tests TAGS="your_tags" PROJECT_SPACE_SETUP=True|False</code>
+            </div>
+
+            <h3>What It Does</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Step</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1. Check Environment</td>
+                        <td>Runs <code>check-env</code> to verify .env file exists</td>
+                    </tr>
+                    <tr>
+                        <td>2. Build Include Tags</td>
+                        <td>Converts TAGS parameter to Robot Framework <code>--include</code> arguments</td>
+                    </tr>
+                    <tr>
+                        <td>3. Execute Tests</td>
+                        <td>Runs Robot Framework inside Docker tools container with:
+                            <ul>
+                                <li><code>-G $(DATE)</code> - Group tests by date</li>
+                                <li><code>--timestampoutputs</code> - Timestamp output files</li>
+                                <li><code>--variable PROJECT_SPACE_SETUP</code> - Pass setup flag</li>
+                                <li><code>--outputdir robot_output</code> - Output directory</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>4. Report Result</td>
+                        <td>Prints success/failure message and exits with appropriate code</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="warning">
+                <strong>Recommendation:</strong> For standard workflows, use the higher-level targets:
+                <ul>
+                    <li><code>robot-run-all-tests</code> - Full workflow with Groundplex management</li>
+                    <li><code>robot-run-tests-no-gp</code> - Workflow without Groundplex operations</li>
+                </ul>
+                Use <code>robot-run-tests</code> directly only when you need fine-grained control over test execution without any environment setup phases.
+            </div>
+
+            <h3>Relationship Diagram</h3>
+            <div class="flow-diagram" style="text-align: left; padding: 25px;">
+                <pre style="font-family: monospace; font-size: 14px; line-height: 1.8;">
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         User Commands                                    │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│   ┌───────────────────────┐       ┌───────────────────────┐            │
+│   │  robot-run-all-tests  │       │  robot-run-tests-no-gp │            │
+│   │  (Full Workflow)      │       │  (No GP Workflow)      │            │
+│   └───────────┬───────────┘       └───────────┬───────────┘            │
+│               │                               │                         │
+│               │   Phase 1: Project Space      │                         │
+│               │   Phase 2: Launch GP          │   Phase 2: SKIPPED      │
+│               │   Phase 2.1: Permissions      │   Phase 2.1: Permissions│
+│               │   Phase 3: Run Tests          │   Phase 3: Run Tests    │
+│               │                               │                         │
+│               └───────────────┬───────────────┘                         │
+│                               │                                         │
+│                               ▼                                         │
+│               ┌───────────────────────────────┐                         │
+│               │       robot-run-tests         │                         │
+│               │       (Base Target)           │                         │
+│               │                               │                         │
+│               │  - Executes Robot Framework   │                         │
+│               │  - Inside Docker container    │                         │
+│               │  - With specified TAGS        │                         │
+│               └───────────────────────────────┘                         │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+                </pre>
+            </div>
+        </div>
+
+        <footer style="text-align: center; margin-top: 40px; padding: 20px; color: #666; border-top: 1px solid #ddd;">
+            <p>Generated for SnapLogic Robot Framework Examples Project</p>
+            <p style="font-size: 0.9em;">Last Updated: January 2026</p>
+        </footer>
+    </div>
+</body>
+</html>
