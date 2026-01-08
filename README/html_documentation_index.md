@@ -17,7 +17,6 @@ Step-by-step guides for getting started with the framework.
 |---------------|-------------|---------------|-------------|
 | Prerequisites | System requirements and software dependencies | `README/Tutorials/HTML DOCS/01_prerequisites.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/Tutorials/HTML%20DOCS/01_prerequisites.html) |
 | Architecture Overview | High-level architecture and component overview | `README/Tutorials/HTML DOCS/02_architecture_overview.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/Tutorials/HTML%20DOCS/02_architecture_overview.html) |
-| VS Code Setup Guide | IDE configuration and extensions setup | `README/Tutorials/HTML DOCS/03_vscode_setup_guide.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/Tutorials/HTML%20DOCS/03_vscode_setup_guide.html) |
 | Pre-Execution Setup | Configuration and environment setup before running tests | `README/Tutorials/HTML DOCS/04_configuration_setup.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/Tutorials/HTML%20DOCS/04_configuration_setup.html) |
 | Pipeline Execution Quick Start | Getting started with running your first pipeline test | `README/Tutorials/HTML DOCS/05_pipeline_execution_quickstart.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/Tutorials/HTML%20DOCS/05_pipeline_execution_quickstart.html) |
 | Testing Phases | Understanding the different phases of test execution | `README/Tutorials/HTML DOCS/06_testing_phases.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/Tutorials/HTML%20DOCS/06_testing_phases.html) |
@@ -32,7 +31,6 @@ Detailed guides for Robot Framework test development and execution.
 |---------------|-------------|---------------|-------------|
 | Complete End-to-End Workflow | Full workflow from setup to test execution | `README/How To Guides/robot_framework_guides/html_docs/Robotframework_end_to_end_workflow_steps.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/robot_framework_guides/html_docs/Robotframework_end_to_end_workflow_steps.html) |
 | Account Creation Guide | How to create and configure SnapLogic accounts | `README/How To Guides/robot_framework_guides/html_docs/account_creation_guide.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/robot_framework_guides/html_docs/account_creation_guide.html) |
-| Docker Infrastructure Guide | Docker container setup and management | `README/How To Guides/robot_framework_guides/html_docs/docker_infrastructure_guide.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/robot_framework_guides/html_docs/docker_infrastructure_guide.html) |
 | Make Targets Documentation | All available Makefile commands for test execution | `README/How To Guides/robot_framework_guides/html_docs/robot_framework_make_targets_documentation.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/robot_framework_guides/html_docs/robot_framework_make_targets_documentation.html) |
 | Test Initialization Workflow | Understanding the __init__.robot file and suite setup | `README/How To Guides/robot_framework_guides/html_docs/test_initialization_workflow_init_file.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/robot_framework_guides/html_docs/test_initialization_workflow_init_file.html) |
 | Triggered Task Guide | Working with SnapLogic triggered tasks in tests | `README/How To Guides/robot_framework_guides/html_docs/triggered_task_guide.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/robot_framework_guides/html_docs/triggered_task_guide.html) |
@@ -48,6 +46,7 @@ Guides for setting up various infrastructure components.
 | Document Name | Description | Relative Path | GitHub Link |
 |---------------|-------------|---------------|-------------|
 | Docker Compose Architecture | Docker Compose configuration and architecture flow | `README/How To Guides/infra_setup_guides/docker/docker-compose.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/infra_setup_guides/docker/docker-compose.html) |
+| Docker Infrastructure Guide | Docker container setup and management | `README/How To Guides/infra_setup_guides/docker/docker_infrastructure_guide.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/infra_setup_guides/docker/docker_infrastructure_guide.html) |
 | Configuration Files Documentation | Makefile, Docker, and environment files explained | `README/How To Guides/infra_setup_guides/docker_makefile_envfiles_details.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/infra_setup_guides/docker_makefile_envfiles_details.html) |
 
 ### Kafka
@@ -62,6 +61,12 @@ Guides for setting up various infrastructure components.
 | Document Name | Description | Relative Path | GitHub Link |
 |---------------|-------------|---------------|-------------|
 | Stateless vs Stateful Workflow | Understanding workflow patterns for Salesforce testing | `README/How To Guides/infra_setup_guides/salesforce/README/stateless vs stateful workflow.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/infra_setup_guides/salesforce/README/stateless%20vs%20stateful%20workflow.html) |
+
+### VS Code
+
+| Document Name | Description | Relative Path | GitHub Link |
+|---------------|-------------|---------------|-------------|
+| VS Code Setup Guide | IDE configuration and extensions setup | `README/Tutorials/HTML DOCS/03_vscode_setup_guide.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/Tutorials/HTML%20DOCS/03_vscode_setup_guide.html) |
 
 ### Windows
 
