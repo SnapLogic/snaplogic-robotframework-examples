@@ -30,6 +30,7 @@ Library             CSVLibrary
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource    # SnapLogic API keywords
 Resource            ../../test_data/queries/postgres_queries.resource
 Resource            ../../../resources/common/files.resource    # CSV/JSON file operations
+Resource            ../../../resources/common/general.resource    # Common keywords including Get Unique Id
 Resource            ../../../resources/common/sql_table_operations.resource
 Resource            ../../../resources/minio/minio.resource
 
@@ -271,3 +272,8 @@ Drop Tables in Postgres DB
     Execute SQL String    ${DROP_TABLE_EMPLOYEES2_PG}
     Log    ✅ Dropped 'employees2' table    INFO
     Log    ✅ Test DB Tables cleanup completed successfully    INFO
+
+Connect to Postgres Database
+    [Documentation]    Establishes connection to PostgreSQL database using psycopg2
+    [Arguments]    ${dbname}    ${dbuser}    ${dbpass}    ${dbhost}    ${dbport}=5432
+    Connect To Database    psycopg2    ${dbname}    ${dbuser}    ${dbpass}    ${dbhost}    ${dbport}

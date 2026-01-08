@@ -108,8 +108,13 @@ Load CSV Data Template
     ${expected_rows}=    Count Data Rows In CSV    ${csv_file}
     Log    Auto-detected expected rows: ${expected_rows}
 
-    # Read CSV data
-    @{csv_data}=    Read Csv File To List    ${csv_file}    header=True
+    # Read CSV data - first row is header with column names
+    @{all_rows}=    Read Csv File To List    ${csv_file}
+    ${header_row}=    Evaluate    $all_rows[0]    # Get column names from header
+    @{csv_data}=    Evaluate    $all_rows[1:]    # Skip header row for data
+
+    # Build column names string from CSV header
+    ${columns}=    Evaluate    ', '.join($header_row)
 
     # Truncate table if requested
     IF    ${truncate_table}
@@ -117,17 +122,30 @@ Load CSV Data Template
         Log    Truncated table: ${table_name}
     END
 
-    # Insert data row by row (for compatibility - consider batch insert for large files)
+    # Log total rows to insert for debugging
+    ${total_rows}=    Get Length    ${csv_data}
+    Log    Total data rows to insert: ${total_rows}
+
+    # Insert data row by row with explicit column names
+    ${row_num}=    Set Variable    0
     FOR    ${row}    IN    @{csv_data}
-        # Build INSERT statement based on row data
-        ${values}=    Evaluate    ', '.join([f"'{v}'" for v in $row])
-        Execute SQL String    INSERT INTO ${table_name} VALUES (${values})
+        ${row_num}=    Evaluate    ${row_num} + 1
+        Log    Processing row ${row_num}: ${row}
+        # Build INSERT statement - quote strings, leave numbers unquoted
+        ${values}=    Evaluate    ', '.join([v if v.isdigit() or (v.replace('.','',1).replace('-','',1).isdigit()) else f"'{v}'" for v in $row])
+        ${sql}=    Set Variable    INSERT INTO ${table_name} (${columns}) VALUES (${values})
+        Log    Row ${row_num}: Executing SQL: ${sql}
+        Execute SQL String    ${sql}
+        # Verify the insert worked by checking count after each insert
+        ${count_after}=    Row Count    SELECT COUNT(*) FROM ${table_name}
+        Log    Row ${row_num}: After insert, table has ${count_after} rows
     END
 
-    # Verify row count
-    ${actual_count}=    Row Count    SELECT COUNT(*) FROM ${table_name}
+    # Verify row count - use Query to get the actual COUNT value
+    ${result}=    Query    SELECT COUNT(*) FROM ${table_name}
+    ${actual_count}=    Set Variable    ${result[0][0]}
     Should Be Equal As Numbers    ${actual_count}    ${expected_rows}
-    ...    Expected ${expected_rows} rows but inserted ${actual_count}
+    ...    CSV Data Load Failed: CSV file '${csv_file}' contains ${expected_rows} data rows (excluding header), but only ${actual_count} rows were inserted into '${table_name}' table. Possible causes: INSERT statement failed silently, duplicate key constraint, or data type mismatch.
 
     IF    ${truncate_table}
         Log    Successfully loaded ${expected_rows} rows into ${table_name} table (table was truncated)
@@ -157,18 +175,30 @@ Load JSON Data Template
     END
 
     # Insert data row by row
+    ${row_num}=    Set Variable    0
     FOR    ${item}    IN    @{json_data}
+        ${row_num}=    Evaluate    ${row_num} + 1
         ${keys}=    Get Dictionary Keys    ${item}
         ${values}=    Get Dictionary Values    ${item}
         ${columns}=    Evaluate    ', '.join($keys)
-        ${value_str}=    Evaluate    ', '.join([f"'{v}'" for v in $values])
-        Execute SQL String    INSERT INTO ${table_name} (${columns}) VALUES (${value_str})
+        # Quote strings, leave numbers unquoted
+        ${value_str}=    Evaluate    ', '.join([str(v) if isinstance(v, (int, float)) else f"'{v}'" for v in $values])
+        ${sql}=    Set Variable    INSERT INTO ${table_name} (${columns}) VALUES (${value_str})
+        Log    Row ${row_num}: Executing SQL: ${sql}
+        TRY
+            Execute SQL String    ${sql}
+            Log    Row ${row_num}: INSERT successful
+        EXCEPT    AS    ${error}
+            Log    Row ${row_num}: INSERT FAILED - ${error}    level=ERROR
+            Fail    JSON row ${row_num} failed to insert. SQL: ${sql} | Error: ${error}
+        END
     END
 
-    # Verify row count
-    ${actual_count}=    Row Count    SELECT COUNT(*) FROM ${table_name}
+    # Verify row count - use Query to get the actual COUNT value
+    ${result}=    Query    SELECT COUNT(*) FROM ${table_name}
+    ${actual_count}=    Set Variable    ${result[0][0]}
     Should Be Equal As Numbers    ${actual_count}    ${expected_rows}
-    ...    Expected ${expected_rows} rows but inserted ${actual_count}
+    ...    JSON Data Load Failed: JSON file '${json_file}' contains ${expected_rows} records, but only ${actual_count} rows were inserted into '${table_name}' table. Possible causes: INSERT statement failed silently, duplicate key constraint, or data type mismatch.
 
     IF    ${truncate_table}
         Log    Successfully loaded ${expected_rows} rows into ${table_name} table (table was truncated)
