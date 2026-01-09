@@ -80,7 +80,7 @@ Execute Trigger Task Within Certain Time
     Run Triggered Task In Certain Time
     ...    30 Sec
     ...    5 Sec
-    ...    ${PIPELINES_LOCATION_PATH}
+    ...    ${ORG_NAME}/${PIPELINES_LOCATION_PATH}
     ...    ${pipeline_name}_${task1}_${unique_id}
 
 
@@ -94,35 +94,241 @@ Initialize Variables
     Set Suite Variable    ${unique_id}    ${unique_id}
 
 Run Triggered Task In Certain Time
-    [Documentation]    Executes a SnapLogic triggered task located at the given path, with optional query parameters.
+    [Documentation]    Executes a SnapLogic triggered task and captures detailed error on failure.
     ...
-    ...    This keyword wraps the `Run Triggered Task Api` call with automatic retry logic using
-    ...    `Wait Until Keyword Succeeds`. It retries the task execution up to 30 seconds (every 5 seconds)
-    ...    in case of transient failures (e.g., network latency or temporary unavailability).
-    ...
-    ...    Optional parameters can be passed as a URL-style query string (e.g., `param1=value1&param2=value2`).
-    ...    This is useful when triggering pipelines that accept runtime parameters via task execution.
+    ...    This keyword makes a direct API call to run the triggered task and captures
+    ...    the full response including error details when the pipeline fails.
+    ...    On failure, it fetches detailed pipeline execution statistics.
     ...
     ...    *Argument Details:*
-    ...    - ``path``: Full SnapLogic path to the project where the task resides (e.g., `/org/space/project`)
+    ...    - ``timeout``: Maximum time to wait for task completion
+    ...    - ``retry_interval``: Interval between retry attempts
+    ...    - ``path``: Full SnapLogic path to the project where the task resides
     ...    - ``task_name``: Name of the triggered task to run
-    ...    - ``params`` (optional): Query string with parameters to pass at runtime (e.g., `debug=true&env=dev`)
+    ...    - ``params`` (optional): Query string with parameters to pass at runtime
     ...
     ...    *Returns:*
-    ...    - The response object returned from the `Run Triggered Task Api`
-    ...
-    ...    *Behavior:*
-    ...    - Retries the task run for up to 30 seconds (retry interval: 5 seconds)
-    ...    - Passes parameters (if provided) to the task at execution time
-    ...    - Returns the HTTP response object from the API
-    ...    *Example:*
-    ...    | ${task_response} | Run Triggered Task | /org/project | My Task | param1=value1&param2=value2 |
+    ...    - The response object on success
+    ...    - Fails with detailed error message on failure
     [Arguments]    ${timeout}    ${retry_interval}    ${path}    ${task_name}    ${params}=${EMPTY}
-    ${response}    Wait Until Keyword Succeeds
-    ...    ${timeout}
-    ...    ${retry_interval}
-    ...    Run Triggered Task Api
-    ...    ${path}
-    ...    ${task_name}
-    ...    ${params}
-    RETURN    ${response}
+
+    # Make direct API call to capture full response
+    ${response}=    GET On Session
+    ...    ${ORG_ADMIN_SESSION}
+    ...    /api/1/rest/slsched/feed/${path}/${task_name}
+    ...    params=${params}
+    ...    expected_status=any
+
+    Log    Response Status Code: ${response.status_code}
+    Log    Response Content: ${response.content}
+
+    # Check if the request was successful
+    IF    ${response.status_code} == 200
+        Log    Task executed successfully
+        RETURN    ${response}
+    ELSE
+        # Extract basic error details from response
+        ${error_details}=    Extract Error From Response    ${response}
+
+        # Try to get runtime UUID and fetch detailed execution stats
+        ${detailed_error}=    Get Pipeline Execution Details    ${response}    ${error_details}
+
+        Log To Console    \n=============== PIPELINE EXECUTION FAILED ===============
+        Log To Console    Task Name: ${task_name}
+        Log To Console    Path: ${path}
+        Log To Console    Status Code: ${response.status_code}
+        Log To Console    ${detailed_error}
+        Log To Console    =========================================================\n
+
+        Log    Task execution failed for: ${task_name}    level=ERROR
+        Log    Path: ${path}    level=ERROR
+        Log    Status Code: ${response.status_code}    level=ERROR
+        Log    Error details: ${detailed_error}    level=ERROR
+
+        Fail    Pipeline task '${task_name}' failed (HTTP ${response.status_code}): ${detailed_error}
+    END
+
+Get Pipeline Execution Details
+    [Documentation]    Fetches detailed pipeline execution statistics using runtime UUID.
+    [Arguments]    ${response}    ${basic_error}
+
+    TRY
+        # Try to parse response to get runtime UUID
+        ${json}=    Evaluate    json.loads($response.content)    json
+
+        # Look for ruuid in the response
+        ${ruuid}=    Set Variable    ${EMPTY}
+
+        # Check different possible locations for ruuid
+        ${has_ruuid}=    Evaluate    'ruuid' in $json
+        IF    ${has_ruuid}
+            ${ruuid}=    Set Variable    ${json['ruuid']}
+        END
+
+        ${has_response_map_ruuid}=    Evaluate    'response_map' in $json and 'ruuid' in $json.get('response_map', {})
+        IF    ${has_response_map_ruuid}
+            ${ruuid}=    Set Variable    ${json['response_map']['ruuid']}
+        END
+
+        # If we have a ruuid, fetch detailed execution stats
+        IF    '${ruuid}' != '${EMPTY}'
+            Log    Found runtime UUID: ${ruuid}
+            ${exec_details}=    Fetch Runtime Details    ${ruuid}
+            RETURN    ${exec_details}
+        END
+
+        # No ruuid found, return basic error
+        RETURN    Error: ${basic_error}
+
+    EXCEPT    AS    ${error}
+        Log    Could not fetch detailed execution stats: ${error}    level=WARN
+        RETURN    Error: ${basic_error}
+    END
+
+Fetch Runtime Details
+    [Documentation]    Fetches runtime details from SnapLogic API.
+    [Arguments]    ${ruuid}
+
+    TRY
+        ${params}=    Create Dictionary    level=detail
+        ${runtime_response}=    GET On Session
+        ...    ${ORG_ADMIN_SESSION}
+        ...    /api/2/${org_snode_id}/rest/pm/runtime/${ruuid}
+        ...    params=${params}
+        ...    expected_status=any
+
+        IF    ${runtime_response.status_code} == 200
+            ${runtime_json}=    Evaluate    json.loads($runtime_response.content)    json
+
+            # Extract key information
+            ${error_parts}=    Create List
+
+            # Get state/status
+            ${has_state}=    Evaluate    'state' in $runtime_json
+            IF    ${has_state}
+                Append To List    ${error_parts}    State: ${runtime_json['state']}
+            END
+
+            # Get reason if available
+            ${has_reason}=    Evaluate    'reason' in $runtime_json
+            IF    ${has_reason}
+                Append To List    ${error_parts}    Reason: ${runtime_json['reason']}
+            END
+
+            # Get status_message if available
+            ${has_status_msg}=    Evaluate    'status_message' in $runtime_json
+            IF    ${has_status_msg}
+                Append To List    ${error_parts}    Message: ${runtime_json['status_message']}
+            END
+
+            # Get resolution if available
+            ${has_resolution}=    Evaluate    'resolution' in $runtime_json
+            IF    ${has_resolution}
+                Append To List    ${error_parts}    Resolution: ${runtime_json['resolution']}
+            END
+
+            # Get failed snap info if available
+            ${has_failed_snap}=    Evaluate    'failed_snap' in $runtime_json or 'snap_map' in $runtime_json
+            IF    ${has_failed_snap}
+                ${snap_info}=    Extract Failed Snap Info    ${runtime_json}
+                IF    '${snap_info}' != '${EMPTY}'
+                    Append To List    ${error_parts}    Failed Snap: ${snap_info}
+                END
+            END
+
+            # Join all parts
+            ${details_str}=    Evaluate    '\\n'.join($error_parts)
+            IF    '${details_str}' != '${EMPTY}'
+                RETURN    ${details_str}
+            END
+        END
+
+        RETURN    Error: Pipeline execution failed (ruuid: ${ruuid})
+
+    EXCEPT    AS    ${error}
+        Log    Error fetching runtime details: ${error}    level=WARN
+        RETURN    Error: Pipeline execution failed (ruuid: ${ruuid})
+    END
+
+Extract Failed Snap Info
+    [Documentation]    Extracts information about the failed snap from runtime data.
+    [Arguments]    ${runtime_json}
+
+    TRY
+        # Check for snap_map which contains snap execution details
+        ${has_snap_map}=    Evaluate    'snap_map' in $runtime_json
+        IF    ${has_snap_map}
+            ${snap_map}=    Set Variable    ${runtime_json['snap_map']}
+            # Find snaps that failed
+            ${failed_snaps}=    Evaluate
+            ...    [f"{k}: {v.get('state', 'unknown')}" for k, v in $snap_map.items() if v.get('state') in ['Failed', 'Aborted', 'Error']]
+            IF    ${failed_snaps}
+                ${snap_info}=    Evaluate    ', '.join($failed_snaps)
+                RETURN    ${snap_info}
+            END
+        END
+
+        # Check for direct failed_snap field
+        ${has_failed_snap}=    Evaluate    'failed_snap' in $runtime_json
+        IF    ${has_failed_snap}
+            RETURN    ${runtime_json['failed_snap']}
+        END
+
+        RETURN    ${EMPTY}
+
+    EXCEPT    AS    ${error}
+        Log    Error extracting snap info: ${error}    level=DEBUG
+        RETURN    ${EMPTY}
+    END
+
+Extract Error From Response
+    [Documentation]    Extracts detailed error message from API response.
+    [Arguments]    ${response}
+
+    TRY
+        # Try to parse response as JSON
+        ${json}=    Evaluate    json.loads($response.content)    json
+
+        # Check for different error structures
+        # Structure 1: response_map.error_list[0].message
+        ${has_error_list}=    Evaluate
+        ...    'response_map' in $json and 'error_list' in $json.get('response_map', {}) and len($json.get('response_map', {}).get('error_list', [])) > 0
+
+        IF    ${has_error_list}
+            ${error_msg}=    Evaluate    $json['response_map']['error_list'][0].get('message', 'Unknown error')
+            RETURN    ${error_msg}
+        END
+
+        # Structure 2: Direct error message
+        ${has_error}=    Evaluate    'error' in $json
+        IF    ${has_error}
+            RETURN    ${json['error']}
+        END
+
+        # Structure 3: message field
+        ${has_message}=    Evaluate    'message' in $json
+        IF    ${has_message}
+            RETURN    ${json['message']}
+        END
+
+        # Structure 4: reason field (common for pipeline failures)
+        ${has_reason}=    Evaluate    'reason' in $json
+        IF    ${has_reason}
+            RETURN    ${json['reason']}
+        END
+
+        # Structure 5: status_message field
+        ${has_status_msg}=    Evaluate    'status_message' in $json
+        IF    ${has_status_msg}
+            RETURN    ${json['status_message']}
+        END
+
+        # Return full JSON if no specific error field found
+        RETURN    ${json}
+
+    EXCEPT    AS    ${parse_error}
+        # Response is not JSON, return raw content
+        ${content}=    Convert To String    ${response.content}
+        Log    Response is not JSON: ${content}    level=DEBUG
+        RETURN    ${content}
+    END
