@@ -2,16 +2,261 @@
 description: Guide for creating Robot Framework test cases that create SnapLogic accounts
 ---
 
+# COMMAND ACTIONS (Claude: Read this first!)
+
+## Available Commands
+
+| Command | Action |
+|---------|--------|
+| `/create-account-testcase` | Default menu with quick options |
+| `/create-account-testcase info` | Full menu with all commands and account types |
+| `/create-account-testcase list` | Table of supported account types |
+| `/create-account-testcase template` | Generic test case template |
+| `/create-account-testcase create oracle` | Create Oracle account test case |
+| `/create-account-testcase create postgres` | Create PostgreSQL account test case |
+| `/create-account-testcase create snowflake` | Create Snowflake account test case (password auth) |
+| `/create-account-testcase create snowflake-keypair` | Create Snowflake account test case (key pair auth) |
+| `/create-account-testcase check snowflake` | Check Snowflake env variables |
+
+### Natural Language Examples
+
+You can also use natural language:
+
+```
+/create-account-testcase I need PostgreSQL and S3 accounts for my pipeline
+```
+
+```
+/create-account-testcase What environment variables do I need to update and in which files to create a Snowflake account?
+```
+
+```
+/create-account-testcase Show me the baseline test for Snowflake account creation as a reference
+```
+
+#### Create Test Case for Account Creation
+
+```
+/create-account-testcase Create a robot test file for Oracle account creation
+```
+
+```
+/create-account-testcase Generate a test case to create a Snowflake keypair account
+```
+
+```
+/create-account-testcase Write a robot file that creates both Kafka and S3 accounts
+```
+
+```
+/create-account-testcase I need a new robot test file to create a MySQL account in my project
+```
+
+#### Environment Variable Setup Questions
+
+```
+/create-account-testcase How do I set up environment variables for Snowflake?
+```
+
+```
+/create-account-testcase I want to use my own Snowflake instance, not Docker
+```
+
+```
+/create-account-testcase Where do I put my production database credentials?
+```
+
+```
+/create-account-testcase Do I need to change anything if I'm using Docker services?
+```
+
+```
+/create-account-testcase What's the difference between env_files and root .env?
+```
+
+**Baseline test references:**
+- `test/suite/pipeline_tests/snowflake/snowflake_baseline_tests.robot`
+- `test/suite/pipeline_tests/oracle/oracle_baseline_tests.robot`
+- `test/suite/pipeline_tests/postgres/postgres_baseline_tests.robot`
+
+---
+
+## Supported Account Types
+
+| Type | Description |
+|------|-------------|
+| `oracle` | Oracle Database |
+| `postgres` | PostgreSQL Database |
+| `mysql` | MySQL Database |
+| `sqlserver` | SQL Server Database |
+| `snowflake` | Snowflake (Password Auth) |
+| `snowflake-keypair` | Snowflake (Key Pair Auth) |
+| `db2` | IBM DB2 |
+| `teradata` | Teradata |
+| `kafka` | Apache Kafka |
+| `jms` | JMS/ActiveMQ |
+| `s3` | AWS S3 / MinIO |
+| `email` | Email/SMTP |
+| `salesforce` | Salesforce |
+
+---
+
+## Account Files Reference
+
+| Account Type | Payload File | Env File |
+|--------------|--------------|----------|
+| PostgreSQL | `acc_postgres.json` | `env_files/database_accounts/.env.postgres` |
+| MySQL | `acc_mysql.json` | `env_files/database_accounts/.env.mysql` |
+| Oracle | `acc_oracle.json` | `env_files/database_accounts/.env.oracle` |
+| SQL Server | `acc_sqlserver.json` | `env_files/database_accounts/.env.sqlserver` |
+| Snowflake | `acc_snowflake_s3_db.json` | `env_files/database_accounts/.env.snowflake` |
+| Snowflake (Key Pair) | `acc_snowflake_s3_keypair.json` | `env_files/database_accounts/.env.snowflake_s3_keypair` |
+| DB2 | `acc_db2.json` | `env_files/database_accounts/.env.db2` |
+| Teradata | `acc_teradata.json` | `env_files/database_accounts/.env.teradata` |
+| Kafka | `acc_kafka.json` | `env_files/messaging_service_accounts/.env.kafka` |
+| JMS | `acc_jms.json` | `env_files/messaging_service_accounts/.env.jms` |
+| S3 / MinIO | `acc_s3.json` | `env_files/mock_service_accounts/.env.s3` |
+| Email | `acc_email.json` | `env_files/mock_service_accounts/.env.email` |
+| Salesforce | `acc_salesforce.json` | `env_files/mock_service_accounts/.env.salesforce` |
+
+---
+
+## Environment Variable Setup
+
+### Case 1: Using Docker Services (Local Testing)
+
+If you're creating an account for an endpoint brought up using Docker services (Oracle, PostgreSQL, MySQL, Kafka, MinIO, etc.):
+
+- **Use the default credentials** from the respective file in `env_files/`
+- No changes needed - the values are pre-configured for Docker containers
+- Just run the tests: `make robot-run-tests TAGS="oracle"`
+
+### Case 2: Using External/Your Own Instance
+
+If you're using your own external instance (e.g., your company's Snowflake, production database, etc.):
+
+1. **Read the env file** to understand the required variables:
+   ```
+   env_files/database_accounts/.env.snowflake
+   ```
+
+2. **Copy the variables to root `.env`** file (not the env_files one):
+   ```bash
+   # Copy these lines to your root .env file:
+   SNOWFLAKE_HOSTNAME=your-account.snowflakecomputing.com
+   SNOWFLAKE_USERNAME=your_username
+   SNOWFLAKE_PASSWORD=your_password
+   SNOWFLAKE_DATABASE=YOUR_DB
+   SNOWFLAKE_WAREHOUSE=YOUR_WH
+   ```
+
+3. **Update the values** with your actual credentials
+
+4. **Do NOT copy the payload file variable** - it remains constant:
+   ```bash
+   # DO NOT copy this to .env - leave it in env_files/
+   SNOWFLAKE_ACCOUNT_PAYLOAD_FILE_NAME=acc_snowflake_s3_db.json
+   ```
+
+### Why This Works
+
+- Root `.env` file is loaded **last** and overrides everything
+- `env_files/` contains default Docker values
+- Payload file names never change - they reference JSON templates
+
+---
+
+# REFERENCE DOCUMENTATION
+
 You are helping a user create Robot Framework test cases that create SnapLogic accounts. Follow these conventions and patterns based on the account creation framework.
+
+---
+
+## How to Use This Command
+
+### Invoking the Command
+
+In Claude Code, type:
+```
+/create-account-testcase
+```
+
+Then add your specific request after the command.
+
+### Example Prompts
+
+#### Create a specific account type:
+```
+/create-account-testcase
+
+I need to create a Snowflake account test case using key pair authentication
+```
+
+#### Create multiple accounts:
+```
+/create-account-testcase
+
+I need to create test cases for PostgreSQL and S3 accounts for my data pipeline
+```
+
+#### Ask about available options:
+```
+/create-account-testcase
+
+What account types are supported? Show me the env file locations.
+```
+
+#### Get help with configuration:
+```
+/create-account-testcase
+
+I want to create an Oracle account but I'm not sure what environment variables I need
+```
+
+#### Create accounts for a pipeline:
+```
+/create-account-testcase
+
+I'm building a pipeline that reads from Kafka and writes to Snowflake. What accounts do I need?
+```
+
+#### Troubleshoot account issues:
+```
+/create-account-testcase
+
+I'm getting an error creating my MySQL account. What JAR files do I need?
+```
+
+#### Add a new account type:
+```
+/create-account-testcase
+
+I need to add support for a new database type called "CockroachDB". Guide me through the process.
+```
+
+#### Check environment setup:
+```
+/create-account-testcase
+
+Help me verify my Snowflake environment variables are set correctly
+```
+
+---
 
 ## Quick Start Template
 
 Here's a basic test case template for creating accounts:
 
+> **IMPORTANT: Required Libraries**
+> When creating any new Robot file, ALWAYS include these two Resource imports under `*** Settings ***`:
+> - `snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource` - SnapLogic API keywords from installed package
+> - `../../resources/common/general.resource` - Project-specific common keywords
+
 ```robotframework
 *** Settings ***
 Documentation    Creates SnapLogic accounts for pipeline testing
 ...              Uses JSON payload templates with Jinja variable substitution
+Resource         snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource    # SnapLogic API keywords from installed package
 Resource         ../../resources/common/general.resource
 Library          Collections
 
@@ -429,3 +674,4 @@ Create New Account Type
 - [ ] Test has appropriate tags
 - [ ] Documentation describes the account type
 - [ ] No sensitive credentials are hardcoded
+

@@ -28,6 +28,13 @@ Most commands are reference guides - just type the command (e.g., `/robot-expert
 
 The `/create-account-testcase` command supports additional actions and natural language. Type `/create-account-testcase info` to see all options.
 
+### File Organization
+
+Commands and skills at this level are **pointers** to the detailed files in:
+`{{cookiecutter.primary_pipeline_name}}/.claude/`
+
+This avoids duplication - when you generate a repo from cookiecutter, only the detailed files are included (this top-level pointer folder is not needed).
+
 ## Project Overview
 
 This is an automated testing framework for SnapLogic pipelines using Robot Framework. It provides end-to-end testing capabilities for data integration pipelines with support for multiple database systems, messaging platforms, and mock services.
