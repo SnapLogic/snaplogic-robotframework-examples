@@ -2,6 +2,19 @@
 description: Guide for creating Robot Framework test cases that create SnapLogic accounts
 ---
 
+# Create Account Test Case Guide
+
+## Claude Instructions
+
+**IMPORTANT:** When user asks a simple question like "How do I create an Oracle account?", provide a **concise answer first** with just the template/command, then offer to explain more if needed. Do NOT dump all documentation.
+
+**Response format for simple questions:**
+1. Give the direct template or test case first
+2. Add a brief note if relevant
+3. Offer "Want me to explain more?" only if appropriate
+
+---
+
 # COMMAND ACTIONS (Claude: Read this first!)
 
 ## Available Commands

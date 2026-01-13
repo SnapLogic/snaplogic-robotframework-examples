@@ -23,10 +23,11 @@ Use these Claude Code slash commands for assistance:
 | `/setup-database` | Database container setup |
 | `/troubleshoot` | Common issues and solutions |
 | `/create-account-testcase` | Guide for creating account test cases (supports: `info`, `list`, `template`, `create <type>`, `check <type>`) |
+| `/import-pipeline-testcase` | Guide for importing SnapLogic pipelines (supports: `info`, `template`, `create`, `prereqs`, `check`) |
 
 Most commands are reference guides - just type the command (e.g., `/robot-expert`).
 
-The `/create-account-testcase` command supports additional actions and natural language. Type `/create-account-testcase info` to see all options.
+The `/create-account-testcase` and `/import-pipeline-testcase` commands support additional actions and natural language. Type `/create-account-testcase info` or `/import-pipeline-testcase info` to see all options.
 
 ## Project Overview
 
