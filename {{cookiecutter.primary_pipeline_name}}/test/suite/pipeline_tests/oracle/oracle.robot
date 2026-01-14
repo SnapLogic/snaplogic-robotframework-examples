@@ -117,32 +117,6 @@ Execute Triggered Task With Parameters
     [Template]    Run Triggered Task With Parameters From Template
     ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task1}    M_CURR_DATE=10/12/2024
 
-End to End Pipeline Workflow
-    [Tags]    end_to_end_workflow    import_pipeline    oracle2    regression
-
-    # Step 1: Create Account
-    Create Account From Template    ${account_payload_path}/${ACCOUNT_PAYLOAD_FILE}
-
-    # Step 2: Import Pipelines
-    Import Pipelines From Template    ${unique_id}    ${pipeline_file_path}    ${pipeline_name}    ${pipeline_name_slp}
-
-    # Step 3: Create Triggered Tasks
-    Create Triggered Task From Template
-    ...    ${unique_id}
-    ...    ${project_path}
-    ...    ${pipeline_name}
-    ...    ${task1}
-    ...    ${task_params_set1}
-    ...    ${task_notifications}
-
-    # Step 5: Update Task Parameters
-    Run Triggered Task With Parameters From Template
-    ...    ${unique_id}
-    ...    ${project_path}
-    ...    ${pipeline_name}
-    ...    ${task1}
-    ...    M_CURR_DATE=10/12/2024
-
 
 *** Keywords ***
 Check connections
