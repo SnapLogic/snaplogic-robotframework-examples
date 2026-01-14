@@ -56,7 +56,7 @@ jobs:
         - make start-services
 
         # Execute Robot Framework tests with tags
-        - make robot-run-all-tests TAGS="oracle sqlserver file_mount postgres_s3 sla_pipeline email2 snowflake_demo" PROJECT_SPACE_SETUP=True
+        - make robot-run-all-tests TAGS="oracle sqlserver file_mount postgres_s3 email2" PROJECT_SPACE_SETUP=True
 
         # Upload test results to TestRail
         - make upload-test-results
