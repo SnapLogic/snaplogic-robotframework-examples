@@ -27,8 +27,8 @@ Step-by-step guides for getting started with the framework.
 
 Detailed guides for Robot Framework test development and execution.
 
-| Document Name | Description | Relative Path | GitHub Link |
-|---------------|-------------|---------------|-------------|
+| Document Name | Description | Relative Path | Open Link |
+|---------------|-------------|---------------|-----------|
 | Complete End-to-End Workflow | Full workflow from setup to test execution | `README/How To Guides/robot_framework_guides/html_docs/Robotframework_end_to_end_workflow_steps.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/robot_framework_guides/html_docs/Robotframework_end_to_end_workflow_steps.html) |
 | Account Creation Guide | How to create and configure SnapLogic accounts | `README/How To Guides/robot_framework_guides/html_docs/account_creation_guide.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/robot_framework_guides/html_docs/account_creation_guide.html) |
 | Make Targets Documentation | All available Makefile commands for test execution | `README/How To Guides/robot_framework_guides/html_docs/robot_framework_make_targets_documentation.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/robot_framework_guides/html_docs/robot_framework_make_targets_documentation.html) |
@@ -94,14 +94,14 @@ README/
     │   └── html_docs/
     │       ├── Robotframework_end_to_end_workflow_steps.html
     │       ├── account_creation_guide.html
-    │       ├── docker_infrastructure_guide.html
     │       ├── robot_framework_make_targets_documentation.html
     │       ├── test_initialization_workflow_init_file.html
     │       └── triggered_task_guide.html
     │
     └── infra_setup_guides/
         ├── docker/
-        │   └── docker-compose.html
+        │   ├── docker-compose.html
+        │   └── docker_infrastructure_guide.html
         ├── kafka/
         │   ├── kafka-core-concepts.html
         │   └── kafka-docker-compose.html
@@ -119,7 +119,7 @@ README/
 
 | Category | Document Count |
 |----------|----------------|
-| Tutorials | 6 |
-| Robot Framework Guides | 6 |
-| Infrastructure Setup Guides | 6 |
+| Tutorials (HTML) | 6 |
+| Robot Framework Guides (HTML) | 5 |
+| Infrastructure Setup Guides (HTML) | 7 |
 | **Total** | **18** |
