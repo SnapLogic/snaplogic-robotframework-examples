@@ -144,7 +144,9 @@
       "src/pipelines/swapna-automation-latest_sl_project (2).zip"
     ],
     "backup_files": "**/*.backup",
-    "pyc_files": "**/*.pyc"
+    "pyc_files": "**/*.pyc",
+    "robot_output": "test/robot_output/**",
+    "config_dir": "test/.config/**"
   },
   "file_mounts": {
     "pipeline_paths": [

@@ -1,3 +1,4 @@
+# {% raw %}
 import glob
 import os
 import smtplib
@@ -594,3 +595,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Email notification failed: {str(e)}")
         sys.exit(1)
+# {% endraw %}
