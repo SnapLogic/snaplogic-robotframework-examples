@@ -23,6 +23,7 @@ Library             DatabaseLibrary
 # Other Resource Files
 Resource            general.resource
 Resource            sql_table_operations.resource
+Resource            database.resource
 # SnapLogic API keywords for file upload operations
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource
 
@@ -132,7 +133,8 @@ Load CSV Data Template
         ${row_num}=    Evaluate    ${row_num} + 1
         Log    Processing row ${row_num}: ${row}
         # Build INSERT statement - quote strings, leave numbers unquoted
-        ${values}=    Evaluate    ', '.join([v if v.isdigit() or (v.replace('.','',1).replace('-','',1).isdigit()) else f"'{v}'" for v in $row])
+        ${values}=    Evaluate
+        ...    ', '.join([v if v.isdigit() or (v.replace('.','',1).replace('-','',1).isdigit()) else f"'{v}'" for v in $row])
         ${sql}=    Set Variable    INSERT INTO ${table_name} (${columns}) VALUES (${values})
         Log    Row ${row_num}: Executing SQL: ${sql}
         Execute SQL String    ${sql}
@@ -144,7 +146,9 @@ Load CSV Data Template
     # Verify row count - use Query to get the actual COUNT value
     ${result}=    Query    SELECT COUNT(*) FROM ${table_name}
     ${actual_count}=    Set Variable    ${result[0][0]}
-    Should Be Equal As Numbers    ${actual_count}    ${expected_rows}
+    Should Be Equal As Numbers
+    ...    ${actual_count}
+    ...    ${expected_rows}
     ...    CSV Data Load Failed: CSV file '${csv_file}' contains ${expected_rows} data rows (excluding header), but only ${actual_count} rows were inserted into '${table_name}' table. Possible causes: INSERT statement failed silently, duplicate key constraint, or data type mismatch.
 
     IF    ${truncate_table}
@@ -197,7 +201,9 @@ Load JSON Data Template
     # Verify row count - use Query to get the actual COUNT value
     ${result}=    Query    SELECT COUNT(*) FROM ${table_name}
     ${actual_count}=    Set Variable    ${result[0][0]}
-    Should Be Equal As Numbers    ${actual_count}    ${expected_rows}
+    Should Be Equal As Numbers
+    ...    ${actual_count}
+    ...    ${expected_rows}
     ...    JSON Data Load Failed: JSON file '${json_file}' contains ${expected_rows} records, but only ${actual_count} rows were inserted into '${table_name}' table. Possible causes: INSERT statement failed silently, duplicate key constraint, or data type mismatch.
 
     IF    ${truncate_table}

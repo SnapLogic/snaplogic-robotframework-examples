@@ -10,6 +10,7 @@ Library             JSONLibrary
 Library             RequestsLibrary
 Resource            files.resource
 Resource            sql_table_operations.resource
+Resource            database.resource
 
 
 *** Keywords ***
