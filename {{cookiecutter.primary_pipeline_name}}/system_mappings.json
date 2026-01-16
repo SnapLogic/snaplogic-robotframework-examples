@@ -3,7 +3,11 @@
     "docker_path": "docker/oracle/**",
     "env_path": "env_files/database_accounts/.env.oracle",
     "makefile_path": "makefiles/database_services/Makefile.oracle",
-    "pipeline_path": "src/pipelines/oracle_baseline_tests.slp",
+    "pipeline_path": [
+      "src/pipelines/oracle.slp",
+      "src/pipelines/oracle2.slp",
+      "src/pipelines/oracle_cms_rebate.slp"
+    ],
     "tests_path": "test/suite/pipeline_tests/*oracle*",
     "accounts_path": "test/suite/test_data/accounts_payload/acc_oracle.json"
   },
