@@ -164,15 +164,12 @@ jspm_packages/
 # Environment Variables
 # ==========================================
 
-# Environment files
+# Environment files - ignore ALL files starting with .env
+# This includes: .env, .env.stage, .env.prod, .env.local, etc.
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.test
+.env.*
 
-# Keep example environment files
+# Keep example environment files (these should be tracked)
 !.env.example
 !.env.*.example
 

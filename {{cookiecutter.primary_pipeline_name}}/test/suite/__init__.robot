@@ -15,6 +15,9 @@ ${env_files_dir}                    ${CURDIR}/../../env_files
 # ${pipeline_payload_path}    /app/src/pipelines
 ${pipeline_payload_path}            ${CURDIR}/../../src/pipelines
 ${generative_slp_pipelines_path}    ${CURDIR}/../../src/generative_pipelines
+# ENV override file - passed via command line: --variable ENV_OVERRIDE_FILE:/app/.env.stage
+# When set, this file is loaded LAST and takes HIGHEST PRECEDENCE over all other env files
+${ENV_OVERRIDE_FILE}                ${EMPTY}
 
 
 *** Keywords ***
@@ -73,7 +76,10 @@ Validate Environment Variables
     END
 
 Load Environment Variables
-    [Documentation]    Loads environment variables from env_files directory first, then root .env file last (highest precedence)
+    [Documentation]    Loads environment variables in order of precedence (last file wins):
+    ...    1. env_files/ directory files (lowest precedence)
+    ...    2. Root .env file
+    ...    3. ENV_OVERRIDE_FILE if specified via ENV= parameter (HIGHEST precedence)
 
     # First load all .env files from env_files directory and subdirectories
     ${env_dir_exists}=    Run Keyword And Return Status    Directory Should Exist    ${env_files_dir}
@@ -112,9 +118,19 @@ Load Environment Variables
         Log To Console    \nEnvironment files directory not found: ${env_files_dir}
     END
 
-    # Finally load the root .env file LAST (highest precedence - can override all previous values)
-    Log To Console    \nLoading root .env file (HIGHEST PRECEDENCE):
+    # Load the root .env file (high precedence - can override env_files values)
+    Log To Console    \nLoading root .env file:
     Load Single Env File    ${env_file_path}
+
+    # Finally load the ENV override file LAST if specified (HIGHEST PRECEDENCE)
+    # This is set via: make robot-run-tests ENV=.env.stage
+    IF    '${ENV_OVERRIDE_FILE}' != '${EMPTY}'
+        Log To Console    \n========================================
+        Log To Console    Loading ENV override file (HIGHEST PRECEDENCE):
+        Log To Console    ${ENV_OVERRIDE_FILE}
+        Log To Console    ========================================
+        Load Single Env File    ${ENV_OVERRIDE_FILE}
+    END
 
 Load Single Env File
     [Documentation]    Loads environment variables from a single .env file and auto-detects JSON values

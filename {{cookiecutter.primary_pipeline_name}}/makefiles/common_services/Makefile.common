@@ -18,16 +18,32 @@ MAKEFILE_COMMON_INCLUDED := 1
 # This means variables in .env will override the same variables in other files
 # Will throw an error if root .env file is not found
 # Can be overridden to use specific files or directories
+#
+# Environment Override Feature:
+# Pass ENV parameter to specify an environment-specific file that takes HIGHEST precedence
+# The ENV file must exist at the project root level (same level as .env)
+#
 # Usage examples:
+#   make robot-run-all-tests TAGS="oracle" ENV=.env.stage  # Full workflow with staging env (HIGHEST precedence)
+#   make robot-run-all-tests TAGS="oracle" ENV=.env.prod   # Full workflow with production env
+#   make robot-run-tests TAGS="oracle" ENV=.env.stage      # Run tests with staging env override
 #   make robot-run-tests                                    # Uses all files from env_files/ + .env (with .env taking precedence)
 #   make robot-run-tests ENV_FILES=".env .env.staging"     # Use specific files (last file takes precedence)
 #   make robot-run-tests ENV_DIR="./production-env"        # Use different directory
+#
+# Recommended file naming conventions for ENV files:
+#   .env.dev, .env.stage, .env.prod                        # Dotenv style (hidden files)
+#   dev.env, stage.env, prod.env                           # Suffix style (visible files)
 
 # Directory containing env files
 ENV_DIR ?= env_files
 
 # Root .env file is required
 ROOT_ENV_FILE := .env
+
+# Optional: Environment override file (e.g., ENV=.env.stage)
+# When specified, this file takes HIGHEST precedence over all other env files
+ENV ?=
 
 # Get all env files from the directory and subdirectories (both .env and .env.* patterns)
 # Using find command for recursive search - works on Linux/Mac/WSL2
@@ -48,9 +64,20 @@ ifeq ($(strip $(ENV_FILES_FROM_DIR)),)
     $(info Warning: No .env files found in $(ENV_DIR)/ directory. Using only root .env file)
 endif
 
+# Validate ENV file if specified
+ifneq ($(strip $(ENV)),)
+    ifeq (,$(wildcard $(ENV)))
+        $(error Environment override file '$(ENV)' not found! Please ensure the file exists at the project root level. Available env files at root: $(wildcard .env* *.env))
+    endif
+endif
+
 # Build --env-file flags for docker compose
 # This creates multiple --env-file flags, one for each file
+# If ENV is specified, it is appended LAST to take HIGHEST precedence
 ENV_FILE_FLAGS := $(foreach file,$(ENV_FILES),--env-file $(file))
+ifneq ($(strip $(ENV)),)
+    ENV_FILE_FLAGS += --env-file $(ENV)
+endif
 
 # Docker compose file location
 DOCKER_COMPOSE_FILE := docker-compose.yml
@@ -104,34 +131,48 @@ ifndef COMMON_DEBUG_TARGETS_DEFINED
 COMMON_DEBUG_TARGETS_DEFINED := 1
 
 # Show which env files are being loaded
-# Show which env files are being loaded
 show-env-files:
 	@echo "========================================"
 	@echo "Environment Files Configuration:"
 	@echo "========================================"
 	@echo "Root ENV file: $(ROOT_ENV_FILE)"
 	@echo "ENV_DIR: $(ENV_DIR)"
+	@echo "ENV override: $(if $(ENV),$(ENV),(not set))"
 	@echo ""
 	@echo "ENV_FILES being loaded (in order):"
-
 	@if [ -z "$(ENV_FILES)" ]; then \
-	echo "  (No ENV files configured)"; \
-else \
-	for file in $(ENV_FILES); do \
-		if [ -f "$$file" ]; then \
-			echo "  ✓ $$file (exists)"; \
+		echo "  (No ENV files configured)"; \
+	else \
+		for file in $(ENV_FILES); do \
+			if [ -f "$$file" ]; then \
+				echo "  ✓ $$file (exists)"; \
+			else \
+				echo "  ✗ $$file (NOT FOUND)"; \
+			fi; \
+		done; \
+	fi
+	@if [ -n "$(ENV)" ]; then \
+		if [ -f "$(ENV)" ]; then \
+			echo "  ✓ $(ENV) (ENV override - HIGHEST PRECEDENCE)"; \
 		else \
-			echo "  ✗ $$file (NOT FOUND)"; \
+			echo "  ✗ $(ENV) (ENV override - NOT FOUND)"; \
 		fi; \
-	done; \
-fi
-
+	fi
+	@echo ""
 	@echo "========================================"
 	@echo "Loading Order & Precedence:"
 	@echo "  1. Files from $(ENV_DIR)/ and subdirectories load first (sorted alphabetically)"
-	@echo "  2. Root .env loads LAST (HIGHEST PRECEDENCE - overwrites all others)"
+	@echo "  2. Root .env loads next"
+	@if [ -n "$(ENV)" ]; then \
+		echo "  3. $(ENV) loads LAST (HIGHEST PRECEDENCE - overwrites all others)"; \
+	else \
+		echo "  → Root .env has HIGHEST PRECEDENCE (no ENV override specified)"; \
+	fi
 	@echo ""
-	@echo "  ⚠️  IMPORTANT: Variables in .env will OVERRIDE the same variables in other files!"
+	@echo "  ⚠️  IMPORTANT: Variables in the last loaded file OVERRIDE the same variables in earlier files!"
+	@echo "========================================"
+	@echo "Available env files at project root (for ENV parameter):"
+	@ls -1 .env* *.env 2>/dev/null | grep -v "^\.env$$" || echo "  (none found)"
 	@echo "========================================"
 	@echo "Docker Compose Command:"
 	@echo "$(DOCKER_COMPOSE)"

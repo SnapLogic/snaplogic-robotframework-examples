@@ -13,17 +13,24 @@ include makefiles/common_services/Makefile.common
 # =============================================================================
 # 🧪 Run Robot Framework tests with optional tags
 #   → usage: make robot-run-tests TAGS="oracle,minio" PROJECT_SPACE_SETUP=True
+#   → usage with ENV override: make robot-run-tests TAGS="oracle" ENV=.env.stage
 # =============================================================================
 robot-run-tests: check-env
 	@echo "🧪 Starting Robot Framework tests..."
 	@echo "ℹ️ Tags: $(TAGS)"
 	$(eval INCLUDES=$(foreach arg,$(TAGS),--include $(arg)))
 	$(eval PROJECT_SPACE_SETUP_VAL=$(if $(PROJECT_SPACE_SETUP),$(PROJECT_SPACE_SETUP),False))
+	$(eval ENV_OVERRIDE_VAR=$(if $(ENV),--variable ENV_OVERRIDE_FILE:/app/$(notdir $(ENV)),))
+	@if [ -n "$(ENV)" ]; then \
+		echo "ℹ️ ENV override: $(ENV) -> copying to container..."; \
+		docker cp "$(ENV)" snaplogic-test-example-tools-container:/app/$(notdir $(ENV)); \
+	fi
 	@$(DOCKER_COMPOSE) exec -w /app/test tools robot \
 		-G $(DATE) \
 		--timestampoutputs \
 		--variable PROJECT_SPACE_SETUP:$(PROJECT_SPACE_SETUP_VAL) \
 		--variable TAGS:"$(TAGS)" \
+		$(ENV_OVERRIDE_VAR) \
 		$(INCLUDES) \
 		--outputdir robot_output suite/ && \
 	echo "✅ Tests completed successfully!" || \
