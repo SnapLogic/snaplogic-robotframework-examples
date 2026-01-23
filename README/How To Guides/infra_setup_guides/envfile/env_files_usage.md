@@ -11,9 +11,14 @@ The environment files have been reorganized into individual service-specific fil
 - Files can be organized in subdirectories for better structure
 - Automatic recursive discovery of all env files
 
+### Environment Override Feature (NEW)
+
+You can now pass an `ENV` parameter to specify an environment-specific file (e.g., `.env.stage`, `.env.prod`) that takes **highest precedence** over all other environment files. This is ideal for running tests against different environments (dev, staging, production) with different configurations.
+
 ## Table of Contents
 
 - [How It Works](#how-it-works)
+- [Environment Override Feature](#environment-override-feature)
 - [Configuration Variables](#configuration-variables)
 - [Usage Examples](#usage-examples)
 - [File Loading Order](#file-loading-order)
@@ -27,11 +32,13 @@ The environment files have been reorganized into individual service-specific fil
 The Makefile configuration automatically loads:
 1. **Root `.env` file** (required) - Base configuration
 2. **All `.env` files from `env_files/` directory and subdirectories** (optional) - Modular configurations
+3. **ENV override file** (optional) - If specified via `ENV=` parameter, loaded LAST with highest precedence
 
 The root `.env` is mandatory, while files in `env_files/` are optional (will show a warning if missing).
 
 ### Key Features
 
+- **Environment Override**: Pass `ENV=.env.stage` to override all other variables with environment-specific values
 - **Recursive Discovery**: Automatically finds all env files in `env_files/` and its subdirectories
 - **Modular Configuration**: Each service has its own dedicated env file
 - **Subdirectory Support**: Organize files in logical folders (databases/, messaging/, etc.)
@@ -40,6 +47,115 @@ The root `.env` is mandatory, while files in `env_files/` are optional (will sho
 - **Manual Override**: Can specify exact files to load instead of auto-discovery
 - **Flexible Configuration**: Can change the directory or specify individual files
 - **WSL2 Compatible**: Works seamlessly on Linux, Mac, and Windows with WSL2
+
+## Environment Override Feature
+
+The `ENV` parameter allows you to specify an environment-specific configuration file that takes **highest precedence** over all other environment files. This is perfect for:
+- Running tests against different environments (dev, staging, production)
+- Switching between different data sets
+- Overriding specific variables without modifying base configuration
+
+### Technical Implementation
+
+When you run `make robot-run-all-tests TAGS="oracle" ENV=.env.stage`:
+
+1. **Makefile validates** the ENV file exists at project root
+2. **Copies the ENV file** into the Docker container: `docker cp .env.stage container:/app/.env.stage`
+3. **Passes Robot variable**: `--variable ENV_OVERRIDE_FILE:/app/.env.stage`
+4. **Robot Framework loads** files in order inside the container:
+   - `env_files/*` (lowest precedence)
+   - `.env` (root)
+   - `.env.stage` (**highest precedence** - loaded last)
+
+This ensures the ENV override file variables are available to the Robot Framework tests inside the container.
+
+### Basic Syntax
+
+```bash
+make robot-run-all-tests TAGS="your-tags" ENV=<filename>
+```
+
+### Usage Examples
+
+```bash
+# Run full test workflow with staging environment
+make robot-run-all-tests TAGS="oracle,minio" ENV=.env.stage
+
+# Run full test workflow with production environment
+make robot-run-all-tests TAGS="postgres" ENV=.env.prod
+
+# Run full test workflow with project space setup
+make robot-run-all-tests TAGS="oracle" ENV=.env.stage PROJECT_SPACE_SETUP=True
+
+# Run individual tests with environment override
+make robot-run-tests TAGS="oracle" ENV=.env.stage
+
+# Run tests without groundplex with environment override
+make robot-run-tests-no-gp TAGS="salesforce" ENV=.env.prod
+```
+
+### Creating Environment Override Files
+
+Place your environment override files at the **project root level** (same directory as `.env`):
+
+```
+project_root/
+├── .env                    # Root env (always required)
+├── .env.dev                # Development overrides
+├── .env.stage              # Staging overrides
+├── .env.prod               # Production overrides
+└── env_files/
+    └── ...                 # Common/shared env files
+```
+
+### Recommended File Naming Conventions
+
+| Convention | Examples | Description |
+|------------|----------|-------------|
+| **Dotenv prefix** | `.env.dev`, `.env.stage`, `.env.prod` | Hidden files, follows common dotenv convention |
+| **Dotenv suffix** | `dev.env`, `stage.env`, `prod.env` | Visible files, easy to identify |
+| **Custom names** | `staging-config.env`, `qa-environment` | Any name that makes sense for your project |
+
+**Note:** The file name can be anything - there are no enforced naming restrictions.
+
+### How Variables Are Merged
+
+When you use `ENV=.env.stage`:
+
+| Variable Source | Precedence |
+|-----------------|------------|
+| `env_files/` directory files | Lowest (loaded first) |
+| Root `.env` file | Medium |
+| `ENV` override file (`.env.stage`) | **Highest** (loaded last) |
+
+**Example:**
+
+**env_files/.env.oracle:**
+```bash
+ORACLE_HOST=common-oracle-db
+ORACLE_PORT=1521
+```
+
+**Root .env:**
+```bash
+ORACLE_HOST=dev-oracle-db
+API_KEY=dev-key
+```
+
+**.env.stage:**
+```bash
+ORACLE_HOST=stage-oracle-db
+STAGE_FEATURE_FLAG=true
+```
+
+**Result when running `make robot-run-all-tests ENV=.env.stage`:**
+
+| Variable | Final Value | Source |
+|----------|-------------|--------|
+| `ORACLE_HOST` | `stage-oracle-db` | `.env.stage` (override) |
+| `ORACLE_PORT` | `1521` | `env_files/.env.oracle` |
+| `API_KEY` | `dev-key` | Root `.env` |
+| `STAGE_FEATURE_FLAG` | `true` | `.env.stage` (new variable) |
 
 ## Configuration Variables
 
@@ -59,10 +175,18 @@ The root `.env` is mandatory, while files in `env_files/` are optional (will sho
 - **Purpose**: Complete list of environment files to load
 - **Override**: Can be manually specified to bypass auto-discovery
 
+### `ENV`
+- **Default**: (empty - not set)
+- **Purpose**: Environment override file that takes HIGHEST precedence
+- **Location**: Project root directory (same level as `.env`)
+- **Override**: Specify via command line: `ENV=.env.stage`
+- **Example**: `make robot-run-all-tests TAGS="oracle" ENV=.env.stage`
+
 ### `ENV_FILE_FLAGS`
-- **Generated**: Automatically created from `ENV_FILES`
+- **Generated**: Automatically created from `ENV_FILES` + `ENV` (if specified)
 - **Purpose**: Builds `--env-file` flags for Docker Compose
 - **Format**: `--env-file .env --env-file env_files/file1 --env-file env_files/file2 ...`
+- **With ENV**: `--env-file .env --env-file env_files/file1 --env-file .env.stage` (ENV file appended last)
 
 ## Usage Examples
 
@@ -169,24 +293,40 @@ make logs
 
 Files are loaded in the order they appear, with **later files overriding earlier ones**:
 
-### Default Loading Order:
-1. **`.env` (root)** - Loads first, base configuration
-2. **`env_files/` directory files** - Load alphabetically, can override root values
+### Default Loading Order (without ENV parameter):
+1. **`env_files/` directory files** - Load first (sorted alphabetically)
+2. **`.env` (root)** - Loads last, has highest precedence
+
+### Loading Order with ENV Parameter:
+1. **`env_files/` directory files** - Load first (sorted alphabetically) - **lowest precedence**
+2. **`.env` (root)** - Loads next
+3. **ENV override file** (e.g., `.env.stage`) - Loads last - **HIGHEST precedence**
 
 ```bash
-# Example with multiple files
-ENV_FILES=".env env_files/.env.accounts env_files/.env.ports"
+# Example: make robot-run-all-tests TAGS="oracle" ENV=.env.stage
 
-# If .env has:
-DATABASE_HOST=localhost
-DATABASE_PORT=5432
+# Loading order:
+# 1. env_files/.env.oracle (and other env_files)
+# 2. .env (root)
+# 3. .env.stage (ENV override - HIGHEST PRECEDENCE)
 
-# And env_files/.env.accounts has:
-DATABASE_HOST=production.db.com
+# If env_files/.env.oracle has:
+ORACLE_HOST=common-db
+ORACLE_PORT=1521
+
+# And .env has:
+ORACLE_HOST=dev-db
+API_KEY=dev-key
+
+# And .env.stage has:
+ORACLE_HOST=stage-db
+STAGE_VAR=stage-value
 
 # The final values will be:
-DATABASE_HOST=production.db.com  # From .env.accounts
-DATABASE_PORT=5432                # From .env (not overridden)
+ORACLE_HOST=stage-db     # From .env.stage (ENV override)
+ORACLE_PORT=1521         # From env_files/.env.oracle
+API_KEY=dev-key          # From .env
+STAGE_VAR=stage-value    # From .env.stage (new variable)
 ```
 
 ### Current File Structure
@@ -247,6 +387,19 @@ make robot-run-tests
 # Please create a .env file in the project root directory
 ```
 
+### ENV Override File Not Found
+
+If you specify an ENV file that doesn't exist:
+
+```bash
+make robot-run-all-tests TAGS="oracle" ENV=.env.staging
+# ERROR: Environment override file '.env.staging' not found!
+# Please ensure the file exists at the project root level.
+# Available env files at root: .env .env.dev .env.prod
+```
+
+**Solution**: Create the file or check the filename for typos.
+
 ### No Files in env_files/ Directory
 
 If no `.env` files are found in the `env_files/` directory:
@@ -288,28 +441,75 @@ make robot-run-tests
 Display which env files are being loaded:
 
 ```bash
+# Without ENV override
 make show-env-files
+
+# With ENV override
+make show-env-files ENV=.env.stage
 ```
 
-Output:
+Output (without ENV):
 ```
 ========================================
 Environment Files Configuration:
 ========================================
 Root ENV file: .env
 ENV_DIR: env_files
+ENV override: (not set)
 
 ENV_FILES being loaded (in order):
-  ✓ .env (exists)
   ✓ env_files/.env.accounts (exists)
   ✓ env_files/.env.ports (exists)
+  ✓ .env (exists)
+
 ========================================
-Loading Order:
-  1. Root .env loads first (base configuration)
-  2. Files from env_files/ and subdirectories load next (sorted alphabetically)
+Loading Order & Precedence:
+  1. Files from env_files/ and subdirectories load first (sorted alphabetically)
+  2. Root .env loads next
+  → Root .env has HIGHEST PRECEDENCE (no ENV override specified)
+
+  ⚠️  IMPORTANT: Variables in the last loaded file OVERRIDE the same variables in earlier files!
+========================================
+Available env files at project root (for ENV parameter):
+  .env.dev
+  .env.stage
+  .env.prod
 ========================================
 Docker Compose Command:
-docker compose --env-file .env --env-file env_files/.env.accounts --env-file env_files/.env.ports -f docker-compose.yml
+docker compose --env-file env_files/.env.accounts --env-file env_files/.env.ports --env-file .env -f docker-compose.yml
+========================================
+```
+
+Output (with ENV=.env.stage):
+```
+========================================
+Environment Files Configuration:
+========================================
+Root ENV file: .env
+ENV_DIR: env_files
+ENV override: .env.stage
+
+ENV_FILES being loaded (in order):
+  ✓ env_files/.env.accounts (exists)
+  ✓ env_files/.env.ports (exists)
+  ✓ .env (exists)
+  ✓ .env.stage (ENV override - HIGHEST PRECEDENCE)
+
+========================================
+Loading Order & Precedence:
+  1. Files from env_files/ and subdirectories load first (sorted alphabetically)
+  2. Root .env loads next
+  3. .env.stage loads LAST (HIGHEST PRECEDENCE - overwrites all others)
+
+  ⚠️  IMPORTANT: Variables in the last loaded file OVERRIDE the same variables in earlier files!
+========================================
+Available env files at project root (for ENV parameter):
+  .env.dev
+  .env.stage
+  .env.prod
+========================================
+Docker Compose Command:
+docker compose --env-file env_files/.env.accounts --env-file env_files/.env.ports --env-file .env --env-file .env.stage -f docker-compose.yml
 ========================================
 ```
 
@@ -383,13 +583,23 @@ project/
 ### 3. Security Considerations
 
 - Never commit sensitive `.env` files to git
-- Use `.gitignore` to exclude env files:
+- The project's `.gitignore` is configured to:
+  - **Ignore** all files starting with `.env` (e.g., `.env`, `.env.stage`, `.env.prod`, `.env.local`)
+  - **Track** example files (`.env.example`, `.env.*.example`)
+
   ```gitignore
-  env_files/.env.*
-  .env.local
-  .env.secrets
+  # Environment files - ignore ALL files starting with .env
+  .env
+  .env.*
+
+  # Keep example environment files (these should be tracked)
+  !.env.example
+  !.env.*.example
   ```
+
+- This means your environment override files (`.env.stage`, `.env.prod`, etc.) are automatically ignored
 - Store production secrets separately
+- Always create `.env.example` templates with dummy values for documentation
 
 ### 4. Documentation
 
@@ -411,14 +621,39 @@ validate-env:
 
 ## Troubleshooting
 
+### Issue: ENV override not being applied
+
+**Symptoms**: Variables from your ENV file are not taking effect during tests.
+
+**Possible Causes & Solutions**:
+
+1. **File not found**: Verify the file exists at project root
+   ```bash
+   ls -la .env.stage
+   ```
+
+2. **Check Robot Framework output**: Look for the loading message in console output
+   ```
+   ========================================
+   Loading ENV override file (HIGHEST PRECEDENCE):
+   /app/.env.stage
+   ========================================
+   ```
+
+3. **Verify file was copied to container**: Check if the file exists inside the container
+   ```bash
+   docker exec snaplogic-test-example-tools-container cat /app/.env.stage
+   ```
+
+4. **Check variable name**: Ensure variable names match exactly (case-sensitive)
 
 ### Issue: Variable conflicts between files
 
 **Solution**: Check loading order:
 ```bash
-make show-env-files
+make show-env-files ENV=.env.stage
 ```
-Remember: later files override earlier ones.
+Remember: later files override earlier ones. The ENV override file should show as "HIGHEST PRECEDENCE".
 
 ### Issue: Docker Compose not finding env files
 
@@ -460,15 +695,43 @@ endif
 
 The environment file system provides flexible configuration management:
 
+- **Environment override**: Pass `ENV=.env.stage` to use environment-specific configuration with highest precedence
 - **Required files**: Root `.env` must exist; files in `env_files/` are optional
 - **Modular structure**: Each service has its own dedicated `.env` file
 - **Subdirectory support**: Files can be organized in subdirectories and are discovered recursively
-- **Default behavior**: Loads `.env` + all files from `env_files/` and subdirectories
-- **Loading order**: Root `.env` first, then `env_files/` alphabetically (including subdirectories)
+- **Default behavior**: Loads `env_files/` first, then root `.env`, then ENV override (if specified)
+- **Loading order**: `env_files/` → root `.env` → ENV override file (last file wins)
 - **Manual control**: Override with specific files when needed
 - **Cross-platform**: Works on Linux, Mac, and Windows with WSL2
-- **Debugging**: Built-in commands to inspect configuration
+- **Debugging**: Built-in commands to inspect configuration (`make show-env-files ENV=.env.stage`)
 - **Runtime reload**: Use `make restart-tools` after env changes
+
+### Quick Start with ENV Override
+
+```bash
+# Create environment-specific files at project root
+# .env.dev, .env.stage, .env.prod
+
+# Run tests with specific environment
+make robot-run-all-tests TAGS="oracle" ENV=.env.stage
+
+# View configuration
+make show-env-files ENV=.env.stage
+```
+
+### Verifying ENV Override is Working
+
+When tests run with ENV override, you should see in the Robot Framework console output:
+
+```
+========================================
+Loading ENV override file (HIGHEST PRECEDENCE):
+/app/.env.stage
+========================================
+Loaded environment variables from: /app/.env.stage
+```
+
+If you don't see this message, the ENV override is not being applied.
 
 ### New Service-Specific Files
 
@@ -511,6 +774,7 @@ make robot-run-tests \
 
 | Variable              | Default                         | Example Override                 | Description                         |
 | --------------------- | ------------------------------- | -------------------------------- | ----------------------------------- |
+| **ENV**               | (empty)                         | `ENV=.env.stage`                 | **Environment override file (HIGHEST precedence)** |
 | ENV_DIR               | env_files                       | `ENV_DIR=./config`               | Directory to scan for env files     |
 | ENV_FILES             | Auto-discovered from ENV_DIR    | `ENV_FILES=".env.staging"`       | Specific env files to load          |
 | COMPOSE_PROFILES      | tools,oracle-dev,minio,...      | `COMPOSE_PROFILES=minimal`       | Docker Compose profiles to activate |
@@ -526,18 +790,31 @@ make robot-run-tests \
 
 ### Common Override Patterns
 
+#### Run Tests with Environment Override (Recommended)
+```bash
+# Staging environment
+make robot-run-all-tests TAGS="oracle,minio" ENV=.env.stage
+
+# Production environment
+make robot-run-all-tests TAGS="postgres" ENV=.env.prod
+
+# Development environment with project space setup
+make robot-run-all-tests TAGS="oracle" ENV=.env.dev PROJECT_SPACE_SETUP=True
+```
+
 #### Minimal Testing Setup
 ```bash
 make robot-run-tests \
-  ENV_FILES=".env.minimal" \
+  ENV=.env.minimal \
   COMPOSE_PROFILES=tools \
   DEFAULT_PROCESSES=1
 ```
 
 #### Full Integration Testing
 ```bash
-make robot-run-tests \
-  ENV_FILES=".env.integration .env.all-services" \
+make robot-run-all-tests \
+  TAGS="oracle,postgres,kafka" \
+  ENV=.env.integration \
   COMPOSE_PROFILES=tools,kafka,oracle-dev,postgres-dev,mysql-dev \
   DEFAULT_PROCESSES=10 \
   ROBOT_DEFAULT_TIMEOUT=120s
@@ -545,8 +822,9 @@ make robot-run-tests \
 
 #### CI/CD Pipeline Configuration
 ```bash
-make robot-run-tests \
-  ENV_FILES="${CI_ENV_FILES}" \
+make robot-run-all-tests \
+  TAGS="${CI_TEST_TAGS}" \
+  ENV=.env.ci \
   COMPOSE_PROFILES="${CI_PROFILES}" \
   ROBOT_OUTPUT_DIR="${CI_PROJECT_DIR}/results" \
   S3_BUCKET="${CI_ARTIFACTS_BUCKET}" \
@@ -554,12 +832,13 @@ make robot-run-tests \
   DATE="${CI_BUILD_NUMBER}"
 ```
 
-#### Production Deployment
+#### Production Testing
 ```bash
-make deploy \
-  ENV_FILES=".env.production .env.secrets" \
-  COMPOSE_PROFILES=production \
-  DOCKER_COMPOSE_FILE=docker/docker-compose.prod.yml
+make robot-run-all-tests \
+  TAGS="smoke" \
+  ENV=.env.prod \
+  COMPOSE_PROFILES=tools \
+  ROBOT_DEFAULT_TIMEOUT=60s
 ```
 
 ### Combining with Environment Variables
