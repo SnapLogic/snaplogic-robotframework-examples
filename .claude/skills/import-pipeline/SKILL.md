@@ -48,4 +48,4 @@ src/pipelines/your_pipeline.slp
 - `${PIPELINES_LOCATION_PATH}` - SnapLogic destination path
 - `${unique_id}` - Generated in suite setup
 
-**Related slash command:** `/import-pipeline-testcase`
+**Invoke with:** `/import-pipeline`

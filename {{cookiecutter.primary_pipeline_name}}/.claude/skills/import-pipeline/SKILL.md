@@ -4,24 +4,7 @@ description: Creates Robot Framework test cases for importing SnapLogic pipeline
 user-invocable: true
 ---
 
-# SnapLogic Pipeline Import Skill
-
-## Usage Examples
-
-| What You Want | Example Prompt |
-|---------------|----------------|
-| Explain steps | `Explain the steps to import a pipeline` |
-| Import single pipeline | `Create a robot test case to import my_pipeline.slp` |
-| Import multiple pipelines | `Generate a test case to import multiple pipelines` |
-| Check prerequisites | `What are the prerequisites for importing a pipeline?` |
-| Get template | `Show me a template for importing pipelines` |
-| See example | `What does a pipeline import test case look like?` |
-| File location | `Where do I put my .slp pipeline file?` |
-| Variables needed | `What variables do I need for pipeline import?` |
-| Parameterization | `How do I parameterize my pipeline for testing?` |
-| Troubleshoot | `Pipeline import failed - how do I fix it?` |
-
----
+# Import Pipeline Test Case Guide
 
 ## Claude Instructions
 
@@ -34,61 +17,62 @@ user-invocable: true
 
 ---
 
-## Quick Template Reference
+# COMMAND ACTIONS (Claude: Read this first!)
 
-**Import pipeline test case:**
-```robotframework
-[Template]    Import Pipelines From Template
-${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${pipeline_file_name}
+## Available Commands
+
+| Command | Action |
+|---------|--------|
+| `/import-pipeline-testcase` | `/import-pipeline-testcase` - Default menu with quick options |
+| `/import-pipeline-testcase info` | `/import-pipeline-testcase info` - Full menu with all commands and options |
+| `/import-pipeline-testcase template` | `/import-pipeline-testcase template` - Generic import pipeline test case template |
+| `/import-pipeline-testcase create` | `/import-pipeline-testcase create` - Create a pipeline import test case |
+| `/import-pipeline-testcase prereqs` | `/import-pipeline-testcase prereqs` - Show prerequisites checklist |
+| `/import-pipeline-testcase check` | `/import-pipeline-testcase check` - Verify pipeline file exists in src/pipelines |
+
+### Natural Language Examples
+
+You can also use natural language:
+
+```
+/import-pipeline-testcase I need to import my_pipeline.slp into SnapLogic
 ```
 
-**Required variables:**
-- `${pipeline_name}` - Logical name (without .slp)
-- `${pipeline_file_name}` - Physical file (with .slp)
-- Pipeline file location: `src/pipelines/your_pipeline.slp`
-
-**Related slash command:** `/import-pipeline-testcase`
-
----
-
-## Agentic Workflow (Claude: Follow these steps in order)
-
-**This is the complete guide. Proceed with the steps below.**
-
-### Step 1: Understand the User's Request
-Parse what the user wants:
-- Import a single pipeline or multiple pipelines?
-- Need prerequisites checklist?
-- Create test case?
-- Show template or examples?
-- Questions about pipeline parameterization?
-
-### Step 2: Follow the Guide
-Use the detailed instructions below to:
-- Show the prerequisites for pipeline import
-- Verify pipeline .slp file location
-- Create or explain the test case
-- Provide troubleshooting if needed
-
-### Step 3: Respond to User
-Provide the requested information or create the test case based on this guide.
-
----
-
-## Quick Reference
-
-**Pipeline file location:**
 ```
-src/pipelines/your_pipeline.slp
+/import-pipeline-testcase What are the prerequisites for importing a pipeline?
 ```
 
-**Required variables:**
-- `${pipeline_name}` - Logical name (without .slp extension)
-- `${pipeline_file_name}` - Physical file name (with .slp extension)
-- `${PIPELINES_LOCATION_PATH}` - SnapLogic destination path
-- `${unique_id}` - Generated in suite setup
+```
+/import-pipeline-testcase Show me the baseline test for pipeline import
+```
 
-**Related slash command:** `/import-pipeline-testcase`
+#### Create Test Case for Pipeline Import
+
+```
+/import-pipeline-testcase Create a robot test to import snowflake_etl.slp
+```
+
+```
+/import-pipeline-testcase Generate a test case to import multiple pipelines
+```
+
+```
+/import-pipeline-testcase Write a robot file that imports my data_processor.slp pipeline
+```
+
+#### Pipeline Preparation Questions
+
+```
+/import-pipeline-testcase Where do I put my .slp pipeline file?
+```
+
+```
+/import-pipeline-testcase What variables do I need for pipeline import?
+```
+
+```
+/import-pipeline-testcase How do I parameterize my pipeline for testing?
+```
 
 **Baseline test references:**
 - `test/suite/pipeline_tests/snowflake/snowflake_baseline_tests.robot`
@@ -460,7 +444,7 @@ Import Pipeline
             │
             ▼
 ┌─────────────────────────┐
-│  4. Import Pipeline     │  ◄── THIS SKILL
+│  4. Import Pipeline     │  ◄── YOU ARE HERE
 │  (.slp file)            │
 └───────────┬─────────────┘
             │

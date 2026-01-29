@@ -56,4 +56,4 @@ Only provide additional context if asked.
 
 **Note:** Use `PROJECT_SPACE_SETUP=True` for first run, omit for subsequent runs.
 
-**Related slash command:** `/run-tests`
+**Invoke with:** `/run-tests`

@@ -4,25 +4,7 @@ description: Creates Robot Framework test cases for uploading files to SnapLogic
 user-invocable: true
 ---
 
-# SnapLogic File Upload Skill
-
-## Usage Examples
-
-| What You Want | Example Prompt |
-|---------------|----------------|
-| Explain steps | `Explain the steps to upload a file to SnapLogic` |
-| Upload JSON file | `Upload a JSON file to SnapLogic` |
-| Upload CSV file | `Create a test case to upload CSV test data to my project` |
-| Upload expression library | `Upload an expression library to the shared folder` |
-| Upload JAR file | `Upload JDBC driver JAR for MySQL` |
-| Upload multiple files | `I need to upload multiple input files for my Snowflake pipeline` |
-| Get template | `Show me a template for uploading files` |
-| See example | `How do I upload multiple files in one test case?` |
-| Path questions | `What's the difference between PIPELINES_LOCATION_PATH and ACCOUNT_LOCATION_PATH?` |
-| SLDB info | `What is SLDB and how does file storage work?` |
-| Destination help | `Where should I upload expression libraries?` |
-
----
+# Upload File Test Case Guide
 
 ## Claude Instructions
 
@@ -35,69 +17,82 @@ user-invocable: true
 
 ---
 
-## Quick Template Reference
+# COMMAND ACTIONS (Claude: Read this first!)
 
-**Upload to project folder (test input files, pipelines):**
-```robotframework
-[Template]    Upload File Using File Protocol Template
-${CURDIR}/../../test_data/input.json    ${PIPELINES_LOCATION_PATH}
+## Available Commands
+
+| Command | Action |
+|---------|--------|
+| `/upload-file-testcase` | Default menu with quick options |
+| `/upload-file-testcase info` | Full menu with all commands and file types |
+| `/upload-file-testcase template` | Generic upload test case template |
+| `/upload-file-testcase create json` | Create JSON file upload test case |
+| `/upload-file-testcase create csv` | Create CSV file upload test case |
+| `/upload-file-testcase create expr` | Create expression library upload test case |
+| `/upload-file-testcase create slp` | Create pipeline file upload test case |
+| `/upload-file-testcase create jar` | Create JAR file upload test case |
+
+### Natural Language Examples
+
+You can also use natural language:
+
+```
+/upload-file-testcase I need to upload a JSON test input file to my project
 ```
 
-**Upload to shared folder (expression libraries, JAR files):**
-```robotframework
-[Template]    Upload File Using File Protocol Template
-${CURDIR}/../../test_data/my_library.expr    ${ACCOUNT_LOCATION_PATH}
+```
+/upload-file-testcase How do I upload an expression library to the shared folder?
 ```
 
-**Related slash command:** `/upload-file-testcase`
+```
+/upload-file-testcase Show me how to upload multiple files in one test case
+```
 
----
+#### Upload Test Case Examples
 
-## Agentic Workflow (Claude: Follow these steps in order)
+```
+/upload-file-testcase Create a robot test to upload CSV files to SnapLogic
+```
 
-**This is the complete guide. Proceed with the steps below.**
+```
+/upload-file-testcase Generate a test case to upload expression libraries
+```
 
-### Step 1: Understand the User's Request
-Parse what the user wants:
-- What file type? (JSON, CSV, .expr, .slp, .jar, etc.)
-- Upload to which location? (project folder, shared folder)
-- Single file or multiple files?
-- Create test case?
-- Show template or examples?
-- Questions about SLDB or destination paths?
+```
+/upload-file-testcase Write a robot file that uploads JAR files to the shared folder
+```
 
-### Step 2: Follow the Guide
-Use the detailed instructions below to:
-- Identify the correct destination path variable
-- Determine the appropriate file location convention
-- Check baseline tests for reference if needed
-- Create or explain the test case
+#### Environment Variable Questions
 
-### Step 3: Respond to User
-Provide the requested information or create the test case based on this guide.
+```
+/upload-file-testcase What's the difference between PIPELINES_LOCATION_PATH and ACCOUNT_LOCATION_PATH?
+```
 
----
+```
+/upload-file-testcase Where should I upload expression libraries?
+```
 
-## Quick Reference
-
-**Supported file types:**
-`json`, `csv`, `slp` (pipeline), `expr` (expression library), `jar`, `txt`, `xml`, and any other file type
-
-**Key destination paths:**
-| Variable | Use For |
-|----------|---------|
-| `${PIPELINES_LOCATION_PATH}` | Test input files, pipelines, project-specific files |
-| `${ACCOUNT_LOCATION_PATH}` | Expression libraries, JAR files, shared resources |
-
-**What is SLDB?**
-SLDB (SnapLogic Database) is SnapLogic's internal file storage. Files uploaded to project spaces are stored in SLDB and referenced using paths like `sldb:///org/project_space/project/file.json`
-
-**Related slash command:** `/upload-file-testcase`
+```
+/upload-file-testcase What destination path should I use for test input files?
+```
 
 **Baseline test references:**
 - `test/suite/pipeline_tests/snowflake/snowflake_baseline_tests.robot`
 - `test/suite/pipeline_tests/oracle/oracle.robot`
 - `test/suite/pipeline_tests/kafka/kafka_snowflake_tests.robot`
+
+---
+
+## What is SLDB?
+
+**SLDB (SnapLogic Database)** is SnapLogic's internal file storage system. When you upload files to a SnapLogic project space, they are stored in SLDB and can be referenced using paths like:
+- `sldb:///org/project_space/project/filename.json`
+- `sldb:///org/project_space/shared/expression_library.expr`
+
+Files uploaded to SLDB can be:
+- Referenced by pipelines during execution
+- Used as input data for pipeline testing
+- Shared across multiple pipelines in a project
 
 ---
 

@@ -1,5 +1,7 @@
 ---
-description: Guide for creating new Robot Framework test cases
+name: add-test
+description: Creates new Robot Framework test cases for SnapLogic pipeline testing. Use when the user wants to create a new test file, add test cases to existing files, or needs test templates for specific system types (Oracle, PostgreSQL, Snowflake, etc.).
+user-invocable: true
 ---
 
 You are helping a user create new Robot Framework test cases in this SnapLogic pipeline testing project. Follow these conventions and patterns.

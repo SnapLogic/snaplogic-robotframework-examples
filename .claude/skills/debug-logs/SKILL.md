@@ -1,15 +1,17 @@
 ---
-description: Guide for debugging test failures and viewing logs
+name: debug-logs
+description: Helps debug test failures and view logs in the SnapLogic Robot Framework project. Use when the user wants to view test results, check container logs, debug specific test failures, or run environment diagnostics.
+user-invocable: true
 ---
 
-# Debug Logs
+# Debug Logs Skill
 
 ## Agentic Workflow (Claude: Follow these steps in order)
 
 ### Step 1: Load the Complete Guide
 ```
 ACTION: Use the Read tool to load:
-{{cookiecutter.primary_pipeline_name}}/.claude/commands/debug-logs.md
+{{cookiecutter.primary_pipeline_name}}/.claude/skills/debug-logs/SKILL.md
 ```
 **Do not proceed until you have read the complete guide.**
 

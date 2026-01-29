@@ -45,4 +45,4 @@ Provide the requested information or create the test case based on the complete 
 - `${PIPELINES_LOCATION_PATH}` - Test input files, pipelines, project-specific files
 - `${ACCOUNT_LOCATION_PATH}` - Expression libraries, JAR files, shared resources
 
-**Related slash command:** `/upload-file-testcase`
+**Invoke with:** `/upload-file`

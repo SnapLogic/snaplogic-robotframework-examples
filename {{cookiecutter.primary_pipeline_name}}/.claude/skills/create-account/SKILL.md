@@ -4,25 +4,7 @@ description: Creates Robot Framework test cases for SnapLogic account creation. 
 user-invocable: true
 ---
 
-# SnapLogic Account Creation Skill
-
-## Usage Examples
-
-| What You Want | Example Prompt |
-|---------------|----------------|
-| Explain steps | `Explain the steps to create an account in SnapLogic` |
-| Create account test case | `Create a robot test case for Oracle account` |
-| Create multiple accounts | `I need to create Snowflake and S3 accounts for my pipeline` |
-| Check env variables | `What environment variables do I need for Kafka?` |
-| View env file contents | `Show me what's in the Snowflake keypair env file` |
-| Get template | `Show me a template for creating accounts` |
-| See example | `What does an Oracle account test case look like?` |
-| Troubleshoot | `I'm getting an error creating my Snowflake account` |
-| JAR file info | `What JAR files do I need for DB2?` |
-| List account types | `What account types are supported?` |
-| Configure credentials | `Help me configure MySQL account credentials` |
-
----
+# Create Account Test Case Guide
 
 ## Claude Instructions
 
@@ -35,57 +17,77 @@ user-invocable: true
 
 ---
 
-## Quick Template Reference
+# COMMAND ACTIONS (Claude: Read this first!)
 
-**Create account test case:**
-```robotframework
-[Template]    Create Account From Template
-${ACCOUNT_LOCATION_PATH}    ${ORACLE_ACCOUNT_PAYLOAD_FILE_NAME}    ${ORACLE_ACCOUNT_NAME}    overwrite_if_exists=${TRUE}
+## Available Commands
+
+| Command | Action |
+|---------|--------|
+| `/create-account-testcase` | Default menu with quick options |
+| `/create-account-testcase info` | Full menu with all commands and account types |
+| `/create-account-testcase list` | Table of supported account types |
+| `/create-account-testcase template` | Generic test case template |
+| `/create-account-testcase create oracle` | Create Oracle account test case |
+| `/create-account-testcase create postgres` | Create PostgreSQL account test case |
+| `/create-account-testcase create snowflake` | Create Snowflake account test case (password auth) |
+| `/create-account-testcase create snowflake-keypair` | Create Snowflake account test case (key pair auth) |
+| `/create-account-testcase check snowflake` | Check Snowflake env variables |
+
+### Natural Language Examples
+
+You can also use natural language:
+
+```
+/create-account-testcase I need PostgreSQL and S3 accounts for my pipeline
 ```
 
-**Common account variables:**
-| Account | Payload Variable | Name Variable |
-|---------|------------------|---------------|
-| Oracle | `${ORACLE_ACCOUNT_PAYLOAD_FILE_NAME}` | `${ORACLE_ACCOUNT_NAME}` |
-| PostgreSQL | `${POSTGRES_ACCOUNT_PAYLOAD_FILE_NAME}` | `${POSTGRES_ACCOUNT_NAME}` |
-| Snowflake | `${SNOWFLAKE_ACCOUNT_PAYLOAD_FILE_NAME}` | `${SNOWFLAKE_ACCOUNT_NAME}` |
-| Kafka | `${KAFKA_ACCOUNT_PAYLOAD_FILE_NAME}` | `${KAFKA_ACCOUNT_NAME}` |
-| S3 | `${S3_ACCOUNT_PAYLOAD_FILE_NAME}` | `${S3_ACCOUNT_NAME}` |
+```
+/create-account-testcase What environment variables do I need to update and in which files to create a Snowflake account?
+```
 
-**Related slash command:** `/create-account-testcase`
+```
+/create-account-testcase Show me the baseline test for Snowflake account creation as a reference
+```
 
----
+#### Create Test Case for Account Creation
 
-## Agentic Workflow (Claude: Follow these steps in order)
+```
+/create-account-testcase Create a robot test file for Oracle account creation
+```
 
-**This is the complete guide. Proceed with the steps below.**
+```
+/create-account-testcase Generate a test case to create a Snowflake keypair account
+```
 
-### Step 1: Understand the User's Request
-Parse what the user wants:
-- Which account type? (oracle, postgres, snowflake, etc.)
-- Create test case?
-- Check environment variables?
-- Show template or examples?
-- Multiple accounts needed?
+```
+/create-account-testcase Write a robot file that creates both Kafka and S3 accounts
+```
 
-### Step 2: Follow the Guide
-Use the detailed instructions below to:
-- Identify the correct env file for the account type
-- Read the env file to understand available variables
-- Check baseline tests for reference if needed
-- Create or explain the test case
+```
+/create-account-testcase I need a new robot test file to create a MySQL account in my project
+```
 
-### Step 3: Respond to User
-Provide the requested information or create the test case based on this guide.
+#### Environment Variable Setup Questions
 
----
+```
+/create-account-testcase How do I set up environment variables for Snowflake?
+```
 
-## Quick Reference
+```
+/create-account-testcase I want to use my own Snowflake instance, not Docker
+```
 
-**Supported account types:**
-`oracle`, `postgres`, `mysql`, `sqlserver`, `snowflake`, `snowflake-keypair`, `db2`, `teradata`, `kafka`, `jms`, `s3`, `email`, `salesforce`
+```
+/create-account-testcase Where do I put my production database credentials?
+```
 
-**Related slash command:** `/create-account-testcase`
+```
+/create-account-testcase Do I need to change anything if I'm using Docker services?
+```
+
+```
+/create-account-testcase What's the difference between env_files and root .env?
+```
 
 **Baseline test references:**
 - `test/suite/pipeline_tests/snowflake/snowflake_baseline_tests.robot`
@@ -179,6 +181,83 @@ If you're using your own external instance (e.g., your company's Snowflake, prod
 
 ---
 
+# REFERENCE DOCUMENTATION
+
+You are helping a user create Robot Framework test cases that create SnapLogic accounts. Follow these conventions and patterns based on the account creation framework.
+
+---
+
+## How to Use This Command
+
+### Invoking the Command
+
+In Claude Code, type:
+```
+/create-account-testcase
+```
+
+Then add your specific request after the command.
+
+### Example Prompts
+
+#### Create a specific account type:
+```
+/create-account-testcase
+
+I need to create a Snowflake account test case using key pair authentication
+```
+
+#### Create multiple accounts:
+```
+/create-account-testcase
+
+I need to create test cases for PostgreSQL and S3 accounts for my data pipeline
+```
+
+#### Ask about available options:
+```
+/create-account-testcase
+
+What account types are supported? Show me the env file locations.
+```
+
+#### Get help with configuration:
+```
+/create-account-testcase
+
+I want to create an Oracle account but I'm not sure what environment variables I need
+```
+
+#### Create accounts for a pipeline:
+```
+/create-account-testcase
+
+I'm building a pipeline that reads from Kafka and writes to Snowflake. What accounts do I need?
+```
+
+#### Troubleshoot account issues:
+```
+/create-account-testcase
+
+I'm getting an error creating my MySQL account. What JAR files do I need?
+```
+
+#### Add a new account type:
+```
+/create-account-testcase
+
+I need to add support for a new database type called "CockroachDB". Guide me through the process.
+```
+
+#### Check environment setup:
+```
+/create-account-testcase
+
+Help me verify my Snowflake environment variables are set correctly
+```
+
+---
+
 ## Quick Start Template
 
 Here's a basic test case template for creating accounts:
@@ -214,8 +293,6 @@ Create PostgreSQL Account
     [Template]    Create Account From Template
     ${ACCOUNT_LOCATION_PATH}    ${POSTGRES_ACCOUNT_PAYLOAD_FILE_NAME}    ${account_name}    overwrite_if_exists=${TRUE}
 ```
-
----
 
 ## IMPORTANT: Step-by-Step Workflow
 
@@ -258,6 +335,48 @@ The env file tells you:
 ### Step 5: Create the Test Case
 Use the variables from the env file in your Robot Framework test case.
 
+### Example: Reading the Snowflake Key Pair Env File
+
+When user asks for Snowflake Key Pair account, first read `env_files/database_accounts/.env.snowflake_s3_keypair`:
+
+```bash
+# ============================================================================
+#                      SNOWFLAKE DATABASE ACCOUNT - KEY PAIR AUTHENTICATION
+# ============================================================================
+
+# Account payload file name
+SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_FILE_NAME=acc_snowflake_s3_keypair.json
+
+# Account Label
+SNOWFLAKE_KEYPAIR_ACCOUNT_NAME=SNOWFLAKE_KEYPAIR_acct
+
+# Authentication Configuration
+SNOWFLAKE_KEYPAIR_AUTHENTICATION_TYPE=Key Pair
+SNOWFLAKE_KEYPAIR_USERNAME=your_username
+# SNOWFLAKE_KEYPAIR_PRIVATE_KEY=-----BEGIN ENCRYPTED PRIVATE KEY-----...
+# SNOWFLAKE_KEYPAIR_PRIVATE_KEY_PASSPHRASE=
+
+# Connection Configuration
+SNOWFLAKE_KEYPAIR_HOSTNAME=your_account.snowflakecomputing.com
+SNOWFLAKE_ACCOUNT_IDENTIFIER=your_account
+
+# Database Configuration
+SNOWFLAKE_KEYPAIR_DATABASE=YOUR_DB
+SNOWFLAKE_KEYPAIR_WAREHOUSE=YOUR_WH
+SNOWFLAKE_KEYPAIR_SCHEMA=
+SNOWFLAKE_KEYPAIR_ROLE=SYSADMIN
+
+# S3 Configuration (External Stages)
+SNOWFLAKE_KEYPAIR_S3_BUCKET=
+SNOWFLAKE_KEYPAIR_S3_ACCESS_KEY_ID=
+SNOWFLAKE_KEYPAIR_S3_SECRET_KEY=
+```
+
+From this, you know:
+- Use `${SNOWFLAKE_ACCOUNT_PAYLOAD_KEY_PAIR_FILE_NAME}` for the payload file
+- Use `${SNOWFLAKE_KEYPAIR_ACCOUNT_NAME}` for the account name
+- User needs to update: hostname, username, private key, database, warehouse, and optionally S3 settings
+
 ---
 
 ## How Account Creation Works
@@ -294,9 +413,7 @@ Use the variables from the env file in your Robot Framework test case.
                                 └─────────────────────┘
 ```
 
----
-
-## Supported Account Types with JAR Requirements
+## Supported Account Types
 
 | Account Type | Payload File | Env File | JAR Required |
 |--------------|--------------|----------|--------------|
@@ -313,8 +430,6 @@ Use the variables from the env file in your Robot Framework test case.
 | S3 / MinIO | `acc_s3.json` | `.env.s3` | No |
 | Email | `acc_email.json` | `.env.email` | No |
 | Salesforce | `acc_salesforce.json` | `.env.salesforce` | No |
-
----
 
 ## File Locations
 
@@ -365,8 +480,6 @@ env_files/
     ├── .env.salesforce
     └── .env.email
 ```
-
----
 
 ## Test Case Examples by Account Type
 
@@ -478,8 +591,6 @@ Create Salesforce Account
     ${ACCOUNT_LOCATION_PATH}    ${SALESFORCE_ACCOUNT_PAYLOAD_FILE_NAME}    ${SALESFORCE_ACCOUNT_NAME}    overwrite_if_exists=${TRUE}
 ```
 
----
-
 ## Template Keyword Arguments
 
 | Argument | Description | Example |
@@ -489,14 +600,11 @@ Create Salesforce Account
 | `Account Name` | Name displayed in SnapLogic Manager | `postgres_acc` |
 | `overwrite_if_exists` | Replace existing account with same name | `${TRUE}` or `${FALSE}` |
 
----
-
 ## Creating Multiple Accounts in One Test Suite
 
 ```robotframework
 *** Settings ***
 Documentation    Creates all required accounts for end-to-end testing
-Resource         snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource
 Resource         ../../resources/common/general.resource
 
 *** Test Cases ***
@@ -515,8 +623,6 @@ Create S3 Account
     [Template]    Create Account From Template
     ${ACCOUNT_LOCATION_PATH}    ${S3_ACCOUNT_PAYLOAD_FILE_NAME}    ${S3_ACCOUNT_NAME}    overwrite_if_exists=${TRUE}
 ```
-
----
 
 ## Usage Scenarios
 
@@ -547,8 +653,6 @@ SNOWFLAKE_KEYPAIR_PRIVATE_KEY_PASSPHRASE=your_passphrase
 
 **Note:** You don't need to copy the `*_PAYLOAD_FILE_NAME` variable - the payload template structure doesn't change.
 
----
-
 ## Adding a New Account Type
 
 ### Step 1: Create Payload Template
@@ -576,8 +680,6 @@ Create New Account Type
     ${ACCOUNT_LOCATION_PATH}    ${NEWTYPE_ACCOUNT_PAYLOAD_FILE_NAME}    ${NEWTYPE_ACCOUNT_NAME}    overwrite_if_exists=${TRUE}
 ```
 
----
-
 ## Checklist Before Committing
 
 - [ ] Payload file exists in `accounts_payload/`
@@ -587,3 +689,4 @@ Create New Account Type
 - [ ] Test has appropriate tags
 - [ ] Documentation describes the account type
 - [ ] No sensitive credentials are hardcoded
+

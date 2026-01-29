@@ -1,5 +1,7 @@
 ---
-description: Guide for debugging test failures and viewing logs
+name: debug-logs
+description: Helps debug test failures and view logs in the SnapLogic Robot Framework project. Use when the user wants to view test results, check container logs, debug specific test failures, or run environment diagnostics.
+user-invocable: true
 ---
 
 You are helping a user debug test failures and view logs in this SnapLogic Robot Framework project. Provide guidance based on these conventions.

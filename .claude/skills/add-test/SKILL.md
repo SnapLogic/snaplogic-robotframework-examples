@@ -1,15 +1,17 @@
 ---
-description: Guide for creating new Robot Framework test cases
+name: add-test
+description: Creates new Robot Framework test cases for SnapLogic pipeline testing. Use when the user wants to create a new test file, add test cases to existing files, or needs test templates for specific system types (Oracle, PostgreSQL, Snowflake, etc.).
+user-invocable: true
 ---
 
-# Add Test
+# Add Test Skill
 
 ## Agentic Workflow (Claude: Follow these steps in order)
 
 ### Step 1: Load the Complete Guide
 ```
 ACTION: Use the Read tool to load:
-{{cookiecutter.primary_pipeline_name}}/.claude/commands/add-test.md
+{{cookiecutter.primary_pipeline_name}}/.claude/skills/add-test/SKILL.md
 ```
 **Do not proceed until you have read the complete guide.**
 

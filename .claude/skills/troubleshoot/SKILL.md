@@ -1,15 +1,17 @@
 ---
-description: Troubleshooting guide for common issues in SnapLogic Robot Framework testing
+name: troubleshoot
+description: Troubleshooting guide for common issues in SnapLogic Robot Framework testing. Use when the user encounters errors, Docker/container issues, environment configuration problems, network connectivity issues, or SnapLogic API errors.
+user-invocable: true
 ---
 
-# Troubleshoot
+# Troubleshoot Skill
 
 ## Agentic Workflow (Claude: Follow these steps in order)
 
 ### Step 1: Load the Complete Guide
 ```
 ACTION: Use the Read tool to load:
-{{cookiecutter.primary_pipeline_name}}/.claude/commands/troubleshoot.md
+{{cookiecutter.primary_pipeline_name}}/.claude/skills/troubleshoot/SKILL.md
 ```
 **Do not proceed until you have read the complete guide.**
 

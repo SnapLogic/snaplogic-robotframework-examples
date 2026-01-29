@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation       Database Connection Management Resource File
 ...                 Contains all keywords related to:
-...                 - Database connection management (PostgreSQL, Oracle, SQL Server)
+...                 - Database connection management (PostgreSQL, Oracle, SQL Server, Redshift)
 ...                 - Connection testing and validation
 ...                 - Connection retry and wait utilities
 ...
@@ -113,6 +113,37 @@ Connect to SQL Server Database
 
     Log    Successfully connected to SQL Server database    console=yes
 
+Connect to Redshift Database
+    [Documentation]    Sets up Amazon Redshift database connection using psycopg2 driver
+    ...    Redshift is PostgreSQL-compatible, so we use psycopg2 driver
+    ...    Arguments:
+    ...    - REDSHIFT_DATABASE: Database name
+    ...    - REDSHIFT_USER: Username for authentication
+    ...    - REDSHIFT_PASSWORD: Password for authentication
+    ...    - REDSHIFT_HOST: Database server hostname (cluster endpoint)
+    ...    - REDSHIFT_PORT: Database server port (default: 5439)
+    [Arguments]
+    ...    ${REDSHIFT_DATABASE}
+    ...    ${REDSHIFT_USER}
+    ...    ${REDSHIFT_PASSWORD}
+    ...    ${REDSHIFT_HOST}
+    ...    ${REDSHIFT_PORT}=5439
+
+    Log    Connecting to Redshift database...    console=yes
+    Log    Host: ${REDSHIFT_HOST}:${REDSHIFT_PORT}    console=yes
+    Log    Database: ${REDSHIFT_DATABASE}    console=yes
+    Log    User: ${REDSHIFT_USER}    console=yes
+
+    Connect To Database
+    ...    psycopg2
+    ...    ${REDSHIFT_DATABASE}
+    ...    ${REDSHIFT_USER}
+    ...    ${REDSHIFT_PASSWORD}
+    ...    ${REDSHIFT_HOST}
+    ...    ${REDSHIFT_PORT}
+
+    Log    Successfully connected to Redshift database    console=yes
+
 Connect to Database Generic
     [Documentation]    Generic database connection supporting multiple database types
     ...    Arguments:
@@ -217,8 +248,8 @@ Execute SQL On Database
     ...    Automatically connects, executes, and remains connected
     ...    Arguments:
     ...    - sql: SQL statement to execute
-    ...    - database_type: Type of database ('postgres', 'oracle', or 'sqlserver')
-    ...    Note: Uses global variables for connection parameters (POSTGRES_*, ORACLE_*, SQLSERVER_*)
+    ...    - database_type: Type of database ('postgres', 'oracle', 'sqlserver', or 'redshift')
+    ...    Note: Uses global variables for connection parameters (POSTGRES_*, ORACLE_*, SQLSERVER_*, REDSHIFT_*)
     [Arguments]    ${sql}    ${database_type}
 
     # Close any existing connection to avoid warnings
@@ -249,6 +280,14 @@ Execute SQL On Database
         ...    ${SQLSERVER_HOST}
         ...    ${SQLSERVER_PORT}
         Execute SQL String    ${sql}
+    ELSE IF    '${database_type}' == 'redshift'
+        Connect to Redshift Database
+        ...    ${REDSHIFT_DATABASE}
+        ...    ${REDSHIFT_USER}
+        ...    ${REDSHIFT_PASSWORD}
+        ...    ${REDSHIFT_HOST}
+        ...    ${REDSHIFT_PORT}
+        Execute SQL String    ${sql}
     ELSE
-        Fail    Unknown database type: ${database_type}. Use 'postgres', 'oracle', or 'sqlserver'
+        Fail    Unknown database type: ${database_type}. Use 'postgres', 'oracle', 'sqlserver', or 'redshift'
     END

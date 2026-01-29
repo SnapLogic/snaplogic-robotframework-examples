@@ -1,5 +1,7 @@
 ---
-description: Guide for setting up database containers for testing
+name: setup-database
+description: Guides setting up database containers for testing in the SnapLogic project. Use when the user wants to start/stop databases (Oracle, PostgreSQL, MySQL, SQL Server, DB2, Teradata, Snowflake), load test data, or troubleshoot database connections.
+user-invocable: true
 ---
 
 You are helping a user set up database containers for SnapLogic pipeline testing. Provide guidance based on these conventions.

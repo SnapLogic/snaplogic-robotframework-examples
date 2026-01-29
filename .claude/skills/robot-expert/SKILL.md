@@ -1,15 +1,17 @@
 ---
-description: Robot Framework expert for SnapLogic pipeline testing conventions
+name: robot-expert
+description: Robot Framework expert for SnapLogic pipeline testing conventions. Use when the user asks about best practices, naming conventions, tags, variable patterns, or database/messaging test patterns.
+user-invocable: true
 ---
 
-# Robot Framework Expert
+# Robot Framework Expert Skill
 
 ## Agentic Workflow (Claude: Follow these steps in order)
 
 ### Step 1: Load the Complete Guide
 ```
 ACTION: Use the Read tool to load:
-{{cookiecutter.primary_pipeline_name}}/.claude/commands/robot-expert.md
+{{cookiecutter.primary_pipeline_name}}/.claude/skills/robot-expert/SKILL.md
 ```
 **Do not proceed until you have read the complete guide.**
 

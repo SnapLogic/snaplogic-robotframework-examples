@@ -1,15 +1,17 @@
 ---
-description: Guide for setting up database containers for testing
+name: setup-database
+description: Guides setting up database containers for testing in the SnapLogic project. Use when the user wants to start/stop databases (Oracle, PostgreSQL, MySQL, SQL Server, DB2, Teradata, Snowflake), load test data, or troubleshoot database connections.
+user-invocable: true
 ---
 
-# Setup Database
+# Setup Database Skill
 
 ## Agentic Workflow (Claude: Follow these steps in order)
 
 ### Step 1: Load the Complete Guide
 ```
 ACTION: Use the Read tool to load:
-{{cookiecutter.primary_pipeline_name}}/.claude/commands/setup-database.md
+{{cookiecutter.primary_pipeline_name}}/.claude/skills/setup-database/SKILL.md
 ```
 **Do not proceed until you have read the complete guide.**
 
@@ -33,8 +35,10 @@ Provide database setup commands and guidance based on the complete guide.
 
 ## Quick Reference
 
+**Available databases:**
+Oracle, PostgreSQL, MySQL, SQL Server, DB2, Teradata, Snowflake
+
 This guide covers:
-- Available databases (Oracle, PostgreSQL, MySQL, SQL Server, DB2, Teradata, Snowflake)
 - Quick start commands
 - Database-specific configurations
 - Loading test data

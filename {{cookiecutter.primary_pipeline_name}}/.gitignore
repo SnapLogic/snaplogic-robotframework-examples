@@ -173,6 +173,10 @@ jspm_packages/
 !.env.example
 !.env.*.example
 
+# Track all files under env_files directory (database accounts, etc.)
+!env_files/
+!env_files/**
+
 # ==========================================
 # SnapLogic Specific Files
 # ==========================================

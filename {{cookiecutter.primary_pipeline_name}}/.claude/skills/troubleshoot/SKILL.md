@@ -1,5 +1,7 @@
 ---
-description: Troubleshooting guide for common issues in SnapLogic Robot Framework testing
+name: troubleshoot
+description: Troubleshooting guide for common issues in SnapLogic Robot Framework testing. Use when the user encounters errors, Docker/container issues, environment configuration problems, network connectivity issues, or SnapLogic API errors.
+user-invocable: true
 ---
 
 You are helping a user troubleshoot issues in this SnapLogic Robot Framework testing project. Diagnose problems and provide solutions.

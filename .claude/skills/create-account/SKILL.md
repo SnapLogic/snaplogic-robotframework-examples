@@ -40,4 +40,4 @@ Provide the requested information or create the test case based on the complete 
 **Supported account types:**
 `oracle`, `postgres`, `mysql`, `sqlserver`, `snowflake`, `snowflake-keypair`, `db2`, `teradata`, `kafka`, `jms`, `s3`, `email`, `salesforce`
 
-**Related slash command:** `/create-account-testcase`
+**Invoke with:** `/create-account`
