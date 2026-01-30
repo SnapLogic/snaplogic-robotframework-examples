@@ -23,15 +23,17 @@ Parse what the user wants:
 - Show template or examples?
 - Multiple accounts needed?
 
-### Step 3: Follow the Guide
-Use the detailed instructions from the file you loaded in Step 1 to:
-- Identify the correct env file for the account type
-- Read the env file to understand available variables
-- Check baseline tests for reference if needed
-- Create or explain the test case
+### Step 3: Follow the Guide — Create ALL Required Files (MANDATORY)
+When creating account test cases, you **MUST call the Write tool** to create ALL 4 files for EVERY account type (supported or new). Never skip any file. Never say "file already exists". Always write them fresh:
+1. **Payload file** (`acc_[type].json`) in `test/suite/test_data/accounts_payload/` — WRITE this
+2. **Env file** (`.env.[type]`) in `env_files/[category]_accounts/` — WRITE this
+3. **Robot test file** (`.robot`) in `test/suite/pipeline_tests/[type]/` — WRITE this
+4. **ACCOUNT_SETUP_README.md** with file structure tree diagram in the same test directory — WRITE this
+
+Use the detailed instructions from the file you loaded in Step 1 for templates and conventions.
 
 ### Step 4: Respond to User
-Provide the requested information or create the test case based on the complete guide.
+Provide the created files or requested information based on the complete guide.
 
 ---
 
