@@ -6,9 +6,35 @@ user-invocable: true
 
 # Import Pipeline Test Case Guide
 
+## Usage Examples
+
+| What You Want | Example Prompt |
+|---------------|----------------|
+| Explain steps | `Explain the steps to import a pipeline in SnapLogic` |
+| Create import test case | `Create a robot test case to import my_pipeline.slp` |
+| Import multiple pipelines | `I need to import data_extractor.slp and data_loader.slp` |
+| Check prerequisites | `What are the prerequisites for importing a pipeline?` |
+| Get template | `Show me a template for importing pipelines` |
+| See example | `What does a pipeline import test case look like?` |
+| Troubleshoot | `I'm getting an error importing my pipeline` |
+| Verify pipeline file | `Check if my pipeline file exists in src/pipelines` |
+| Parameterization | `How do I parameterize my pipeline for testing?` |
+
+---
+
 ## Claude Instructions
 
 **IMPORTANT:** When user asks a simple question like "How do I import a pipeline?", provide a **concise answer first** with just the template/command, then offer to explain more if needed. Do NOT dump all documentation.
+
+**PREREQUISITES (Claude: Always verify these before creating test cases):**
+1. A valid `.slp` pipeline file must exist under `src/pipelines/`. Check that the file is present before proceeding.
+2. Required accounts must already be created before importing a pipeline. If the user hasn't created accounts yet, guide them to use `/create-account` first. Accounts are a dependency for pipeline execution.
+
+**MANDATORY:** When creating pipeline import test cases, you MUST call the **Write tool** to create ALL required files. Do NOT read files to check if they exist first. Do NOT say "file already exists" or "already complete". Always write them fresh:
+1. **Robot test file** (`.robot`) in `test/suite/pipeline_tests/[type]/` — WRITE this
+2. **PIPELINE_IMPORT_README.md** with file structure tree diagram in the same test directory — WRITE this
+
+This applies to ALL pipeline import test cases. No exceptions. You must call Write for each file. See the "IMPORTANT: Step-by-Step Workflow" section for details.
 
 **Response format for simple questions:**
 1. Give the direct template or test case first
@@ -17,61 +43,83 @@ user-invocable: true
 
 ---
 
-# COMMAND ACTIONS (Claude: Read this first!)
+# WHEN USER INVOKES `/import-pipeline` WITH NO ARGUMENTS
 
-## Available Commands
+**Claude: When user types just `/import-pipeline` with no specific request, present the menu below. Use this EXACT format:**
 
-| Command | Action |
-|---------|--------|
-| `/import-pipeline-testcase` | `/import-pipeline-testcase` - Default menu with quick options |
-| `/import-pipeline-testcase info` | `/import-pipeline-testcase info` - Full menu with all commands and options |
-| `/import-pipeline-testcase template` | `/import-pipeline-testcase template` - Generic import pipeline test case template |
-| `/import-pipeline-testcase create` | `/import-pipeline-testcase create` - Create a pipeline import test case |
-| `/import-pipeline-testcase prereqs` | `/import-pipeline-testcase prereqs` - Show prerequisites checklist |
-| `/import-pipeline-testcase check` | `/import-pipeline-testcase check` - Verify pipeline file exists in src/pipelines |
+---
 
-### Natural Language Examples
+**SnapLogic Pipeline Import**
 
-You can also use natural language:
+**Prerequisites**
+1. A valid `.slp` pipeline file must exist under `src/pipelines/`
+2. Required accounts must already be created before importing a pipeline — use `/create-account` first
+
+**What I Can Do**
+
+For every pipeline import, I create the **complete set of files** you need:
+- **Robot test file** (`.robot`) — Robot Framework test case using `Import Pipelines From Template`
+- **PIPELINE_IMPORT_README.md** — File structure diagram, prerequisites, and run instructions
+
+I can also:
+- Show you prerequisites for pipeline import
+- Explain pipeline parameterization best practices
+- Guide you through importing multiple pipelines
+- Troubleshoot import issues
+
+**Try these sample prompts to get started:**
+
+| Sample Prompt | What It Does |
+|---------------|--------------|
+| `Create a test case to import snowflake_etl.slp` | Generates robot test file and README |
+| `What are the prerequisites for importing a pipeline?` | Shows the full prerequisites checklist |
+| `I need to import data_extractor.slp and data_loader.slp` | Creates test cases for multiple pipelines |
+| `Show me the baseline test for pipeline import` | Displays existing reference test as an example |
+| `How do I parameterize my pipeline?` | Explains pipeline parameters and how to use them in tests |
+| `Where do I put my .slp pipeline file?` | Shows the correct file location |
+
+---
+
+## Natural Language — Just Describe What You Need
+
+You don't need special syntax. Just describe what you need after `/import-pipeline`:
 
 ```
-/import-pipeline-testcase I need to import my_pipeline.slp into SnapLogic
+/import-pipeline I need to import my_pipeline.slp into SnapLogic
 ```
 
 ```
-/import-pipeline-testcase What are the prerequisites for importing a pipeline?
+/import-pipeline What are the prerequisites for importing a pipeline?
 ```
 
 ```
-/import-pipeline-testcase Show me the baseline test for pipeline import
-```
-
-#### Create Test Case for Pipeline Import
-
-```
-/import-pipeline-testcase Create a robot test to import snowflake_etl.slp
+/import-pipeline Show me the baseline test for pipeline import
 ```
 
 ```
-/import-pipeline-testcase Generate a test case to import multiple pipelines
+/import-pipeline Generate a test case to import snowflake_etl.slp
 ```
 
 ```
-/import-pipeline-testcase Write a robot file that imports my data_processor.slp pipeline
+/import-pipeline Write a robot file that imports multiple pipelines
+```
+
+```
+/import-pipeline I need a test case to import data_processor.slp
 ```
 
 #### Pipeline Preparation Questions
 
 ```
-/import-pipeline-testcase Where do I put my .slp pipeline file?
+/import-pipeline Where do I put my .slp pipeline file?
 ```
 
 ```
-/import-pipeline-testcase What variables do I need for pipeline import?
+/import-pipeline What variables do I need for pipeline import?
 ```
 
 ```
-/import-pipeline-testcase How do I parameterize my pipeline for testing?
+/import-pipeline How do I parameterize my pipeline for testing?
 ```
 
 **Baseline test references:**
@@ -81,9 +129,56 @@ You can also use natural language:
 
 ---
 
+## Quick Template Reference
+
+**Import pipeline test case:**
+```robotframework
+[Template]    Import Pipelines From Template
+${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${pipeline_file_name}
+```
+
+**Required variables:**
+| Variable | Description |
+|----------|-------------|
+| `${unique_id}` | Generated in suite setup (Check connections keyword) |
+| `${PIPELINES_LOCATION_PATH}` | SnapLogic destination path |
+| `${pipeline_name}` | Logical name (without .slp extension) |
+| `${pipeline_file_name}` | Physical file name (with .slp extension) |
+
+**Related slash command:** `/import-pipeline`
+
+---
+
+## Agentic Workflow (Claude: Follow these steps in order)
+
+**This is the complete guide. Proceed with the steps below.**
+
+### Step 1: Understand the User's Request
+Parse what the user wants:
+- Import a single pipeline or multiple pipelines?
+- Need prerequisites checklist?
+- Create test case?
+- Show template or examples?
+- Questions about pipeline parameterization?
+
+### Step 2: Follow the Guide
+Use the detailed instructions below to:
+- Show the prerequisites for pipeline import
+- Verify pipeline .slp file location
+- Create or explain the test case
+- Provide troubleshooting if needed
+
+### Step 3: Respond to User
+Provide the requested information or create the test case based on this guide.
+
+---
+
 ## Prerequisites Checklist
 
 Before importing a pipeline, ensure you have completed the following:
+
+### Step 0: Verify Account Creation (REQUIRED)
+**Accounts must be created before importing a pipeline.** If the pipeline references any accounts (database, S3, Kafka, etc.), those accounts must already exist in SnapLogic. Use `/create-account` to create them first.
 
 ### Step 1: Pipeline Preparation in SnapLogic Designer
 
@@ -184,6 +279,122 @@ Import Pipeline
     [Template]    Import Pipelines From Template
     ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${pipeline_file_name}
 ```
+
+---
+
+## IMPORTANT: Step-by-Step Workflow
+
+**Always follow this workflow when creating pipeline import test cases.**
+
+**MANDATORY: You MUST create ALL of the following files:**
+
+| # | File | Location | Purpose |
+|---|------|----------|---------|
+| 1 | **Robot test file** | `test/suite/pipeline_tests/[type]/[type]_pipeline_import.robot` | Robot Framework test case |
+| 2 | **PIPELINE_IMPORT_README.md** | `test/suite/pipeline_tests/[type]/PIPELINE_IMPORT_README.md` | File structure diagram and instructions |
+
+**ALWAYS create all files using the Write tool.** There are NO exceptions. Even if a file already exists, you MUST still use the Write tool to create/overwrite it. Do NOT skip any file. Do NOT say "file already exists" or "marking it complete" — actually write the file content.
+
+**CRITICAL: Do NOT read files to check if they exist first. Do NOT skip writing a file because it already exists. Always use the Write tool to create every file, every time.**
+
+### Step 1: Identify the Pipeline
+Determine which pipeline(s) need to be imported based on the user's request.
+
+### Step 2: Verify Pipeline File Location
+Ensure the `.slp` file exists in `src/pipelines/`.
+
+### Step 3: Create the Robot Test Case (ALWAYS — use Write tool)
+**ALWAYS use the Write tool** to create the `.robot` test file in `test/suite/pipeline_tests/[type]/`. Do NOT skip this step. Do NOT check if it exists first.
+
+### Step 4: Create PIPELINE_IMPORT_README.md with File Structure (ALWAYS — use Write tool)
+**ALWAYS use the Write tool** to create a PIPELINE_IMPORT_README.md in the test directory with a file structure tree diagram. See the "MANDATORY: README with File Structure" section for the template. Do NOT skip this step.
+
+### Summary: You MUST use the Write tool to create these files every time
+```
+1. test/suite/pipeline_tests/[type]/[type]_pipeline_import.robot    ← WRITE this file
+2. test/suite/pipeline_tests/[type]/PIPELINE_IMPORT_README.md       ← WRITE this file
+```
+If you did not call the Write tool for each file, you have NOT completed the task. Never say "file already exists" — always write it.
+
+---
+
+## COMPLETE EXAMPLE: Snowflake Pipeline Import (All Files)
+
+**When a user asks "Create a pipeline import test case for Snowflake", you MUST create ALL of these files:**
+
+### File 1: Robot Test File — `test/suite/pipeline_tests/snowflake/snowflake_pipeline_import.robot`
+```robotframework
+*** Settings ***
+Documentation    Imports Snowflake pipeline(s) into SnapLogic for testing
+...              Uploads pipeline definitions (.slp files) to the specified project location
+Resource         snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource
+Resource         ../../resources/common/general.resource
+Library          Collections
+
+*** Variables ***
+# Pipeline configuration
+${pipeline_name}                snowflake_keypair
+${pipeline_file_name}           snowflake_keypair.slp
+
+*** Test Cases ***
+Import Snowflake Pipeline
+    [Documentation]    Imports Snowflake pipeline file (.slp) into the SnapLogic project space.
+    ...    PREREQUISITES:
+    ...    - ${unique_id} - Generated from suite setup (Check connections keyword)
+    ...    - Pipeline .slp file must exist in src/pipelines/ directory
+    ...    - SnapLogic project and folder structure must be in place
+    ...
+    ...    ARGUMENT DETAILS:
+    ...    - Argument 1: ${unique_id} - Unique test execution identifier for naming/tracking
+    ...    - Argument 2: ${PIPELINES_LOCATION_PATH} - SnapLogic folder path where pipelines will be imported
+    ...    - Argument 3: ${pipeline_name} - Logical name for the pipeline (without .slp extension)
+    ...    - Argument 4: ${pipeline_file_name} - Physical .slp file name to import
+    [Tags]    snowflake    pipeline_import
+    [Template]    Import Pipelines From Template
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${pipeline_file_name}
+```
+
+### File 2: README — `test/suite/pipeline_tests/snowflake/PIPELINE_IMPORT_README.md`
+````markdown
+# Snowflake Pipeline Import Tests
+
+To create pipeline import test cases, you need:
+- **Pipeline .slp file** — Exported from SnapLogic Designer, placed in `src/pipelines/`
+- **Test case file** — Robot Framework test that uses `Import Pipelines From Template` to import the pipeline
+
+## Purpose
+Imports Snowflake pipeline(s) into SnapLogic for testing.
+
+## File Structure
+```
+project-root/
+├── src/
+│   └── pipelines/
+│       └── snowflake_keypair.slp                              ← Pipeline file (.slp)
+├── test/
+│   └── suite/
+│       └── pipeline_tests/
+│           └── snowflake/
+│               ├── snowflake_pipeline_import.robot            ← Test case file
+│               └── PIPELINE_IMPORT_README.md                  ← This file
+└── .env                                                       ← Environment configuration
+```
+
+## Prerequisites
+1. Pipeline `.slp` file must exist in `src/pipelines/`
+2. Pipeline must be tested and working in SnapLogic Designer
+3. Required accounts must be created before pipeline import
+4. Environment variables configured:
+   - `${PIPELINES_LOCATION_PATH}` — SnapLogic folder path for pipeline import
+   - `${unique_id}` — Generated from suite setup
+
+## How to Run
+```bash
+make robot-run-all-tests TAGS="snowflake" PROJECT_SPACE_SETUP=True
+```
+````
+
+**Claude: The above is a COMPLETE example. When creating pipeline import test cases for ANY pipeline type, follow the same pattern — always create all files. Never create just the .robot file alone.**
 
 ---
 
@@ -467,6 +678,62 @@ Import Pipeline
 
 ---
 
+## MANDATORY: PIPELINE_IMPORT_README.md with File Structure
+
+**IMPORTANT: Every time you create pipeline import test cases, you MUST also create a PIPELINE_IMPORT_README.md in the same directory with a file structure diagram.**
+
+This is required for ALL pipeline types. No exceptions.
+
+### What to Include in the README
+
+1. **Purpose** — Brief description of what the test suite does
+2. **File Structure** — A tree diagram showing all related files (test files, pipeline .slp files)
+3. **Prerequisites** — Pipeline file location and environment variables needed
+4. **How to Run** — The make command to execute the tests
+
+### README Template
+
+````markdown
+# [Pipeline Type] Pipeline Import Tests
+
+To create pipeline import test cases, you need:
+- **Pipeline .slp file** — Exported from SnapLogic Designer, placed in `src/pipelines/`
+- **Test case file** — Robot Framework test that uses `Import Pipelines From Template` to import the pipeline
+
+## Purpose
+Imports [Pipeline Type] pipeline(s) into SnapLogic for testing.
+
+## File Structure
+```
+project-root/
+├── src/
+│   └── pipelines/
+│       └── [pipeline_name].slp                                ← Pipeline file (.slp)
+├── test/
+│   └── suite/
+│       └── pipeline_tests/
+│           └── [pipeline_type]/
+│               ├── [pipeline_type]_pipeline_import.robot      ← Test case file
+│               └── PIPELINE_IMPORT_README.md                  ← This file
+└── .env                                                       ← Environment configuration
+```
+
+## Prerequisites
+1. Pipeline `.slp` file must exist in `src/pipelines/`
+2. Pipeline must be tested and working in SnapLogic Designer
+3. Required accounts must be created before pipeline import
+4. Environment variables configured:
+   - `${PIPELINES_LOCATION_PATH}` — SnapLogic folder path for pipeline import
+   - `${unique_id}` — Generated from suite setup
+
+## How to Run
+```bash
+make robot-run-all-tests TAGS="[pipeline_type]" PROJECT_SPACE_SETUP=True
+```
+````
+
+---
+
 ## Troubleshooting
 
 ### Common Issues
@@ -509,3 +776,4 @@ Import Pipeline
 - [ ] Test has appropriate tags
 - [ ] Documentation describes the pipeline being imported
 - [ ] Required accounts are created before pipeline import (if pipeline references them)
+- [ ] **PIPELINE_IMPORT_README.md created with file structure diagram**

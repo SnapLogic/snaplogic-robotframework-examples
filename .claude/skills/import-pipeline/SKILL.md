@@ -23,15 +23,15 @@ Parse what the user wants:
 - Show template or examples?
 - Questions about pipeline parameterization?
 
-### Step 3: Follow the Guide
-Use the detailed instructions from the file you loaded in Step 1 to:
-- Show the prerequisites for pipeline import
-- Verify pipeline .slp file location
-- Create or explain the test case
-- Provide troubleshooting if needed
+### Step 3: Follow the Guide — Create ALL Required Files (MANDATORY)
+When creating pipeline import test cases, you **MUST call the Write tool** to create ALL required files. Never skip any file. Never say "file already exists". Always write them fresh:
+1. **Robot test file** (`.robot`) in `test/suite/pipeline_tests/[type]/` — WRITE this
+2. **PIPELINE_IMPORT_README.md** with file structure tree diagram in the same test directory — WRITE this
+
+Use the detailed instructions from the file you loaded in Step 1 for templates and conventions.
 
 ### Step 4: Respond to User
-Provide the requested information or create the test case based on the complete guide.
+Provide the created files or requested information based on the complete guide.
 
 ---
 
