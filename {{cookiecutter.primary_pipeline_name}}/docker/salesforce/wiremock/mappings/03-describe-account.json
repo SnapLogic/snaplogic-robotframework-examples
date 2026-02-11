@@ -1,5 +1,5 @@
 {
-  "priority": 2,
+  "priority": 1,
   "name": "Describe Account Object",
   "request": {
     "method": "GET",

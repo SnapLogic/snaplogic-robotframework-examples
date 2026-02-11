@@ -1,0 +1,115 @@
+{
+  "priority": 1,
+  "name": "Describe Case Object",
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/services/data/v[0-9]+\\.[0-9]+/sobjects/Case/describe"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "name": "Case",
+      "label": "Case",
+      "keyPrefix": "500",
+      "createable": true,
+      "updateable": true,
+      "deletable": true,
+      "queryable": true,
+      "searchable": true,
+      "fields": [
+        {
+          "name": "Id",
+          "type": "id",
+          "label": "Case ID",
+          "length": 18,
+          "updateable": false,
+          "createable": false,
+          "nillable": false
+        },
+        {
+          "name": "Subject",
+          "type": "string",
+          "label": "Subject",
+          "length": 255,
+          "updateable": true,
+          "createable": true,
+          "nillable": true
+        },
+        {
+          "name": "Description",
+          "type": "textarea",
+          "label": "Description",
+          "length": 32000,
+          "updateable": true,
+          "createable": true,
+          "nillable": true
+        },
+        {
+          "name": "Status",
+          "type": "picklist",
+          "label": "Status",
+          "length": 255,
+          "updateable": true,
+          "createable": true,
+          "nillable": false,
+          "picklistValues": [
+            { "value": "New", "active": true, "defaultValue": true },
+            { "value": "Working", "active": true, "defaultValue": false },
+            { "value": "Escalated", "active": true, "defaultValue": false },
+            { "value": "Closed", "active": true, "defaultValue": false }
+          ]
+        },
+        {
+          "name": "Priority",
+          "type": "picklist",
+          "label": "Priority",
+          "length": 255,
+          "updateable": true,
+          "createable": true,
+          "nillable": true,
+          "picklistValues": [
+            { "value": "High", "active": true, "defaultValue": false },
+            { "value": "Medium", "active": true, "defaultValue": true },
+            { "value": "Low", "active": true, "defaultValue": false }
+          ]
+        },
+        {
+          "name": "Origin",
+          "type": "picklist",
+          "label": "Case Origin",
+          "length": 255,
+          "updateable": true,
+          "createable": true,
+          "nillable": true,
+          "picklistValues": [
+            { "value": "Phone", "active": true, "defaultValue": false },
+            { "value": "Email", "active": true, "defaultValue": false },
+            { "value": "Web", "active": true, "defaultValue": false }
+          ]
+        },
+        {
+          "name": "AccountId",
+          "type": "reference",
+          "label": "Account ID",
+          "length": 18,
+          "updateable": true,
+          "createable": true,
+          "nillable": true,
+          "referenceTo": ["Account"]
+        },
+        {
+          "name": "ContactId",
+          "type": "reference",
+          "label": "Contact ID",
+          "length": 18,
+          "updateable": true,
+          "createable": true,
+          "nillable": true,
+          "referenceTo": ["Contact"]
+        }
+      ]
+    },
+    "transformers": ["response-template"]
+  }
+}

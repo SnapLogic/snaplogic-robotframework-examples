@@ -1,0 +1,98 @@
+{
+  "priority": 1,
+  "name": "Describe Contact Object",
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/services/data/v[0-9]+\\.[0-9]+/sobjects/Contact/describe"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "name": "Contact",
+      "label": "Contact",
+      "keyPrefix": "003",
+      "createable": true,
+      "updateable": true,
+      "deletable": true,
+      "queryable": true,
+      "searchable": true,
+      "fields": [
+        {
+          "name": "Id",
+          "type": "id",
+          "label": "Contact ID",
+          "length": 18,
+          "updateable": false,
+          "createable": false,
+          "nillable": false
+        },
+        {
+          "name": "FirstName",
+          "type": "string",
+          "label": "First Name",
+          "length": 40,
+          "updateable": true,
+          "createable": true,
+          "nillable": true
+        },
+        {
+          "name": "LastName",
+          "type": "string",
+          "label": "Last Name",
+          "length": 80,
+          "updateable": true,
+          "createable": true,
+          "nillable": false
+        },
+        {
+          "name": "Email",
+          "type": "email",
+          "label": "Email",
+          "length": 80,
+          "updateable": true,
+          "createable": true,
+          "nillable": true
+        },
+        {
+          "name": "Phone",
+          "type": "phone",
+          "label": "Business Phone",
+          "length": 40,
+          "updateable": true,
+          "createable": true,
+          "nillable": true
+        },
+        {
+          "name": "AccountId",
+          "type": "reference",
+          "label": "Account ID",
+          "length": 18,
+          "updateable": true,
+          "createable": true,
+          "nillable": true,
+          "referenceTo": ["Account"]
+        },
+        {
+          "name": "Title",
+          "type": "string",
+          "label": "Title",
+          "length": 128,
+          "updateable": true,
+          "createable": true,
+          "nillable": true
+        },
+        {
+          "name": "Department",
+          "type": "string",
+          "label": "Department",
+          "length": 80,
+          "updateable": true,
+          "createable": true,
+          "nillable": true
+        }
+      ]
+    },
+    "transformers": ["response-template"]
+  }
+}

@@ -10,19 +10,19 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
-        
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
         }
-        
+
         .header {
             background: white;
             border-radius: 10px;
@@ -30,42 +30,62 @@
             margin-bottom: 20px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        
+
         .header h1 {
             color: #333;
             display: flex;
             align-items: center;
             gap: 10px;
         }
-        
+
         .stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
             margin-bottom: 20px;
         }
-        
+
         .stat-card {
             background: white;
             border-radius: 10px;
-            padding: 20px;
+            padding: 15px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             text-align: center;
         }
-        
+
         .stat-card h3 {
             color: #666;
-            font-size: 14px;
-            margin-bottom: 10px;
+            font-size: 11px;
+            margin-bottom: 8px;
             text-transform: uppercase;
         }
-        
+
         .stat-card .number {
-            font-size: 36px;
+            font-size: 28px;
             font-weight: bold;
             color: #667eea;
         }
-        
+
+        .stat-card.create-stat .number { color: #27ae60; }
+        .stat-card.update-stat .number { color: #f39c12; }
+        .stat-card.delete-stat .number { color: #e74c3c; }
+
+        .section-divider {
+            background: white;
+            border-radius: 10px;
+            padding: 12px 20px;
+            margin: 25px 0 15px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .section-divider h2 {
+            color: #333;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         .data-section {
             background: white;
             border-radius: 10px;
@@ -73,7 +93,7 @@
             margin-bottom: 20px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        
+
         .data-section h2 {
             color: #333;
             margin-bottom: 15px;
@@ -81,16 +101,29 @@
             justify-content: space-between;
             align-items: center;
         }
-        
+
+        .data-section h2 .badge {
+            background: #667eea;
+            color: white;
+            font-size: 12px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: normal;
+        }
+
+        .data-section h2 .badge.update-badge { background: #f39c12; }
+        .data-section h2 .badge.delete-badge { background: #e74c3c; }
+        .data-section h2 .badge.create-badge { background: #27ae60; }
+
         .table-container {
             overflow-x: auto;
         }
-        
+
         table {
             width: 100%;
             border-collapse: collapse;
         }
-        
+
         th {
             background: #f7f7f7;
             padding: 12px;
@@ -99,16 +132,30 @@
             color: #333;
             border-bottom: 2px solid #e0e0e0;
         }
-        
+
         td {
             padding: 12px;
             border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
         }
-        
+
         tr:hover {
             background: #f9f9f9;
         }
-        
+
+        .nested-json {
+            background: #f9f9f9;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            max-width: 400px;
+            max-height: 80px;
+            overflow: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
         .btn {
             background: #667eea;
             color: white;
@@ -119,39 +166,44 @@
             font-size: 14px;
             transition: all 0.3s;
         }
-        
+
         .btn:hover {
             background: #5a67d8;
             transform: translateY(-2px);
         }
-        
+
         .btn-danger {
             background: #e74c3c;
         }
-        
+
         .btn-danger:hover {
             background: #c0392b;
         }
-        
+
         .btn-success {
             background: #27ae60;
         }
-        
+
         .btn-success:hover {
             background: #229954;
         }
-        
+
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 12px;
+        }
+
         .actions {
             display: flex;
             gap: 10px;
         }
-        
+
         .loading {
             text-align: center;
             padding: 40px;
             color: #999;
         }
-        
+
         .error {
             background: #ffe6e6;
             color: #e74c3c;
@@ -159,7 +211,14 @@
             border-radius: 5px;
             margin-bottom: 20px;
         }
-        
+
+        .empty-msg {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-style: italic;
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -172,7 +231,7 @@
             align-items: center;
             z-index: 1000;
         }
-        
+
         .modal-content {
             background: white;
             padding: 30px;
@@ -180,21 +239,21 @@
             max-width: 500px;
             width: 90%;
         }
-        
+
         .modal h3 {
             margin-bottom: 20px;
         }
-        
+
         .form-group {
             margin-bottom: 15px;
         }
-        
+
         .form-group label {
             display: block;
             margin-bottom: 5px;
             font-weight: 600;
         }
-        
+
         .form-group input, .form-group select {
             width: 100%;
             padding: 8px 12px;
@@ -202,7 +261,7 @@
             border-radius: 5px;
             font-size: 14px;
         }
-        
+
         .json-view {
             background: #f4f4f4;
             padding: 15px;
@@ -213,14 +272,46 @@
             overflow-y: auto;
             white-space: pre-wrap;
         }
-        
+
         .refresh-btn {
             animation: spin 2s linear infinite;
         }
-        
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+
+        .tab-nav {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover, .tab-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
         }
     </style>
 </head>
@@ -228,113 +319,447 @@
     <div class="container">
         <div class="header">
             <h1>
-                📊 Salesforce JSON-DB Dashboard
-                <button class="btn btn-success" onclick="refreshData()">🔄 Refresh</button>
+                Salesforce JSON-DB Dashboard
+                <button class="btn btn-success" onclick="refreshData()">Refresh</button>
             </h1>
         </div>
-        
+
+        <!-- Stats Row -->
         <div class="stats">
-            <div class="stat-card">
+            <div class="stat-card create-stat">
                 <h3>Accounts</h3>
                 <div class="number" id="accountCount">-</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card create-stat">
                 <h3>Contacts</h3>
                 <div class="number" id="contactCount">-</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card create-stat">
                 <h3>Opportunities</h3>
                 <div class="number" id="opportunityCount">-</div>
+            </div>
+            <div class="stat-card create-stat">
+                <h3>Leads</h3>
+                <div class="number" id="leadCount">-</div>
+            </div>
+            <div class="stat-card create-stat">
+                <h3>Cases</h3>
+                <div class="number" id="caseCount">-</div>
+            </div>
+            <div class="stat-card update-stat">
+                <h3>Total Updates</h3>
+                <div class="number" id="totalUpdates">-</div>
+            </div>
+            <div class="stat-card delete-stat">
+                <h3>Total Deletes</h3>
+                <div class="number" id="totalDeletes">-</div>
             </div>
             <div class="stat-card">
                 <h3>Total Records</h3>
                 <div class="number" id="totalCount">-</div>
             </div>
         </div>
-        
+
+        <!-- Tab Navigation -->
         <div class="data-section">
-            <h2>
-                Accounts
-                <button class="btn" onclick="showCreateAccountModal()">+ Add Account</button>
-            </h2>
-            <div class="table-container">
-                <table id="accountsTable">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Type</th>
-                            <th>Industry</th>
-                            <th>Annual Revenue</th>
-                            <th>Employees</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td colspan="7" class="loading">Loading...</td></tr>
-                    </tbody>
-                </table>
+            <div class="tab-nav">
+                <button class="tab-btn active" onclick="showTab('accounts-tab')">Accounts</button>
+                <button class="tab-btn" onclick="showTab('contacts-tab')">Contacts</button>
+                <button class="tab-btn" onclick="showTab('opportunities-tab')">Opportunities</button>
+                <button class="tab-btn" onclick="showTab('leads-tab')">Leads</button>
+                <button class="tab-btn" onclick="showTab('cases-tab')">Cases</button>
+                <button class="tab-btn" onclick="showTab('updates-tab')">Updates Audit</button>
+                <button class="tab-btn" onclick="showTab('deletes-tab')">Deletes Audit</button>
+                <button class="tab-btn" onclick="showTab('json-tab')">Raw JSON</button>
             </div>
         </div>
-        
-        <div class="data-section">
-            <h2>
-                Contacts
-                <button class="btn" onclick="showCreateContactModal()">+ Add Contact</button>
-            </h2>
-            <div class="table-container">
-                <table id="contactsTable">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>First Name</th>
-                            <th>Last Name</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th>Account ID</th>
-                            <th>Title</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td colspan="8" class="loading">Loading...</td></tr>
-                    </tbody>
-                </table>
+
+        <!-- ==================== ACCOUNTS TAB ==================== -->
+        <div id="accounts-tab" class="tab-content active">
+            <div class="data-section">
+                <h2>
+                    Accounts <span class="badge create-badge" id="accountBadge">0</span>
+                    <button class="btn" onclick="showCreateAccountModal()">+ Add Account</button>
+                </h2>
+                <div class="table-container">
+                    <table id="accountsTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Industry</th>
+                                <th>Annual Revenue</th>
+                                <th>Employees</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="7" class="loading">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
-        
-        <div class="data-section">
-            <h2>
-                Opportunities
-                <button class="btn" onclick="showCreateOpportunityModal()">+ Add Opportunity</button>
-            </h2>
-            <div class="table-container">
-                <table id="opportunitiesTable">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Account ID</th>
-                            <th>Amount</th>
-                            <th>Close Date</th>
-                            <th>Stage</th>
-                            <th>Probability</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td colspan="8" class="loading">Loading...</td></tr>
-                    </tbody>
-                </table>
+
+        <!-- ==================== CONTACTS TAB ==================== -->
+        <div id="contacts-tab" class="tab-content">
+            <div class="data-section">
+                <h2>
+                    Contacts <span class="badge create-badge" id="contactBadge">0</span>
+                </h2>
+                <div class="table-container">
+                    <table id="contactsTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>First Name</th>
+                                <th>Last Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Account ID</th>
+                                <th>Title</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="8" class="loading">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
-        
-        <div class="data-section">
-            <h2>Raw JSON View</h2>
-            <div class="json-view" id="jsonView">Loading...</div>
+
+        <!-- ==================== OPPORTUNITIES TAB ==================== -->
+        <div id="opportunities-tab" class="tab-content">
+            <div class="data-section">
+                <h2>
+                    Opportunities <span class="badge create-badge" id="opportunityBadge">0</span>
+                </h2>
+                <div class="table-container">
+                    <table id="opportunitiesTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Account ID</th>
+                                <th>Amount</th>
+                                <th>Close Date</th>
+                                <th>Stage</th>
+                                <th>Probability</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="8" class="loading">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== LEADS TAB ==================== -->
+        <div id="leads-tab" class="tab-content">
+            <div class="data-section">
+                <h2>
+                    Leads <span class="badge create-badge" id="leadBadge">0</span>
+                </h2>
+                <div class="table-container">
+                    <table id="leadsTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>First Name</th>
+                                <th>Last Name</th>
+                                <th>Company</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Status</th>
+                                <th>Lead Source</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="9" class="loading">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== CASES TAB ==================== -->
+        <div id="cases-tab" class="tab-content">
+            <div class="data-section">
+                <h2>
+                    Cases <span class="badge create-badge" id="caseBadge">0</span>
+                </h2>
+                <div class="table-container">
+                    <table id="casesTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Subject</th>
+                                <th>Status</th>
+                                <th>Priority</th>
+                                <th>Origin</th>
+                                <th>Account ID</th>
+                                <th>Contact ID</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="8" class="loading">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== UPDATES AUDIT TAB ==================== -->
+        <div id="updates-tab" class="tab-content">
+            <!-- Account Updates -->
+            <div class="data-section">
+                <h2>
+                    Account Updates <span class="badge update-badge" id="accountUpdateBadge">0</span>
+                </h2>
+                <div class="table-container">
+                    <table id="accountUpdatesTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>SF ID</th>
+                                <th>Timestamp</th>
+                                <th>Updated Fields</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="5" class="empty-msg">No account updates</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Contact Updates -->
+            <div class="data-section">
+                <h2>
+                    Contact Updates <span class="badge update-badge" id="contactUpdateBadge">0</span>
+                </h2>
+                <div class="table-container">
+                    <table id="contactUpdatesTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>SF ID</th>
+                                <th>Timestamp</th>
+                                <th>Updated Fields</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="5" class="empty-msg">No contact updates</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Opportunity Updates -->
+            <div class="data-section">
+                <h2>
+                    Opportunity Updates <span class="badge update-badge" id="opportunityUpdateBadge">0</span>
+                </h2>
+                <div class="table-container">
+                    <table id="opportunityUpdatesTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>SF ID</th>
+                                <th>Timestamp</th>
+                                <th>Updated Fields</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="5" class="empty-msg">No opportunity updates</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Lead Updates -->
+            <div class="data-section">
+                <h2>
+                    Lead Updates <span class="badge update-badge" id="leadUpdateBadge">0</span>
+                </h2>
+                <div class="table-container">
+                    <table id="leadUpdatesTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>SF ID</th>
+                                <th>Timestamp</th>
+                                <th>Updated Fields</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="5" class="empty-msg">No lead updates</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Case Updates -->
+            <div class="data-section">
+                <h2>
+                    Case Updates <span class="badge update-badge" id="caseUpdateBadge">0</span>
+                </h2>
+                <div class="table-container">
+                    <table id="caseUpdatesTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>SF ID</th>
+                                <th>Timestamp</th>
+                                <th>Updated Fields</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="5" class="empty-msg">No case updates</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== DELETES AUDIT TAB ==================== -->
+        <div id="deletes-tab" class="tab-content">
+            <!-- Account Deletes -->
+            <div class="data-section">
+                <h2>
+                    Account Deletes <span class="badge delete-badge" id="accountDeleteBadge">0</span>
+                </h2>
+                <div class="table-container">
+                    <table id="accountDeletesTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>SF ID</th>
+                                <th>Timestamp</th>
+                                <th>Details</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="5" class="empty-msg">No account deletes</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Contact Deletes -->
+            <div class="data-section">
+                <h2>
+                    Contact Deletes <span class="badge delete-badge" id="contactDeleteBadge">0</span>
+                </h2>
+                <div class="table-container">
+                    <table id="contactDeletesTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>SF ID</th>
+                                <th>Timestamp</th>
+                                <th>Details</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="5" class="empty-msg">No contact deletes</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Opportunity Deletes -->
+            <div class="data-section">
+                <h2>
+                    Opportunity Deletes <span class="badge delete-badge" id="opportunityDeleteBadge">0</span>
+                </h2>
+                <div class="table-container">
+                    <table id="opportunityDeletesTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>SF ID</th>
+                                <th>Timestamp</th>
+                                <th>Details</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="5" class="empty-msg">No opportunity deletes</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Lead Deletes -->
+            <div class="data-section">
+                <h2>
+                    Lead Deletes <span class="badge delete-badge" id="leadDeleteBadge">0</span>
+                </h2>
+                <div class="table-container">
+                    <table id="leadDeletesTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>SF ID</th>
+                                <th>Timestamp</th>
+                                <th>Details</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="5" class="empty-msg">No lead deletes</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Case Deletes -->
+            <div class="data-section">
+                <h2>
+                    Case Deletes <span class="badge delete-badge" id="caseDeleteBadge">0</span>
+                </h2>
+                <div class="table-container">
+                    <table id="caseDeletesTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>SF ID</th>
+                                <th>Timestamp</th>
+                                <th>Details</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="5" class="empty-msg">No case deletes</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== RAW JSON TAB ==================== -->
+        <div id="json-tab" class="tab-content">
+            <div class="data-section">
+                <h2>Raw JSON View</h2>
+                <div class="json-view" id="jsonView">Loading...</div>
+            </div>
         </div>
     </div>
-    
+
     <!-- Create Account Modal -->
     <div id="createAccountModal" class="modal">
         <div class="modal-content">
@@ -375,67 +800,155 @@
             </form>
         </div>
     </div>
-    
+
     <script>
         const API_BASE = 'http://localhost:8082';
         let dbData = {};
-        
+
+        // ==================== TAB NAVIGATION ====================
+        function showTab(tabId) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            // Show selected tab
+            document.getElementById(tabId).classList.add('active');
+
+            // Highlight button
+            const buttons = document.querySelectorAll('.tab-btn');
+            const tabIndex = ['accounts-tab', 'contacts-tab', 'opportunities-tab', 'leads-tab', 'cases-tab', 'updates-tab', 'deletes-tab', 'json-tab'].indexOf(tabId);
+            if (tabIndex >= 0 && buttons[tabIndex]) {
+                buttons[tabIndex].classList.add('active');
+            }
+        }
+
+        // ==================== DATA FETCHING ====================
         async function fetchData() {
             try {
-                // Add visual feedback
                 document.querySelector('h1').style.opacity = '0.5';
-                
+
                 const response = await fetch(`${API_BASE}/db`);
                 if (!response.ok) throw new Error('Failed to fetch data');
                 dbData = await response.json();
                 updateUI();
-                
-                // Restore opacity
+
                 document.querySelector('h1').style.opacity = '1';
+                document.querySelector('h1').style.color = '#333';
             } catch (error) {
                 console.error('Error fetching data:', error);
-                // Don't alert on every error with 1-second refresh
-                // alert('Error: Make sure JSON Server is running on port 8082');
                 document.querySelector('h1').style.color = 'red';
             }
         }
-        
+
+        // ==================== HELPER: Render Audit Table ====================
+        function renderAuditTable(tableId, data, type) {
+            const tbody = document.querySelector(`#${tableId} tbody`);
+            if (data?.length) {
+                tbody.innerHTML = data.map((record, index) => {
+                    const fields = record._updatedFields || record._deleteInfo || record;
+                    const fieldsJson = JSON.stringify(fields, null, 2);
+                    return `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${record._sfId || '-'}</td>
+                            <td>${record._timestamp || '-'}</td>
+                            <td><div class="nested-json">${escapeHtml(fieldsJson)}</div></td>
+                            <td class="actions">
+                                <button class="btn btn-danger btn-sm" onclick="deleteRecord('${type}', '${record.id}')">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } else {
+                tbody.innerHTML = `<tr><td colspan="5" class="empty-msg">No ${type.replace(/_/g, ' ')} recorded</td></tr>`;
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ==================== UI UPDATE ====================
         function updateUI() {
-            // Update counts
-            document.getElementById('accountCount').textContent = dbData.accounts?.length || 0;
-            document.getElementById('contactCount').textContent = dbData.contacts?.length || 0;
-            document.getElementById('opportunityCount').textContent = dbData.opportunities?.length || 0;
-            document.getElementById('totalCount').textContent = 
-                (dbData.accounts?.length || 0) + 
-                (dbData.contacts?.length || 0) + 
-                (dbData.opportunities?.length || 0);
-            
-            // Update accounts table
+            // --- Stat Counts ---
+            const accountCount = dbData.accounts?.length || 0;
+            const contactCount = dbData.contacts?.length || 0;
+            const oppCount = dbData.opportunities?.length || 0;
+            const leadCount = dbData.leads?.length || 0;
+            const caseCount = dbData.cases?.length || 0;
+
+            const accUpdates = dbData.account_updates?.length || 0;
+            const conUpdates = dbData.contact_updates?.length || 0;
+            const oppUpdates = dbData.opportunity_updates?.length || 0;
+            const leadUpdates = dbData.lead_updates?.length || 0;
+            const caseUpdates = dbData.case_updates?.length || 0;
+            const totalUpdates = accUpdates + conUpdates + oppUpdates + leadUpdates + caseUpdates;
+
+            const accDeletes = dbData.account_deletes?.length || 0;
+            const conDeletes = dbData.contact_deletes?.length || 0;
+            const oppDeletes = dbData.opportunity_deletes?.length || 0;
+            const leadDeletes = dbData.lead_deletes?.length || 0;
+            const caseDeletes = dbData.case_deletes?.length || 0;
+            const totalDeletes = accDeletes + conDeletes + oppDeletes + leadDeletes + caseDeletes;
+
+            const totalRecords = accountCount + contactCount + oppCount + leadCount + caseCount + totalUpdates + totalDeletes;
+
+            document.getElementById('accountCount').textContent = accountCount;
+            document.getElementById('contactCount').textContent = contactCount;
+            document.getElementById('opportunityCount').textContent = oppCount;
+            document.getElementById('leadCount').textContent = leadCount;
+            document.getElementById('caseCount').textContent = caseCount;
+            document.getElementById('totalUpdates').textContent = totalUpdates;
+            document.getElementById('totalDeletes').textContent = totalDeletes;
+            document.getElementById('totalCount').textContent = totalRecords;
+
+            // --- Badges ---
+            document.getElementById('accountBadge').textContent = accountCount;
+            document.getElementById('contactBadge').textContent = contactCount;
+            document.getElementById('opportunityBadge').textContent = oppCount;
+            document.getElementById('leadBadge').textContent = leadCount;
+            document.getElementById('caseBadge').textContent = caseCount;
+
+            document.getElementById('accountUpdateBadge').textContent = accUpdates;
+            document.getElementById('contactUpdateBadge').textContent = conUpdates;
+            document.getElementById('opportunityUpdateBadge').textContent = oppUpdates;
+            document.getElementById('leadUpdateBadge').textContent = leadUpdates;
+            document.getElementById('caseUpdateBadge').textContent = caseUpdates;
+
+            document.getElementById('accountDeleteBadge').textContent = accDeletes;
+            document.getElementById('contactDeleteBadge').textContent = conDeletes;
+            document.getElementById('opportunityDeleteBadge').textContent = oppDeletes;
+            document.getElementById('leadDeleteBadge').textContent = leadDeletes;
+            document.getElementById('caseDeleteBadge').textContent = caseDeletes;
+
+            // --- ACCOUNTS TABLE ---
             const accountsBody = document.querySelector('#accountsTable tbody');
             if (dbData.accounts?.length) {
                 accountsBody.innerHTML = dbData.accounts.map(account => `
                     <tr>
-                        <td>${account.id}</td>
-                        <td><strong>${account.Name}</strong></td>
+                        <td>${account.id || '-'}</td>
+                        <td><strong>${account.Name || '-'}</strong></td>
                         <td>${account.Type || '-'}</td>
                         <td>${account.Industry || '-'}</td>
                         <td>$${(account.AnnualRevenue || 0).toLocaleString()}</td>
                         <td>${account.NumberOfEmployees || '-'}</td>
                         <td class="actions">
-                            <button class="btn btn-danger" onclick="deleteRecord('accounts', '${account.id}')">Delete</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteRecord('accounts', '${account.id}')">Delete</button>
                         </td>
                     </tr>
                 `).join('');
             } else {
-                accountsBody.innerHTML = '<tr><td colspan="7">No accounts found</td></tr>';
+                accountsBody.innerHTML = '<tr><td colspan="7" class="empty-msg">No accounts found</td></tr>';
             }
-            
-            // Update contacts table
+
+            // --- CONTACTS TABLE ---
             const contactsBody = document.querySelector('#contactsTable tbody');
             if (dbData.contacts?.length) {
                 contactsBody.innerHTML = dbData.contacts.map(contact => `
                     <tr>
-                        <td>${contact.id}</td>
+                        <td>${contact.id || '-'}</td>
                         <td>${contact.FirstName || '-'}</td>
                         <td>${contact.LastName || '-'}</td>
                         <td>${contact.Email || '-'}</td>
@@ -443,47 +956,105 @@
                         <td>${contact.AccountId || '-'}</td>
                         <td>${contact.Title || '-'}</td>
                         <td class="actions">
-                            <button class="btn btn-danger" onclick="deleteRecord('contacts', '${contact.id}')">Delete</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteRecord('contacts', '${contact.id}')">Delete</button>
                         </td>
                     </tr>
                 `).join('');
             } else {
-                contactsBody.innerHTML = '<tr><td colspan="8">No contacts found</td></tr>';
+                contactsBody.innerHTML = '<tr><td colspan="8" class="empty-msg">No contacts found</td></tr>';
             }
-            
-            // Update opportunities table
+
+            // --- OPPORTUNITIES TABLE ---
             const oppsBody = document.querySelector('#opportunitiesTable tbody');
             if (dbData.opportunities?.length) {
                 oppsBody.innerHTML = dbData.opportunities.map(opp => `
                     <tr>
-                        <td>${opp.id}</td>
-                        <td><strong>${opp.Name}</strong></td>
+                        <td>${opp.id || '-'}</td>
+                        <td><strong>${opp.Name || '-'}</strong></td>
                         <td>${opp.AccountId || '-'}</td>
                         <td>$${(opp.Amount || 0).toLocaleString()}</td>
                         <td>${opp.CloseDate || '-'}</td>
                         <td>${opp.StageName || '-'}</td>
                         <td>${opp.Probability || 0}%</td>
                         <td class="actions">
-                            <button class="btn btn-danger" onclick="deleteRecord('opportunities', '${opp.id}')">Delete</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteRecord('opportunities', '${opp.id}')">Delete</button>
                         </td>
                     </tr>
                 `).join('');
             } else {
-                oppsBody.innerHTML = '<tr><td colspan="8">No opportunities found</td></tr>';
+                oppsBody.innerHTML = '<tr><td colspan="8" class="empty-msg">No opportunities found</td></tr>';
             }
-            
-            // Update JSON view
+
+            // --- LEADS TABLE ---
+            const leadsBody = document.querySelector('#leadsTable tbody');
+            if (dbData.leads?.length) {
+                leadsBody.innerHTML = dbData.leads.map(lead => `
+                    <tr>
+                        <td>${lead.id || '-'}</td>
+                        <td>${lead.FirstName || '-'}</td>
+                        <td>${lead.LastName || '-'}</td>
+                        <td>${lead.Company || '-'}</td>
+                        <td>${lead.Email || '-'}</td>
+                        <td>${lead.Phone || '-'}</td>
+                        <td>${lead.Status || '-'}</td>
+                        <td>${lead.LeadSource || '-'}</td>
+                        <td class="actions">
+                            <button class="btn btn-danger btn-sm" onclick="deleteRecord('leads', '${lead.id}')">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } else {
+                leadsBody.innerHTML = '<tr><td colspan="9" class="empty-msg">No leads found</td></tr>';
+            }
+
+            // --- CASES TABLE ---
+            const casesBody = document.querySelector('#casesTable tbody');
+            if (dbData.cases?.length) {
+                casesBody.innerHTML = dbData.cases.map(c => `
+                    <tr>
+                        <td>${c.id || '-'}</td>
+                        <td><strong>${c.Subject || '-'}</strong></td>
+                        <td>${c.Status || '-'}</td>
+                        <td>${c.Priority || '-'}</td>
+                        <td>${c.Origin || '-'}</td>
+                        <td>${c.AccountId || '-'}</td>
+                        <td>${c.ContactId || '-'}</td>
+                        <td class="actions">
+                            <button class="btn btn-danger btn-sm" onclick="deleteRecord('cases', '${c.id}')">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } else {
+                casesBody.innerHTML = '<tr><td colspan="8" class="empty-msg">No cases found</td></tr>';
+            }
+
+            // --- UPDATE AUDIT TABLES ---
+            renderAuditTable('accountUpdatesTable', dbData.account_updates, 'account_updates');
+            renderAuditTable('contactUpdatesTable', dbData.contact_updates, 'contact_updates');
+            renderAuditTable('opportunityUpdatesTable', dbData.opportunity_updates, 'opportunity_updates');
+            renderAuditTable('leadUpdatesTable', dbData.lead_updates, 'lead_updates');
+            renderAuditTable('caseUpdatesTable', dbData.case_updates, 'case_updates');
+
+            // --- DELETE AUDIT TABLES ---
+            renderAuditTable('accountDeletesTable', dbData.account_deletes, 'account_deletes');
+            renderAuditTable('contactDeletesTable', dbData.contact_deletes, 'contact_deletes');
+            renderAuditTable('opportunityDeletesTable', dbData.opportunity_deletes, 'opportunity_deletes');
+            renderAuditTable('leadDeletesTable', dbData.lead_deletes, 'lead_deletes');
+            renderAuditTable('caseDeletesTable', dbData.case_deletes, 'case_deletes');
+
+            // --- RAW JSON ---
             document.getElementById('jsonView').textContent = JSON.stringify(dbData, null, 2);
         }
-        
+
+        // ==================== CRUD OPERATIONS ====================
         async function deleteRecord(type, id) {
-            if (!confirm(`Delete this ${type.slice(0, -1)}?`)) return;
-            
+            if (!confirm(`Delete this record from ${type.replace(/_/g, ' ')}?`)) return;
+
             try {
                 const response = await fetch(`${API_BASE}/${type}/${id}`, {
                     method: 'DELETE'
                 });
-                
+
                 if (response.ok) {
                     await fetchData();
                 } else {
@@ -494,30 +1065,22 @@
                 alert('Error deleting record');
             }
         }
-        
+
         function showCreateAccountModal() {
             document.getElementById('createAccountModal').style.display = 'flex';
         }
-        
-        function showCreateContactModal() {
-            alert('Contact creation modal not implemented in this demo');
-        }
-        
-        function showCreateOpportunityModal() {
-            alert('Opportunity creation modal not implemented in this demo');
-        }
-        
+
         function closeModal() {
             document.getElementById('createAccountModal').style.display = 'none';
         }
-        
+
         async function refreshData() {
             const btn = event.target;
             btn.classList.add('refresh-btn');
             await fetchData();
             setTimeout(() => btn.classList.remove('refresh-btn'), 500);
         }
-        
+
         // Handle account creation
         document.getElementById('createAccountForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -526,14 +1089,14 @@
             formData.forEach((value, key) => {
                 if (value) account[key] = value;
             });
-            
+
             try {
                 const response = await fetch(`${API_BASE}/accounts`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(account)
                 });
-                
+
                 if (response.ok) {
                     closeModal();
                     e.target.reset();
@@ -546,10 +1109,10 @@
                 alert('Error creating account');
             }
         });
-        
-        // Auto-refresh every 1 second
-        setInterval(fetchData, 1000);
-        
+
+        // Auto-refresh every 2 seconds
+        setInterval(fetchData, 2000);
+
         // Initial load
         fetchData();
     </script>

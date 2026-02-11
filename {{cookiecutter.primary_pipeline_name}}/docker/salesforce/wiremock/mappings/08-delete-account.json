@@ -1,0 +1,25 @@
+{
+  "priority": 1,
+  "name": "Delete Account - Log to JSON Server via Webhook",
+  "request": {
+    "method": "DELETE",
+    "urlPathPattern": "/services/data/v[0-9]+\\.[0-9]+/sobjects/Account/[A-Za-z0-9]+"
+  },
+  "response": {
+    "status": 204,
+    "transformers": ["response-template"]
+  },
+  "serveEventListeners": [
+    {
+      "name": "webhook",
+      "parameters": {
+        "method": "POST",
+        "url": "http://salesforce-json-mock/account_deletes",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\"_sfId\": \"{{request.pathSegments.[5]}}\", \"_operation\": \"DELETE\", \"_timestamp\": \"{{now}}\"}"
+      }
+    }
+  ]
+}

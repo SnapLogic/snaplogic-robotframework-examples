@@ -13,8 +13,7 @@ Library             pymysql    # MySQL specific operations
 Library             DependencyLibrary
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource    # SnapLogic API keywords from installed package
 Resource            ../../../resources/common/files.resource    # CSV/JSON file operations
-
-Suite Setup         Check connections    # Check if the connection to the MySQL database is successful and snaplex is up
+# Suite Setup    Check connections    # Check if the connection to the MySQL database is successful and snaplex is up
 
 
 *** Variables ***
@@ -57,17 +56,6 @@ Create Account
 
 
 *** Keywords ***
-Check connections
-    [Documentation]    Verifies MySQL database connection and Snaplex availability
-    Wait Until Plex Status Is Up    /${ORG_NAME}/${GROUNDPLEX_LOCATION_PATH}/${GROUNDPLEX_NAME}
-    Connect to MySQL Database
-    ...    ${MYSQL_DATABASE}
-    ...    ${MYSQL_USER}
-    ...    ${MYSQL_PASSWORD}
-    ...    ${MYSQL_HOST}
-    ...    ${MYSQL_PORT}
-    Initialize Variables
-
 Initialize Variables
     ${unique_id}=    Get Unique Id
     Set Suite Variable    ${unique_id}    ${unique_id}
