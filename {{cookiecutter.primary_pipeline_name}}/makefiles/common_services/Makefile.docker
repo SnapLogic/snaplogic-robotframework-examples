@@ -407,7 +407,7 @@ reinstall-snaplogic-common-robot:
 	@echo ""
 	@echo "📦 Step 2/4: Installing snaplogic-common-robot..."
 	@echo "   Using: pip install snaplogic-common-robot --upgrade --no-cache-dir"
-	@docker exec snaplogic-test-example-tools-container pip install snaplogic-common-robot --upgrade --no-cache-dir --no-deps
+	@docker exec snaplogic-test-example-tools-container pip install snaplogic-common-robot --upgrade --no-cache-dir
 	@echo "✅ snaplogic-common-robot installed successfully!"
 	@echo ""
 	@echo "🔧 Step 3/4: Installing setuptools<81 (required for pkg_resources)..."
