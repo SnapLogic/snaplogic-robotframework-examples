@@ -113,8 +113,8 @@ Create a custom certificate with proper Subject Alternative Names (SANs) that in
 cd /Users/spothana/QADocs/SNAPLOGIC_RF_EXAMPLES2/snaplogic-robotframework-examples
 
 # Create certificates directory
-mkdir -p docker/scripts/salesforce/wiremock/certs
-cd docker/scripts/salesforce/wiremock/certs
+mkdir -p docker/salesforce/certs
+cd docker/salesforce/certs
 ```
 
 #### 1.2 Generate Private Key
@@ -253,7 +253,7 @@ services:
       - ./scripts/salesforce/wiremock/mappings:/home/wiremock/mappings
       
       # Mount certificates directory (read-only for security)
-      - ./scripts/salesforce/wiremock/certs:/home/wiremock/certs:ro
+      - ./salesforce/certs:/home/wiremock/certs:ro
       
     command:
       - "--port"
@@ -280,7 +280,7 @@ networks:
 
 | Host Path                             | Container Path         | Purpose                    |
 | ------------------------------------- | ---------------------- | -------------------------- |
-| `./scripts/salesforce/wiremock/certs` | `/home/wiremock/certs` | Certificate files location |
+| `./salesforce/certs` | `/home/wiremock/certs` | Certificate files location |
 | `:ro` flag                            | Read-only mount        | Security best practice     |
 
 #### 2.2 Start WireMock Service
@@ -635,14 +635,13 @@ snaplogic-robotframework-examples/
 ├── docker/
 │   ├── docker-compose.yml             # Main compose file
 │   ├── docker-compose.salesforce-mock.yml  # WireMock configuration
-│   └── scripts/
-│       └── salesforce/
-│           └── wiremock/
-│               ├── mappings/          # API response mappings
-│               │   └── *.json
-│               └── certs/             # Certificate files
-│                   └── custom-keystore.p12 # PKCS12 keystore (only file needed)
-│                   # Note: .pem files can be deleted after P12 creation
+│   └── salesforce/
+│       ├── certs/                     # Certificate files
+│       │   └── custom-keystore.p12    # PKCS12 keystore (only file needed)
+│       │   # Note: .pem files can be deleted after P12 creation
+│       └── wiremock/
+│           └── mappings/              # API response mappings
+│               └── *.json
 └── test/
     └── .config/                       # Groundplex configuration
 ```
