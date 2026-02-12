@@ -1,0 +1,59 @@
+{
+  "name": "Report",
+  "idPrefix": "00O",
+  "label": "Report",
+  "labelPlural": "Reports",
+  "keyPrefix": "00O",
+  "fields": {
+    "Name": {
+      "type": "string",
+      "required": true,
+      "label": "Report Name",
+      "maxLength": 40,
+      "createable": true,
+      "updateable": true
+    },
+    "Description": {
+      "type": "string",
+      "required": false,
+      "label": "Description",
+      "maxLength": 255,
+      "createable": true,
+      "updateable": true
+    },
+    "DeveloperName": {
+      "type": "string",
+      "required": false,
+      "label": "Report Unique Name",
+      "maxLength": 80,
+      "createable": true,
+      "updateable": true
+    },
+    "FolderName": {
+      "type": "string",
+      "required": false,
+      "label": "Folder Name",
+      "maxLength": 40,
+      "createable": true,
+      "updateable": true
+    },
+    "Format": {
+      "type": "picklist",
+      "required": false,
+      "label": "Format",
+      "maxLength": 40,
+      "createable": true,
+      "updateable": true,
+      "values": ["Tabular", "Summary", "Matrix"]
+    },
+    "OwnerId": {
+      "type": "reference",
+      "required": false,
+      "label": "Owner ID",
+      "maxLength": 18,
+      "createable": true,
+      "updateable": true,
+      "referenceTo": ["User"]
+    }
+  }
+}

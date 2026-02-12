@@ -1,0 +1,86 @@
+{
+  "name": "Quote",
+  "idPrefix": "0Q0",
+  "label": "Quote",
+  "labelPlural": "Quotes",
+  "keyPrefix": "0Q0",
+  "fields": {
+    "Name": {
+      "type": "string",
+      "required": true,
+      "label": "Quote Name",
+      "maxLength": 255,
+      "createable": true,
+      "updateable": true
+    },
+    "OpportunityId": {
+      "type": "reference",
+      "required": true,
+      "label": "Opportunity ID",
+      "maxLength": 18,
+      "createable": true,
+      "updateable": true,
+      "referenceTo": ["Opportunity"]
+    },
+    "Status": {
+      "type": "picklist",
+      "required": true,
+      "label": "Status",
+      "maxLength": 40,
+      "createable": true,
+      "updateable": true,
+      "values": ["Draft", "Needs Review", "In Review", "Approved", "Rejected", "Presented", "Accepted", "Denied"]
+    },
+    "ExpirationDate": {
+      "type": "date",
+      "required": false,
+      "label": "Expiration Date",
+      "createable": true,
+      "updateable": true
+    },
+    "Pricebook2Id": {
+      "type": "reference",
+      "required": false,
+      "label": "Price Book ID",
+      "maxLength": 18,
+      "createable": true,
+      "updateable": true,
+      "referenceTo": ["Pricebook2"]
+    },
+    "TotalPrice": {
+      "type": "currency",
+      "required": false,
+      "label": "Total Price",
+      "precision": 18,
+      "scale": 2,
+      "createable": false,
+      "updateable": false
+    },
+    "Discount": {
+      "type": "percent",
+      "required": false,
+      "label": "Discount",
+      "precision": 5,
+      "scale": 2,
+      "createable": true,
+      "updateable": true
+    },
+    "Description": {
+      "type": "textarea",
+      "required": false,
+      "label": "Description",
+      "maxLength": 32000,
+      "createable": true,
+      "updateable": true
+    },
+    "ContactId": {
+      "type": "reference",
+      "required": false,
+      "label": "Contact ID",
+      "maxLength": 18,
+      "createable": true,
+      "updateable": true,
+      "referenceTo": ["Contact"]
+    }
+  }
+}

@@ -85,7 +85,8 @@
   "salesforce": {
     "docker_path": "docker/salesforce/**",
     "env_path": "env_files/mock_service_accounts/.env.salesforce",
-    "makefile_path": "makefiles/mock_services/Makefile.salesforce",
+    "makefile_wiremock": "makefiles/mock_services/Makefile.salesforce-wiremock",
+    "makefile_custom": "makefiles/mock_services/Makefile.salesforce-custom",
     "pipeline_path": "src/pipelines/salesforce.slp",
     "tests_path": "test/suite/pipeline_tests/*salesforce*",
     "accounts_path": "test/suite/test_data/accounts_payload/acc_salesforce.json"

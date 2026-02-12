@@ -1,0 +1,275 @@
+# =============================================================================
+# Custom Salesforce API Mock Server Management
+# =============================================================================
+#
+# Single Node.js server with real CRUD, SOQL parsing, field validation,
+# and Bulk API 2.0 support. Replaces WireMock + JSON Server.
+#
+# Container:    salesforce-api-mock
+# HTTP port:    8089
+# HTTPS port:   8443
+# Network:      snaplogicnet
+# Compose file: docker/salesforce/docker-compose.salesforce-custom.yml
+#
+# Key advantages over WireMock:
+#   - Real CRUD: Create -> Read returns actual created data
+#   - SOQL parsing: SELECT, WHERE, LIMIT, ORDER BY all work
+#   - Field validation: Required fields, picklist values
+#   - Bulk API 2.0: Ingest (CSV upload) + Query (CSV download)
+#   - Schema-driven: 1 JSON file per object, zero code changes
+#   - Single container: ~80MB vs ~450MB, 1-2s vs 10-15s startup
+#
+# NOTE: Shares the same container name and ports as WireMock.
+#       They are MUTUALLY EXCLUSIVE — only one can run at a time.
+#       The start target automatically stops the other backend first.
+#
+# Quick Reference:
+#   make salesforce-custom-build     Build Docker image
+#   make salesforce-custom-start     Start server (recommended)
+#   make salesforce-custom-stop      Stop server
+#   make salesforce-custom-restart   Restart server
+#   make salesforce-custom-status    Check server status
+#   make salesforce-custom-test      Test all endpoints (REST + Bulk API)
+#   make salesforce-custom-reset     Reset all data
+#   make salesforce-custom-logs      View logs
+# =============================================================================
+
+.PHONY: salesforce-custom-start salesforce-custom-stop salesforce-custom-status \
+        salesforce-custom-restart salesforce-custom-test \
+        salesforce-custom-build salesforce-custom-reset \
+        salesforce-custom-logs salesforce-custom-logs-follow
+
+# Uses $(DOCKER_COMPOSE) from Makefile.common (main docker-compose.yml)
+# This ensures the Custom Server joins the same network as Groundplex.
+
+# =============================================================================
+# Service Management
+# =============================================================================
+
+## Build the Custom Server Docker image
+salesforce-custom-build:
+	@echo "🔨 Building Custom Salesforce Mock Server..."
+	$(DOCKER_COMPOSE) --profile salesforce-custom-start build
+	@echo "✅ Build complete!"
+
+## Start Custom Salesforce Mock Server (stops WireMock if running)
+salesforce-custom-start:
+	@echo "🚀 Starting Custom Salesforce Mock API Server..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@# Stop WireMock if running (same container name / ports)
+	@if docker inspect -f "{{.State.Status}}" salesforce-api-mock >/dev/null 2>&1; then \
+		echo "⚠️  Stopping existing salesforce-api-mock container first..."; \
+		docker stop salesforce-api-mock >/dev/null 2>&1 || true; \
+		docker rm -f salesforce-api-mock >/dev/null 2>&1 || true; \
+		echo ""; \
+	fi
+	$(DOCKER_COMPOSE) --profile salesforce-custom-start up -d --build
+	@echo "⏳ Waiting for server to initialize..."
+	@sleep 3
+	@echo ""
+	@echo "✅ Custom Salesforce Mock Server started!"
+	@echo ""
+	@echo "🌐 Available endpoints:"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "📡 Mock API Server:"
+	@echo "   • HTTP:     http://localhost:8089"
+	@echo "   • HTTPS:    https://localhost:8443"
+	@echo "   • OAuth:    POST http://localhost:8089/services/oauth2/token"
+	@echo "   • Query:    GET  http://localhost:8089/services/data/v59.0/query"
+	@echo "   • CRUD:     http://localhost:8089/services/data/v59.0/sobjects/{Object}"
+	@echo "   • Bulk:     http://localhost:8089/services/data/v59.0/jobs/ingest"
+	@echo ""
+	@echo "🔧 Admin endpoints:"
+	@echo "   • Health:   http://localhost:8089/health"
+	@echo "   • View DB:  http://localhost:8089/__admin/db"
+	@echo "   • Schemas:  http://localhost:8089/__admin/schemas"
+	@echo "   • Reset:    POST http://localhost:8089/__admin/reset"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
+	@echo "🔧 Configure SnapLogic Salesforce Account:"
+	@echo "   • Login URL: https://salesforce-api-mock:8443 (from Docker/Groundplex)"
+	@echo "   • Login URL: https://localhost:8443 (from host)"
+	@echo "   • Username: snap-qa@snaplogic.com (or any value)"
+	@echo "   • Password: any value"
+	@echo ""
+	@echo "🧪 Quick test:"
+	@echo "   curl -s -X POST http://localhost:8089/services/oauth2/token -d 'grant_type=password'"
+
+## Stop Custom Salesforce Mock Server
+salesforce-custom-stop:
+	@echo "⛔ Stopping Custom Salesforce Mock Server..."
+	@docker stop salesforce-api-mock 2>/dev/null || true
+	@echo "🗑️ Removing container..."
+	@docker rm -f salesforce-api-mock 2>/dev/null || true
+	@echo "✅ Custom Salesforce Mock Server stopped and cleaned up."
+
+## Restart Custom Salesforce Mock Server
+salesforce-custom-restart:
+	@echo "🔄 Restarting Custom Salesforce Mock Server..."
+	@$(MAKE) salesforce-custom-stop
+	@sleep 2
+	@$(MAKE) salesforce-custom-start
+
+## Check Custom Server status
+salesforce-custom-status:
+	@bash -c '\
+		echo "🔍 Checking Custom Salesforce Mock Server status..."; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		server_status=$$(docker inspect -f "{{.State.Status}}" salesforce-api-mock 2>/dev/null || echo "not found"); \
+		if [ "$$server_status" = "running" ]; then \
+			echo "✅ Custom Salesforce Mock Server is running"; \
+			echo "   Container: salesforce-api-mock"; \
+			echo "   HTTP Port: 8089"; \
+			echo "   HTTPS Port: 8443"; \
+			echo ""; \
+			echo "🧪 Testing service health..."; \
+			health=$$(curl -s http://localhost:8089/health 2>/dev/null); \
+			if [ $$? -eq 0 ]; then \
+				echo "   ✅ Health check passed"; \
+				echo "   $$health" | python3 -m json.tool 2>/dev/null || echo "   $$health"; \
+			else \
+				echo "   ⚠️  Health check failed"; \
+			fi; \
+			echo ""; \
+			echo "🧪 Testing OAuth endpoint..."; \
+			if curl -s -f -X POST http://localhost:8089/services/oauth2/token -d "grant_type=password" >/dev/null 2>&1; then \
+				echo "   ✅ OAuth endpoint is accessible"; \
+			else \
+				echo "   ⚠️  OAuth endpoint not responding"; \
+			fi; \
+		else \
+			echo "❌ Custom Salesforce Mock Server is not running (status: $$server_status)"; \
+			echo "💡 Run '\''make salesforce-custom-start'\'' to start the server"; \
+		fi; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"'
+
+# =============================================================================
+# Testing — REST API + Bulk API 2.0
+# =============================================================================
+
+## Test all Custom Server endpoints (REST API + Bulk API 2.0)
+salesforce-custom-test:
+	@echo "🧪 Testing Custom Salesforce Mock Server..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
+	@echo "═══ REST API ═══"
+	@echo ""
+	@echo "1️⃣  Testing OAuth endpoint..."
+	@curl -s -X POST http://localhost:8089/services/oauth2/token \
+		-d "grant_type=password&username=test@test.com&password=test" \
+		| python3 -m json.tool 2>/dev/null || echo "   ⚠️  OAuth endpoint not responding"
+	@echo ""
+	@echo "2️⃣  Testing Describe endpoint..."
+	@curl -s http://localhost:8089/services/data/v59.0/sobjects/Account/describe \
+		| python3 -c "import sys,json;d=json.load(sys.stdin);print(f'   Object: {d[\"name\"]}, Fields: {len(d[\"fields\"])}')" 2>/dev/null \
+		|| echo "   ⚠️  Describe endpoint not responding"
+	@echo ""
+	@echo "3️⃣  Testing Create endpoint..."
+	@curl -s -X POST http://localhost:8089/services/data/v59.0/sobjects/Account \
+		-H "Content-Type: application/json" \
+		-d '{"Name": "Test Account", "Type": "Customer", "Industry": "Technology"}' \
+		| python3 -m json.tool 2>/dev/null || echo "   ⚠️  Create endpoint not responding"
+	@echo ""
+	@echo "4️⃣  Testing SOQL Query (Read back created data)..."
+	@curl -s "http://localhost:8089/services/data/v59.0/query?q=SELECT+Id,Name,Type,Industry+FROM+Account" \
+		| python3 -m json.tool 2>/dev/null || echo "   ⚠️  Query endpoint not responding"
+	@echo ""
+	@echo "5️⃣  Testing Validation (missing required field - should return 400)..."
+	@echo "   Expected: 400 error with REQUIRED_FIELD_MISSING"
+	@curl -s -w "\n   HTTP Status: %{http_code}\n" \
+		-X POST http://localhost:8089/services/data/v59.0/sobjects/Account \
+		-H "Content-Type: application/json" \
+		-d '{"Type": "Customer"}' \
+		| head -5
+	@echo ""
+	@echo "6️⃣  Testing Health endpoint..."
+	@curl -s http://localhost:8089/health \
+		| python3 -m json.tool 2>/dev/null || echo "   ⚠️  Health endpoint not responding"
+	@echo ""
+	@echo "═══ BULK API 2.0 — INGEST ═══"
+	@echo ""
+	@echo "7️⃣  Creating bulk ingest job (insert Account)..."
+	@JOB=$$(curl -s -X POST http://localhost:8089/services/data/v59.0/jobs/ingest \
+		-H "Content-Type: application/json" \
+		-d '{"object":"Account","operation":"insert","contentType":"CSV","lineEnding":"LF"}'); \
+	echo "$$JOB" | python3 -m json.tool 2>/dev/null; \
+	JOB_ID=$$(echo "$$JOB" | python3 -c "import sys,json;print(json.load(sys.stdin)['id'])" 2>/dev/null); \
+	if [ -z "$$JOB_ID" ]; then \
+		echo "   ⚠️  Failed to create bulk ingest job"; \
+		exit 1; \
+	fi; \
+	echo "   Job ID: $$JOB_ID"; \
+	echo ""; \
+	echo "8️⃣  Uploading CSV data..."; \
+	curl -s -X PUT "http://localhost:8089/services/data/v59.0/jobs/ingest/$$JOB_ID/batches" \
+		-H "Content-Type: text/csv" \
+		-d $$'Name,Type,Industry\nBulk Corp,Customer,Technology\nBulk Inc,Partner,Finance\nBulk Ltd,Prospect,Healthcare' \
+		| python3 -m json.tool 2>/dev/null || echo "   ✅ CSV uploaded"; \
+	echo ""; \
+	echo "9️⃣  Closing job (triggers processing)..."; \
+	curl -s -X PATCH "http://localhost:8089/services/data/v59.0/jobs/ingest/$$JOB_ID" \
+		-H "Content-Type: application/json" \
+		-d '{"state":"UploadComplete"}' \
+		| python3 -m json.tool 2>/dev/null; \
+	echo ""; \
+	echo "🔟  Getting successful results (CSV)..."; \
+	curl -s "http://localhost:8089/services/data/v59.0/jobs/ingest/$$JOB_ID/successfulResults"; \
+	echo ""; \
+	echo ""; \
+	echo "1️⃣1️⃣  Verifying bulk-inserted records via REST API query..."; \
+	curl -s "http://localhost:8089/services/data/v59.0/query?q=SELECT+Id,Name,Type,Industry+FROM+Account+WHERE+Name+LIKE+'Bulk%25'" \
+		| python3 -m json.tool 2>/dev/null; \
+	echo ""; \
+	echo "═══ BULK API 2.0 — QUERY ═══"; \
+	echo ""; \
+	echo "1️⃣2️⃣  Creating bulk query job..."; \
+	QJOB=$$(curl -s -X POST http://localhost:8089/services/data/v59.0/jobs/query \
+		-H "Content-Type: application/json" \
+		-d '{"operation":"query","query":"SELECT Id, Name, Type FROM Account"}'); \
+	echo "$$QJOB" | python3 -m json.tool 2>/dev/null; \
+	QJOB_ID=$$(echo "$$QJOB" | python3 -c "import sys,json;print(json.load(sys.stdin)['id'])" 2>/dev/null); \
+	if [ -z "$$QJOB_ID" ]; then \
+		echo "   ⚠️  Failed to create bulk query job"; \
+		exit 1; \
+	fi; \
+	echo "   Job ID: $$QJOB_ID"; \
+	echo ""; \
+	echo "1️⃣3️⃣  Getting query results (CSV)..."; \
+	curl -s "http://localhost:8089/services/data/v59.0/jobs/query/$$QJOB_ID/results"; \
+	echo ""; \
+	echo ""; \
+	echo "1️⃣4️⃣  Listing all bulk jobs (admin)..."; \
+	curl -s http://localhost:8089/__admin/bulk-jobs \
+		| python3 -m json.tool 2>/dev/null
+	@echo ""
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "✅ All tests completed (REST API + Bulk API 2.0)!"
+	@echo ""
+	@echo "💡 To reset all test data: make salesforce-custom-reset"
+
+# =============================================================================
+# Data Management
+# =============================================================================
+
+## Reset all data in the Custom Server (database + bulk jobs)
+salesforce-custom-reset:
+	@echo "🧹 Resetting Custom Salesforce Mock Server data..."
+	@curl -s -X POST http://localhost:8089/__admin/reset \
+		| python3 -m json.tool 2>/dev/null || echo "   ⚠️  Reset endpoint not responding"
+	@echo "✅ All data cleared!"
+
+# =============================================================================
+# Logs
+# =============================================================================
+
+## View Custom Server logs
+salesforce-custom-logs:
+	@echo "📋 Custom Salesforce Mock Server Logs"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@docker logs salesforce-api-mock --tail=50 2>/dev/null || echo "   No logs available"
+
+## Follow Custom Server logs in real-time (Ctrl+C to stop)
+salesforce-custom-logs-follow:
+	@echo "📋 Following Custom Salesforce Mock Server Logs (Ctrl+C to stop)..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@docker logs salesforce-api-mock --tail=20 -f 2>/dev/null || echo "   No logs available"

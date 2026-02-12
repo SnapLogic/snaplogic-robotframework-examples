@@ -55,8 +55,8 @@ services:
       # IMPORTANT: This folder must contain BOTH static AND proxy mappings
       - ./wiremock/mappings:/home/wiremock/mappings:ro
       - ./wiremock/__files:/home/wiremock/__files:ro
-      # Mount custom certificate keystore
-      - ./wiremock/certs/custom-keystore.p12:/home/wiremock/keystore.p12:ro
+      # Mount shared certificate keystore (shared between WireMock and Custom Server)
+      - ./certs/custom-keystore.p12:/home/wiremock/keystore.p12:ro
 
     command: >
       --port=8080

@@ -99,6 +99,13 @@
       "Phone": "(555) 123-4567",
       "Name": "Acme Corp_Swap3",
       "id": 11
+    },
+    {
+      "Industry": "Technology",
+      "Type": "Customer",
+      "Phone": "(555) 123-4567",
+      "Name": "Acme Corp_Swap3",
+      "id": 12
     }
   ],
   "contacts": [],
@@ -447,6 +454,17 @@
         "Name": "Updated Name"
       },
       "id": 15
+    },
+    {
+      "_sfId": "",
+      "_operation": "UPDATE",
+      "_timestamp": "2026-02-11T23:23:08Z",
+      "_updatedFields": {
+        "Industry": "Technology",
+        "id": "001MONCQ0QCHX1R3TU",
+        "Name": "Updated Name"
+      },
+      "id": 16
     }
   ],
   "account_deletes": [

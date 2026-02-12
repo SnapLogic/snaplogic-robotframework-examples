@@ -1,0 +1,78 @@
+{
+  "name": "Lead",
+  "idPrefix": "00Q",
+  "label": "Lead",
+  "labelPlural": "Leads",
+  "keyPrefix": "00Q",
+  "fields": {
+    "FirstName": {
+      "type": "string",
+      "required": false,
+      "label": "First Name",
+      "maxLength": 40,
+      "createable": true,
+      "updateable": true
+    },
+    "LastName": {
+      "type": "string",
+      "required": true,
+      "label": "Last Name",
+      "maxLength": 80,
+      "createable": true,
+      "updateable": true
+    },
+    "Company": {
+      "type": "string",
+      "required": true,
+      "label": "Company",
+      "maxLength": 255,
+      "createable": true,
+      "updateable": true
+    },
+    "Email": {
+      "type": "email",
+      "required": false,
+      "label": "Email",
+      "maxLength": 80,
+      "createable": true,
+      "updateable": true
+    },
+    "Phone": {
+      "type": "phone",
+      "required": false,
+      "label": "Phone",
+      "maxLength": 40,
+      "createable": true,
+      "updateable": true
+    },
+    "Status": {
+      "type": "picklist",
+      "required": true,
+      "label": "Lead Status",
+      "maxLength": 255,
+      "createable": true,
+      "updateable": true,
+      "values": [
+        "Open - Not Contacted",
+        "Working - Contacted",
+        "Closed - Converted",
+        "Closed - Not Converted"
+      ]
+    },
+    "LeadSource": {
+      "type": "picklist",
+      "required": false,
+      "label": "Lead Source",
+      "maxLength": 255,
+      "createable": true,
+      "updateable": true,
+      "values": [
+        "Web",
+        "Phone Inquiry",
+        "Partner Referral",
+        "Purchased List",
+        "Other"
+      ]
+    }
+  }
+}

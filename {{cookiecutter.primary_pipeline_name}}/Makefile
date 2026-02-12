@@ -60,7 +60,8 @@ include makefiles/messaging_services/Makefile.activemq
 # Include all mock service Makefiles
 # -----------------------------------------------------------------------------
 include makefiles/mock_services/Makefile.minio
-include makefiles/mock_services/Makefile.salesforce
+include makefiles/mock_services/Makefile.salesforce-wiremock
+include makefiles/mock_services/Makefile.salesforce-custom
 include makefiles/mock_services/Makefile.maildev
 
 

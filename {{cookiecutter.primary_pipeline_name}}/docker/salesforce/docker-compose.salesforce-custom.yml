@@ -1,0 +1,84 @@
+# =============================================================================
+# Custom Salesforce API Mock Server - Docker Compose
+# =============================================================================
+#
+# Replaces WireMock + JSON Server with a single Node.js server.
+# Same ports, same container name, same network = zero SnapLogic config changes.
+#
+# AVAILABLE ENDPOINTS:
+# -------------------
+# Salesforce Mock API (HTTP):  http://localhost:8089
+# Salesforce Mock API (HTTPS): https://localhost:8443
+# - OAuth Token: POST http(s)://localhost:8089/services/oauth2/token
+# - REST API:    http(s)://localhost:8089/services/data/v59.0/*
+# - Admin DB:    http://localhost:8089/__admin/db
+# - Health:      http://localhost:8089/health
+#
+# SNAPLOGIC CONFIGURATION:
+# -----------------------
+# For Salesforce Account settings in SnapLogic:
+#
+# HTTP Configuration:
+# - Login URL: http://salesforce-api-mock:8080
+#
+# HTTPS Configuration:
+# - Login URL: https://salesforce-api-mock:8443
+#
+# Common Settings:
+# - Username: snap-qa@snaplogic.com (or any value)
+# - Password: any value
+# - Security Token: leave empty (or any value)
+#
+# Note: Use container name and internal ports (8080/8443) when SnapLogic
+# is running in Docker on the same network. If SnapLogic is running
+# on your host machine, use http://localhost:8089 or https://localhost:8443
+#
+# The mock will accept any credentials and return a valid response.
+#
+# HTTPS NOTES:
+# -----------
+# - Reuses the same PKCS12 certificate (custom-keystore.p12) as WireMock
+# - This means the SAME certificate that's already imported into Groundplex
+#   Java truststore works for both WireMock and Custom Server — no cert changes!
+# - Node.js loads the P12 file directly (pfx option) — no conversion needed
+# - When testing with curl, use -k flag to accept self-signed certificates
+# =============================================================================
+
+services:
+  # Custom Salesforce API Mock Server (replaces WireMock + JSON Server)
+  salesforce-custom-server:
+    build:
+      context: ./custom-server
+      dockerfile: Dockerfile
+    container_name: salesforce-api-mock
+    profiles:
+      - salesforce-custom-start
+      - salesforce-custom-dev
+    ports:
+      - "${SALESFORCE_HTTP_PORT:-8089}:8080"    # HTTP  (same as WireMock)
+      - "${SALESFORCE_HTTPS_PORT:-8443}:8443"   # HTTPS (same as WireMock)
+    volumes:
+      # Mount schemas for live reload (restart container after schema changes)
+      - ./custom-server/schemas:/app/schemas:ro
+      # Shared PKCS12 certificate (same cert used by WireMock, already trusted by Groundplex)
+      - ./certs/custom-keystore.p12:/app/certs/custom-keystore.p12:ro
+    networks:
+      - snaplogicnet
+    environment:
+      - NODE_ENV=production
+      - HTTP_PORT=8080
+      - HTTPS_PORT=8443
+      - SCHEMA_DIR=/app/schemas
+      - P12_FILE=/app/certs/custom-keystore.p12
+      - P12_PASSWORD=password
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+networks:
+  snaplogicnet:
+    driver: bridge

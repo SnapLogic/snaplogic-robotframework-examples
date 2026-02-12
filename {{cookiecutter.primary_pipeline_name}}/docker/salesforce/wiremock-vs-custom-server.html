@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WireMock vs Custom Server — Architecture Comparison</title>
+    <style>
+        :root {
+            --primary: #0059b3;
+            --primary-dark: #004494;
+            --primary-light: #cce0ff;
+            --success: #1b6e20;
+            --success-light: #c8f7c5;
+            --danger: #b71c1c;
+            --danger-light: #ffcdd2;
+            --warning: #e65100;
+            --warning-light: #ffe0b2;
+            --purple: #6a1b9a;
+            --purple-light: #e1bee7;
+            --orange: #e65100;
+            --orange-light: #fff3e0;
+            --gray-50: #fafafa;
+            --gray-100: #f5f5f5;
+            --gray-200: #eeeeee;
+            --gray-300: #e0e0e0;
+            --gray-400: #bdbdbd;
+            --gray-600: #757575;
+            --gray-700: #616161;
+            --gray-800: #424242;
+            --gray-900: #212121;
+            --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+            --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+            --radius: 10px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--gray-100);
+            color: var(--gray-900);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        /* ── Header ── */
+        .hero {
+            background: linear-gradient(135deg, #0052cc 0%, #002966 100%);
+            color: white;
+            padding: 50px 40px 40px;
+            text-align: center;
+        }
+        .hero h1 { font-size: 2.4em; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.5px; }
+        .hero p { font-size: 1.15em; opacity: 0.85; max-width: 700px; margin: 0 auto; }
+        .hero-badges { margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+        .hero-badge {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.25);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            backdrop-filter: blur(4px);
+        }
+
+        /* ── Layout ── */
+        .container { max-width: 1300px; margin: 0 auto; padding: 0 24px; }
+
+        /* ── Main Tabs ── */
+        .main-tabs {
+            display: flex;
+            gap: 4px;
+            background: white;
+            padding: 8px 8px 0;
+            border-radius: var(--radius) var(--radius) 0 0;
+            box-shadow: var(--shadow-sm);
+            margin-top: -20px;
+            overflow-x: auto;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .main-tab {
+            padding: 12px 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            color: var(--gray-600);
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            white-space: nowrap;
+            font-family: var(--font-sans);
+        }
+        .main-tab:hover { color: var(--primary); background: var(--primary-light); border-radius: 6px 6px 0 0; }
+        .main-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background: var(--primary-light);
+            border-radius: 6px 6px 0 0;
+        }
+        .tab-panel {
+            display: none;
+            background: white;
+            padding: 36px 40px;
+            border-radius: 0 0 var(--radius) var(--radius);
+            box-shadow: var(--shadow-md);
+            margin-bottom: 30px;
+            animation: fadeIn 0.3s ease;
+        }
+        .tab-panel.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ── Typography ── */
+        h2 { font-size: 1.8em; color: var(--gray-900); margin: 0 0 8px; font-weight: 700; letter-spacing: -0.3px; }
+        h3 { font-size: 1.3em; color: var(--gray-800); margin: 30px 0 12px; font-weight: 600; }
+        h4 { font-size: 1.05em; color: var(--primary-dark); margin: 24px 0 8px; font-weight: 600; }
+        .section-subtitle { color: var(--gray-600); font-size: 1.05em; margin-bottom: 28px; }
+        p { margin-bottom: 14px; }
+        strong { font-weight: 600; }
+
+        /* ── Section cards ── */
+        .section-card {
+            background: #ffffff;
+            border: 2px solid #d0d7e2;
+            border-radius: 10px;
+            padding: 28px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .section-card h3 {
+            font-size: 1.3em;
+            font-weight: 700;
+            margin-bottom: 16px;
+            margin-top: 0;
+        }
+
+        /* ── Code blocks ── */
+        pre {
+            background: #1e1e2e;
+            color: #cdd6f4;
+            padding: 20px 24px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: var(--font-mono);
+            font-size: 0.88em;
+            line-height: 1.6;
+            margin: 14px 0 20px;
+            border: 1px solid #313244;
+        }
+        code {
+            font-family: var(--font-mono);
+            background: var(--gray-100);
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: var(--primary-dark);
+        }
+        pre code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+        .code-label {
+            display: inline-block;
+            background: #313244;
+            color: #a6adc8;
+            padding: 3px 12px;
+            border-radius: 6px 6px 0 0;
+            font-size: 0.78em;
+            font-family: var(--font-mono);
+            margin-bottom: -1px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── Syntax highlighting ── */
+        .hl-keyword { color: #cba6f7; }
+        .hl-string { color: #a6e3a1; }
+        .hl-number { color: #fab387; }
+        .hl-comment { color: #6c7086; font-style: italic; }
+        .hl-property { color: #89b4fa; }
+        .hl-value { color: #f9e2af; }
+        .hl-url { color: #89dceb; }
+        .hl-method { color: #f38ba8; font-weight: 600; }
+        .hl-success { color: #a6e3a1; }
+        .hl-error { color: #f38ba8; }
+
+        /* ── Tables ── */
+        table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; }
+        th {
+            background: #e3e8f0;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 700;
+            font-size: 0.88em;
+            color: #1a1a2e;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 3px solid #9aa5b4;
+        }
+        td { padding: 12px 16px; border-bottom: 1px solid var(--gray-200); font-size: 0.95em; }
+        tr:hover td { background: var(--gray-50); }
+        td code { font-size: 0.88em; }
+        .yes { color: var(--success); font-weight: 600; }
+        .no { color: var(--danger); font-weight: 600; }
+        .partial { color: var(--warning); font-weight: 600; }
+
+        /* ── Info boxes ── */
+        .info-box {
+            padding: 18px 22px;
+            border-radius: 8px;
+            margin: 18px 0;
+            border-left: 6px solid;
+        }
+        .info-box.blue    { background: var(--primary-light); border-color: var(--primary); color: #002952; }
+        .info-box.green   { background: var(--success-light); border-color: var(--success); color: #0a3d0c; }
+        .info-box.red     { background: var(--danger-light); border-color: var(--danger); color: #5d0000; }
+        .info-box.yellow  { background: var(--warning-light); border-color: var(--warning); color: #4e2600; }
+        .info-box.purple  { background: var(--purple-light); border-color: var(--purple); color: #38006b; }
+        .info-box-title { font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; font-size: 1.05em; }
+
+        /* ── Cards grid ── */
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin: 20px 0; }
+        .card {
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius);
+            padding: 24px;
+            transition: all 0.2s;
+        }
+        .card:hover { box-shadow: var(--shadow-md); border-color: var(--primary); transform: translateY(-2px); }
+        .card-icon { font-size: 2em; margin-bottom: 12px; }
+        .card h4 { margin: 0 0 8px; color: var(--gray-900); font-size: 1.1em; }
+        .card p { color: var(--gray-600); font-size: 0.92em; margin: 0; }
+
+        /* ── Comparison columns ── */
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin: 20px 0;
+        }
+        .comparison-col {
+            border-radius: var(--radius);
+            padding: 24px;
+            border-top: 4px solid;
+        }
+        .comparison-col.wiremock { background: var(--orange-light); border-color: var(--orange); }
+        .comparison-col.custom { background: var(--success-light); border-color: var(--success); }
+        .comparison-col h3 { margin-top: 0; }
+
+        /* ── Stats grid ── */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: white;
+            border: 2px solid var(--gray-200);
+            border-radius: var(--radius);
+            padding: 24px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+        .stat-number { font-size: 2.8em; font-weight: 800; line-height: 1; }
+        .stat-label { font-size: 0.88em; color: var(--gray-600); margin-top: 8px; font-weight: 500; }
+        .stat-card.orange { border-color: var(--orange); }
+        .stat-card.orange .stat-number { color: var(--orange); }
+        .stat-card.green { border-color: var(--success); }
+        .stat-card.green .stat-number { color: var(--success); }
+        .stat-card.red { border-color: var(--danger); }
+        .stat-card.red .stat-number { color: var(--danger); }
+        .stat-card.blue { border-color: var(--primary); }
+        .stat-card.blue .stat-number { color: var(--primary); }
+
+        /* ── Flow diagram ── */
+        .flow-diagram {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius);
+            padding: 30px;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+        .flow-row { display: flex; align-items: center; gap: 12px; margin: 12px 0; flex-wrap: wrap; justify-content: center; }
+        .flow-box {
+            background: white;
+            border: 2px solid var(--gray-300);
+            border-radius: 8px;
+            padding: 10px 18px;
+            font-size: 0.9em;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .flow-box.highlight { border-color: var(--primary); background: var(--primary-light); color: var(--primary-dark); }
+        .flow-box.orange { border-color: var(--orange); background: var(--orange-light); color: var(--orange); }
+        .flow-box.green { border-color: var(--success); background: var(--success-light); color: var(--success); }
+        .flow-box.red { border-color: var(--danger); background: var(--danger-light); color: var(--danger); }
+        .flow-arrow { color: var(--gray-400); font-size: 1.4em; font-weight: 700; }
+
+        /* ── Architecture diagram ── */
+        .arch-diagram {
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+            overflow-x: auto;
+        }
+        .arch-box {
+            display: inline-block;
+            border: 2px solid var(--gray-300);
+            border-radius: 10px;
+            padding: 16px 24px;
+            text-align: center;
+            min-width: 140px;
+            background: white;
+        }
+        .arch-box.main { border-color: var(--primary); background: var(--primary-light); }
+        .arch-box.orange { border-color: var(--orange); background: var(--orange-light); }
+        .arch-box .title { font-weight: 700; font-size: 0.95em; margin-bottom: 4px; }
+        .arch-box .desc { font-size: 0.8em; color: var(--gray-600); }
+
+        /* ── Directory tree ── */
+        .dir-tree {
+            font-family: var(--font-mono);
+            font-size: 0.88em;
+            background: #1e1e2e;
+            color: #cdd6f4;
+            padding: 24px;
+            border-radius: 8px;
+            line-height: 1.8;
+            overflow-x: auto;
+        }
+        .dir-tree .dir { color: #89b4fa; font-weight: 600; }
+        .dir-tree .file { color: #a6e3a1; }
+        .dir-tree .comment { color: #6c7086; }
+
+        /* ── Badges / Tags ── */
+        .tag { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.78em; font-weight: 600; }
+        .tag.orange { background: rgba(230, 81, 0, 0.12); color: var(--orange); }
+        .tag.green { background: rgba(27, 110, 32, 0.12); color: var(--success); }
+        .tag.blue { background: rgba(0, 89, 179, 0.12); color: var(--primary); }
+
+        /* ── Step indicator ── */
+        .steps { counter-reset: step-counter; }
+        .step {
+            position: relative;
+            padding: 20px 20px 20px 70px;
+            margin: 16px 0;
+            background: var(--gray-50);
+            border-radius: 8px;
+            border: 1px solid var(--gray-200);
+            counter-increment: step-counter;
+        }
+        .step::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            width: 34px;
+            height: 34px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9em;
+        }
+        .step h4 { margin: 0 0 8px; font-size: 1.05em; }
+        .step p { margin: 0; color: var(--gray-700); }
+
+        /* ── Lists ── */
+        ul, ol { margin: 10px 0 16px 24px; }
+        li { margin: 6px 0; }
+        li::marker { color: var(--primary); }
+        ul.check-list { list-style: none; margin-left: 0; }
+        ul.check-list li { padding: 6px 0; padding-left: 28px; position: relative; }
+        ul.check-list li::before { content: ''; position: absolute; left: 0; top: 12px; width: 10px; height: 10px; border-radius: 50%; }
+        ul.check-list.pro li::before { background: var(--success); }
+        ul.check-list.con li::before { background: var(--danger); }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+            .hero { padding: 30px 20px; }
+            .hero h1 { font-size: 1.6em; }
+            .tab-panel { padding: 20px; }
+            .comparison { grid-template-columns: 1fr; }
+            .main-tab { padding: 10px 14px; font-size: 0.82em; }
+        }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--gray-100); }
+        ::-webkit-scrollbar-thumb { background: var(--gray-400); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--gray-600); }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════ HERO ═══════════════════════════ -->
+<div class="hero">
+    <h1>WireMock vs Custom Server</h1>
+    <p>Architecture Comparison for Salesforce Mock API Testing</p>
+    <div class="hero-badges">
+        <span class="hero-badge">SnapLogic QA Team</span>
+        <span class="hero-badge">Salesforce Snap Pack</span>
+        <span class="hero-badge">Docker Compose</span>
+        <span class="hero-badge">REST + Bulk API</span>
+        <span class="hero-badge">SOQL Parsing</span>
+    </div>
+</div>
+
+<div class="container">
+
+<!-- ═══════════════════════════ TAB BAR ═══════════════════════════ -->
+<div class="main-tabs" id="mainTabs">
+    <button class="main-tab active" data-tab="problem">The Problem</button>
+    <button class="main-tab" data-tab="wiremock">WireMock Approach</button>
+    <button class="main-tab" data-tab="custom">Custom Server</button>
+    <button class="main-tab" data-tab="architecture">Architecture</button>
+    <button class="main-tab" data-tab="create-flow">Create Flow</button>
+    <button class="main-tab" data-tab="read-flow">Read / SOQL</button>
+    <button class="main-tab" data-tab="validation">Validation</button>
+    <button class="main-tab" data-tab="api-coverage">API Coverage</button>
+    <button class="main-tab" data-tab="soql">SOQL Support</button>
+    <button class="main-tab" data-tab="numbers">By the Numbers</button>
+    <button class="main-tab" data-tab="file-structure">File Structure</button>
+    <button class="main-tab" data-tab="summary" style="background:#0059b3; color:white; font-weight:700; border-radius:6px 6px 0 0;">Summary</button>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  TAB 1: THE PROBLEM                                             ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="tab-panel active" id="tab-problem">
+    <h2>The Problem</h2>
+    <p class="section-subtitle">Why do we need a mock Salesforce server?</p>
+
+    <div class="section-card">
+        <h3>Testing SnapLogic Salesforce Pipelines Requires a Salesforce Endpoint</h3>
+        <ul class="check-list con">
+            <li>Real Salesforce orgs have <strong>API rate limits</strong> and cost money</li>
+            <li>Shared orgs cause <strong>test data conflicts</strong> between team members</li>
+            <li>Test data in production orgs creates <strong>compliance risks</strong></li>
+            <li><strong>Network latency</strong> makes test suites slow</li>
+            <li>No control over the Salesforce environment (schema changes, downtime)</li>
+        </ul>
+    </div>
+
+    <div class="info-box blue">
+        <div class="info-box-title">&#128161; Solution</div>
+        <p>Run a <strong>local mock server inside Docker</strong> that mimics the Salesforce API &mdash; fast, free, isolated, and fully controlled. From SnapLogic's perspective, it cannot tell the difference.</p>
+    </div>
+
+    <h3>Two Approaches Compared</h3>
+    <div class="comparison">
+        <div class="comparison-col wiremock">
+            <h3 style="color: var(--orange); margin-top: 0;">&#9673; WireMock + JSON Server</h3>
+            <p>Static URL pattern matching with hardcoded responses. Each API operation needs a separate JSON mapping file.</p>
+            <p><strong>Status:</strong> Original implementation</p>
+        </div>
+        <div class="comparison-col custom">
+            <h3 style="color: var(--success); margin-top: 0;">&#9889; Custom Express.js Server</h3>
+            <p>Dynamic route handlers with in-memory database. Schema-driven &mdash; one JSON file per Salesforce object.</p>
+            <p><strong>Status:</strong> New implementation (replacement)</p>
+        </div>
+    </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  TAB 2: WIREMOCK APPROACH                                       ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="tab-panel" id="tab-wiremock">
+    <h2>&#9673; WireMock Approach</h2>
+    <p class="section-subtitle">Static URL pattern matching with hardcoded responses</p>
+
+    <div class="comparison">
+        <div class="section-card">
+            <h3 style="color: var(--orange);">&#128196; How It Works</h3>
+            <p>Each API operation needs a <strong>separate JSON mapping file</strong> that says: "When you see this URL, return this response."</p>
+            <div class="code-label">04-create-account.json</div>
+<pre><code><span class="hl-comment">// WireMock mapping &mdash; static config</span>
+{
+  <span class="hl-property">"request"</span>: {
+    <span class="hl-property">"method"</span>: <span class="hl-string">"POST"</span>,
+    <span class="hl-property">"url"</span>: <span class="hl-string">"/sobjects/Account"</span>
+  },
+  <span class="hl-property">"response"</span>: {
+    <span class="hl-property">"jsonBody"</span>: {
+      <span class="hl-property">"id"</span>: <span class="hl-string">"001HARDCODED..."</span>,
+      <span class="hl-property">"success"</span>: <span class="hl-number">true</span>
+    }
+  }
+}</code></pre>
+        </div>
+
+        <div class="section-card">
+            <h3 style="color: var(--orange);">&#128450; Files Needed (per object)</h3>
+            <table>
+                <thead><tr><th>#</th><th>Mapping File</th><th>Scope</th></tr></thead>
+                <tbody>
+                    <tr><td>01</td><td>OAuth Token</td><td><span class="tag blue">Shared</span></td></tr>
+                    <tr><td>02</td><td>Validation Query</td><td><span class="tag blue">Shared</span></td></tr>
+                    <tr><td>03</td><td>Describe Account</td><td><span class="tag orange">Per Object</span></td></tr>
+                    <tr><td>04</td><td>Create Account</td><td><span class="tag orange">Per Object</span></td></tr>
+                    <tr><td>05</td><td>Read Account (Query)</td><td><span class="tag orange">Per Object</span></td></tr>
+                    <tr><td>06</td><td>Read Single Account</td><td><span class="tag orange">Per Object</span></td></tr>
+                    <tr><td>07</td><td>Update Account</td><td><span class="tag orange">Per Object</span></td></tr>
+                    <tr><td>08</td><td>Delete Account</td><td><span class="tag orange">Per Object</span></td></tr>
+                </tbody>
+            </table>
+            <div class="info-box yellow">
+                <div class="info-box-title">&#9888;&#65039; File explosion</div>
+                <p>5 objects &times; 6 mappings = <strong>30+ JSON files</strong> to maintain</p>
+            </div>
+        </div>
+    </div>
+
+    <h3 style="color: var(--danger);">&#9888; Limitations</h3>
+    <div class="section-card" style="border-color: var(--danger-light);">
+        <ul class="check-list con">
+            <li><strong>Static responses</strong> &mdash; Read always returns the same hardcoded record, even if you created different data</li>
+            <li><strong>No validation</strong> &mdash; Missing required field "Name"? WireMock still returns success</li>
+            <li><strong>No real SOQL</strong> &mdash; WHERE clause is ignored, always returns same data</li>
+            <li><strong>Create &amp; Read are disconnected</strong> &mdash; Create returns random Id, Read returns a different hardcoded Id</li>
+            <li><strong>2 containers needed</strong> &mdash; WireMock + JSON Server (separate networking)</li>
+        </ul>
+    </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  TAB 3: CUSTOM SERVER                                           ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="tab-panel" id="tab-custom">
+    <h2>&#9889; Custom Server Approach</h2>
+    <p class="section-subtitle">Dynamic route handlers with in-memory database</p>
+
+    <div class="comparison">
+        <div class="section-card">
+            <h3 style="color: var(--success);">&#9889; How It Works</h3>
+            <p>ONE route handler function handles <strong>all objects dynamically</strong> using a <code>:object</code> URL wildcard.</p>
+            <div class="code-label">rest-routes.js &mdash; Create Handler</div>
+<pre><code><span class="hl-comment">// One handler for ALL objects</span>
+app.<span class="hl-method">post</span>(<span class="hl-string">'/sobjects/<span class="hl-value">:object</span>'</span>, (req, res) <span class="hl-keyword">=&gt;</span> {
+  <span class="hl-keyword">const</span> schema = schemas[req.params.<span class="hl-value">object</span>];
+
+  <span class="hl-comment">// Step 1: Validate against schema</span>
+  <span class="hl-keyword">const</span> errors = <span class="hl-method">validate</span>(req.body, schema);
+  <span class="hl-keyword">if</span> (errors.length &gt; <span class="hl-number">0</span>) <span class="hl-keyword">return</span> res.json(errors);
+
+  <span class="hl-comment">// Step 2: Generate Salesforce-style Id</span>
+  <span class="hl-keyword">const</span> id = <span class="hl-method">generateId</span>(schema.idPrefix);
+
+  <span class="hl-comment">// Step 3: Store in memory</span>
+  database[objectName].<span class="hl-method">push</span>(record);
+
+  <span class="hl-comment">// Step 4: Return real response</span>
+  res.json({ id, <span class="hl-property">success</span>: <span class="hl-number">true</span> });
+});</code></pre>
+        </div>
+
+        <div class="section-card">
+            <h3 style="color: var(--success);">&#128196; Files Needed (per object)</h3>
+            <table>
+                <thead><tr><th>#</th><th>File</th><th>Scope</th></tr></thead>
+                <tbody>
+                    <tr><td>1</td><td>Account.json</td><td><span class="tag green">Schema Only</span></td></tr>
+                </tbody>
+            </table>
+            <div class="code-label" style="margin-top: 16px;">schemas/Account.json</div>
+<pre><code>{
+  <span class="hl-property">"name"</span>: <span class="hl-string">"Account"</span>,
+  <span class="hl-property">"idPrefix"</span>: <span class="hl-string">"001"</span>,
+  <span class="hl-property">"fields"</span>: {
+    <span class="hl-property">"Name"</span>: {
+      <span class="hl-property">"required"</span>: <span class="hl-number">true</span>,
+      <span class="hl-property">"maxLength"</span>: <span class="hl-number">255</span>
+    },
+    <span class="hl-property">"Type"</span>: {
+      <span class="hl-property">"type"</span>: <span class="hl-string">"picklist"</span>,
+      <span class="hl-property">"values"</span>: [<span class="hl-string">"Customer"</span>, <span class="hl-string">"Partner"</span>]
+    }
+  }
+}</code></pre>
+            <div class="info-box green">
+                <div class="info-box-title">&#10003; Minimal footprint</div>
+                <p>5 objects = <strong>5 schema files</strong>. Zero code changes. Add a new object by creating one JSON file.</p>
+            </div>
+        </div>
+    </div>
+
+    <h3 style="color: var(--success);">&#10003; Capabilities</h3>
+    <div class="section-card" style="border-color: var(--success-light);">
+        <ul class="check-list pro">
+            <li><strong>Real CRUD</strong> &mdash; Create a record, Read returns the actual created data</li>
+            <li><strong>Field validation</strong> &mdash; Required fields, picklist values, max length, read-only fields</li>
+            <li><strong>Real SOQL</strong> &mdash; WHERE, LIKE, IN, ORDER BY, NULLS FIRST/LAST, LIMIT all work on actual data</li>
+            <li><strong>Single container</strong> &mdash; Everything in one Express.js server</li>
+            <li><strong>Schema-driven</strong> &mdash; Add new object = add one JSON file, zero code changes</li>
+            <li><strong>Bulk API support</strong> &mdash; Both v1 (XML) and v2 (CSV) ingest and query</li>
+        </ul>
+    </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  TAB 4: ARCHITECTURE                                            ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="tab-panel" id="tab-architecture">
+    <h2>Architecture Comparison</h2>
+    <p class="section-subtitle">How each approach handles requests internally</p>
+
+    <div class="comparison">
+        <div class="section-card">
+            <h3 style="color: var(--orange);">&#128196; WireMock Architecture</h3>
+            <div class="flow-diagram">
+                <div class="flow-row">
+                    <div class="flow-box">SnapLogic Snap</div>
+                    <div class="flow-arrow">&rarr;</div>
+                    <div class="flow-box orange">WireMock<br><small>Pattern match URL</small><br><small>Return static JSON</small></div>
+                </div>
+                <div class="flow-row" style="margin-top: 20px;">
+                    <div class="flow-box orange">WireMock<br><small>Webhook</small></div>
+                    <div class="flow-arrow">&rarr;</div>
+                    <div class="flow-box">JSON Server<br><small>Separate container</small><br><small>Stores data on disk</small></div>
+                </div>
+            </div>
+            <div class="info-box yellow">
+                <p>Two services, separate networking. Create &amp; Read responses are <strong>disconnected</strong>.</p>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <h3 style="color: var(--success);">&#9889; Custom Server Architecture</h3>
+            <div class="flow-diagram">
+                <div class="flow-row">
+                    <div class="flow-box">SnapLogic Snap</div>
+                    <div class="flow-arrow">&rarr;</div>
+                    <div class="flow-box highlight">Custom Server<br><small>Validate &rarr; Generate Id &rarr; Store</small></div>
+                </div>
+                <div class="flow-row" style="margin-top: 20px;">
+                    <div class="flow-box">Schema</div>
+                    <div class="flow-arrow">&rarr;</div>
+                    <div class="flow-box">Validator</div>
+                    <div class="flow-arrow">&rarr;</div>
+                    <div class="flow-box">Database (RAM)</div>
+                    <div class="flow-arrow">&rarr;</div>
+                    <div class="flow-box green">Response</div>
+                </div>
+            </div>
+            <div class="info-box green">
+                <p>Single container, everything in memory. Create data &rarr; Read returns <strong>the same data</strong>.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  TAB 5: CREATE FLOW                                             ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="tab-panel" id="tab-create-flow">
+    <h2>Create Record &mdash; Step by Step</h2>
+    <p class="section-subtitle">What happens when a SnapLogic Create snap sends a POST request</p>
+
+    <div class="comparison">
+        <div class="section-card">
+            <h3 style="color: var(--orange);">&#128196; WireMock Flow</h3>
+            <div class="flow-diagram">
+                <div class="flow-row">
+                    <div class="flow-box">Snap sends POST</div>
+                    <div class="flow-arrow">&rarr;</div>
+                    <div class="flow-box">URL matches?</div>
+                    <div class="flow-arrow">&rarr;</div>
+                    <div class="flow-box orange">Return hardcoded JSON</div>
+                </div>
+            </div>
+            <div class="steps">
+                <div class="step"><h4>Snap sends POST <code>/sobjects/Account</code></h4></div>
+                <div class="step"><h4>WireMock matches URL regex pattern</h4></div>
+                <div class="step"><h4>Returns static response: <code>{ id: "001RANDOM", success: true }</code></h4></div>
+                <div class="step"><h4>Webhook forwards body to JSON Server (async)</h4></div>
+            </div>
+            <div class="info-box red">
+                <div class="info-box-title">&#9888; No validation</div>
+                <p>Missing Name? Invalid Type? <strong>Still returns success.</strong> The Id is randomly generated but never linked to the stored data.</p>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <h3 style="color: var(--success);">&#9889; Custom Server Flow</h3>
+            <div class="flow-diagram">
+                <div class="flow-row">
+                    <div class="flow-box">Snap sends POST</div>
+                    <div class="flow-arrow">&rarr;</div>
+                    <div class="flow-box highlight">Load schema</div>
+                    <div class="flow-arrow">&rarr;</div>
+                    <div class="flow-box highlight">Validate</div>
+                    <div class="flow-arrow">&rarr;</div>
+                    <div class="flow-box highlight">Generate Id</div>
+                    <div class="flow-arrow">&rarr;</div>
+                    <div class="flow-box green">Store &amp; respond</div>
+                </div>
+            </div>
+            <div class="steps">
+                <div class="step"><h4>Snap sends POST <code>/sobjects/Account</code></h4></div>
+                <div class="step"><h4>Extract <code>Account</code> from URL &rarr; load <code>Account.json</code> schema</h4></div>
+                <div class="step"><h4>Validate: Is Name present? Is Type a valid picklist value?</h4></div>
+                <div class="step"><h4>Generate Salesforce-style Id: <code>001</code> + 15 random chars</h4></div>
+                <div class="step"><h4>Store record in <code>database["Account"]</code> with timestamps</h4></div>
+                <div class="step"><h4>Return <code>{ id: "001ABC...", success: true }</code></h4></div>
+            </div>
+            <div class="info-box green">
+                <div class="info-box-title">&#10003; Real validation</div>
+                <p>Missing Name &rarr; returns <code>REQUIRED_FIELD_MISSING</code>. The Id is <strong>linked to the actual stored record</strong>.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  TAB 6: READ / SOQL FLOW                                        ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="tab-panel" id="tab-read-flow">
+    <h2>Read / SOQL Query &mdash; Step by Step</h2>
+    <p class="section-subtitle">What happens when a SnapLogic SOQL snap sends a query</p>
+
+    <div class="comparison">
+        <div class="section-card">
+            <h3 style="color: var(--orange);">&#128196; WireMock</h3>
+            <h4>Query: <code>SELECT Id, Name FROM Account WHERE Type = 'Customer'</code></h4>
+            <div class="code-label">WireMock mapping &mdash; ignores the actual SOQL</div>
+<pre><code>{
+  <span class="hl-property">"request"</span>: {
+    <span class="hl-property">"queryParameters"</span>: {
+      <span class="hl-property">"q"</span>: { <span class="hl-property">"contains"</span>: <span class="hl-string">"Account"</span> }
+    }
+  },
+  <span class="hl-property">"response"</span>: {
+    <span class="hl-property">"jsonBody"</span>: {
+      <span class="hl-property">"records"</span>: [
+        { <span class="hl-property">"Id"</span>: <span class="hl-string">"001TEST01"</span>,
+          <span class="hl-property">"Name"</span>: <span class="hl-string">"Test Account"</span> }
+      ]
+    }
+  }
+}</code></pre>
+            <div class="info-box red">
+                <p><strong>Always returns the same record</strong> regardless of what data was created or what WHERE clause is used. The query is only checked for containing "Account".</p>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <h3 style="color: var(--success);">&#9889; Custom Server</h3>
+            <h4>Same Query: <code>SELECT Id, Name FROM Account WHERE Type = 'Customer'</code></h4>
+            <div class="code-label">Parses SOQL, filters actual data</div>
+<pre><code><span class="hl-keyword">const</span> parsed = <span class="hl-method">parseSOQL</span>(query);
+<span class="hl-comment">// &rarr; { fields: ['Id','Name'], object: 'Account',</span>
+<span class="hl-comment">//     where: [{field:'Type', op:'=', val:'Customer'}] }</span>
+
+<span class="hl-keyword">let</span> records = database[<span class="hl-string">'Account'</span>];
+records = <span class="hl-method">applyWhere</span>(records, parsed.where);
+records = <span class="hl-method">applyOrderBy</span>(records, parsed.orderBy);
+<span class="hl-comment">// &rarr; returns only actual Customer records</span></code></pre>
+            <div class="info-box green">
+                <p><strong>Returns real data</strong> that was actually created. WHERE, LIKE, IN, ORDER BY, NULLS FIRST/LAST, LIMIT all work against the in-memory database.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  TAB 7: VALIDATION                                              ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="tab-panel" id="tab-validation">
+    <h2>Validation &mdash; Error Handling</h2>
+    <p class="section-subtitle">What happens when you send invalid data?</p>
+
+    <div class="comparison">
+        <div class="section-card">
+            <h3 style="color: var(--orange);">&#128196; WireMock &mdash; No Validation</h3>
+            <table>
+                <thead><tr><th>Scenario</th><th>Result</th></tr></thead>
+                <tbody>
+                    <tr><td>Missing required field (Name)</td><td><span class="no">&#10003; Returns success (wrong!)</span></td></tr>
+                    <tr><td>Invalid picklist value</td><td><span class="no">&#10003; Returns success (wrong!)</span></td></tr>
+                    <tr><td>String too long (&gt;255 chars)</td><td><span class="no">&#10003; Returns success (wrong!)</span></td></tr>
+                    <tr><td>Unknown object name</td><td><span class="no">&#10003; Returns success (wrong!)</span></td></tr>
+                </tbody>
+            </table>
+            <div class="info-box red">
+                <p>WireMock only checks if the URL pattern matches. It <strong>never looks at the request body</strong>.</p>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <h3 style="color: var(--success);">&#9889; Custom Server &mdash; Real Validation</h3>
+            <table>
+                <thead><tr><th>Scenario</th><th>Result</th></tr></thead>
+                <tbody>
+                    <tr><td>Missing required field (Name)</td><td><span class="yes">REQUIRED_FIELD_MISSING</span></td></tr>
+                    <tr><td>Invalid picklist value (Type="Bad")</td><td><span class="yes">INVALID_OR_NULL_FOR_RESTRICTED_PICKLIST</span></td></tr>
+                    <tr><td>String too long (&gt;255 chars)</td><td><span class="yes">STRING_TOO_LONG</span></td></tr>
+                    <tr><td>Unknown object name</td><td><span class="yes">404 &mdash; sObject type not supported</span></td></tr>
+                    <tr><td>Read-only field on create</td><td><span class="yes">INVALID_FIELD_FOR_INSERT_UPDATE</span></td></tr>
+                </tbody>
+            </table>
+            <div class="info-box green">
+                <p>Returns the <strong>same error codes</strong> as real Salesforce. Validation rules come from the schema JSON file.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  TAB 8: API COVERAGE                                            ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="tab-panel" id="tab-api-coverage">
+    <h2>API Coverage</h2>
+    <p class="section-subtitle">What SnapLogic snaps are supported?</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>SnapLogic Snap</th>
+                <th>API Used</th>
+                <th style="text-align:center">WireMock</th>
+                <th style="text-align:center">Custom Server</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>Salesforce Create (REST)</td><td><code>POST /sobjects/{Object}</code></td><td style="text-align:center"><span class="partial">Static only</span></td><td style="text-align:center"><span class="yes">&#10003; Full</span></td></tr>
+            <tr><td>Salesforce Read</td><td><code>GET /sobjects/{Object}/{Id}</code></td><td style="text-align:center"><span class="partial">Static only</span></td><td style="text-align:center"><span class="yes">&#10003; Full</span></td></tr>
+            <tr><td>Salesforce Update</td><td><code>PATCH /sobjects/{Object}/{Id}</code></td><td style="text-align:center"><span class="partial">Static only</span></td><td style="text-align:center"><span class="yes">&#10003; Full</span></td></tr>
+            <tr><td>Salesforce Delete</td><td><code>DELETE /sobjects/{Object}/{Id}</code></td><td style="text-align:center"><span class="partial">Static only</span></td><td style="text-align:center"><span class="yes">&#10003; Full</span></td></tr>
+            <tr><td>Salesforce Upsert</td><td><code>PATCH /sobjects/{Object}/{ExtId}/{Val}</code></td><td style="text-align:center"><span class="no">&#10007; None</span></td><td style="text-align:center"><span class="yes">&#10003; Full</span></td></tr>
+            <tr><td>Salesforce SOQL</td><td><code>GET /query?q=SELECT...</code></td><td style="text-align:center"><span class="partial">Pattern match only</span></td><td style="text-align:center"><span class="yes">&#10003; Real SOQL parsing</span></td></tr>
+            <tr><td>Salesforce Create (Bulk v1)</td><td><code>POST /services/async/{ver}/job</code></td><td style="text-align:center"><span class="no">&#10007; None</span></td><td style="text-align:center"><span class="yes">&#10003; Bulk v1</span></td></tr>
+            <tr><td>Salesforce Bulk Create (v2)</td><td><code>POST /services/data/{ver}/jobs/ingest</code></td><td style="text-align:center"><span class="no">&#10007; None</span></td><td style="text-align:center"><span class="yes">&#10003; Bulk v2</span></td></tr>
+            <tr><td>Salesforce Bulk Query (v2)</td><td><code>POST /services/data/{ver}/jobs/query</code></td><td style="text-align:center"><span class="no">&#10007; None</span></td><td style="text-align:center"><span class="yes">&#10003; Bulk v2</span></td></tr>
+            <tr><td>Describe Object</td><td><code>GET /sobjects/{Object}/describe</code></td><td style="text-align:center"><span class="partial">Static file per object</span></td><td style="text-align:center"><span class="yes">&#10003; Auto-generated</span></td></tr>
+            <tr><td>OAuth Authentication</td><td><code>POST /services/oauth2/token</code></td><td style="text-align:center"><span class="yes">&#10003;</span></td><td style="text-align:center"><span class="yes">&#10003;</span></td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  TAB 9: SOQL SUPPORT                                            ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="tab-panel" id="tab-soql">
+    <h2>SOQL Query Support</h2>
+    <p class="section-subtitle">Custom server parses and executes real SOQL queries against in-memory data</p>
+
+    <table>
+        <thead>
+            <tr><th>SOQL Feature</th><th>Example</th><th style="text-align:center">Supported</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>SELECT fields</td><td><code>SELECT Id, Name, Type FROM Account</code></td><td style="text-align:center"><span class="yes">&#10003;</span></td></tr>
+            <tr><td>COUNT()</td><td><code>SELECT COUNT() FROM Account</code></td><td style="text-align:center"><span class="yes">&#10003;</span></td></tr>
+            <tr><td>WHERE =, !=, &lt;, &gt;, &lt;=, &gt;=</td><td><code>WHERE Type = 'Customer'</code></td><td style="text-align:center"><span class="yes">&#10003;</span></td></tr>
+            <tr><td>WHERE LIKE</td><td><code>WHERE Name LIKE '%Corp%'</code></td><td style="text-align:center"><span class="yes">&#10003;</span></td></tr>
+            <tr><td>WHERE IN / NOT IN</td><td><code>WHERE Type IN ('Customer', 'Partner')</code></td><td style="text-align:center"><span class="yes">&#10003;</span></td></tr>
+            <tr><td>AND / OR</td><td><code>WHERE Type='Customer' AND Industry='Tech'</code></td><td style="text-align:center"><span class="yes">&#10003;</span></td></tr>
+            <tr><td>ORDER BY ASC/DESC</td><td><code>ORDER BY Name DESC</code></td><td style="text-align:center"><span class="yes">&#10003;</span></td></tr>
+            <tr><td>NULLS FIRST / LAST</td><td><code>ORDER BY Id DESC NULLS LAST</code></td><td style="text-align:center"><span class="yes">&#10003;</span></td></tr>
+            <tr><td>LIMIT / OFFSET</td><td><code>LIMIT 10 OFFSET 5</code></td><td style="text-align:center"><span class="yes">&#10003;</span></td></tr>
+            <tr><td>NULL checks</td><td><code>WHERE Email != null</code></td><td style="text-align:center"><span class="yes">&#10003;</span></td></tr>
+            <tr style="background: var(--danger-light);"><td>Subqueries</td><td><code>SELECT (SELECT Id FROM Contacts) FROM Account</code></td><td style="text-align:center"><span class="no">&#10007;</span></td></tr>
+            <tr style="background: var(--danger-light);"><td>Relationship fields</td><td><code>SELECT Account.Name FROM Contact</code></td><td style="text-align:center"><span class="no">&#10007;</span></td></tr>
+            <tr style="background: var(--danger-light);"><td>GROUP BY / HAVING</td><td><code>GROUP BY Type HAVING COUNT(Id) &gt; 5</code></td><td style="text-align:center"><span class="no">&#10007;</span></td></tr>
+            <tr style="background: var(--danger-light);"><td>Date literals</td><td><code>WHERE CreatedDate = TODAY</code></td><td style="text-align:center"><span class="no">&#10007;</span></td></tr>
+        </tbody>
+    </table>
+
+    <div class="info-box purple">
+        <div class="info-box-title">&#128161; Unsupported features can be added</div>
+        <p>The SOQL parser is in <code>lib/soql-parser.js</code>. If you need a specific subquery or feature, it can be added to the parser without affecting existing functionality.</p>
+    </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  TAB 10: BY THE NUMBERS                                         ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="tab-panel" id="tab-numbers">
+    <h2>By the Numbers</h2>
+    <p class="section-subtitle">A quantitative comparison of both approaches</p>
+
+    <div class="stats-grid">
+        <div class="stat-card orange"><div class="stat-number">30+</div><div class="stat-label">WireMock mapping files</div></div>
+        <div class="stat-card green"><div class="stat-number">5</div><div class="stat-label">Custom Server schema files</div></div>
+        <div class="stat-card orange"><div class="stat-number">2</div><div class="stat-label">WireMock containers</div></div>
+        <div class="stat-card green"><div class="stat-number">1</div><div class="stat-label">Custom Server container</div></div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card red"><div class="stat-number">0</div><div class="stat-label">WireMock validations</div></div>
+        <div class="stat-card green"><div class="stat-number">5</div><div class="stat-label">Custom Server validation types</div></div>
+        <div class="stat-card red"><div class="stat-number">0</div><div class="stat-label">WireMock SOQL features</div></div>
+        <div class="stat-card blue"><div class="stat-number">10</div><div class="stat-label">Custom Server SOQL features</div></div>
+    </div>
+
+    <h3>Adding a New Object</h3>
+    <div class="comparison">
+        <div class="section-card" style="border-left: 4px solid var(--orange);">
+            <h3 style="color: var(--orange); margin-top: 0;">&#128196; WireMock: 6&ndash;8 steps</h3>
+            <ul class="check-list con">
+                <li>Create describe mapping file</li>
+                <li>Create create mapping file</li>
+                <li>Create read-query mapping file</li>
+                <li>Create read-single mapping file</li>
+                <li>Create update mapping file</li>
+                <li>Create delete mapping file</li>
+                <li>Add JSON Server endpoint config</li>
+                <li>Create response body files with hardcoded data</li>
+            </ul>
+        </div>
+        <div class="section-card" style="border-left: 4px solid var(--success);">
+            <h3 style="color: var(--success); margin-top: 0;">&#9889; Custom Server: 2 steps</h3>
+            <ul class="check-list pro">
+                <li>Create one <code>schemas/ObjectName.json</code> file</li>
+                <li>Restart the container</li>
+                <li><strong>Done.</strong> All CRUD + SOQL + Bulk API work automatically.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  TAB 11: FILE STRUCTURE                                         ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="tab-panel" id="tab-file-structure">
+    <h2>Custom Server &mdash; File Structure</h2>
+    <p class="section-subtitle">Complete project layout</p>
+
+    <div class="dir-tree">
+<span class="dir">custom-server/</span>
+  <span class="file">server.js</span>                       <span class="comment">&larr; Express app setup, HTTPS, middleware</span>
+  <span class="file">package.json</span>                     <span class="comment">&larr; Only dependency: express</span>
+  <span class="file">Dockerfile</span>                       <span class="comment">&larr; Node 18 Alpine image</span>
+  <span class="dir">schemas/</span>                         <span class="comment">&larr; One file per Salesforce object (22 objects)</span>
+    <span class="file">Account.json</span>                   <span class="comment">&larr; Field definitions, validation rules</span>
+    <span class="file">Contact.json</span>
+    <span class="file">Lead.json</span>
+    <span class="file">Opportunity.json</span>
+    <span class="file">Case.json</span>
+    <span class="file">Task.json</span>
+    <span class="file">Event.json</span>
+    <span class="file">Campaign.json</span>
+    <span class="file">... and 14 more</span>
+  <span class="dir">lib/</span>                             <span class="comment">&larr; Application logic modules</span>
+    <span class="file">routes.js</span>                      <span class="comment">&larr; Route orchestrator (wires everything)</span>
+    <span class="dir">routes/</span>
+      <span class="file">rest-routes.js</span>             <span class="comment">&larr; REST API (CRUD + SOQL + OAuth)</span>
+      <span class="file">bulk-v1-routes.js</span>          <span class="comment">&larr; Bulk API v1 (XML, /services/async/...)</span>
+      <span class="file">bulk-v2-ingest-routes.js</span>   <span class="comment">&larr; Bulk API v2 write (CSV)</span>
+      <span class="file">bulk-v2-query-routes.js</span>    <span class="comment">&larr; Bulk API v2 read (CSV)</span>
+      <span class="file">admin-routes.js</span>            <span class="comment">&larr; Health, DB viewer, reset</span>
+    <span class="file">soql-parser.js</span>               <span class="comment">&larr; SOQL query parser (WHERE, ORDER BY, NULLS)</span>
+    <span class="file">validator.js</span>                 <span class="comment">&larr; Field validation engine</span>
+    <span class="file">id-generator.js</span>              <span class="comment">&larr; Salesforce 18-char ID generator</span>
+    <span class="file">error-formatter.js</span>           <span class="comment">&larr; Salesforce error format</span>
+    <span class="dir">bulk/</span>
+      <span class="file">job-store.js</span>               <span class="comment">&larr; Bulk job state management</span>
+      <span class="file">csv-parser.js</span>              <span class="comment">&larr; CSV parse/serialize</span>
+      <span class="file">bulk-processor.js</span>          <span class="comment">&larr; Bulk record processing</span>
+    </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  TAB 12: SUMMARY                                                ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<div class="tab-panel" id="tab-summary">
+    <h2>Summary</h2>
+    <p class="section-subtitle">Side-by-side comparison of both approaches</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width:28%">Aspect</th>
+                <th style="width:36%; color: var(--orange);">&#9673; WireMock</th>
+                <th style="width:36%; color: var(--success);">&#9889; Custom Server</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>Approach</strong></td><td>Static pattern matching</td><td>Dynamic logic + in-memory DB</td></tr>
+            <tr><td><strong>Files per object</strong></td><td>6&ndash;8 mapping files</td><td>1 schema file</td></tr>
+            <tr><td><strong>Containers</strong></td><td>2 (WireMock + JSON Server)</td><td>1</td></tr>
+            <tr><td><strong>Validation</strong></td><td>None</td><td>Required, picklist, length, read-only</td></tr>
+            <tr><td><strong>SOQL</strong></td><td>Pattern match only</td><td>Full parsing (WHERE, LIKE, IN, ORDER BY, NULLS)</td></tr>
+            <tr><td><strong>Create &rarr; Read link</strong></td><td>Disconnected</td><td>Same data returned</td></tr>
+            <tr><td><strong>Bulk API</strong></td><td>Not supported</td><td>v1 (XML) + v2 (CSV)</td></tr>
+            <tr><td><strong>Add new object</strong></td><td>Create 6+ files</td><td>Create 1 JSON file</td></tr>
+            <tr><td><strong>Error handling</strong></td><td>Always returns success</td><td>Real Salesforce error codes</td></tr>
+            <tr><td><strong>Dependencies</strong></td><td>WireMock + JSON Server</td><td>Express.js only</td></tr>
+            <tr><td><strong>Objects supported</strong></td><td>5 (Account, Contact, Lead, Opp, Case)</td><td>22 objects</td></tr>
+        </tbody>
+    </table>
+
+    <div class="info-box blue" style="margin-top: 32px;">
+        <div class="info-box-title">&#128161; Bottom Line</div>
+        <p><strong>Custom Server = Fewer files, more features, real behavior.</strong> Schema-driven architecture means adding any Salesforce object requires zero code changes &mdash; just one JSON file.</p>
+    </div>
+</div>
+
+</div><!-- /container -->
+
+<!-- ═══════════════════════════ FOOTER ═══════════════════════════ -->
+<div style="text-align: center; padding: 30px; color: var(--gray-600); font-size: 0.85em; border-top: 1px solid var(--gray-200); margin-top: 40px;">
+    WireMock vs Custom Server &mdash; Architecture Comparison<br>
+    <span style="color: var(--gray-400);">SnapLogic QA Team &bull; Salesforce Mock API Testing</span>
+</div>
+
+<!-- ═══════════════════════════ SCRIPTS ═══════════════════════════ -->
+<script>
+    // ── Main Tabs ──
+    document.querySelectorAll('.main-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+        });
+    });
+</script>
+
+</body>
+</html>

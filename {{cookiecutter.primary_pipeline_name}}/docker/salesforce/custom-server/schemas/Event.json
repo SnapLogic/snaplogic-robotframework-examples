@@ -1,0 +1,73 @@
+{
+  "name": "Event",
+  "idPrefix": "00U",
+  "label": "Event",
+  "labelPlural": "Events",
+  "keyPrefix": "00U",
+  "fields": {
+    "Subject": {
+      "type": "picklist",
+      "required": true,
+      "label": "Subject",
+      "maxLength": 255,
+      "createable": true,
+      "updateable": true,
+      "values": ["Call", "Email", "Meeting", "Send Letter", "Send Quote", "Other"]
+    },
+    "StartDateTime": {
+      "type": "datetime",
+      "required": true,
+      "label": "Start Date Time",
+      "createable": true,
+      "updateable": true
+    },
+    "EndDateTime": {
+      "type": "datetime",
+      "required": true,
+      "label": "End Date Time",
+      "createable": true,
+      "updateable": true
+    },
+    "Location": {
+      "type": "string",
+      "required": false,
+      "label": "Location",
+      "maxLength": 255,
+      "createable": true,
+      "updateable": true
+    },
+    "Description": {
+      "type": "textarea",
+      "required": false,
+      "label": "Description",
+      "maxLength": 32000,
+      "createable": true,
+      "updateable": true
+    },
+    "WhoId": {
+      "type": "reference",
+      "required": false,
+      "label": "Name ID",
+      "maxLength": 18,
+      "createable": true,
+      "updateable": true,
+      "referenceTo": ["Contact", "Lead"]
+    },
+    "WhatId": {
+      "type": "reference",
+      "required": false,
+      "label": "Related To ID",
+      "maxLength": 18,
+      "createable": true,
+      "updateable": true,
+      "referenceTo": ["Account", "Opportunity"]
+    },
+    "IsAllDayEvent": {
+      "type": "boolean",
+      "required": false,
+      "label": "All-Day Event",
+      "createable": true,
+      "updateable": true
+    }
+  }
+}

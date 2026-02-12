@@ -1,0 +1,78 @@
+{
+  "name": "Task",
+  "idPrefix": "00T",
+  "label": "Task",
+  "labelPlural": "Tasks",
+  "keyPrefix": "00T",
+  "fields": {
+    "Subject": {
+      "type": "picklist",
+      "required": false,
+      "label": "Subject",
+      "maxLength": 255,
+      "createable": true,
+      "updateable": true,
+      "values": ["Call", "Email", "Send Letter", "Send Quote", "Other"]
+    },
+    "Status": {
+      "type": "picklist",
+      "required": true,
+      "label": "Status",
+      "maxLength": 40,
+      "createable": true,
+      "updateable": true,
+      "values": ["Not Started", "In Progress", "Completed", "Waiting on someone else", "Deferred"]
+    },
+    "Priority": {
+      "type": "picklist",
+      "required": true,
+      "label": "Priority",
+      "maxLength": 40,
+      "createable": true,
+      "updateable": true,
+      "values": ["High", "Normal", "Low"]
+    },
+    "WhoId": {
+      "type": "reference",
+      "required": false,
+      "label": "Name ID",
+      "maxLength": 18,
+      "createable": true,
+      "updateable": true,
+      "referenceTo": ["Contact", "Lead"]
+    },
+    "WhatId": {
+      "type": "reference",
+      "required": false,
+      "label": "Related To ID",
+      "maxLength": 18,
+      "createable": true,
+      "updateable": true,
+      "referenceTo": ["Account", "Opportunity", "Case"]
+    },
+    "ActivityDate": {
+      "type": "date",
+      "required": false,
+      "label": "Due Date",
+      "createable": true,
+      "updateable": true
+    },
+    "Description": {
+      "type": "textarea",
+      "required": false,
+      "label": "Comments",
+      "maxLength": 32000,
+      "createable": true,
+      "updateable": true
+    },
+    "OwnerId": {
+      "type": "reference",
+      "required": false,
+      "label": "Assigned To ID",
+      "maxLength": 18,
+      "createable": true,
+      "updateable": true,
+      "referenceTo": ["User"]
+    }
+  }
+}

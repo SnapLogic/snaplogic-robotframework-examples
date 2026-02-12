@@ -232,6 +232,11 @@ src/exported_assets/**
 !test/suite/test_data/accounts_jar_files/
 !test/suite/test_data/accounts_jar_files/**
 
+# Allow custom-server lib/ directory (overrides Python lib/ ignore on line 69)
+# The Python "lib/" rule is too broad and also ignores our Node.js server code
+!docker/salesforce/custom-server/lib/
+!docker/salesforce/custom-server/lib/**
+
 # ==========================================
 # Development Tools
 # ==========================================
