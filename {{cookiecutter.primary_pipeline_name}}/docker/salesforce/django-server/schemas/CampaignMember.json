@@ -1,0 +1,52 @@
+{
+  "name": "CampaignMember",
+  "idPrefix": "00v",
+  "label": "Campaign Member",
+  "labelPlural": "Campaign Members",
+  "keyPrefix": "00v",
+  "fields": {
+    "CampaignId": {
+      "type": "reference",
+      "required": true,
+      "label": "Campaign ID",
+      "maxLength": 18,
+      "createable": true,
+      "updateable": false,
+      "referenceTo": ["Campaign"]
+    },
+    "ContactId": {
+      "type": "reference",
+      "required": false,
+      "label": "Contact ID",
+      "maxLength": 18,
+      "createable": true,
+      "updateable": false,
+      "referenceTo": ["Contact"]
+    },
+    "LeadId": {
+      "type": "reference",
+      "required": false,
+      "label": "Lead ID",
+      "maxLength": 18,
+      "createable": true,
+      "updateable": false,
+      "referenceTo": ["Lead"]
+    },
+    "Status": {
+      "type": "picklist",
+      "required": false,
+      "label": "Status",
+      "maxLength": 40,
+      "createable": true,
+      "updateable": true,
+      "values": ["Sent", "Responded", "Planned", "Received"]
+    },
+    "HasResponded": {
+      "type": "boolean",
+      "required": false,
+      "label": "Responded",
+      "createable": false,
+      "updateable": false
+    }
+  }
+}

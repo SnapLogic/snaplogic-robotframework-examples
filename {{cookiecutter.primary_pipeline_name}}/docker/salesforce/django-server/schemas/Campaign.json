@@ -1,0 +1,91 @@
+{
+  "name": "Campaign",
+  "idPrefix": "701",
+  "label": "Campaign",
+  "labelPlural": "Campaigns",
+  "keyPrefix": "701",
+  "fields": {
+    "Name": {
+      "type": "string",
+      "required": true,
+      "label": "Campaign Name",
+      "maxLength": 80,
+      "createable": true,
+      "updateable": true
+    },
+    "Type": {
+      "type": "picklist",
+      "required": false,
+      "label": "Type",
+      "maxLength": 40,
+      "createable": true,
+      "updateable": true,
+      "values": ["Conference", "Webinar", "Trade Show", "Public Relations", "Partners", "Referral Program", "Advertisement", "Banner Ads", "Direct Mail", "Email", "Telemarketing", "Other"]
+    },
+    "Status": {
+      "type": "picklist",
+      "required": true,
+      "label": "Status",
+      "maxLength": 40,
+      "createable": true,
+      "updateable": true,
+      "values": ["Planned", "In Progress", "Completed", "Aborted"]
+    },
+    "StartDate": {
+      "type": "date",
+      "required": false,
+      "label": "Start Date",
+      "createable": true,
+      "updateable": true
+    },
+    "EndDate": {
+      "type": "date",
+      "required": false,
+      "label": "End Date",
+      "createable": true,
+      "updateable": true
+    },
+    "BudgetedCost": {
+      "type": "currency",
+      "required": false,
+      "label": "Budgeted Cost",
+      "precision": 18,
+      "scale": 2,
+      "createable": true,
+      "updateable": true
+    },
+    "ActualCost": {
+      "type": "currency",
+      "required": false,
+      "label": "Actual Cost",
+      "precision": 18,
+      "scale": 2,
+      "createable": true,
+      "updateable": true
+    },
+    "ExpectedRevenue": {
+      "type": "currency",
+      "required": false,
+      "label": "Expected Revenue",
+      "precision": 18,
+      "scale": 2,
+      "createable": true,
+      "updateable": true
+    },
+    "IsActive": {
+      "type": "boolean",
+      "required": false,
+      "label": "Active",
+      "createable": true,
+      "updateable": true
+    },
+    "Description": {
+      "type": "textarea",
+      "required": false,
+      "label": "Description",
+      "maxLength": 32000,
+      "createable": true,
+      "updateable": true
+    }
+  }
+}

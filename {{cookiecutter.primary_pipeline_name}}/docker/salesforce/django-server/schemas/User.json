@@ -1,0 +1,96 @@
+{
+  "name": "User",
+  "idPrefix": "005",
+  "label": "User",
+  "labelPlural": "Users",
+  "keyPrefix": "005",
+  "fields": {
+    "Username": {
+      "type": "string",
+      "required": true,
+      "label": "Username",
+      "maxLength": 80,
+      "createable": true,
+      "updateable": true
+    },
+    "LastName": {
+      "type": "string",
+      "required": true,
+      "label": "Last Name",
+      "maxLength": 80,
+      "createable": true,
+      "updateable": true
+    },
+    "FirstName": {
+      "type": "string",
+      "required": false,
+      "label": "First Name",
+      "maxLength": 40,
+      "createable": true,
+      "updateable": true
+    },
+    "Email": {
+      "type": "email",
+      "required": true,
+      "label": "Email",
+      "maxLength": 128,
+      "createable": true,
+      "updateable": true
+    },
+    "Alias": {
+      "type": "string",
+      "required": true,
+      "label": "Alias",
+      "maxLength": 8,
+      "createable": true,
+      "updateable": true
+    },
+    "IsActive": {
+      "type": "boolean",
+      "required": false,
+      "label": "Active",
+      "createable": true,
+      "updateable": true
+    },
+    "ProfileId": {
+      "type": "reference",
+      "required": true,
+      "label": "Profile ID",
+      "maxLength": 18,
+      "createable": true,
+      "updateable": true
+    },
+    "UserRoleId": {
+      "type": "reference",
+      "required": false,
+      "label": "Role ID",
+      "maxLength": 18,
+      "createable": true,
+      "updateable": true
+    },
+    "Title": {
+      "type": "string",
+      "required": false,
+      "label": "Title",
+      "maxLength": 80,
+      "createable": true,
+      "updateable": true
+    },
+    "Department": {
+      "type": "string",
+      "required": false,
+      "label": "Department",
+      "maxLength": 80,
+      "createable": true,
+      "updateable": true
+    },
+    "Phone": {
+      "type": "phone",
+      "required": false,
+      "label": "Phone",
+      "maxLength": 40,
+      "createable": true,
+      "updateable": true
+    }
+  }
+}

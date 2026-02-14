@@ -1,0 +1,66 @@
+# =============================================================================
+# Django Salesforce API Mock Server - Docker Compose
+# =============================================================================
+#
+# Python/Django alternative to WireMock and Node.js Custom Server.
+# Same ports, same container name, same network = zero SnapLogic config changes.
+#
+# AVAILABLE ENDPOINTS:
+# -------------------
+# Salesforce Mock API (HTTP):  http://localhost:8089
+# Salesforce Mock API (HTTPS): https://localhost:8443
+# - OAuth Token: POST http(s)://localhost:8089/services/oauth2/token
+# - REST API:    http(s)://localhost:8089/services/data/v59.0/*
+# - Admin DB:    http://localhost:8089/__admin/db
+# - Health:      http://localhost:8089/health
+#
+# SNAPLOGIC CONFIGURATION:
+# -----------------------
+# HTTP:  Login URL: http://salesforce-api-mock:8080
+# HTTPS: Login URL: https://salesforce-api-mock:8443
+# Username: snap-qa@snaplogic.com (or any value)
+# Password: any value
+#
+# HTTPS NOTES:
+# -----------
+# - Schemas are baked into the Docker image (no volume mount needed)
+# - PKCS12 certificate is mounted from docker/salesforce/certs/ (shared with all servers)
+# - P12 is converted to PEM at container startup (Python ssl needs PEM)
+# - Same certificate already trusted by Groundplex Java truststore
+# =============================================================================
+
+services:
+  # Django Salesforce API Mock Server
+  salesforce-django-server:
+    build:
+      context: ./django-server
+      dockerfile: Dockerfile
+    container_name: salesforce-api-mock
+    profiles:
+      - salesforce-django-start
+      - salesforce-django-dev
+    ports:
+      - "${SALESFORCE_HTTP_PORT:-8089}:8080"    # HTTP  (same as WireMock/Node.js)
+      - "${SALESFORCE_HTTPS_PORT:-8443}:8443"   # HTTPS (same as WireMock/Node.js)
+    volumes:
+      # Shared certificate keystore (single source: docker/salesforce/certs/)
+      - ./certs/custom-keystore.p12:/app/certs/custom-keystore.p12:ro
+    networks:
+      - snaplogicnet
+    environment:
+      - HTTP_PORT=8080
+      - HTTPS_PORT=8443
+      - SCHEMA_DIR=/app/schemas
+      - P12_FILE=/app/certs/custom-keystore.p12
+      - P12_PASSWORD=password
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+networks:
+  snaplogicnet:
+    driver: bridge

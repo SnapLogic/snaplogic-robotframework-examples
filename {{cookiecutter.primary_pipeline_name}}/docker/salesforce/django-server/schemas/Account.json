@@ -1,0 +1,68 @@
+{
+  "name": "Account",
+  "idPrefix": "001",
+  "label": "Account",
+  "labelPlural": "Accounts",
+  "keyPrefix": "001",
+  "fields": {
+    "Name": {
+      "type": "string",
+      "required": true,
+      "label": "Account Name",
+      "maxLength": 255,
+      "createable": true,
+      "updateable": true
+    },
+    "Type": {
+      "type": "picklist",
+      "required": false,
+      "label": "Account Type",
+      "maxLength": 40,
+      "createable": true,
+      "updateable": true,
+      "values": ["Customer", "Partner", "Prospect"]
+    },
+    "Industry": {
+      "type": "picklist",
+      "required": false,
+      "label": "Industry",
+      "maxLength": 40,
+      "createable": true,
+      "updateable": true,
+      "values": ["Technology", "Manufacturing", "Finance", "Healthcare"]
+    },
+    "Phone": {
+      "type": "phone",
+      "required": false,
+      "label": "Phone",
+      "maxLength": 40,
+      "createable": true,
+      "updateable": true
+    },
+    "Website": {
+      "type": "url",
+      "required": false,
+      "label": "Website",
+      "maxLength": 255,
+      "createable": true,
+      "updateable": true
+    },
+    "AnnualRevenue": {
+      "type": "currency",
+      "required": false,
+      "label": "Annual Revenue",
+      "precision": 18,
+      "scale": 0,
+      "createable": true,
+      "updateable": true
+    },
+    "NumberOfEmployees": {
+      "type": "int",
+      "required": false,
+      "label": "Employees",
+      "digits": 8,
+      "createable": true,
+      "updateable": true
+    }
+  }
+}

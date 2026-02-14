@@ -55,7 +55,7 @@ services:
       # IMPORTANT: This folder must contain BOTH static AND proxy mappings
       - ./wiremock/mappings:/home/wiremock/mappings:ro
       - ./wiremock/__files:/home/wiremock/__files:ro
-      # Mount shared certificate keystore (shared between WireMock and Custom Server)
+      # Shared certificate keystore (single source: docker/salesforce/certs/)
       - ./certs/custom-keystore.p12:/home/wiremock/keystore.p12:ro
 
     command: >

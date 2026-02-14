@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Django Salesforce Mock Server Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 10px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 22px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .server-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ccc;
+        }
+
+        .status-dot.up { background: #27ae60; }
+        .status-dot.down { background: #e74c3c; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            color: #666;
+            font-size: 11px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .stat-card .number {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2d6a4f;
+        }
+
+        .stat-card.bulk-stat .number { color: #8e44ad; }
+        .stat-card.total-stat .number { color: #1b4332; }
+
+        .data-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .data-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .data-section h2 .badge {
+            background: #2d6a4f;
+            color: white;
+            font-size: 12px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: normal;
+        }
+
+        .data-section h2 .badge.bulk-badge { background: #8e44ad; }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f7f7f7;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+            font-size: 13px;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        .nested-json {
+            background: #f9f9f9;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            max-width: 400px;
+            max-height: 80px;
+            overflow: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .btn {
+            background: #2d6a4f;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #1b4332;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-success {
+            background: #27ae60;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+        }
+
+        .btn-warning:hover {
+            background: #d68910;
+        }
+
+        .btn-purple {
+            background: #8e44ad;
+        }
+
+        .btn-purple:hover {
+            background: #6c3483;
+        }
+
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 12px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .error {
+            background: #ffe6e6;
+            color: #e74c3c;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .empty-msg {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-style: italic;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal h3 {
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            font-family: 'Courier New', monospace;
+            height: 100px;
+        }
+
+        .json-view {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .tab-nav {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 8px 16px;
+            border: 2px solid #2d6a4f;
+            background: white;
+            color: #2d6a4f;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover, .tab-btn.active {
+            background: #2d6a4f;
+            color: white;
+        }
+
+        .tab-btn.bulk-tab {
+            border-color: #8e44ad;
+            color: #8e44ad;
+        }
+
+        .tab-btn.bulk-tab:hover, .tab-btn.bulk-tab.active {
+            background: #8e44ad;
+            color: white;
+        }
+
+        .tab-btn.admin-tab {
+            border-color: #7f8c8d;
+            color: #7f8c8d;
+        }
+
+        .tab-btn.admin-tab:hover, .tab-btn.admin-tab.active {
+            background: #7f8c8d;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .job-state {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .job-state.Open { background: #3498db; }
+        .job-state.UploadComplete { background: #f39c12; }
+        .job-state.InProgress { background: #e67e22; }
+        .job-state.JobComplete { background: #27ae60; }
+        .job-state.Failed { background: #e74c3c; }
+        .job-state.Aborted { background: #95a5a6; }
+
+        .info-box {
+            background: #e8f5e9;
+            border-left: 4px solid #2d6a4f;
+            padding: 12px 16px;
+            margin-bottom: 15px;
+            border-radius: 0 5px 5px 0;
+            font-size: 13px;
+            color: #1b4332;
+        }
+
+        .info-box code {
+            background: #d8f3dc;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .last-refresh {
+            font-size: 11px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Django Salesforce Mock Server Dashboard</h1>
+            <div class="header-actions">
+                <div class="server-status">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Checking...</span>
+                </div>
+                <span class="last-refresh" id="lastRefresh"></span>
+                <button class="btn btn-success" onclick="refreshData()">Refresh</button>
+                <button class="btn btn-danger" onclick="resetData()">Reset All Data</button>
+            </div>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="stats" id="statsRow">
+            <!-- Dynamically populated -->
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="data-section">
+            <div class="tab-nav" id="tabNav">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+
+        <!-- Tab Content Area -->
+        <div id="tabContentArea">
+            <!-- Dynamically populated -->
+        </div>
+    </div>
+
+    <!-- Create Record Modal -->
+    <div id="createRecordModal" class="modal">
+        <div class="modal-content">
+            <h3 id="createModalTitle">Create New Record</h3>
+            <form id="createRecordForm">
+                <input type="hidden" id="createObjectName" name="_objectName">
+                <div id="createFormFields">
+                    <!-- Dynamically populated -->
+                </div>
+                <div class="actions" style="margin-top: 20px;">
+                    <button type="submit" class="btn btn-success">Create</button>
+                    <button type="button" class="btn" onclick="closeModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // =============================================================================
+        // Configuration
+        // =============================================================================
+        const API_BASE = 'http://localhost:8089';
+        const SF_API = `${API_BASE}/services/data/v59.0`;
+
+        let dbData = {};        // { Account: { count, records }, ... }
+        let schemasData = {};   // { Account: { name, fields, ... }, ... }
+        let bulkJobsData = {};  // { count, jobs: [...] }
+        let healthData = {};    // { status, objects, totalRecords, bulkJobs }
+
+        // Track which object names we've seen so we know when tabs need structural rebuild
+        let knownObjectNames = [];
+        let activeTab = null;
+        let structureBuilt = false;
+
+        // =============================================================================
+        // Tab Navigation
+        // =============================================================================
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            const tabEl = document.getElementById(tabId);
+            if (tabEl) tabEl.classList.add('active');
+            const btnEl = document.querySelector(`[data-tab="${tabId}"]`);
+            if (btnEl) btnEl.classList.add('active');
+            activeTab = tabId;
+        }
+
+        // =============================================================================
+        // Data Fetching
+        // =============================================================================
+        async function fetchData() {
+            try {
+                const [dbRes, schemasRes, bulkRes, healthRes] = await Promise.all([
+                    fetch(`${API_BASE}/__admin/db`).then(r => r.json()).catch(() => ({})),
+                    fetch(`${API_BASE}/__admin/schemas`).then(r => r.json()).catch(() => ({})),
+                    fetch(`${API_BASE}/__admin/bulk-jobs`).then(r => r.json()).catch(() => ({ count: 0, jobs: [] })),
+                    fetch(`${API_BASE}/health`).then(r => r.json()).catch(() => ({ status: 'DOWN' }))
+                ]);
+
+                dbData = dbRes;
+                schemasData = schemasRes;
+                bulkJobsData = bulkRes;
+                healthData = healthRes;
+
+                updateServerStatus(true);
+                updateUI();
+                document.getElementById('lastRefresh').textContent =
+                    `Updated: ${new Date().toLocaleTimeString()}`;
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                updateServerStatus(false);
+            }
+        }
+
+        function updateServerStatus(isUp) {
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+            if (isUp && healthData.status === 'UP') {
+                dot.className = 'status-dot up';
+                text.textContent = 'Server Running';
+            } else {
+                dot.className = 'status-dot down';
+                text.textContent = 'Server Down';
+            }
+        }
+
+        // =============================================================================
+        // UI Update — In-place updates (no DOM removal/recreation)
+        // =============================================================================
+        function updateUI() {
+            const objectNames = Object.keys(dbData);
+            const structureChanged = !arraysEqual(objectNames, knownObjectNames);
+
+            // Only rebuild the tab structure if the set of objects changed
+            // (e.g., first load, or a new schema was added)
+            if (structureChanged || !structureBuilt) {
+                knownObjectNames = [...objectNames];
+                buildTabStructure(objectNames);
+                structureBuilt = true;
+            }
+
+            // Always update the data content in-place (no flicker)
+            updateStatsRow(objectNames);
+            updateObjectTabContent(objectNames);
+            updateBulkJobsContent();
+            updateSchemasContent();
+            updateRawJsonContent();
+        }
+
+        function arraysEqual(a, b) {
+            if (a.length !== b.length) return false;
+            for (let i = 0; i < a.length; i++) {
+                if (a[i] !== b[i]) return false;
+            }
+            return true;
+        }
+
+        // =============================================================================
+        // One-time Structure Build (only runs when objects change)
+        // =============================================================================
+        function buildTabStructure(objectNames) {
+            // --- Tab Navigation Buttons ---
+            const tabNav = document.getElementById('tabNav');
+            let navHtml = '';
+            for (const name of objectNames) {
+                const tabId = `${name.toLowerCase()}-tab`;
+                navHtml += `<button class="tab-btn" data-tab="${tabId}" onclick="showTab('${tabId}')">${name}</button>`;
+            }
+            navHtml += `<button class="tab-btn bulk-tab" data-tab="bulk-jobs-tab" onclick="showTab('bulk-jobs-tab')">Bulk Jobs</button>`;
+            navHtml += `<button class="tab-btn admin-tab" data-tab="schemas-tab" onclick="showTab('schemas-tab')">Schemas</button>`;
+            navHtml += `<button class="tab-btn admin-tab" data-tab="raw-json-tab" onclick="showTab('raw-json-tab')">Raw JSON</button>`;
+            tabNav.innerHTML = navHtml;
+
+            // --- Tab Content Containers ---
+            const area = document.getElementById('tabContentArea');
+            let contentHtml = '';
+
+            // Object tabs (each with a stable container for data)
+            for (const name of objectNames) {
+                const tabId = `${name.toLowerCase()}-tab`;
+                const schema = schemasData[name];
+                const fieldNames = schema ? Object.keys(schema.fields) : [];
+                const columns = ['Id', ...fieldNames];
+                const headerRow = columns.map(c => `<th>${c}</th>`).join('') + '<th>Actions</th>';
+
+                contentHtml += `
+                    <div id="${tabId}" class="tab-content">
+                        <div class="data-section">
+                            <h2>
+                                ${name} <span class="badge" id="${name}-badge">0</span>
+                                <button class="btn" onclick="showCreateModal('${name}')">+ Add ${name}</button>
+                            </h2>
+                            <div class="info-box">
+                                REST API: <code>POST ${SF_API}/sobjects/${name}</code> &nbsp;|&nbsp;
+                                SOQL: <code>SELECT Id, ${fieldNames.slice(0, 3).join(', ')} FROM ${name}</code>
+                            </div>
+                            <div class="table-container">
+                                <table>
+                                    <thead><tr>${headerRow}</tr></thead>
+                                    <tbody id="${name}-tbody"><tr><td colspan="${columns.length + 1}" class="loading">Loading...</td></tr></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+
+            // Bulk Jobs tab
+            contentHtml += `
+                <div id="bulk-jobs-tab" class="tab-content">
+                    <div class="data-section">
+                        <h2>
+                            Bulk API 2.0 Jobs <span class="badge bulk-badge" id="bulk-jobs-badge">0</span>
+                        </h2>
+                        <div class="info-box">
+                            Ingest: <code>POST ${SF_API}/jobs/ingest</code> &nbsp;|&nbsp;
+                            Query: <code>POST ${SF_API}/jobs/query</code> &nbsp;|&nbsp;
+                            Admin: <code>GET ${API_BASE}/__admin/bulk-jobs</code>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Job ID</th>
+                                        <th>Object</th>
+                                        <th>Operation</th>
+                                        <th>Type</th>
+                                        <th>State</th>
+                                        <th>Processed</th>
+                                        <th>Failed</th>
+                                        <th>Created</th>
+                                        <th>Query</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bulk-jobs-tbody"><tr><td colspan="9" class="loading">Loading...</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>`;
+
+            // Schemas tab
+            contentHtml += `
+                <div id="schemas-tab" class="tab-content">
+                    <div class="info-box">
+                        Schemas define the structure of each Salesforce object. Located in: <code>django-server/schemas/*.json</code>
+                    </div>
+                    <div id="schemas-content"></div>
+                </div>`;
+
+            // Raw JSON tab
+            contentHtml += `
+                <div id="raw-json-tab" class="tab-content">
+                    <div class="data-section">
+                        <h2>Database (/__admin/db)</h2>
+                        <div class="json-view" id="raw-db-json">Loading...</div>
+                    </div>
+                    <div class="data-section" style="margin-top: 15px;">
+                        <h2>Bulk Jobs (/__admin/bulk-jobs)</h2>
+                        <div class="json-view" id="raw-bulk-json">Loading...</div>
+                    </div>
+                    <div class="data-section" style="margin-top: 15px;">
+                        <h2>Health (/health)</h2>
+                        <div class="json-view" id="raw-health-json">Loading...</div>
+                    </div>
+                </div>`;
+
+            area.innerHTML = contentHtml;
+
+            // Set default active tab
+            if (!activeTab) {
+                activeTab = objectNames.length > 0
+                    ? `${objectNames[0].toLowerCase()}-tab`
+                    : 'raw-json-tab';
+            }
+            showTab(activeTab);
+        }
+
+        // =============================================================================
+        // In-place Content Updates (run every refresh, no DOM destruction)
+        // =============================================================================
+
+        // --- Stats Row (update numbers only) ---
+        function updateStatsRow(objectNames) {
+            const statsRow = document.getElementById('statsRow');
+            let html = '';
+            let totalRecords = 0;
+
+            for (const name of objectNames) {
+                const count = dbData[name]?.count || 0;
+                totalRecords += count;
+                html += `
+                    <div class="stat-card">
+                        <h3>${name}</h3>
+                        <div class="number">${count}</div>
+                    </div>`;
+            }
+
+            const bulkCount = bulkJobsData?.count || 0;
+            html += `
+                <div class="stat-card bulk-stat">
+                    <h3>Bulk Jobs</h3>
+                    <div class="number">${bulkCount}</div>
+                </div>
+                <div class="stat-card total-stat">
+                    <h3>Total Records</h3>
+                    <div class="number">${totalRecords}</div>
+                </div>`;
+
+            statsRow.innerHTML = html;
+        }
+
+        // --- Object Table Bodies (update tbody only) ---
+        function updateObjectTabContent(objectNames) {
+            for (const name of objectNames) {
+                const records = dbData[name]?.records || [];
+                const schema = schemasData[name];
+                const fieldNames = schema ? Object.keys(schema.fields) : [];
+                const columns = ['Id', ...fieldNames];
+
+                // Update badge count
+                const badge = document.getElementById(`${name}-badge`);
+                if (badge) badge.textContent = records.length;
+
+                // Update table body only
+                const tbody = document.getElementById(`${name}-tbody`);
+                if (!tbody) continue;
+
+                if (records.length > 0) {
+                    tbody.innerHTML = records.map(record => {
+                        const cells = columns.map(col => {
+                            const val = record[col];
+                            if (val === null || val === undefined) return '<td>-</td>';
+                            if (typeof val === 'object') return `<td><div class="nested-json">${escapeHtml(JSON.stringify(val, null, 2))}</div></td>`;
+                            return `<td>${escapeHtml(String(val))}</td>`;
+                        }).join('');
+                        return `<tr>${cells}<td class="actions">
+                            <button class="btn btn-danger btn-sm" onclick="deleteRecord('${name}', '${record.Id}')">Delete</button>
+                        </td></tr>`;
+                    }).join('');
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="${columns.length + 1}" class="empty-msg">No ${name} records found. Create one using SnapLogic or the button above.</td></tr>`;
+                }
+            }
+        }
+
+        // --- Bulk Jobs Table Body ---
+        function updateBulkJobsContent() {
+            const jobs = bulkJobsData?.jobs || [];
+
+            const badge = document.getElementById('bulk-jobs-badge');
+            if (badge) badge.textContent = jobs.length;
+
+            const tbody = document.getElementById('bulk-jobs-tbody');
+            if (!tbody) return;
+
+            if (jobs.length > 0) {
+                tbody.innerHTML = jobs.map(job => `
+                    <tr>
+                        <td><code>${job.id}</code></td>
+                        <td>${job.object || '-'}</td>
+                        <td>${job.operation || '-'}</td>
+                        <td>${job.jobType || '-'}</td>
+                        <td><span class="job-state ${job.state}">${job.state}</span></td>
+                        <td>${job.numberRecordsProcessed || 0}</td>
+                        <td>${job.numberRecordsFailed || 0}</td>
+                        <td>${formatDate(job.createdDate)}</td>
+                        <td><div class="nested-json">${escapeHtml(job.query || '-')}</div></td>
+                    </tr>`).join('');
+            } else {
+                tbody.innerHTML = `<tr><td colspan="9" class="empty-msg">No bulk jobs found. Create one via the Bulk API 2.0 endpoints.</td></tr>`;
+            }
+        }
+
+        // --- Schemas Content ---
+        function updateSchemasContent() {
+            const container = document.getElementById('schemas-content');
+            if (!container) return;
+
+            const schemaNames = Object.keys(schemasData);
+            let html = '';
+
+            for (const name of schemaNames) {
+                const schema = schemasData[name];
+                const fields = schema.fields || {};
+                const fieldEntries = Object.entries(fields);
+
+                let fieldsHtml = fieldEntries.map(([fieldName, fieldDef]) => `
+                    <tr>
+                        <td><strong>${fieldName}</strong></td>
+                        <td>${fieldDef.type || '-'}</td>
+                        <td>${fieldDef.label || '-'}</td>
+                        <td>${fieldDef.required ? 'Yes' : 'No'}</td>
+                        <td>${fieldDef.values ? fieldDef.values.join(', ') : '-'}</td>
+                        <td>${fieldDef.maxLength || fieldDef.precision || '-'}</td>
+                    </tr>`).join('');
+
+                html += `
+                    <div class="data-section" style="margin-bottom: 15px;">
+                        <h2>${schema.name || name} <span class="badge">${fieldEntries.length} fields</span></h2>
+                        <div style="font-size: 12px; color: #666; margin-bottom: 10px;">
+                            ID Prefix: <code>${schema.idPrefix || schema.keyPrefix || '-'}</code> &nbsp;|&nbsp;
+                            Label: ${schema.label || '-'} &nbsp;|&nbsp;
+                            Plural: ${schema.labelPlural || '-'}
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Field Name</th>
+                                        <th>Type</th>
+                                        <th>Label</th>
+                                        <th>Required</th>
+                                        <th>Picklist Values</th>
+                                        <th>Max Length</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${fieldsHtml}</tbody>
+                            </table>
+                        </div>
+                    </div>`;
+            }
+
+            if (schemaNames.length === 0) {
+                html = '<div class="data-section"><p class="empty-msg">No schemas loaded.</p></div>';
+            }
+
+            container.innerHTML = html;
+        }
+
+        // --- Raw JSON Content ---
+        function updateRawJsonContent() {
+            const dbJson = document.getElementById('raw-db-json');
+            const bulkJson = document.getElementById('raw-bulk-json');
+            const healthJson = document.getElementById('raw-health-json');
+            if (dbJson) dbJson.textContent = JSON.stringify(dbData, null, 2);
+            if (bulkJson) bulkJson.textContent = JSON.stringify(bulkJobsData, null, 2);
+            if (healthJson) healthJson.textContent = JSON.stringify(healthData, null, 2);
+        }
+
+        // =============================================================================
+        // CRUD Operations (via Salesforce REST API)
+        // =============================================================================
+
+        // --- Delete a record via REST API ---
+        async function deleteRecord(objectName, recordId) {
+            if (!confirm(`Delete ${objectName} record ${recordId}?`)) return;
+            try {
+                const res = await fetch(`${SF_API}/sobjects/${objectName}/${recordId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer mock-token' }
+                });
+                if (res.ok || res.status === 204) {
+                    await fetchData();
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    alert(`Failed to delete: ${JSON.stringify(err)}`);
+                }
+            } catch (error) {
+                console.error('Delete error:', error);
+                alert('Error deleting record: ' + error.message);
+            }
+        }
+
+        // --- Create Record Modal ---
+        function showCreateModal(objectName) {
+            const schema = schemasData[objectName];
+            if (!schema) {
+                alert(`No schema found for ${objectName}`);
+                return;
+            }
+
+            document.getElementById('createModalTitle').textContent = `Create New ${objectName}`;
+            document.getElementById('createObjectName').value = objectName;
+
+            const fieldsDiv = document.getElementById('createFormFields');
+            let html = '';
+
+            for (const [fieldName, fieldDef] of Object.entries(schema.fields)) {
+                if (!fieldDef.createable) continue;
+
+                const required = fieldDef.required ? 'required' : '';
+                const requiredMark = fieldDef.required ? ' <span style="color:red">*</span>' : '';
+
+                if (fieldDef.type === 'picklist' && fieldDef.values) {
+                    const options = fieldDef.values.map(v => `<option value="${v}">${v}</option>`).join('');
+                    html += `
+                        <div class="form-group">
+                            <label>${fieldDef.label || fieldName}${requiredMark}</label>
+                            <select name="${fieldName}" ${required}>
+                                <option value="">-- Select --</option>
+                                ${options}
+                            </select>
+                        </div>`;
+                } else if (fieldDef.type === 'int' || fieldDef.type === 'currency' || fieldDef.type === 'double') {
+                    html += `
+                        <div class="form-group">
+                            <label>${fieldDef.label || fieldName}${requiredMark}</label>
+                            <input type="number" name="${fieldName}" ${required}>
+                        </div>`;
+                } else {
+                    html += `
+                        <div class="form-group">
+                            <label>${fieldDef.label || fieldName}${requiredMark}</label>
+                            <input type="text" name="${fieldName}" ${required}
+                                   maxlength="${fieldDef.maxLength || 255}"
+                                   placeholder="${fieldDef.label || fieldName}">
+                        </div>`;
+                }
+            }
+
+            fieldsDiv.innerHTML = html;
+            document.getElementById('createRecordModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('createRecordModal').style.display = 'none';
+        }
+
+        // Handle form submission
+        document.getElementById('createRecordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const objectName = formData.get('_objectName');
+            formData.delete('_objectName');
+
+            const record = {};
+            formData.forEach((value, key) => {
+                if (value !== '') record[key] = value;
+            });
+
+            try {
+                const res = await fetch(`${SF_API}/sobjects/${objectName}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer mock-token'
+                    },
+                    body: JSON.stringify(record)
+                });
+
+                if (res.ok || res.status === 201) {
+                    closeModal();
+                    e.target.reset();
+                    await fetchData();
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    alert(`Failed to create: ${JSON.stringify(err, null, 2)}`);
+                }
+            } catch (error) {
+                console.error('Create error:', error);
+                alert('Error creating record: ' + error.message);
+            }
+        });
+
+        // --- Reset all data ---
+        async function resetData() {
+            if (!confirm('Reset ALL data? This will clear all records and bulk jobs.')) return;
+            try {
+                const res = await fetch(`${API_BASE}/__admin/reset`, { method: 'POST' });
+                if (res.ok) {
+                    await fetchData();
+                } else {
+                    alert('Failed to reset data');
+                }
+            } catch (error) {
+                alert('Error resetting data: ' + error.message);
+            }
+        }
+
+        // =============================================================================
+        // Utility Functions
+        // =============================================================================
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatDate(isoString) {
+            if (!isoString) return '-';
+            try {
+                return new Date(isoString).toLocaleString();
+            } catch {
+                return isoString;
+            }
+        }
+
+        async function refreshData() {
+            await fetchData();
+        }
+
+        // =============================================================================
+        // Initialization
+        // =============================================================================
+
+        // Auto-refresh every 3 seconds
+        setInterval(fetchData, 3000);
+
+        // Initial load
+        fetchData();
+    </script>
+</body>
+</html>

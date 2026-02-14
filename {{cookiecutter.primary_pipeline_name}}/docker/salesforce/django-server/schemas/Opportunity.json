@@ -1,0 +1,64 @@
+{
+  "name": "Opportunity",
+  "idPrefix": "006",
+  "label": "Opportunity",
+  "labelPlural": "Opportunities",
+  "keyPrefix": "006",
+  "fields": {
+    "Name": {
+      "type": "string",
+      "required": true,
+      "label": "Opportunity Name",
+      "maxLength": 120,
+      "createable": true,
+      "updateable": true
+    },
+    "StageName": {
+      "type": "picklist",
+      "required": true,
+      "label": "Stage",
+      "maxLength": 255,
+      "createable": true,
+      "updateable": true,
+      "values": [
+        "Prospecting",
+        "Qualification",
+        "Needs Analysis",
+        "Proposal",
+        "Negotiation",
+        "Closed Won",
+        "Closed Lost"
+      ]
+    },
+    "Amount": {
+      "type": "currency",
+      "required": false,
+      "label": "Amount",
+      "createable": true,
+      "updateable": true
+    },
+    "CloseDate": {
+      "type": "date",
+      "required": true,
+      "label": "Close Date",
+      "createable": true,
+      "updateable": true
+    },
+    "AccountId": {
+      "type": "reference",
+      "required": false,
+      "label": "Account ID",
+      "maxLength": 18,
+      "createable": true,
+      "updateable": true,
+      "referenceTo": ["Account"]
+    },
+    "Probability": {
+      "type": "percent",
+      "required": false,
+      "label": "Probability (%)",
+      "createable": true,
+      "updateable": true
+    }
+  }
+}

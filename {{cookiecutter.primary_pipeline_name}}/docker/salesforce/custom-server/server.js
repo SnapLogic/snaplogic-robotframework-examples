@@ -1,50 +1,30 @@
 'use strict';
 
 /**
- * Custom Salesforce API Mock Server
- * ==================================
- *
- * A schema-driven Express server that replaces WireMock + JSON Server
- * for testing SnapLogic Salesforce Snap integrations.
- *
- * Features:
- *   - Real CRUD: Create -> Read returns actual created data
- *   - SOQL parsing: SELECT, WHERE, LIMIT, ORDER BY all work
- *   - SOSL search: Cross-object text search with FIND/RETURNING
- *   - Field validation: Required fields, picklist values, type checking
- *   - Bulk API v1: Legacy XML-based bulk operations (/services/async/...)
- *   - Bulk API 2.0: Insert/update/upsert/delete/query via CSV
- *   - File download: Attachment/ContentVersion/Document body download
- *   - Platform Events: Publish events via REST, subscribe via CometD
- *   - Wave Analytics: Dataset listing and SAQL query execution
- *   - Schema-driven: 1 JSON file per object, zero code changes to add objects
- *   - HTTPS support: Reuses WireMock PKCS12 cert (already trusted by Groundplex)
- *   - Admin endpoints: View database, reset data, health check
- *
- * Modules (lib/):
- *   lib/routes.js                       - Route orchestrator (registers all route groups)
- *   lib/routes/search-routes.js         - SOSL cross-object search
- *   lib/routes/download-routes.js       - File body download (Attachment/ContentVersion/Document)
- *   lib/routes/event-routes.js          - Platform Event publish + CometD streaming subscribe
- *   lib/routes/rest-routes.js           - REST API (single-record CRUD + SOQL)
- *   lib/routes/bulk-v1-routes.js        - Bulk API v1 (legacy XML-based bulk)
- *   lib/routes/bulk-v2-ingest-routes.js - Bulk API 2.0 write (CSV upload)
- *   lib/routes/bulk-v2-query-routes.js  - Bulk API 2.0 read (CSV download)
- *   lib/routes/wave-routes.js           - Wave Analytics (Einstein Analytics)
- *   lib/routes/admin-routes.js          - Admin/health endpoints
- *   lib/bulk/job-store.js               - Bulk job state management
- *   lib/bulk/csv-parser.js              - CSV parse/serialize
- *   lib/bulk/bulk-processor.js          - Bulk job processing logic
- *   lib/streaming/event-bus.js          - Platform Event pub/sub + CometD client state
- *   lib/id-generator.js                 - Salesforce 18-char ID generation
- *   lib/error-formatter.js              - Salesforce REST API error format
- *   lib/validator.js                    - Field validation (required, picklist, length)
- *   lib/soql-parser.js                  - SOQL query parsing and filtering
- *   lib/sosl-parser.js                  - SOSL search query parsing
- *
- * Adding a new Salesforce object = adding one JSON file in schemas/ directory.
- * Zero code changes. Ever.
+ /**
+ * Fake Salesforce API Server (for testing)
+ * 
+ * This server pretends to be Salesforce so our Robot Framework tests can run
+ * without hitting the real Salesforce API. It supports:
+ * 
+ *   - CRUD operations (create, read, update, delete records)
+ *   - SOQL queries (SELECT ... FROM ... WHERE ...)
+ *   - SOSL search (cross-object text search)
+ *   - Bulk API v1 (XML) and v2 (CSV) for large data operations
+ *   - Platform Events (publish/subscribe)
+ *   - Wave/Einstein Analytics queries
+ *   - OAuth token endpoint (returns a fake token)
+ * 
+ * How it works:
+ *   1. On startup, reads JSON schema files from /schemas (e.g., Account.json, Contact.json)
+ *   2. Stores all records in memory (wiped on restart — by design for clean tests)
+ *   3. Listens on HTTP (8080) and HTTPS (8443)
+ * 
+ * To add a new Salesforce object: just add a new JSON file in schemas/. No code changes needed.
+ * 
  */
+
+
 
 const express = require('express');
 const fs = require('fs');

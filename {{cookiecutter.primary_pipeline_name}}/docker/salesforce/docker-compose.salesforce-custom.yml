@@ -60,7 +60,7 @@ services:
     volumes:
       # Mount schemas for live reload (restart container after schema changes)
       - ./custom-server/schemas:/app/schemas:ro
-      # Shared PKCS12 certificate (same cert used by WireMock, already trusted by Groundplex)
+      # Shared certificate keystore (single source: docker/salesforce/certs/)
       - ./certs/custom-keystore.p12:/app/certs/custom-keystore.p12:ro
     networks:
       - snaplogicnet

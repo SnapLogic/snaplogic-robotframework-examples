@@ -62,6 +62,7 @@ include makefiles/messaging_services/Makefile.activemq
 include makefiles/mock_services/Makefile.minio
 include makefiles/mock_services/Makefile.salesforce-wiremock
 include makefiles/mock_services/Makefile.salesforce-custom
+include makefiles/mock_services/Makefile.salesforce-django
 include makefiles/mock_services/Makefile.maildev
 
 

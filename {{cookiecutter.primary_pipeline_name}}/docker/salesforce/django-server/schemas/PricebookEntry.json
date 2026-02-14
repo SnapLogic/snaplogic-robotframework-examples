@@ -1,0 +1,50 @@
+{
+  "name": "PricebookEntry",
+  "idPrefix": "01u",
+  "label": "Price Book Entry",
+  "labelPlural": "Price Book Entries",
+  "keyPrefix": "01u",
+  "fields": {
+    "Pricebook2Id": {
+      "type": "reference",
+      "required": true,
+      "label": "Price Book ID",
+      "maxLength": 18,
+      "createable": true,
+      "updateable": false,
+      "referenceTo": ["Pricebook2"]
+    },
+    "Product2Id": {
+      "type": "reference",
+      "required": true,
+      "label": "Product ID",
+      "maxLength": 18,
+      "createable": true,
+      "updateable": false,
+      "referenceTo": ["Product2"]
+    },
+    "UnitPrice": {
+      "type": "currency",
+      "required": true,
+      "label": "List Price",
+      "precision": 18,
+      "scale": 2,
+      "createable": true,
+      "updateable": true
+    },
+    "IsActive": {
+      "type": "boolean",
+      "required": false,
+      "label": "Active",
+      "createable": true,
+      "updateable": true
+    },
+    "UseStandardPrice": {
+      "type": "boolean",
+      "required": false,
+      "label": "Use Standard Price",
+      "createable": true,
+      "updateable": true
+    }
+  }
+}
