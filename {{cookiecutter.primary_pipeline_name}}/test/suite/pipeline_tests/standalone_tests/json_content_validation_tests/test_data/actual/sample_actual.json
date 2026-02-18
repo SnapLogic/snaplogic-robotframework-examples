@@ -1,0 +1,30 @@
+{
+    "status": "active",
+    "pipeline_name": "EBAS_to_CBS",
+    "project": "EBAS2CBS",
+    "jira_ticket": "EBAS-5042",
+    "approved_by": "srilekha.polati",
+    "reviewed_by": "dev_lead_rao",
+    "record_count": 150,
+    "execution_duration_seconds": 45,
+    "source_table_1_count": 100,
+    "source_table_2_count": 200,
+    "source_table_3_count": 150,
+    "source_total": 450,
+    "target_total": 450,
+    "output_columns": ["DCEVENTHEADERS_USERID", "TY2024_TAXFILING_REFUNDBALDUEAMOUNT_FED", "TY2024_TAXFILING_EFILESTATUS_STATEREJECTED", "TY2024_TTOGTKM_TOTALREVENUE", "TY2024_COMMERCE_COMPLETEDSKU"],
+    "accounts": {
+        "DEV": "../shared/EBAS2CBS_SQL_All",
+        "QA": "../shared/EBAS2CBS_SQL_All",
+        "PREPROD": "../shared/EBAS2CBS_SQL_All",
+        "PROD": "../shared/EBAS2CBS_SQL_All"
+    },
+    "paths": {
+        "account_path": "../shared/EBAS2CBS_SQL_All",
+        "upload_source_path": "../shared/EBAS2CBS/uploads",
+        "output_path": "file:///mnt/data/EBAS2CBS/output"
+    },
+    "schema": "dbo",
+    "expression_file": "EBAS_to_CBS.expr",
+    "expression_file_size": 560
+}

@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EBAAS Integration — Mapping Matrix</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            border-radius: 10px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 22px;
+        }
+
+        .header-subtitle {
+            color: #666;
+            font-size: 15px;
+        }
+
+        .header-right {
+            text-align: right;
+        }
+
+        .header-right .date {
+            color: #888;
+            font-size: 12px;
+        }
+
+        /* Data Sections / Cards */
+        .data-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .data-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 20px;
+        }
+
+        .data-section h2 .badge {
+            background: #0f3460;
+            color: white;
+            font-size: 13px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: normal;
+        }
+        .data-section h2 .badge.green { background: #27ae60; }
+        .data-section h2 .badge.blue { background: #2980b9; }
+        .data-section h2 .badge.purple { background: #8e44ad; }
+        .data-section h2 .badge.orange { background: #e67e22; }
+        .data-section h2 .badge.red { background: #e74c3c; }
+        .data-section h2 .badge.teal { background: #00897b; }
+
+        .data-section h3 {
+            color: #444;
+            margin: 20px 0 10px 0;
+            font-size: 17px;
+        }
+
+        .data-section p {
+            color: #555;
+            font-size: 16px;
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+
+        /* Info Boxes */
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #0f3460;
+            padding: 14px 18px;
+            margin-bottom: 15px;
+            border-radius: 0 5px 5px 0;
+            font-size: 15px;
+            color: #1a237e;
+            line-height: 1.7;
+        }
+        .info-box code {
+            background: #bbdefb;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .info-box.green {
+            background: #e8f5e9;
+            border-left-color: #27ae60;
+            color: #1b5e20;
+        }
+        .info-box.green code { background: #c8e6c9; }
+
+        .info-box.blue {
+            background: #e8f0fe;
+            border-left-color: #2980b9;
+            color: #1a3a5c;
+        }
+        .info-box.blue code { background: #d0e3f7; }
+
+        .info-box.purple {
+            background: #f3e8fa;
+            border-left-color: #8e44ad;
+            color: #4a1a6b;
+        }
+        .info-box.purple code { background: #e8d5f5; }
+
+        .info-box.orange {
+            background: #fef3e2;
+            border-left-color: #e67e22;
+            color: #6b3a0a;
+        }
+        .info-box.orange code { background: #fde6c8; }
+
+        .info-box.red {
+            background: #fde8e8;
+            border-left-color: #e74c3c;
+            color: #6b1a1a;
+        }
+        .info-box.red code { background: #f9d0d0; }
+
+        .info-box.teal {
+            background: #e0f2f1;
+            border-left-color: #00897b;
+            color: #004d40;
+        }
+        .info-box.teal code { background: #b2dfdb; }
+
+        /* Tables */
+        .table-container { overflow-x: auto; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f7f7f7;
+            padding: 14px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+            font-size: 15px;
+        }
+
+        td {
+            padding: 14px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 15px;
+            vertical-align: top;
+        }
+
+        tr:hover { background: #f9f9f9; }
+
+        td code, th code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #333;
+        }
+
+        /* Stats Cards */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .stat-card .label-text {
+            font-size: 15px;
+            font-weight: bold;
+            color: #0f3460;
+        }
+
+        .stat-card .big-number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .stat-card.green .label-text, .stat-card.green .big-number { color: #27ae60; }
+        .stat-card.blue .label-text, .stat-card.blue .big-number { color: #2980b9; }
+        .stat-card.purple .label-text, .stat-card.purple .big-number { color: #8e44ad; }
+        .stat-card.orange .label-text, .stat-card.orange .big-number { color: #e67e22; }
+        .stat-card.red .label-text, .stat-card.red .big-number { color: #e74c3c; }
+        .stat-card.teal .label-text, .stat-card.teal .big-number { color: #00897b; }
+        .stat-card.gray .label-text, .stat-card.gray .big-number { color: #7f8c8d; }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 700;
+            color: white;
+        }
+        .status-badge.covered { background: #27ae60; }
+        .status-badge.partial { background: #e67e22; }
+        .status-badge.gap { background: #e74c3c; }
+        .status-badge.high { background: #e74c3c; }
+        .status-badge.medium { background: #e67e22; }
+        .status-badge.low { background: #2980b9; }
+        .status-badge.info { background: #7f8c8d; }
+
+        /* Priority Badges */
+        .priority {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 700;
+            color: white;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 0.5px;
+        }
+        .priority.high { background: #e74c3c; }
+        .priority.medium { background: #e67e22; }
+        .priority.low { background: #2980b9; }
+
+        /* Category Badge (gray) */
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: normal;
+            color: white;
+        }
+        .badge.gray { background: #7f8c8d; }
+        .badge.blue { background: #2980b9; }
+        .badge.green { background: #27ae60; }
+        .badge.red { background: #e74c3c; }
+        .badge.orange { background: #e67e22; }
+        .badge.purple { background: #8e44ad; }
+
+        @media (max-width: 768px) {
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .header { flex-direction: column; gap: 10px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <!-- HEADER -->
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <div class="header">
+            <div>
+                <h1>&#128260; EBAAS Integration &mdash; Mapping Matrix</h1>
+                <div class="header-subtitle">Manual Testing Strategy vs Robot Framework Baseline Tests &mdash; Full Traceability Matrix</div>
+            </div>
+            <div class="header-right">
+                <div class="date">Generated: Feb 2025</div>
+                <div style="color:#0f3460; font-weight:600; font-size:13px;">SnapLogic QA Automation</div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <!-- MAPPING MATRIX -->
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <div class="data-section">
+            <h2>&#128260; Full Mapping Matrix <span class="badge green">MANUAL &#10231; AUTOMATION</span></h2>
+            <p>Complete traceability matrix showing how each manual test scenario maps to baseline automated tests, with coverage status and gap identification.</p>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Manual ID</th>
+                            <th>Manual Test Scenario</th>
+                            <th>Category</th>
+                            <th>Baseline Test</th>
+                            <th>Coverage</th>
+                            <th>Can Automate?</th>
+                            <th>Gap Priority</th>
+                            <th>Notes (How to Automate)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="background:#fff5f5;">
+                            <td><strong>A1</strong></td>
+                            <td>UT approval gate verification</td>
+                            <td><span class="badge gray" style="font-size:12px;">Quality Gate</span></td>
+                            <td>&mdash;</td>
+                            <td><span class="status-badge gap">GAP</span></td>
+                            <td><span class="status-badge covered" style="font-size:12px;">YES</span></td>
+                            <td><span class="priority high">HIGH</span></td>
+                            <td>Check for UT approval marker JSON file using <code>File Should Exist</code> + parse status with <code>Load Json From File</code></td>
+                        </tr>
+                        <tr style="background:#fff5f5;">
+                            <td><strong>A2</strong></td>
+                            <td>Pipeline copy to SIT folder</td>
+                            <td><span class="badge gray" style="font-size:12px;">Operational</span></td>
+                            <td>&mdash;</td>
+                            <td><span class="status-badge gap">GAP</span></td>
+                            <td><span class="status-badge covered" style="font-size:12px;">YES</span></td>
+                            <td><span class="priority high">HIGH</span></td>
+                            <td>&#9888;&#65039; <strong>Open Question:</strong> Is the SIT folder a SnapLogic project space (cloud-side)? If yes &rarr; use SnapLogic REST API to verify pipeline exists in project space. If local &rarr; use <code>File Should Exist</code> + <code>Get File Size</code> &gt; 0</td>
+                        </tr>
+                        <tr style="background:#fff5f5;">
+                            <td><strong>A3</strong></td>
+                            <td>Expression file review</td>
+                            <td><span class="badge blue" style="font-size:12px;">Configuration</span></td>
+                            <td>B2 (Upload Files With File Protocol)</td>
+                            <td><span class="status-badge partial">PARTIAL</span></td>
+                            <td><span class="status-badge covered" style="font-size:12px;">YES</span></td>
+                            <td><span class="priority high">HIGH</span></td>
+                            <td>Parse expression file with <code>Get File</code>, validate non-empty + check required field names exist in content</td>
+                        </tr>
+                        <tr style="background:#fff5f5;">
+                            <td><strong>A4</strong></td>
+                            <td>Config validation (schema + paths) vs LLD</td>
+                            <td><span class="badge blue" style="font-size:12px;">Configuration</span></td>
+                            <td>&mdash;</td>
+                            <td><span class="status-badge gap">GAP</span></td>
+                            <td><span class="status-badge covered" style="font-size:12px;">YES</span></td>
+                            <td><span class="priority high">HIGH</span></td>
+                            <td>Load pipeline JSON + LLD spec JSON, loop through <code>$.required_fields</code> and assert each exists using <code>Should Contain</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>M1</strong></td>
+                            <td>Expression file review vs LLD</td>
+                            <td><span class="badge blue" style="font-size:12px;">Configuration</span></td>
+                            <td>B2 (Upload Files With File Protocol)</td>
+                            <td><span class="status-badge partial">PARTIAL</span></td>
+                            <td><span class="status-badge covered" style="font-size:12px;">YES</span></td>
+                            <td><span class="priority medium">MEDIUM</span></td>
+                            <td>Use <code>Load Json From File</code> to parse expression, validate schema fields against LLD expected JSON with <code>Dictionary Should Contain Key</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>M2</strong></td>
+                            <td>Source path validation</td>
+                            <td><span class="badge blue" style="font-size:12px;">Configuration</span></td>
+                            <td>&mdash;</td>
+                            <td><span class="status-badge gap">GAP</span></td>
+                            <td><span class="status-badge covered" style="font-size:12px;">YES</span></td>
+                            <td><span class="priority medium">MEDIUM</span></td>
+                            <td>Extract paths from pipeline config JSON, compare against LLD paths spec using <code>Should Be Equal</code> for each source/target path</td>
+                        </tr>
+                        <tr>
+                            <td><strong>M3</strong></td>
+                            <td>Multi-source SQL read verification</td>
+                            <td><span class="badge green" style="font-size:12px;">Data Integrity</span></td>
+                            <td>B7 (Verify Data In Oracle Table)</td>
+                            <td><span class="status-badge partial">PARTIAL</span></td>
+                            <td><span class="status-badge covered" style="font-size:12px;">YES</span></td>
+                            <td><span class="priority medium">MEDIUM</span></td>
+                            <td>Run <code>Get Row Count</code> on each of the 3 source tables individually and assert expected counts per table</td>
+                        </tr>
+                        <tr style="background:#fff5f5;">
+                            <td><strong>M4</strong></td>
+                            <td>Routing logic (request type 1,2)</td>
+                            <td><span class="badge red" style="font-size:12px;">Business Logic</span></td>
+                            <td>&mdash;</td>
+                            <td><span class="status-badge gap">GAP</span></td>
+                            <td><span class="status-badge covered" style="font-size:12px;">YES</span></td>
+                            <td><span class="priority high">HIGH</span></td>
+                            <td>Query source with <code>WHERE request_type IN (1,2)</code>, compare count against output view 1256 using <code>Should Be Equal As Integers</code></td>
+                        </tr>
+                        <tr style="background:#fff5f5;">
+                            <td><strong>M5</strong></td>
+                            <td>Routing logic (request type 3,4)</td>
+                            <td><span class="badge red" style="font-size:12px;">Business Logic</span></td>
+                            <td>&mdash;</td>
+                            <td><span class="status-badge gap">GAP</span></td>
+                            <td><span class="status-badge covered" style="font-size:12px;">YES</span></td>
+                            <td><span class="priority high">HIGH</span></td>
+                            <td>Query source with <code>WHERE request_type IN (3,4)</code>, compare count against output view 3-4 + negative cross-routing check</td>
+                        </tr>
+                        <tr>
+                            <td><strong>M6</strong></td>
+                            <td>Snap-by-snap output verification</td>
+                            <td><span class="badge orange" style="font-size:12px;">UI-Level</span></td>
+                            <td>&mdash;</td>
+                            <td><span class="status-badge gap">GAP</span></td>
+                            <td><span class="status-badge covered" style="font-size:12px;">YES</span></td>
+                            <td><span class="priority low">LOW</span></td>
+                            <td>No snap preview API exists; verify snap success via pipeline execution status (Completed/Failed) from <code>Run Triggered Task</code> response + validate final data in target table using <code>Get Row Count</code></td>
+                        </tr>
+                        <tr style="background:#fff5f5;">
+                            <td><strong>M7</strong></td>
+                            <td>Status update verification (0&#10145;1)</td>
+                            <td><span class="badge green" style="font-size:12px;">Data Integrity</span></td>
+                            <td>&mdash;</td>
+                            <td><span class="status-badge gap">GAP</span></td>
+                            <td><span class="status-badge covered" style="font-size:12px;">YES</span></td>
+                            <td><span class="priority high">HIGH</span></td>
+                            <td>Pre-check <code>state=0</code> count, run pipeline, then assert <code>state=1</code> for processed records using <code>Select Where</code> + <code>Should Be Equal</code></td>
+                        </tr>
+                        <tr style="background:#fff5f5;">
+                            <td><strong>M8</strong></td>
+                            <td>DataStage vs SnapLogic comparison</td>
+                            <td><span class="badge purple" style="font-size:12px;">Cross-System</span></td>
+                            <td>B9 (Compare Actual vs Expected CSV)</td>
+                            <td><span class="status-badge partial">PARTIAL</span></td>
+                            <td><span class="status-badge covered" style="font-size:12px;">YES</span></td>
+                            <td><span class="priority high">HIGH</span></td>
+                            <td>Use <code>Compare CSV Files With Exclusions Template</code> to diff DS output CSV against SL output CSV + verify counts match with <code>Count Data Rows In CSV</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>M9</strong></td>
+                            <td>Source &amp; target count verification</td>
+                            <td><span class="badge green" style="font-size:12px;">Data Integrity</span></td>
+                            <td>B7 (Verify Data In Oracle Table)</td>
+                            <td><span class="status-badge partial">PARTIAL</span></td>
+                            <td><span class="status-badge covered" style="font-size:12px;">YES</span></td>
+                            <td><span class="priority medium">MEDIUM</span></td>
+                            <td>Use <code>Get Row Count</code> per source table, sum with <code>Evaluate</code>, assert sum equals target count</td>
+                        </tr>
+                        <tr>
+                            <td><strong>M10</strong></td>
+                            <td>Tidal job trigger verification</td>
+                            <td><span class="badge gray" style="font-size:12px;">Operational</span></td>
+                            <td>B6 (Execute Triggered Task)</td>
+                            <td><span class="status-badge partial">PARTIAL</span></td>
+                            <td><span class="status-badge covered" style="font-size:12px;">YES</span></td>
+                            <td><span class="priority low">LOW</span></td>
+                            <td>Use <code>Run Triggered Task With Parameters From Template</code> and verify execution status via SnapLogic REST API response</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <!-- COVERAGE SUMMARY -->
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <div class="data-section">
+            <h2>Coverage Summary</h2>
+            <div class="stats">
+                <div class="stat-card green">
+                    <h3>Full Coverage</h3>
+                    <div class="big-number">0</div>
+                    <div class="label-text">Fully automated</div>
+                </div>
+                <div class="stat-card orange">
+                    <h3>Partial Coverage</h3>
+                    <div class="big-number">7</div>
+                    <div class="label-text">Needs enhancement</div>
+                </div>
+                <div class="stat-card red">
+                    <h3>No Coverage</h3>
+                    <div class="big-number">7</div>
+                    <div class="label-text">New scripts needed</div>
+                </div>
+            </div>
+            <div class="info-box green">
+                <strong>&#128161; Key Insight:</strong> The baseline covers the "happy path" flow (setup &#10145; execute &#10145; verify output), but lacks three critical areas: <strong>(1) Pre-execution validation</strong> (UT approval, SIT folder, LLD conformance), <strong>(2) Business logic validation</strong> (routing, status updates), and <strong>(3) Cross-platform comparison</strong> (DS vs SL) that represent the customer's most critical manual checks.
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>
