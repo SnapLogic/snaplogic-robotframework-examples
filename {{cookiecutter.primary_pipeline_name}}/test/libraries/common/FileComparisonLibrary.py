@@ -26,7 +26,95 @@ class FileComparisonLibrary:
     """Robot Framework library for file comparison operations."""
 
     ROBOT_LIBRARY_SCOPE = 'GLOBAL'
-    ROBOT_LIBRARY_VERSION = '2.0.0'
+    ROBOT_LIBRARY_VERSION = '2.1.0'
+
+    # ==================== NUMERIC NORMALIZATION ====================
+
+    @staticmethod
+    def _normalize_numeric_value(value):
+        """Normalize a numeric value to its canonical form.
+
+        Converts floats that are whole numbers to ints (e.g., 1250.0 -> 1250)
+        so that mathematically equal values compare as identical.
+
+        Args:
+            value: Any value (int, float, str, etc.)
+
+        Returns:
+            Normalized value: int if the value is a whole number float, otherwise unchanged.
+        """
+        if isinstance(value, float) and value.is_integer():
+            return int(value)
+        return value
+
+    @staticmethod
+    def _normalize_numeric_string(s: str) -> str:
+        """Normalize a string that represents a number.
+
+        If the string is a numeric value like '1250.0', normalize it to '1250'.
+        Non-numeric strings are returned unchanged.
+        """
+        try:
+            num = float(s)
+            if num.is_integer():
+                return str(int(num))
+        except (ValueError, TypeError):
+            pass
+        return s
+
+    def _normalize_json_numerics(self, data):
+        """Recursively normalize numeric values in a JSON-like structure.
+
+        Converts float values that are whole numbers to int (e.g., 1250.0 -> 1250).
+        This ensures that {\"amount\": 1250.0} and {\"amount\": 1250} compare as equal.
+        """
+        if isinstance(data, dict):
+            return {k: self._normalize_json_numerics(v) for k, v in data.items()}
+        elif isinstance(data, list):
+            return [self._normalize_json_numerics(item) for item in data]
+        elif isinstance(data, float) and data.is_integer():
+            return int(data)
+        return data
+
+    def _normalize_csv_row(self, row: List[str]) -> List[str]:
+        """Normalize all fields in a CSV row for numeric-aware comparison.
+
+        For each field: if it's a plain numeric string, normalize it.
+        If it's JSON, parse it, normalize numerics recursively, and re-serialize.
+        """
+        return [self._normalize_csv_field_for_comparison(field) for field in row]
+
+    def _normalize_csv_field_for_comparison(self, field: str) -> str:
+        """Normalize a single CSV field for numeric-aware comparison.
+
+        - Plain numeric strings: '1250.0' -> '1250'
+        - JSON fields: recursively normalize all numeric values inside
+        - Other strings: returned unchanged
+        """
+        field = field.strip()
+
+        # Try JSON first
+        clean = field
+        if clean.startswith('"') and clean.endswith('"'):
+            clean = clean[1:-1]
+
+        if (clean.startswith('{') and clean.endswith('}')) or \
+           (clean.startswith('[') and clean.endswith(']')):
+            try:
+                json_str = clean.replace('""', '"')
+                data = json.loads(json_str)
+                normalized = self._normalize_json_numerics(data)
+                return json.dumps(normalized, sort_keys=True)
+            except json.JSONDecodeError:
+                try:
+                    data = json.loads(clean)
+                    normalized = self._normalize_json_numerics(data)
+                    return json.dumps(normalized, sort_keys=True)
+                except json.JSONDecodeError:
+                    pass
+
+        # Plain value - try numeric normalization
+        return self._normalize_numeric_string(field)
 
     # ==================== CSV COMPARISON ====================
 
@@ -381,7 +469,10 @@ class FileComparisonLibrary:
         ]
 
     def _normalize_field(self, field: str, exclude_keys_lower: Set[str]) -> str:
-        """Normalize a single field by removing excluded keys if it's JSON."""
+        """Normalize a single field by removing excluded keys if it's JSON.
+
+        Also normalizes numeric values so that 1250.0 and 1250 are treated as equal.
+        """
         field = field.strip()
 
         # Remove CSV outer quotes if present
@@ -391,21 +482,24 @@ class FileComparisonLibrary:
         # Check if field looks like JSON
         if not ((field.startswith('{') and field.endswith('}')) or
                 (field.startswith('[') and field.endswith(']'))):
-            return field
+            # Not JSON - apply plain numeric normalization
+            return self._normalize_numeric_string(field)
 
         try:
             # Handle CSV-style escaped quotes ("" -> ")
             json_str = field.replace('""', '"')
             data = json.loads(json_str)
             cleaned = self._remove_keys_recursive(data, exclude_keys_lower)
+            # Normalize numeric values (e.g., 1250.0 -> 1250) before serialization
+            cleaned = self._normalize_json_numerics(cleaned)
             # Use consistent JSON serialization with sorted keys
-            # Match Robot Framework's default: json.dumps($cleaned_data, sort_keys=True)
             return json.dumps(cleaned, sort_keys=True)
         except json.JSONDecodeError:
             # Try without the quote replacement
             try:
                 data = json.loads(field)
                 cleaned = self._remove_keys_recursive(data, exclude_keys_lower)
+                cleaned = self._normalize_json_numerics(cleaned)
                 return json.dumps(cleaned, sort_keys=True)
             except json.JSONDecodeError:
                 return field
@@ -452,6 +546,7 @@ class FileComparisonLibrary:
         """Compare CSV content using set-based comparison (ignoring row order).
 
         This method converts rows to tuples and compares as sets.
+        Uses numeric-aware normalization so 1250.0 and 1250 are treated as equal.
         Returns True if the sets are equal, False otherwise.
         """
         # Get data rows (skip headers)
@@ -459,9 +554,9 @@ class FileComparisonLibrary:
         data2 = csv2[1:] if csv2 else []
 
         # Convert rows to tuples for set comparison
-        # Using tuple instead of str() for more reliable comparison
-        set1 = {tuple(row) for row in data1}
-        set2 = {tuple(row) for row in data2}
+        # Normalize each field for numeric-aware comparison
+        set1 = {tuple(self._normalize_csv_row(row)) for row in data1}
+        set2 = {tuple(self._normalize_csv_row(row)) for row in data2}
 
         # Debug logging
         logger.info(f"Set comparison - File1 rows: {len(set1)}, File2 rows: {len(set2)}")
@@ -500,16 +595,19 @@ class FileComparisonLibrary:
         csv1: List[List[str]],
         csv2: List[List[str]]
     ) -> List[Dict[str, Any]]:
-        """Compare CSV content ignoring row order."""
+        """Compare CSV content ignoring row order.
+
+        Uses numeric-aware normalization so 1250.0 and 1250 are treated as equal.
+        """
         differences = []
 
         # Get data rows (skip headers)
         data1 = csv1[1:] if csv1 else []
         data2 = csv2[1:] if csv2 else []
 
-        # Convert to sets of tuples for comparison
-        set1 = {tuple(row) for row in data1}
-        set2 = {tuple(row) for row in data2}
+        # Convert to sets of tuples for comparison with numeric normalization
+        set1 = {tuple(self._normalize_csv_row(row)) for row in data1}
+        set2 = {tuple(self._normalize_csv_row(row)) for row in data2}
 
         # Find rows only in file1
         for row in set1 - set2:
@@ -554,7 +652,10 @@ class FileComparisonLibrary:
             has_row2 = row_index < len(csv2)
 
             if has_row1 and has_row2:
-                if csv1[row_index] != csv2[row_index]:
+                # Use numeric-aware comparison: normalize both rows before comparing
+                norm_row1 = self._normalize_csv_row(csv1[row_index])
+                norm_row2 = self._normalize_csv_row(csv2[row_index])
+                if norm_row1 != norm_row2:
                     diff = {
                         'type': 'ROW_CONTENT_MISMATCH',
                         'row_index': row_index,
@@ -601,7 +702,10 @@ class FileComparisonLibrary:
         return differences
 
     def _get_row_key_for_matching(self, row: List[str], exclude_keys: List[str] = None) -> str:
-        """Generate a key for row matching by normalizing JSON content and excluding dynamic fields."""
+        """Generate a key for row matching by normalizing JSON content and excluding dynamic fields.
+
+        Uses numeric-aware normalization so rows with 1250.0 and 1250 produce the same key.
+        """
         if not exclude_keys:
             exclude_keys = []
 
@@ -612,11 +716,13 @@ class FileComparisonLibrary:
                 data = json.loads(cell)
                 if isinstance(data, dict):
                     filtered = {k: v for k, v in data.items() if k not in exclude_keys}
+                    filtered = self._normalize_json_numerics(filtered)
                     normalized_parts.append(json.dumps(filtered, sort_keys=True))
                 else:
+                    data = self._normalize_json_numerics(data)
                     normalized_parts.append(json.dumps(data, sort_keys=True))
             except (json.JSONDecodeError, TypeError):
-                normalized_parts.append(cell)
+                normalized_parts.append(self._normalize_numeric_string(cell))
 
         return '|||'.join(normalized_parts)
 
@@ -660,8 +766,10 @@ class FileComparisonLibrary:
                         'file2_position': row_info2['index']
                     })
 
-                # Compare row content
-                if row_info1['row'] != row_info2['row']:
+                # Compare row content with numeric-aware comparison
+                norm_row1 = self._normalize_csv_row(row_info1['row'])
+                norm_row2 = self._normalize_csv_row(row_info2['row'])
+                if norm_row1 != norm_row2:
                     diff = {
                         'type': 'ROW_CONTENT_MISMATCH',
                         'match_key': match_key,
@@ -712,7 +820,10 @@ class FileComparisonLibrary:
                 field1 = row1[field_index]
                 field2 = row2[field_index]
 
-                if field1 != field2:
+                # Use numeric-aware comparison
+                norm_field1 = self._normalize_csv_field_for_comparison(field1)
+                norm_field2 = self._normalize_csv_field_for_comparison(field2)
+                if norm_field1 != norm_field2:
                     diff = {
                         'type': 'FIELD_VALUE_MISMATCH',
                         'row_index': row_index,
@@ -775,6 +886,10 @@ class FileComparisonLibrary:
             dict1 = json.loads(json_str1)
             dict2 = json.loads(json_str2)
 
+            # Normalize numeric values before comparison (e.g., 1250.0 -> 1250)
+            dict1 = self._normalize_json_numerics(dict1)
+            dict2 = self._normalize_json_numerics(dict2)
+
             # Find nested differences
             differences = self._find_nested_differences(dict1, dict2, '')
         except json.JSONDecodeError:
@@ -788,10 +903,17 @@ class FileComparisonLibrary:
         obj2: Any,
         path: str
     ) -> List[Dict[str, Any]]:
-        """Recursively find differences between two nested structures."""
+        """Recursively find differences between two nested structures.
+
+        Uses numeric-aware comparison: 1250.0 and 1250 are treated as equal.
+        """
         differences = []
 
-        if type(obj1) != type(obj2):
+        # Normalize numeric values before type comparison
+        norm1 = self._normalize_numeric_value(obj1)
+        norm2 = self._normalize_numeric_value(obj2)
+
+        if type(norm1) != type(norm2):
             differences.append({
                 'path': path or 'root',
                 'type': 'TYPE_MISMATCH',
@@ -802,40 +924,40 @@ class FileComparisonLibrary:
             })
             return differences
 
-        if isinstance(obj1, dict):
-            all_keys = set(obj1.keys()) | set(obj2.keys())
+        if isinstance(norm1, dict):
+            all_keys = set(norm1.keys()) | set(norm2.keys())
             for key in all_keys:
                 new_path = f"{path}.{key}" if path else key
-                if key in obj1 and key in obj2:
+                if key in norm1 and key in norm2:
                     differences.extend(
-                        self._find_nested_differences(obj1[key], obj2[key], new_path)
+                        self._find_nested_differences(norm1[key], norm2[key], new_path)
                     )
-                elif key in obj1:
+                elif key in norm1:
                     differences.append({
                         'path': new_path,
                         'type': 'KEY_ONLY_IN_FILE1',
-                        'value': obj1[key]
+                        'value': norm1[key]
                     })
                 else:
                     differences.append({
                         'path': new_path,
                         'type': 'KEY_ONLY_IN_FILE2',
-                        'value': obj2[key]
+                        'value': norm2[key]
                     })
-        elif isinstance(obj1, list):
-            if len(obj1) != len(obj2):
+        elif isinstance(norm1, list):
+            if len(norm1) != len(norm2):
                 differences.append({
                     'path': path or 'root',
                     'type': 'ARRAY_LENGTH_MISMATCH',
-                    'file1_length': len(obj1),
-                    'file2_length': len(obj2)
+                    'file1_length': len(norm1),
+                    'file2_length': len(norm2)
                 })
-            for i in range(min(len(obj1), len(obj2))):
+            for i in range(min(len(norm1), len(norm2))):
                 new_path = f"{path}[{i}]" if path else f"[{i}]"
                 differences.extend(
-                    self._find_nested_differences(obj1[i], obj2[i], new_path)
+                    self._find_nested_differences(norm1[i], norm2[i], new_path)
                 )
-        elif obj1 != obj2:
+        elif norm1 != norm2:
             differences.append({
                 'path': path or 'root',
                 'type': 'VALUE_MISMATCH',
@@ -926,31 +1048,40 @@ class FileComparisonLibrary:
             return None
 
     def _compare_json_ignore_order(self, json1: Any, json2: Any) -> bool:
-        """Compare two JSON structures ignoring array order."""
-        if type(json1) != type(json2):
+        """Compare two JSON structures ignoring array order.
+
+        Uses numeric-aware comparison: 1250.0 and 1250 are treated as equal.
+        """
+        # Normalize numeric values before comparison
+        norm1 = self._normalize_numeric_value(json1)
+        norm2 = self._normalize_numeric_value(json2)
+
+        if type(norm1) != type(norm2):
             return False
 
-        if isinstance(json1, dict):
-            if set(json1.keys()) != set(json2.keys()):
+        if isinstance(norm1, dict):
+            if set(norm1.keys()) != set(norm2.keys()):
                 return False
             return all(
-                self._compare_json_ignore_order(json1[k], json2[k])
-                for k in json1.keys()
+                self._compare_json_ignore_order(norm1[k], norm2[k])
+                for k in norm1.keys()
             )
-        elif isinstance(json1, list):
-            if len(json1) != len(json2):
+        elif isinstance(norm1, list):
+            if len(norm1) != len(norm2):
                 return False
             try:
-                json1_sorted = sorted(json1, key=lambda x: json.dumps(x, sort_keys=True))
-                json2_sorted = sorted(json2, key=lambda x: json.dumps(x, sort_keys=True))
+                norm1_sorted = sorted(norm1, key=lambda x: json.dumps(
+                    self._normalize_json_numerics(x), sort_keys=True))
+                norm2_sorted = sorted(norm2, key=lambda x: json.dumps(
+                    self._normalize_json_numerics(x), sort_keys=True))
                 return all(
                     self._compare_json_ignore_order(a, b)
-                    for a, b in zip(json1_sorted, json2_sorted)
+                    for a, b in zip(norm1_sorted, norm2_sorted)
                 )
             except TypeError:
-                return json1 == json2
+                return norm1 == norm2
         else:
-            return json1 == json2
+            return norm1 == norm2
 
     def _find_json_differences(
         self,
@@ -958,10 +1089,17 @@ class FileComparisonLibrary:
         json2: Any,
         path: str
     ) -> List[Dict[str, Any]]:
-        """Find all differences between two JSON structures."""
+        """Find all differences between two JSON structures.
+
+        Uses numeric-aware comparison: 1250.0 and 1250 are treated as equal.
+        """
         differences = []
 
-        if type(json1) != type(json2):
+        # Normalize numeric values before comparison
+        norm1 = self._normalize_numeric_value(json1)
+        norm2 = self._normalize_numeric_value(json2)
+
+        if type(norm1) != type(norm2):
             differences.append({
                 'type': 'TYPE_MISMATCH',
                 'path': path or 'root',
@@ -970,42 +1108,42 @@ class FileComparisonLibrary:
             })
             return differences
 
-        if isinstance(json1, dict):
-            all_keys = set(json1.keys()) | set(json2.keys())
+        if isinstance(norm1, dict):
+            all_keys = set(norm1.keys()) | set(norm2.keys())
             for key in all_keys:
                 new_path = f"{path}.{key}" if path else key
-                if key in json1 and key in json2:
+                if key in norm1 and key in norm2:
                     differences.extend(
-                        self._find_json_differences(json1[key], json2[key], new_path)
+                        self._find_json_differences(norm1[key], norm2[key], new_path)
                     )
-                elif key in json1:
+                elif key in norm1:
                     differences.append({
                         'type': 'KEY_ONLY_IN_FILE1',
                         'path': new_path,
-                        'value': json1[key]
+                        'value': norm1[key]
                     })
                 else:
                     differences.append({
                         'type': 'KEY_ONLY_IN_FILE2',
                         'path': new_path,
-                        'value': json2[key]
+                        'value': norm2[key]
                     })
 
-        elif isinstance(json1, list):
-            if len(json1) != len(json2):
+        elif isinstance(norm1, list):
+            if len(norm1) != len(norm2):
                 differences.append({
                     'type': 'ARRAY_LENGTH_MISMATCH',
                     'path': path or 'root',
-                    'file1_length': len(json1),
-                    'file2_length': len(json2)
+                    'file1_length': len(norm1),
+                    'file2_length': len(norm2)
                 })
-            for i in range(min(len(json1), len(json2))):
+            for i in range(min(len(norm1), len(norm2))):
                 new_path = f"{path}[{i}]" if path else f"[{i}]"
                 differences.extend(
-                    self._find_json_differences(json1[i], json2[i], new_path)
+                    self._find_json_differences(norm1[i], norm2[i], new_path)
                 )
 
-        elif json1 != json2:
+        elif norm1 != norm2:
             differences.append({
                 'type': 'VALUE_MISMATCH',
                 'path': path or 'root',
