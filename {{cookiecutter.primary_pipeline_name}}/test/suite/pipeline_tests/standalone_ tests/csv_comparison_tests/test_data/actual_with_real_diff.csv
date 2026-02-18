@@ -1,0 +1,3 @@
+RECORD_METADATA,ENTITY_ID,AMOUNT
+"{""user_id"": ""U001"", ""amount"": 1250, ""count"": 3, ""name"": ""Alice""}",ENT-001,1250
+"{""user_id"": ""U002"", ""amount"": 999, ""count"": 7, ""name"": ""Bob""}",ENT-002,999
