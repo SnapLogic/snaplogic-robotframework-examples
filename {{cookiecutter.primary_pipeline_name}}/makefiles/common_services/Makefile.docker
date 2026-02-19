@@ -7,7 +7,7 @@
 
 .PHONY: check-env start-tools-service-only stop-tools-service-only start-services stop-services \
         clean-start clean-start-tools reload-env-files \
-        reinstall-requirements reinstall-snaplogic-common-robot show-snaplogic-coommon-robot-version
+        reinstall-requirements reinstall-snaplogic-common-robot upgrade-snaplogic-common-robot show-snaplogic-coommon-robot-version
 
 # Include common configuration
 include makefiles/common_services/Makefile.common
@@ -342,21 +342,21 @@ reinstall-requirements:
 	@echo "📋 Step 1/4: Checking if container is running..."
 	@if ! docker ps | grep -q snaplogic-test-example-tools-container; then \
 		echo "❌ Error: Container 'snaplogic-test-example-tools-container' is not running!"; \
-		echo "💡 Start it first with: make start-tools"; \
+		echo "💡 Start it first with: make start-tools-service-only"; \
 		exit 1; \
 	fi
 	@echo "✅ Container is running"
 	@echo ""
 	@echo "📦 Step 2/4: Reinstalling requirements.txt..."
-	@echo "   Using: pip install -r /app/requirements.txt --force-reinstall --no-cache-dir"
-	@docker exec snaplogic-test-example-tools-container pip install -r /app/requirements.txt --force-reinstall --no-cache-dir
+	@echo "   Using: pip install -r /app/requirements.txt --upgrade --upgrade-strategy only-if-needed --no-cache-dir"
+	@docker exec snaplogic-test-example-tools-container pip install -r /app/requirements.txt --upgrade --upgrade-strategy only-if-needed --no-cache-dir
 	@echo "✅ Requirements reinstalled successfully!"
 	@echo ""
 	@echo "🔍 Step 3/4: Checking installed packages..."
 	@echo "📋 Installed packages (first 25):"
 	@docker exec snaplogic-test-example-tools-container pip list | head -25
 	@echo ""
-	@echo "🔍 Checking critical packages:"install-snaplogic-common-robot
+	@echo "🔍 Checking critical packages:"
 	@echo "   ✓ Robot Framework:"
 	@docker exec snaplogic-test-example-tools-container pip show robotframework | grep -E "^(Name|Version):"
 	@echo "   ✓ Requests Library:"
@@ -400,7 +400,7 @@ reinstall-snaplogic-common-robot:
 	@echo "📋 Step 1/4: Checking if container is running..."
 	@if ! docker ps | grep -q snaplogic-test-example-tools-container; then \
 		echo "❌ Error: Container 'snaplogic-test-example-tools-container' is not running!"; \
-		echo "💡 Start it first with: make start-tools"; \
+		echo "💡 Start it first with: make start-tools-service-only"; \
 		exit 1; \
 	fi
 	@echo "✅ Container is running"
@@ -423,13 +423,71 @@ reinstall-snaplogic-common-robot:
 	@echo ""
 	@echo "🎉 Done! snaplogic-common-robot has been installed and verified."
 
+# =============================================================================
+# 🎯 UPGRADE-SNAPLOGIC-COMMON-ROBOT: Upgrade ONLY the package, no dependencies
+# =============================================================================
+# What it does:
+#   - Upgrades ONLY snaplogic-common-robot package (skips all dependencies)
+#   - Uses --no-deps to prevent transitive dependency changes
+#   - Preserves the existing crypto/OpenSSL stack (FIPS-safe)
+#   - Installs setuptools (required dependency)
+#   - Verifies installation and tests import
+#
+# When to use:
+#   - In FIPS-enabled environments (e.g., Jenkins with restricted OpenSSL)
+#   - When you want to update snaplogic-common-robot without risking
+#     transitive dependency changes (cryptography, pymssql, pyOpenSSL, etc.)
+#   - When base image already has all required dependencies installed
+#
+# ⚠️  IMPORTANT: If a new version of snaplogic-common-robot adds a NEW
+#     dependency, --no-deps will skip it. Use 'reinstall-snaplogic-common-robot'
+#     instead if you suspect new dependencies were added.
+#
+# Time: ~15 seconds
+#
+# Usage:
+#   make upgrade-snaplogic-common-robot
+# =============================================================================
+upgrade-snaplogic-common-robot:
+	@echo "🚀 Upgrading snaplogic-common-robot (no dependency changes)..."
+	@echo ""
+	@echo "📋 Step 1/4: Checking if container is running..."
+	@if ! docker ps | grep -q snaplogic-test-example-tools-container; then \
+		echo "❌ Error: Container 'snaplogic-test-example-tools-container' is not running!"; \
+		echo "💡 Start it first with: make start-tools-service-only"; \
+		exit 1; \
+	fi
+	@echo "✅ Container is running"
+	@echo ""
+	@echo "ℹ️  Current version:"
+	@docker exec snaplogic-test-example-tools-container pip show snaplogic-common-robot 2>/dev/null | grep -E "^(Name|Version):" || echo "   (not installed)"
+	@echo ""
+	@echo "📦 Step 2/4: Upgrading snaplogic-common-robot (--no-deps)..."
+	@echo "   Using: pip install --upgrade --no-deps --no-cache-dir snaplogic-common-robot"
+	@docker exec snaplogic-test-example-tools-container pip install --upgrade --no-deps --no-cache-dir "snaplogic-common-robot"
+	@echo "✅ snaplogic-common-robot upgraded successfully!"
+	@echo ""
+	@echo "🔧 Step 3/4: Installing setuptools<81 (required for pkg_resources)..."
+	@docker exec snaplogic-test-example-tools-container pip install "setuptools<81" --quiet
+	@echo "✅ setuptools installed"
+	@echo ""
+	@echo "🔍 Step 4/4: Verifying installation..."
+	@echo "   Package details:"
+	@docker exec snaplogic-test-example-tools-container pip show snaplogic-common-robot
+	@echo ""
+	@echo "   Testing import:"
+	@docker exec snaplogic-test-example-tools-container python -c "import snaplogic_common_robot; print('   ✅ snaplogic-common-robot imported successfully')"
+	@echo ""
+	@echo "🎉 Done! snaplogic-common-robot has been upgraded (dependencies unchanged)."
+	@echo "⚠️  Note: If you encounter ModuleNotFoundError, run 'make reinstall-snaplogic-common-robot' instead."
+
 # Show snaplogic-common-robot version
 show-snaplogic-common-robot-version:
 	@echo "📦 SnapLogic Common Robot Library Version"
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@if ! docker ps | grep -q snaplogic-test-example-tools-container; then \
 		echo "❌ Error: Container 'snaplogic-test-example-tools-container' is not running!"; \
-		echo "💡 Start it first with: make start-tools"; \
+		echo "💡 Start it first with: make start-tools-service-only"; \
 		exit 1; \
 	fi
 	@docker exec snaplogic-test-example-tools-container pip show snaplogic-common-robot | grep -E "^(Name|Version|Location):" || echo "❌ snaplogic-common-robot not installed"
