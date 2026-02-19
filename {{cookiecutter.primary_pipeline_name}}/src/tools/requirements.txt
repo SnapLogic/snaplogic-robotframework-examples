@@ -3,7 +3,6 @@
 # robotframework-databaselibrary, robotframework-pabot, robotframework-jsonlibrary,
 # robotframework-csvlibrary, requests, boto3, and more.
 
-setuptools<81  # Required for pkg_resources used by snaplogic-common-robot
 snaplogic-common-robot
 
 # Database drivers (not included in snaplogic-common-robot)

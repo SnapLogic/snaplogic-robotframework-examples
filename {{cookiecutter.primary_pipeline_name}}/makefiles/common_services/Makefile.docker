@@ -7,7 +7,7 @@
 
 .PHONY: check-env start-tools-service-only stop-tools-service-only start-services stop-services \
         clean-start clean-start-tools reload-env-files \
-        reinstall-requirements reinstall-snaplogic-common-robot upgrade-snaplogic-common-robot show-snaplogic-coommon-robot-version
+        reinstall-requirements reinstall-snaplogic-common-robot upgrade-snaplogic-common-robot show-snaplogic-common-robot-version
 
 # Include common configuration
 include makefiles/common_services/Makefile.common
@@ -405,16 +405,12 @@ reinstall-snaplogic-common-robot:
 	fi
 	@echo "✅ Container is running"
 	@echo ""
-	@echo "📦 Step 2/4: Installing snaplogic-common-robot..."
+	@echo "📦 Step 2/3: Installing snaplogic-common-robot..."
 	@echo "   Using: pip install snaplogic-common-robot --upgrade --no-cache-dir"
 	@docker exec snaplogic-test-example-tools-container pip install snaplogic-common-robot --upgrade --no-cache-dir
 	@echo "✅ snaplogic-common-robot installed successfully!"
 	@echo ""
-	@echo "🔧 Step 3/4: Installing setuptools<81 (required for pkg_resources)..."
-	@docker exec snaplogic-test-example-tools-container pip install "setuptools<81" --quiet
-	@echo "✅ setuptools installed"
-	@echo ""
-	@echo "🔍 Step 4/4: Verifying installation..."
+	@echo "🔍 Step 3/3: Verifying installation..."
 	@echo "   Package details:"
 	@docker exec snaplogic-test-example-tools-container pip show snaplogic-common-robot
 	@echo ""
@@ -430,7 +426,6 @@ reinstall-snaplogic-common-robot:
 #   - Upgrades ONLY snaplogic-common-robot package (skips all dependencies)
 #   - Uses --no-deps to prevent transitive dependency changes
 #   - Preserves the existing crypto/OpenSSL stack (FIPS-safe)
-#   - Installs setuptools (required dependency)
 #   - Verifies installation and tests import
 #
 # When to use:
@@ -462,16 +457,12 @@ upgrade-snaplogic-common-robot:
 	@echo "ℹ️  Current version:"
 	@docker exec snaplogic-test-example-tools-container pip show snaplogic-common-robot 2>/dev/null | grep -E "^(Name|Version):" || echo "   (not installed)"
 	@echo ""
-	@echo "📦 Step 2/4: Upgrading snaplogic-common-robot (--no-deps)..."
+	@echo "📦 Step 2/3: Upgrading snaplogic-common-robot (--no-deps)..."
 	@echo "   Using: pip install --upgrade --no-deps --no-cache-dir snaplogic-common-robot"
 	@docker exec snaplogic-test-example-tools-container pip install --upgrade --no-deps --no-cache-dir "snaplogic-common-robot"
 	@echo "✅ snaplogic-common-robot upgraded successfully!"
 	@echo ""
-	@echo "🔧 Step 3/4: Installing setuptools<81 (required for pkg_resources)..."
-	@docker exec snaplogic-test-example-tools-container pip install "setuptools<81" --quiet
-	@echo "✅ setuptools installed"
-	@echo ""
-	@echo "🔍 Step 4/4: Verifying installation..."
+	@echo "🔍 Step 3/3: Verifying installation..."
 	@echo "   Package details:"
 	@docker exec snaplogic-test-example-tools-container pip show snaplogic-common-robot
 	@echo ""
