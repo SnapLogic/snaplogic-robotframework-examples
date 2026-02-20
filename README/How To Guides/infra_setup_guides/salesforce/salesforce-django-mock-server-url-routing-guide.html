@@ -1,0 +1,1739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mock Server URL Routing Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           Header
+           ═══════════════════════════════════════════════════════════════ */
+        .header {
+            background: white;
+            border-radius: 10px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 22px;
+        }
+
+        .header-subtitle {
+            color: #666;
+            font-size: 13px;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           Navigation
+           ═══════════════════════════════════════════════════════════════ */
+        .nav-section {
+            background: white;
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .nav-section h3 {
+            color: #333;
+            font-size: 13px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tab-nav {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 8px 16px;
+            border: 2px solid #2d6a4f;
+            background: white;
+            color: #2d6a4f;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .tab-btn:hover, .tab-btn.active {
+            background: #2d6a4f;
+            color: white;
+        }
+
+        .tab-btn.concept-tab {
+            border-color: #2980b9;
+            color: #2980b9;
+        }
+
+        .tab-btn.concept-tab:hover, .tab-btn.concept-tab.active {
+            background: #2980b9;
+            color: white;
+        }
+
+        .tab-btn.route-tab {
+            border-color: #8e44ad;
+            color: #8e44ad;
+        }
+
+        .tab-btn.route-tab:hover, .tab-btn.route-tab.active {
+            background: #8e44ad;
+            color: white;
+        }
+
+        .tab-btn.plugin-tab {
+            border-color: #e67e22;
+            color: #e67e22;
+        }
+
+        .tab-btn.plugin-tab:hover, .tab-btn.plugin-tab.active {
+            background: #e67e22;
+            color: white;
+        }
+
+        .tab-btn.config-tab {
+            border-color: #7f8c8d;
+            color: #7f8c8d;
+        }
+
+        .tab-btn.config-tab:hover, .tab-btn.config-tab.active {
+            background: #7f8c8d;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           Data Sections / Cards
+           ═══════════════════════════════════════════════════════════════ */
+        .data-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .data-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 18px;
+        }
+
+        .data-section h2 .badge {
+            background: #2d6a4f;
+            color: white;
+            font-size: 12px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: normal;
+        }
+
+        .data-section h2 .badge.blue-badge { background: #2980b9; }
+        .data-section h2 .badge.purple-badge { background: #8e44ad; }
+        .data-section h2 .badge.orange-badge { background: #e67e22; }
+
+        .data-section h3 {
+            color: #444;
+            margin: 20px 0 10px 0;
+            font-size: 15px;
+        }
+
+        .data-section p {
+            color: #555;
+            font-size: 14px;
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           Info Boxes
+           ═══════════════════════════════════════════════════════════════ */
+        .info-box {
+            background: #e8f5e9;
+            border-left: 4px solid #2d6a4f;
+            padding: 12px 16px;
+            margin-bottom: 15px;
+            border-radius: 0 5px 5px 0;
+            font-size: 13px;
+            color: #1b4332;
+            line-height: 1.6;
+        }
+
+        .info-box code {
+            background: #d8f3dc;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .info-box.blue {
+            background: #e8f0fe;
+            border-left-color: #2980b9;
+            color: #1a3a5c;
+        }
+
+        .info-box.blue code {
+            background: #d0e3f7;
+        }
+
+        .info-box.purple {
+            background: #f3e8fa;
+            border-left-color: #8e44ad;
+            color: #4a1a6b;
+        }
+
+        .info-box.purple code {
+            background: #e8d5f5;
+        }
+
+        .info-box.orange {
+            background: #fef3e2;
+            border-left-color: #e67e22;
+            color: #6b3a0a;
+        }
+
+        .info-box.orange code {
+            background: #fde6c8;
+        }
+
+        .info-box.red {
+            background: #fde8e8;
+            border-left-color: #e74c3c;
+            color: #6b1a1a;
+        }
+
+        .info-box.red code {
+            background: #f9d0d0;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           Tables
+           ═══════════════════════════════════════════════════════════════ */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f7f7f7;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+            font-size: 13px;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+            vertical-align: top;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        td code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #333;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           Code Blocks
+           ═══════════════════════════════════════════════════════════════ */
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 600px;
+            overflow-y: auto;
+            white-space: pre;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .code-block .comment { color: #6a9955; }
+        .code-block .keyword { color: #569cd6; }
+        .code-block .string { color: #ce9178; }
+        .code-block .function { color: #dcdcaa; }
+        .code-block .variable { color: #9cdcfe; }
+        .code-block .highlight { background: #264f2a; display: inline; }
+        .code-block .highlight-blue { background: #1e3a5f; display: inline; }
+        .code-block .highlight-purple { background: #3f1e5f; display: inline; }
+        .code-block .dim { color: #666; }
+        .code-block .arrow { color: #27ae60; font-weight: bold; }
+        .code-block .match { color: #27ae60; font-weight: bold; }
+        .code-block .nomatch { color: #e74c3c; }
+        .code-block .url-fixed { color: #808080; }
+        .code-block .url-dynamic { color: #4ec9b0; font-weight: bold; }
+        .code-block .url-host { color: #569cd6; }
+        .code-block .label { color: #dcdcaa; }
+
+        .code-label {
+            background: #2d6a4f;
+            color: white;
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 5px 5px 0 0;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .code-label.blue { background: #2980b9; }
+        .code-label.purple { background: #8e44ad; }
+        .code-label.orange { background: #e67e22; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           Diagram Boxes
+           ═══════════════════════════════════════════════════════════════ */
+        .diagram {
+            background: #fafafa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        .diagram .box-green {
+            border: 2px solid #2d6a4f;
+            border-radius: 5px;
+            padding: 8px 12px;
+            display: inline-block;
+            background: #e8f5e9;
+            color: #1b4332;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           Stats Cards (top row)
+           ═══════════════════════════════════════════════════════════════ */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            color: #666;
+            font-size: 11px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .stat-card .label-text {
+            font-size: 14px;
+            font-weight: bold;
+            color: #2d6a4f;
+        }
+
+        .stat-card.blue .label-text { color: #2980b9; }
+        .stat-card.purple .label-text { color: #8e44ad; }
+        .stat-card.orange .label-text { color: #e67e22; }
+        .stat-card.gray .label-text { color: #7f8c8d; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           Flow Arrows
+           ═══════════════════════════════════════════════════════════════ */
+        .flow-step {
+            display: flex;
+            align-items: stretch;
+            margin-bottom: 15px;
+        }
+
+        .flow-number {
+            background: #2d6a4f;
+            color: white;
+            min-width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
+        .flow-number.blue { background: #2980b9; }
+        .flow-number.purple { background: #8e44ad; }
+        .flow-number.orange { background: #e67e22; }
+
+        .flow-content {
+            flex: 1;
+        }
+
+        .flow-content h4 {
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .flow-content p {
+            color: #666;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           Comparison Columns
+           ═══════════════════════════════════════════════════════════════ */
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 15px 0;
+        }
+
+        .comparison-col {
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .comparison-col h4 {
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .comparison-col.real {
+            border-color: #2980b9;
+            background: #e8f0fe;
+        }
+
+        .comparison-col.real h4 { color: #2980b9; }
+
+        .comparison-col.mock {
+            border-color: #2d6a4f;
+            background: #e8f5e9;
+        }
+
+        .comparison-col.mock h4 { color: #2d6a4f; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           Method Badges
+           ═══════════════════════════════════════════════════════════════ */
+        .method {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            color: white;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 0.5px;
+        }
+
+        .method.get { background: #27ae60; }
+        .method.post { background: #2980b9; }
+        .method.patch { background: #e67e22; }
+        .method.delete { background: #e74c3c; }
+        .method.put { background: #8e44ad; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           Responsive
+           ═══════════════════════════════════════════════════════════════ */
+        @media (max-width: 768px) {
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             HEADER
+             ═══════════════════════════════════════════════════════════════ -->
+        <div class="header">
+            <div>
+                <h1>Mock Server URL Routing Guide</h1>
+                <div class="header-subtitle">How SnapLogic talks to real Salesforce vs. the Django Mock Server</div>
+            </div>
+            <div class="header-subtitle">Django Salesforce Mock Server Documentation</div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             QUICK STATS
+             ═══════════════════════════════════════════════════════════════ -->
+        <div class="stats">
+            <div class="stat-card">
+                <h3>The Only Change</h3>
+                <div class="label-text">Login URL</div>
+            </div>
+            <div class="stat-card blue">
+                <h3>Real Salesforce</h3>
+                <div class="label-text">login.salesforce.com</div>
+            </div>
+            <div class="stat-card">
+                <h3>Mock Server</h3>
+                <div class="label-text">salesforce-api-mock:8443</div>
+            </div>
+            <div class="stat-card purple">
+                <h3>URL Paths</h3>
+                <div class="label-text">Identical</div>
+            </div>
+            <div class="stat-card orange">
+                <h3>Pipeline Changes</h3>
+                <div class="label-text">Zero</div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             TAB NAVIGATION
+             ═══════════════════════════════════════════════════════════════ -->
+        <div class="nav-section">
+            <h3>Documentation Sections</h3>
+            <div class="tab-nav">
+                <button class="tab-btn concept-tab active" data-tab="big-picture" onclick="showTab('big-picture')">The Big Picture</button>
+                <button class="tab-btn" data-tab="url-anatomy" onclick="showTab('url-anatomy')">URL Anatomy</button>
+                <button class="tab-btn route-tab" data-tab="route-matching" onclick="showTab('route-matching')">Django Route Matching</button>
+                <button class="tab-btn" data-tab="step-by-step" onclick="showTab('step-by-step')">Step-by-Step Walkthrough</button>
+                <button class="tab-btn route-tab" data-tab="all-routes" onclick="showTab('all-routes')">All URL Routes</button>
+                <button class="tab-btn plugin-tab" data-tab="plugin-arch" onclick="showTab('plugin-arch')">Plugin Architecture</button>
+                <button class="tab-btn config-tab" data-tab="snaplogic-config" onclick="showTab('snaplogic-config')">SnapLogic Config</button>
+                <button class="tab-btn config-tab" data-tab="why-mock" onclick="showTab('why-mock')">Why Mock?</button>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             TAB 1: THE BIG PICTURE
+             ═══════════════════════════════════════════════════════════════ -->
+        <div id="big-picture" class="tab-content active">
+            <div class="data-section">
+                <h2>The Big Picture <span class="badge blue-badge">Concept</span></h2>
+
+                <p>When a SnapLogic pipeline talks to Salesforce, it doesn't know (or care) whether it's talking to the <strong>real</strong> Salesforce or a <strong>mock</strong>. It just sends HTTP requests to a URL. <strong>We swap the URL.</strong></p>
+
+                <div class="info-box blue">
+                    <strong>Key Insight:</strong> The pipeline, the Snaps, the data flow, the mappings, the expressions &mdash; everything stays <strong>exactly the same</strong>. Only the Login URL in the SnapLogic Account configuration changes.
+                </div>
+
+                <h3>Real Salesforce Flow</h3>
+                <div class="code-block"><span class="url-host">SnapLogic Pipeline</span>
+    |
+    |  <span class="string">POST https://login.salesforce.com/services/oauth2/token</span>
+    |
+    v
+<span class="url-host">Salesforce Cloud</span> (paid license, rate-limited, shared org)
+    |
+    |  Returns: <span class="variable">instance_url</span> = <span class="string">"https://na139.salesforce.com"</span>
+    |
+    v
+<span class="url-host">SnapLogic Pipeline</span> sends all API calls to <span class="string">na139.salesforce.com</span></div>
+
+                <h3>Mock Server Flow</h3>
+                <div class="code-block"><span class="url-host">SnapLogic Pipeline</span>
+    |
+    |  <span class="string">POST https://salesforce-api-mock:8443/services/oauth2/token</span>
+    |
+    v
+<span class="match">Django Mock Server</span> (free, local Docker, unlimited, instant)
+    |
+    |  Returns: <span class="variable">instance_url</span> = <span class="string">"https://salesforce-api-mock:8443"</span>
+    |
+    v
+<span class="url-host">SnapLogic Pipeline</span> sends all API calls to <span class="match">salesforce-api-mock:8443</span></div>
+
+                <div class="info-box">
+                    <strong>The OAuth trick:</strong> The <code>instance_url</code> in the OAuth response tells SnapLogic where to send ALL future API calls. Real Salesforce returns <code>na139.salesforce.com</code>. Our mock returns <strong>itself</strong> &mdash; so all subsequent calls automatically go to the mock!
+                </div>
+            </div>
+
+            <!-- What Real vs Mock actually do -->
+            <div class="data-section">
+                <h2>Real Salesforce vs. Mock Server <span class="badge">Comparison</span></h2>
+
+                <div class="code-block">
+<span class="label">REAL SALESFORCE</span>
+<span class="dim">+-------------------------------------------------------------+</span>
+<span class="dim">|</span>  <span class="string">Auth System</span>    <span class="string">Schema Metadata</span>    <span class="string">Database (Oracle)</span>    <span class="string">Triggers & Flows</span>  <span class="dim">|</span>
+<span class="dim">|</span>  <span class="string">Rate Limits</span>    <span class="string">Security & Perms</span>    <span class="string">Audit Trail</span>          <span class="string">Workflow Rules</span>    <span class="dim">|</span>
+<span class="dim">|</span>  <span class="string">Apex Code</span>      <span class="string">Validation Rules</span>   <span class="string">Record Types</span>         <span class="string">Process Builder</span>   <span class="dim">|</span>
+<span class="dim">+-------------------------------------------------------------+</span>
+
+                      Mock replaces ALL of that with:
+
+<span class="label">MOCK SERVER</span>
+<span class="dim">+-------------------------------------------------------------+</span>
+<span class="dim">|</span>  <span class="match">Fake OAuth</span>     <span class="match">Schema from</span>        <span class="match">Python Dict</span>                            <span class="dim">|</span>
+<span class="dim">|</span>  <span class="match">(accept all)</span>   <span class="match">JSON files</span>         <span class="match">{key: value}</span>          That's it!        <span class="dim">|</span>
+<span class="dim">|</span>                                                     Just enough         <span class="dim">|</span>
+<span class="dim">|</span>                                                     to test the         <span class="dim">|</span>
+<span class="dim">|</span>                                                     pipeline.           <span class="dim">|</span>
+<span class="dim">+-------------------------------------------------------------+</span></div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             TAB 2: URL ANATOMY
+             ═══════════════════════════════════════════════════════════════ -->
+        <div id="url-anatomy" class="tab-content">
+            <div class="data-section">
+                <h2>URL Anatomy <span class="badge">Breaking it Down</span></h2>
+
+                <p>Every Salesforce API URL follows a consistent pattern. Let's break one apart:</p>
+
+                <div class="code-block">
+<span class="comment">Complete URL:</span>
+https://na139.salesforce.com/services/data/v58.0/sobjects/Account/001xx000003GYk8AAG
+
+<span class="comment">Broken into parts:</span>
+<span class="url-host">https://na139.salesforce.com</span> <span class="url-fixed">/services/data/</span> <span class="url-dynamic">v58.0</span> <span class="url-fixed">/sobjects/</span> <span class="url-dynamic">Account</span> <span class="url-fixed">/</span> <span class="url-dynamic">001xx000003GYk8AAG</span>
+<span class="dim">|___________________________|</span> <span class="dim">|______________|</span> <span class="dim">|_____|</span> <span class="dim">|__________|</span> <span class="dim">|_______|</span>   <span class="dim">|__________________|</span>
+      <span class="url-host">Hostname</span>              <span class="url-fixed">Base path</span>     <span class="url-dynamic">API Ver</span>  <span class="url-fixed">Resource</span>   <span class="url-dynamic">Object</span>        <span class="url-dynamic">Record ID</span>
+  <span class="comment">(we replace this)</span>       <span class="comment">(fixed)</span>      <span class="comment">(dynamic)</span>  <span class="comment">(fixed)</span>   <span class="comment">(dynamic)</span>     <span class="comment">(dynamic)</span></div>
+
+                <div class="info-box">
+                    <strong>Django only matches the PATH</strong> (everything after the hostname). The hostname is handled by Docker networking. So Django sees: <code>/services/data/v58.0/sobjects/Account/001xx000003GYk8AAG</code>
+                </div>
+
+                <h3>Color Legend</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Part</th>
+                                <th>Type</th>
+                                <th>What It Means</th>
+                                <th>Django Pattern</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>na139.salesforce.com</code></td>
+                                <td>Hostname</td>
+                                <td>Replaced by mock server hostname. Django doesn't see this.</td>
+                                <td>&mdash; (not matched)</td>
+                            </tr>
+                            <tr>
+                                <td><code>/services/data/</code></td>
+                                <td>Fixed path</td>
+                                <td>Always the same string. Must match exactly.</td>
+                                <td><code>'services/data/'</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>v58.0</code></td>
+                                <td>Dynamic (API Version)</td>
+                                <td>Can be v55.0, v58.0, v62.0 &mdash; any version</td>
+                                <td><code>&lt;str:version&gt;</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>/sobjects/</code></td>
+                                <td>Fixed path</td>
+                                <td>Always the same. Means "Salesforce objects"</td>
+                                <td><code>'sobjects/'</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>Account</code></td>
+                                <td>Dynamic (Object Name)</td>
+                                <td>Can be Account, Contact, Opportunity, Custom__c &mdash; any object</td>
+                                <td><code>&lt;str:object_name&gt;</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>001xx000003GYk8AAG</code></td>
+                                <td>Dynamic (Record ID)</td>
+                                <td>18-character Salesforce ID. Different for every record.</td>
+                                <td><code>&lt;str:record_id&gt;</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>The Path is Always Identical</h3>
+                <div class="code-block">
+<span class="comment">Real Salesforce:</span>
+  https://<span class="url-host">na139.salesforce.com</span><span class="url-fixed">/services/data/v58.0/sobjects/Account</span>
+
+<span class="comment">Mock Server:</span>
+  https://<span class="match">salesforce-api-mock:8443</span><span class="url-fixed">/services/data/v58.0/sobjects/Account</span>
+                                      <span class="dim">^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>
+                                          <span class="match">Identical path on both!</span></div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             TAB 3: DJANGO ROUTE MATCHING
+             ═══════════════════════════════════════════════════════════════ -->
+        <div id="route-matching" class="tab-content">
+            <div class="data-section">
+                <h2>How Django Route Matching Works <span class="badge purple-badge">Core Concept</span></h2>
+
+                <p>Django uses <strong>angle bracket patterns</strong> like <code>&lt;str:variable_name&gt;</code> to capture dynamic segments of the URL. Think of them as "slots" that grab whatever value appears in that position.</p>
+
+                <div class="info-box purple">
+                    <strong>Key Rule:</strong> Django scans <code>urls.py</code> <strong>top-to-bottom</strong> and uses the <strong>first matching pattern</strong>. That's why specific routes (like <code>.../describe</code>) must come BEFORE generic ones (like <code>.../{id}</code>).
+                </div>
+
+                <h3>Pattern Matching Example: Describe Object</h3>
+                <div class="code-label purple">Django URL Pattern</div>
+                <div class="code-block"><span class="keyword">path</span>(<span class="string">'services/data/&lt;str:version&gt;/sobjects/&lt;str:object_name&gt;/describe'</span>,
+     rest_views.<span class="function">describe_object</span>)</div>
+
+                <p>This <strong>one pattern</strong> catches ALL of these URLs:</p>
+
+                <div class="code-block">
+<span class="url-fixed">/services/data/</span> <span class="url-dynamic">v58.0</span> <span class="url-fixed">/sobjects/</span> <span class="url-dynamic">Account</span>        <span class="url-fixed">/describe</span>   <span class="arrow">&rarr;</span>  object_name = <span class="string">"Account"</span>
+<span class="url-fixed">/services/data/</span> <span class="url-dynamic">v58.0</span> <span class="url-fixed">/sobjects/</span> <span class="url-dynamic">Contact</span>        <span class="url-fixed">/describe</span>   <span class="arrow">&rarr;</span>  object_name = <span class="string">"Contact"</span>
+<span class="url-fixed">/services/data/</span> <span class="url-dynamic">v58.0</span> <span class="url-fixed">/sobjects/</span> <span class="url-dynamic">Opportunity</span>    <span class="url-fixed">/describe</span>   <span class="arrow">&rarr;</span>  object_name = <span class="string">"Opportunity"</span>
+<span class="url-fixed">/services/data/</span> <span class="url-dynamic">v58.0</span> <span class="url-fixed">/sobjects/</span> <span class="url-dynamic">My_Custom__c</span>   <span class="url-fixed">/describe</span>   <span class="arrow">&rarr;</span>  object_name = <span class="string">"My_Custom__c"</span>
+                       <span class="dim">^^^^^</span>            <span class="dim">^^^^^^^^^^^^</span>
+                  <span class="url-dynamic">&lt;str:version&gt;</span>    <span class="url-dynamic">&lt;str:object_name&gt;</span>   <span class="dim">&larr; captures ANY value</span></div>
+
+                <h3>Inside the View Function</h3>
+                <div class="code-label">Python View</div>
+                <div class="code-block"><span class="keyword">def</span> <span class="function">describe_object</span>(request, <span class="variable">version</span>, <span class="variable">object_name</span>):
+    <span class="comment">#                         |         |</span>
+    <span class="comment">#                    "v58.0"    "Account" (or "Contact", or anything)</span>
+
+    <span class="comment"># Load the schema file for whatever object was requested</span>
+    schema = schemas.get(<span class="variable">object_name</span>)   <span class="comment"># looks up Account.json, Contact.json, etc.</span>
+
+    <span class="keyword">if not</span> schema:
+        <span class="keyword">return</span> JsonResponse({<span class="string">"error"</span>: <span class="string">f"Object {object_name} not found"</span>}, status=<span class="string">404</span>)
+
+    <span class="keyword">return</span> JsonResponse(schema)</div>
+
+                <h3>Same URL, Different HTTP Methods</h3>
+                <p>The <strong>same URL path</strong> does different things based on the <strong>HTTP method</strong> (GET, POST, PATCH, DELETE):</p>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>URL Path</th>
+                                <th>Operation</th>
+                                <th>Django Pattern</th>
+                                <th>View Function</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="method post">POST</span></td>
+                                <td><code>/services/data/v58.0/sobjects/Account</code></td>
+                                <td>Create new record</td>
+                                <td><code>&lt;str:object_name&gt;</code></td>
+                                <td><code>create_record()</code></td>
+                            </tr>
+                            <tr>
+                                <td><span class="method get">GET</span></td>
+                                <td><code>/services/data/v58.0/sobjects/Account/001xx...</code></td>
+                                <td>Read record by ID</td>
+                                <td><code>&lt;str:object_name&gt;/&lt;str:record_id&gt;</code></td>
+                                <td><code>record_detail()</code></td>
+                            </tr>
+                            <tr>
+                                <td><span class="method patch">PATCH</span></td>
+                                <td><code>/services/data/v58.0/sobjects/Account/001xx...</code></td>
+                                <td>Update record</td>
+                                <td><code>&lt;str:object_name&gt;/&lt;str:record_id&gt;</code></td>
+                                <td><code>record_detail()</code></td>
+                            </tr>
+                            <tr>
+                                <td><span class="method delete">DELETE</span></td>
+                                <td><code>/services/data/v58.0/sobjects/Account/001xx...</code></td>
+                                <td>Delete record</td>
+                                <td><code>&lt;str:object_name&gt;/&lt;str:record_id&gt;</code></td>
+                                <td><code>record_detail()</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="code-label">How record_detail() handles different methods</div>
+                <div class="code-block"><span class="keyword">def</span> <span class="function">record_detail</span>(request, version, <span class="variable">object_name</span>, <span class="variable">record_id</span>):
+
+    <span class="keyword">if</span> request.method == <span class="string">'GET'</span>:
+        <span class="comment"># Return the record from in-memory dict</span>
+        record = database[<span class="variable">object_name</span>].get(<span class="variable">record_id</span>)
+        <span class="keyword">return</span> JsonResponse(record)
+
+    <span class="keyword">elif</span> request.method == <span class="string">'PATCH'</span>:
+        <span class="comment"># Update the record in memory</span>
+        database[<span class="variable">object_name</span>][<span class="variable">record_id</span>].update(json.loads(request.body))
+        <span class="keyword">return</span> HttpResponse(status=<span class="string">204</span>)
+
+    <span class="keyword">elif</span> request.method == <span class="string">'DELETE'</span>:
+        <span class="comment"># Remove from memory</span>
+        <span class="keyword">del</span> database[<span class="variable">object_name</span>][<span class="variable">record_id</span>]
+        <span class="keyword">return</span> HttpResponse(status=<span class="string">204</span>)</div>
+
+                <h3>Django Top-to-Bottom Matching (Full Example)</h3>
+                <div class="info-box red">
+                    <strong>Why order matters:</strong> If generic patterns come before specific ones, the generic pattern would match first. For example, <code>/sobjects/Account/describe</code> would match <code>&lt;object_name&gt;/&lt;record_id&gt;</code> and think "describe" is a record ID!
+                </div>
+
+                <div class="code-label purple">Django scans urls.py top-to-bottom for: PATCH /services/data/v58.0/sobjects/Account/001xx...</div>
+                <div class="code-block">
+  <span class="nomatch">&cross;</span> services/oauth2/token                                       <span class="dim">&rarr; no match</span>
+  <span class="nomatch">&cross;</span> services/data/&lt;V&gt;/search                                   <span class="dim">&rarr; no match (not "search")</span>
+  <span class="nomatch">&cross;</span> services/data/&lt;V&gt;/sobjects/Attachment/&lt;id&gt;/Body              <span class="dim">&rarr; no match (not "Attachment")</span>
+  <span class="nomatch">&cross;</span> services/data/&lt;V&gt;/sobjects/&lt;name&gt;/describe                  <span class="dim">&rarr; no match (no "describe" at end)</span>
+  <span class="nomatch">&cross;</span> services/data/&lt;V&gt;/query                                    <span class="dim">&rarr; no match (not "query")</span>
+  <span class="nomatch">&cross;</span> services/data/&lt;V&gt;/limits                                   <span class="dim">&rarr; no match (not "limits")</span>
+  <span class="nomatch">&cross;</span> services/data/&lt;V&gt;/sobjects/&lt;name&gt;/&lt;ext_field&gt;/&lt;ext_value&gt;   <span class="dim">&rarr; no match (3 dynamic parts, URL has 2)</span>
+
+  <span class="match">&check; services/data/&lt;V&gt;/sobjects/&lt;name&gt;/&lt;id&gt;</span>                      <span class="match">&rarr; MATCH!</span>
+
+     Captured: <span class="variable">version</span>=<span class="string">"v58.0"</span>  <span class="variable">object_name</span>=<span class="string">"Account"</span>  <span class="variable">record_id</span>=<span class="string">"001xx..."</span>
+     Method: PATCH &rarr; calls <span class="function">record_detail()</span> &rarr; updates the record in memory</div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             TAB 4: STEP-BY-STEP WALKTHROUGH
+             ═══════════════════════════════════════════════════════════════ -->
+        <div id="step-by-step" class="tab-content">
+            <div class="data-section">
+                <h2>Step-by-Step: Real vs. Mock for Every Operation <span class="badge">Walkthrough</span></h2>
+            </div>
+
+            <!-- Step 1: OAuth -->
+            <div class="data-section">
+                <h2>Step 1: Authentication (OAuth Token) <span class="badge blue-badge">Login</span></h2>
+
+                <div class="comparison">
+                    <div class="comparison-col real">
+                        <h4>Real Salesforce</h4>
+                        <p style="font-size:12px; margin:0;"><strong>URL:</strong> <code>POST https://login.salesforce.com/services/oauth2/token</code></p>
+                        <p style="font-size:12px; margin:5px 0 0 0;">Salesforce validates credentials, checks MFA, permissions, and returns a real access token + instance_url pointing to their cloud.</p>
+                    </div>
+                    <div class="comparison-col mock">
+                        <h4>Mock Server</h4>
+                        <p style="font-size:12px; margin:0;"><strong>URL:</strong> <code>POST https://salesforce-api-mock:8443/services/oauth2/token</code></p>
+                        <p style="font-size:12px; margin:5px 0 0 0;">Mock accepts <strong>any</strong> credentials and returns a fake token + instance_url pointing back to itself.</p>
+                    </div>
+                </div>
+
+                <div class="code-label blue">Request (identical on both)</div>
+                <div class="code-block"><span class="method post">POST</span> /services/oauth2/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=xxx&client_secret=xxx&username=admin@test.com&password=pass123</div>
+
+                <div class="comparison">
+                    <div class="comparison-col real">
+                        <h4>Real Response</h4>
+                        <div class="code-block" style="background:#1a3a5c">{
+  "access_token": "00D8F000001gPVm!AR...",
+  "instance_url": "<span class="url-host">https://na139.salesforce.com</span>",
+  "token_type": "Bearer"
+}</div>
+                    </div>
+                    <div class="comparison-col mock">
+                        <h4>Mock Response</h4>
+                        <div class="code-block" style="background:#264f2a">{
+  "access_token": "mock_token_abc123",
+  "instance_url": "<span class="match">https://salesforce-api-mock:8443</span>",
+  "token_type": "Bearer"
+}</div>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <strong>This is the magic moment!</strong> The <code>instance_url</code> tells SnapLogic where to send ALL future API calls. Real Salesforce returns their cloud URL. Mock returns itself. From this point on, every API call automatically goes to the mock.
+                </div>
+            </div>
+
+            <!-- Step 2: Describe -->
+            <div class="data-section">
+                <h2>Step 2: Describe Object (Get Schema) <span class="badge">Metadata</span></h2>
+
+                <p>The pipeline asks: <em>"What fields does the Account object have?"</em></p>
+
+                <div class="comparison">
+                    <div class="comparison-col real">
+                        <h4>Real Salesforce</h4>
+                        <p style="font-size:12px; margin:0;"><code>GET https://na139.salesforce.com/services/data/v58.0/sobjects/Account/describe</code></p>
+                        <p style="font-size:12px; margin:5px 0 0 0;">Looks up the Account object metadata from Salesforce's database.</p>
+                    </div>
+                    <div class="comparison-col mock">
+                        <h4>Mock Server</h4>
+                        <p style="font-size:12px; margin:0;"><code>GET https://salesforce-api-mock:8443/services/data/v58.0/sobjects/Account/describe</code></p>
+                        <p style="font-size:12px; margin:5px 0 0 0;">Loads <code>Account.json</code> schema file from <code>/app/schemas/</code> directory.</p>
+                    </div>
+                </div>
+
+                <div class="info-box purple">
+                    <strong>Same path:</strong> <code>/services/data/v58.0/sobjects/Account/describe</code> &mdash; identical on both real and mock.
+                </div>
+            </div>
+
+            <!-- Step 3: Create -->
+            <div class="data-section">
+                <h2>Step 3: Create Record (INSERT) <span class="badge">CRUD</span></h2>
+
+                <div class="comparison">
+                    <div class="comparison-col real">
+                        <h4>Real Salesforce</h4>
+                        <p style="font-size:12px; margin:0;"><code>POST https://na139.salesforce.com/services/data/v58.0/sobjects/Account</code></p>
+                        <p style="font-size:12px; margin:5px 0 0 0;">Validates schema, checks permissions, runs triggers, saves to Oracle database.</p>
+                    </div>
+                    <div class="comparison-col mock">
+                        <h4>Mock Server</h4>
+                        <p style="font-size:12px; margin:0;"><code>POST https://salesforce-api-mock:8443/services/data/v58.0/sobjects/Account</code></p>
+                        <p style="font-size:12px; margin:5px 0 0 0;">Validates against schema JSON, saves to Python dict in memory.</p>
+                    </div>
+                </div>
+
+                <div class="code-label">Request Body (identical)</div>
+                <div class="code-block">{ "Name": "Acme Corp", "Industry": "Technology", "AnnualRevenue": 5000000 }</div>
+
+                <div class="code-label">Response (same format)</div>
+                <div class="code-block">{ "id": "001xx000003GYk8AAG", "success": true, "errors": [] }</div>
+
+                <div class="info-box">
+                    <strong>After this:</strong> Real Salesforce stores it in their cloud database. Mock stores it in <code>database['Account']['001xx...'] = {...}</code> (Python dict in memory).
+                </div>
+            </div>
+
+            <!-- Step 4: Query -->
+            <div class="data-section">
+                <h2>Step 4: Query Records (SOQL) <span class="badge purple-badge">Query</span></h2>
+
+                <div class="comparison">
+                    <div class="comparison-col real">
+                        <h4>Real Salesforce</h4>
+                        <p style="font-size:12px; margin:0;"><code>GET .../query?q=SELECT Id,Name FROM Account WHERE Industry='Technology'</code></p>
+                        <p style="font-size:12px; margin:5px 0 0 0;">Runs SOQL against massive distributed Oracle database.</p>
+                    </div>
+                    <div class="comparison-col mock">
+                        <h4>Mock Server</h4>
+                        <p style="font-size:12px; margin:0;"><code>GET .../query?q=SELECT Id,Name FROM Account WHERE Industry='Technology'</code></p>
+                        <p style="font-size:12px; margin:5px 0 0 0;"><code>soql_parser.py</code> parses the query and filters the in-memory Python dict.</p>
+                    </div>
+                </div>
+
+                <div class="code-label">Response (same format)</div>
+                <div class="code-block">{
+  "totalSize": 1,
+  "done": true,
+  "records": [
+    {
+      "attributes": { "type": "Account" },
+      "Id": "001xx000003GYk8AAG",
+      "Name": "Acme Corp"
+    }
+  ]
+}</div>
+
+                <div class="info-box">
+                    <strong>How it works:</strong> Django matches the <code>/query</code> path, then reads <code>?q=SELECT...</code> from the query string parameter. The <code>soql_parser.py</code> handles WHERE, LIKE, IN, ORDER BY, LIMIT, and nested queries.
+                </div>
+            </div>
+
+            <!-- Step 5: Update -->
+            <div class="data-section">
+                <h2>Step 5: Update Record <span class="badge">CRUD</span></h2>
+
+                <div class="code-label">Request</div>
+                <div class="code-block"><span class="method patch">PATCH</span> /services/data/v58.0/sobjects/Account/001xx000003GYk8AAG
+Content-Type: application/json
+
+{ "Industry": "Finance" }</div>
+
+                <div class="comparison">
+                    <div class="comparison-col real">
+                        <h4>Real Salesforce</h4>
+                        <p style="font-size:12px;">Updates record in cloud DB. Returns <code>204 No Content</code>.</p>
+                    </div>
+                    <div class="comparison-col mock">
+                        <h4>Mock Server</h4>
+                        <p style="font-size:12px;">Updates record in Python dict. Returns <code>204 No Content</code>.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 6: Delete -->
+            <div class="data-section">
+                <h2>Step 6: Delete Record <span class="badge">CRUD</span></h2>
+
+                <div class="code-label">Request</div>
+                <div class="code-block"><span class="method delete">DELETE</span> /services/data/v58.0/sobjects/Account/001xx000003GYk8AAG</div>
+
+                <div class="comparison">
+                    <div class="comparison-col real">
+                        <h4>Real Salesforce</h4>
+                        <p style="font-size:12px;">Permanently deletes from cloud DB. Returns <code>204 No Content</code>.</p>
+                    </div>
+                    <div class="comparison-col mock">
+                        <h4>Mock Server</h4>
+                        <p style="font-size:12px;">Removes from Python dict. Returns <code>204 No Content</code>.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 7: Bulk API -->
+            <div class="data-section">
+                <h2>Step 7: Bulk API (Large Data Loads) <span class="badge purple-badge">Bulk</span></h2>
+
+                <p>Bulk API is a multi-step process. Each step uses a different URL ending:</p>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Step</th>
+                                <th>Method</th>
+                                <th>URL Path</th>
+                                <th>Real Salesforce</th>
+                                <th>Mock Server</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>1. Create Job</strong></td>
+                                <td><span class="method post">POST</span></td>
+                                <td><code>.../jobs/ingest</code></td>
+                                <td>Creates async bulk job</td>
+                                <td>Creates job in job_store dict</td>
+                            </tr>
+                            <tr>
+                                <td><strong>2. Upload CSV</strong></td>
+                                <td><span class="method put">PUT</span></td>
+                                <td><code>.../jobs/ingest/{jobId}/batches</code></td>
+                                <td>Queues CSV for processing</td>
+                                <td>Parses CSV into memory</td>
+                            </tr>
+                            <tr>
+                                <td><strong>3. Close Job</strong></td>
+                                <td><span class="method patch">PATCH</span></td>
+                                <td><code>.../jobs/ingest/{jobId}</code></td>
+                                <td>Starts async processing</td>
+                                <td>Processes records immediately</td>
+                            </tr>
+                            <tr>
+                                <td><strong>4. Get Results</strong></td>
+                                <td><span class="method get">GET</span></td>
+                                <td><code>.../jobs/ingest/{jobId}/successfulResults</code></td>
+                                <td>Returns processed results</td>
+                                <td>Returns success CSV</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="info-box purple">
+                    <strong>Notice the pattern:</strong> The <code>{jobId}</code> is dynamic (&lt;str:job_id&gt;), but the endings (<code>/batches</code>, <code>/successfulResults</code>, <code>/failedResults</code>) are fixed strings that Django uses to route to different view functions.
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             TAB 5: ALL URL ROUTES
+             ═══════════════════════════════════════════════════════════════ -->
+        <div id="all-routes" class="tab-content">
+            <div class="data-section">
+                <h2>Complete URL Route Map <span class="badge purple-badge">All Routes</span></h2>
+
+                <div class="info-box">
+                    Every URL path below is <strong>identical</strong> between real Salesforce and the mock server. Only the hostname differs.
+                </div>
+
+                <!-- OAuth -->
+                <h3>Authentication</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Method</th><th>URL Path</th><th>View Function</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="method post">POST</span></td>
+                                <td><code>/services/oauth2/token</code></td>
+                                <td><code>oauth_token()</code></td>
+                                <td>Get access token + instance_url</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- REST CRUD -->
+                <h3>REST API &mdash; CRUD Operations</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Method</th><th>URL Path</th><th>View Function</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="method get">GET</span></td>
+                                <td><code>/services/data/{V}/sobjects/{Object}/describe</code></td>
+                                <td><code>describe_object()</code></td>
+                                <td>Get object schema/metadata</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method post">POST</span></td>
+                                <td><code>/services/data/{V}/sobjects/{Object}</code></td>
+                                <td><code>create_record()</code></td>
+                                <td>Create a new record</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method get">GET</span></td>
+                                <td><code>/services/data/{V}/sobjects/{Object}/{Id}</code></td>
+                                <td><code>record_detail()</code></td>
+                                <td>Read a record by ID</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method patch">PATCH</span></td>
+                                <td><code>/services/data/{V}/sobjects/{Object}/{Id}</code></td>
+                                <td><code>record_detail()</code></td>
+                                <td>Update a record</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method delete">DELETE</span></td>
+                                <td><code>/services/data/{V}/sobjects/{Object}/{Id}</code></td>
+                                <td><code>record_detail()</code></td>
+                                <td>Delete a record</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method patch">PATCH</span></td>
+                                <td><code>/services/data/{V}/sobjects/{Object}/{ExtField}/{ExtValue}</code></td>
+                                <td><code>upsert_record()</code></td>
+                                <td>Upsert by external ID</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Query -->
+                <h3>Query &amp; Search</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Method</th><th>URL Path</th><th>View Function</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="method get">GET</span></td>
+                                <td><code>/services/data/{V}/query?q=SELECT...</code></td>
+                                <td><code>soql_query()</code></td>
+                                <td>SOQL query with WHERE, LIKE, IN, ORDER BY</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method get">GET</span></td>
+                                <td><code>/services/data/{V}/search?q=FIND...</code></td>
+                                <td><code>sosl_search()</code></td>
+                                <td>SOSL search across objects</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method get">GET</span></td>
+                                <td><code>/services/data/{V}/limits</code></td>
+                                <td><code>api_limits()</code></td>
+                                <td>API usage limits</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Bulk v2 Ingest -->
+                <h3>Bulk API v2 &mdash; Ingest</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Method</th><th>URL Path</th><th>View Function</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="method post">POST</span></td>
+                                <td><code>/services/data/{V}/jobs/ingest</code></td>
+                                <td><code>ingest_job_list()</code></td>
+                                <td>Create new ingest job</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method get">GET</span></td>
+                                <td><code>/services/data/{V}/jobs/ingest/{jobId}</code></td>
+                                <td><code>ingest_job_detail()</code></td>
+                                <td>Get job status</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method patch">PATCH</span></td>
+                                <td><code>/services/data/{V}/jobs/ingest/{jobId}</code></td>
+                                <td><code>ingest_job_detail()</code></td>
+                                <td>Close/abort job</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method put">PUT</span></td>
+                                <td><code>/services/data/{V}/jobs/ingest/{jobId}/batches</code></td>
+                                <td><code>upload_csv_data()</code></td>
+                                <td>Upload CSV data</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method get">GET</span></td>
+                                <td><code>/services/data/{V}/jobs/ingest/{jobId}/successfulResults</code></td>
+                                <td><code>get_successful_results()</code></td>
+                                <td>Download success results</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method get">GET</span></td>
+                                <td><code>/services/data/{V}/jobs/ingest/{jobId}/failedResults</code></td>
+                                <td><code>get_failed_results()</code></td>
+                                <td>Download failed results</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method get">GET</span></td>
+                                <td><code>/services/data/{V}/jobs/ingest/{jobId}/unprocessedrecords</code></td>
+                                <td><code>get_unprocessed_records()</code></td>
+                                <td>Download unprocessed records</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Bulk v2 Query -->
+                <h3>Bulk API v2 &mdash; Query</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Method</th><th>URL Path</th><th>View Function</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="method post">POST</span></td>
+                                <td><code>/services/data/{V}/jobs/query</code></td>
+                                <td><code>query_job_list()</code></td>
+                                <td>Create bulk query job</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method get">GET</span></td>
+                                <td><code>/services/data/{V}/jobs/query/{jobId}</code></td>
+                                <td><code>query_job_detail()</code></td>
+                                <td>Get query job status</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method get">GET</span></td>
+                                <td><code>/services/data/{V}/jobs/query/{jobId}/results</code></td>
+                                <td><code>get_query_results()</code></td>
+                                <td>Download query results</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Bulk v1 -->
+                <h3>Bulk API v1 (Legacy)</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Method</th><th>URL Path</th><th>View Function</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="method post">POST</span></td>
+                                <td><code>/services/async/{V}/job</code></td>
+                                <td><code>create_v1_job()</code></td>
+                                <td>Create v1 bulk job</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method post">POST</span></td>
+                                <td><code>/services/async/{V}/job/{jobId}/batch</code></td>
+                                <td><code>v1_batch_handler()</code></td>
+                                <td>Add batch to job</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method get">GET</span></td>
+                                <td><code>/services/async/{V}/job/{jobId}/batch/{batchId}</code></td>
+                                <td><code>get_v1_batch()</code></td>
+                                <td>Get batch status</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method get">GET</span></td>
+                                <td><code>/services/async/{V}/job/{jobId}/batch/{batchId}/result</code></td>
+                                <td><code>get_v1_batch_results()</code></td>
+                                <td>Get batch results</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Other APIs -->
+                <h3>Other APIs</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Method</th><th>URL Path</th><th>View Function</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="method get">GET</span></td>
+                                <td><code>/services/data/{V}/sobjects/Attachment/{Id}/Body</code></td>
+                                <td><code>download_attachment_body()</code></td>
+                                <td>Download attachment file</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method post">POST</span></td>
+                                <td><code>/services/data/{V}/sobjects/{Object}__e</code></td>
+                                <td><code>publish_event()</code></td>
+                                <td>Publish platform event</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method get">GET</span></td>
+                                <td><code>/services/data/{V}/wave/datasets</code></td>
+                                <td><code>list_datasets()</code></td>
+                                <td>Wave/Analytics datasets</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method post">POST</span></td>
+                                <td><code>/cometd/{V}</code></td>
+                                <td><code>cometd_handler()</code></td>
+                                <td>Streaming API (CometD)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Admin -->
+                <h3>Admin Endpoints (Mock Server Only)</h3>
+                <div class="info-box orange">
+                    These endpoints do NOT exist on real Salesforce. They are mock-server-only tools for inspecting and managing the in-memory data.
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Method</th><th>URL Path</th><th>View Function</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="method get">GET</span></td>
+                                <td><code>/__admin/db</code></td>
+                                <td><code>admin_db()</code></td>
+                                <td>View all data in memory</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method get">GET</span></td>
+                                <td><code>/__admin/schemas</code></td>
+                                <td><code>admin_schemas()</code></td>
+                                <td>View loaded object schemas</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method post">POST</span></td>
+                                <td><code>/__admin/reset</code></td>
+                                <td><code>admin_reset()</code></td>
+                                <td>Clear all data (fresh start)</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method get">GET</span></td>
+                                <td><code>/__admin/bulk-jobs</code></td>
+                                <td><code>admin_bulk_jobs()</code></td>
+                                <td>View all bulk jobs</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method get">GET</span></td>
+                                <td><code>/health</code></td>
+                                <td><code>health()</code></td>
+                                <td>Health check</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             TAB 6: PLUGIN ARCHITECTURE
+             ═══════════════════════════════════════════════════════════════ -->
+        <div id="plugin-arch" class="tab-content">
+            <div class="data-section">
+                <h2>Plugin Architecture (Future Vision) <span class="badge orange-badge">Roadmap</span></h2>
+
+                <p>The mock server is designed to evolve into a <strong>plugin-based</strong> service. Each enterprise system (Salesforce, SAP, NetSuite, etc.) becomes a plugin that registers its own URL routes.</p>
+
+                <div class="info-box orange">
+                    <strong>Ben's vision:</strong> "A single container in the Compose file that is the SLIM Mock Service, and that mock service loads different endpoints based on what systems need to be mocked."
+                </div>
+
+                <h3>Current Architecture (Single-System)</h3>
+                <div class="code-block">
+<span class="comment">docker/salesforce/django-server/</span>            <span class="dim">&larr; Single-purpose: Salesforce only</span>
+<span class="dim">|</span>
+<span class="dim">+--</span> salesforce_mock/
+<span class="dim">|   +--</span> views/
+<span class="dim">|   |   +--</span> rest_views.py                       <span class="comment">&larr; Salesforce REST API</span>
+<span class="dim">|   |   +--</span> bulk_v1_views.py                     <span class="comment">&larr; Salesforce Bulk v1</span>
+<span class="dim">|   |   +--</span> bulk_v2_ingest_views.py               <span class="comment">&larr; Salesforce Bulk v2</span>
+<span class="dim">|   |   +--</span> ...
+<span class="dim">|   +--</span> state/
+<span class="dim">|   |   +--</span> database.py                          <span class="comment">&larr; In-memory data store</span>
+<span class="dim">|   |   +--</span> job_store.py                         <span class="comment">&larr; Bulk job tracking</span>
+<span class="dim">|   +--</span> parsers/
+<span class="dim">|       +--</span> soql_parser.py                       <span class="comment">&larr; Salesforce query language</span>
+<span class="dim">|       +--</span> sosl_parser.py
+<span class="dim">|</span>
+<span class="dim">+--</span> run_server.py
+<span class="dim">+--</span> Dockerfile</div>
+
+                <h3>Future Architecture (Multi-System Plugins)</h3>
+                <div class="code-block">
+<span class="match">slim-mock-service/</span>                              <span class="dim">&larr; Generic mock service</span>
+<span class="dim">|</span>
+<span class="dim">+--</span> <span class="match">mock_core/</span>                                  <span class="dim">&larr; Shared foundation (reusable)</span>
+<span class="dim">|   +--</span> settings.py
+<span class="dim">|   +--</span> middleware.py                            <span class="comment">&larr; CORS, logging, error handling</span>
+<span class="dim">|   +--</span> run_server.py                            <span class="comment">&larr; HTTP+HTTPS server</span>
+<span class="dim">|   +--</span> base_database.py                         <span class="comment">&larr; Generic in-memory store</span>
+<span class="dim">|   +--</span> <span class="function">plugin_loader.py</span>                        <span class="comment">&larr; Discovers & loads plugins</span>
+<span class="dim">|   +--</span> urls.py                                  <span class="comment">&larr; Dynamically assembles routes</span>
+<span class="dim">|</span>
+<span class="dim">+--</span> <span class="match">plugins/</span>                                    <span class="dim">&larr; Each system is a "plugin"</span>
+<span class="dim">|   +--</span> <span class="string">salesforce/</span>                              <span class="comment">&larr; Plugin #1</span>
+<span class="dim">|   |   +--</span> __init__.py                          <span class="comment">&larr; registers routes, schemas</span>
+<span class="dim">|   |   +--</span> views/
+<span class="dim">|   |   +--</span> parsers/
+<span class="dim">|   |   +--</span> schemas/
+<span class="dim">|   |</span>
+<span class="dim">|   +--</span> <span class="string">sap/</span>                                     <span class="comment">&larr; Plugin #2</span>
+<span class="dim">|   |   +--</span> __init__.py
+<span class="dim">|   |   +--</span> views/
+<span class="dim">|   |   |   +--</span> odata_views.py                   <span class="comment">&larr; SAP OData endpoints</span>
+<span class="dim">|   |   |   +--</span> idoc_views.py                    <span class="comment">&larr; SAP iDoc endpoints</span>
+<span class="dim">|   |   +--</span> schemas/
+<span class="dim">|   |</span>
+<span class="dim">|   +--</span> <span class="string">netsuite/</span>                                <span class="comment">&larr; Plugin #3</span>
+<span class="dim">|   +--</span> <span class="string">workday/</span>                                 <span class="comment">&larr; Plugin #4</span>
+<span class="dim">|</span>
+<span class="dim">+--</span> Dockerfile
+<span class="dim">+--</span> docker-compose.yml</div>
+
+                <h3>Docker Compose Usage</h3>
+                <div class="code-label orange">Control which plugins to load via environment variable</div>
+                <div class="code-block">
+<span class="comment"># Only Salesforce</span>
+<span class="variable">MOCK_PLUGINS</span>=<span class="string">salesforce</span> docker-compose up
+
+<span class="comment"># Salesforce + SAP (e.g., Caterpillar project)</span>
+<span class="variable">MOCK_PLUGINS</span>=<span class="string">salesforce,sap</span> docker-compose up
+
+<span class="comment"># Everything</span>
+<span class="variable">MOCK_PLUGINS</span>=<span class="string">all</span> docker-compose up</div>
+
+                <h3>What's Already Generic vs. Plugin-Specific</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Component</th><th>Already Generic?</th><th>Notes</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>run_server.py</code></td>
+                                <td style="color:#27ae60; font-weight:bold;">&#10003; YES</td>
+                                <td>HTTP+HTTPS dual-protocol &mdash; works for any API</td>
+                            </tr>
+                            <tr>
+                                <td><code>middleware.py</code></td>
+                                <td style="color:#27ae60; font-weight:bold;">&#10003; YES</td>
+                                <td>CORS, trailing slash, logging &mdash; nothing Salesforce-specific</td>
+                            </tr>
+                            <tr>
+                                <td><code>database.py</code></td>
+                                <td style="color:#27ae60; font-weight:bold;">&#10003; YES</td>
+                                <td>Generic key-value in-memory store</td>
+                            </tr>
+                            <tr>
+                                <td><code>settings.py</code></td>
+                                <td style="color:#27ae60; font-weight:bold;">&#10003; YES</td>
+                                <td>Minimal Django config</td>
+                            </tr>
+                            <tr>
+                                <td><code>soql_parser.py</code></td>
+                                <td style="color:#e74c3c; font-weight:bold;">&#10007; Salesforce Plugin</td>
+                                <td>Salesforce-specific query language</td>
+                            </tr>
+                            <tr>
+                                <td><code>job_store.py</code></td>
+                                <td style="color:#e74c3c; font-weight:bold;">&#10007; Salesforce Plugin</td>
+                                <td>Salesforce Bulk API specific</td>
+                            </tr>
+                            <tr>
+                                <td><code>rest_views.py</code></td>
+                                <td style="color:#e74c3c; font-weight:bold;">&#10007; Salesforce Plugin</td>
+                                <td>Salesforce REST API patterns</td>
+                            </tr>
+                            <tr>
+                                <td><code>odata_views.py</code></td>
+                                <td style="color:#e67e22; font-weight:bold;">&#10007; SAP Plugin</td>
+                                <td>SAP OData protocol (future)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="info-box">
+                    <strong>Key insight:</strong> ~80% of the current code is already generic! The refactor to plugins is mostly just <strong>moving files</strong> into a <code>plugins/salesforce/</code> directory. The hard work is already done.
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             TAB 7: SNAPLOGIC CONFIG
+             ═══════════════════════════════════════════════════════════════ -->
+        <div id="snaplogic-config" class="tab-content">
+            <div class="data-section">
+                <h2>SnapLogic Account Configuration <span class="badge">Setup</span></h2>
+
+                <p>To switch a pipeline from real Salesforce to the mock server, <strong>only the Login URL changes</strong>. Everything else can be anything &mdash; the mock accepts all credentials.</p>
+
+                <h3>Real Salesforce Account</h3>
+                <div class="code-block">
+<span class="label">Login URL:</span>       <span class="url-host">https://login.salesforce.com</span>
+<span class="label">Username:</span>        admin@company.com
+<span class="label">Password:</span>        realP@ssw0rd!
+<span class="label">Security Token:</span>  abc123xyz789
+<span class="label">Client ID:</span>       3MVG9A2kN3B...
+<span class="label">Client Secret:</span>   E8B2F71A3C...</div>
+
+                <h3>Mock Server Account</h3>
+                <div class="code-block">
+<span class="label">Login URL:</span>       <span class="match">https://salesforce-api-mock:8443</span>    <span class="comment">&larr; ONLY this changes!</span>
+<span class="label">Username:</span>        <span class="dim">anything@test.com</span>                   <span class="comment">&larr; anything works</span>
+<span class="label">Password:</span>        <span class="dim">anything</span>                             <span class="comment">&larr; anything works</span>
+<span class="label">Security Token:</span>  <span class="dim">anything</span>                             <span class="comment">&larr; anything works</span>
+<span class="label">Client ID:</span>       <span class="dim">anything</span>                             <span class="comment">&larr; anything works</span>
+<span class="label">Client Secret:</span>   <span class="dim">anything</span>                             <span class="comment">&larr; anything works</span></div>
+
+                <div class="info-box">
+                    <strong>The pipeline itself doesn't change at all.</strong> Same Snaps, same mappings, same expressions, same Router conditions, same error handling. It just talks to a different server.
+                </div>
+
+                <h3>How Docker Networking Makes It Work</h3>
+                <div class="code-block">
+<span class="comment">docker-compose.yml:</span>
+
+services:
+  <span class="match">salesforce-api-mock</span>:              <span class="comment">&larr; This container name IS the hostname</span>
+    build: ./docker/salesforce/django-server
+    ports:
+      - "<span class="string">8089:8080</span>"                    <span class="comment">&larr; HTTP  (host:container)</span>
+      - "<span class="string">8443:8443</span>"                    <span class="comment">&larr; HTTPS (host:container)</span>
+
+<span class="comment">From SnapLogic GroundPlex (inside Docker network):</span>
+  <span class="arrow">&rarr;</span> https://<span class="match">salesforce-api-mock</span>:8443/services/oauth2/token
+
+<span class="comment">From your browser (outside Docker network):</span>
+  <span class="arrow">&rarr;</span> https://<span class="match">localhost</span>:8443/services/oauth2/token</div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             TAB 8: WHY MOCK?
+             ═══════════════════════════════════════════════════════════════ -->
+        <div id="why-mock" class="tab-content">
+            <div class="data-section">
+                <h2>Why Use a Mock Server? <span class="badge">Benefits</span></h2>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Problem</th><th>Real Salesforce</th><th>Mock Server</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Cost</strong></td>
+                                <td>$25&ndash;300/user/month license</td>
+                                <td style="color:#27ae60; font-weight:bold;">Free (Docker container)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Rate Limits</strong></td>
+                                <td>100,000 API calls/day</td>
+                                <td style="color:#27ae60; font-weight:bold;">Unlimited</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Speed</strong></td>
+                                <td>200&ndash;500ms per call (network latency)</td>
+                                <td style="color:#27ae60; font-weight:bold;">&lt;1ms (local Docker)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Test Data</strong></td>
+                                <td>Pollutes real org, hard to reset</td>
+                                <td style="color:#27ae60; font-weight:bold;"><code>POST /__admin/reset</code> clears everything</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Availability</strong></td>
+                                <td>Down during maintenance windows</td>
+                                <td style="color:#27ae60; font-weight:bold;">Always up (runs locally)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>CI/CD</strong></td>
+                                <td>Can't run in GitHub Actions</td>
+                                <td style="color:#27ae60; font-weight:bold;">Runs anywhere Docker runs</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Parallel Tests</strong></td>
+                                <td>Shared org = conflicts between testers</td>
+                                <td style="color:#27ae60; font-weight:bold;">Each test run gets fresh state</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Snaps Team</strong></td>
+                                <td>Must maintain paid licenses for every system</td>
+                                <td style="color:#27ae60; font-weight:bold;">No licenses needed for testing</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="info-box">
+                    <strong>Ben's key point:</strong> "Every Snap is just a no-code interface to an API call. If you have an API-level mock, you can mock <strong>any Snap</strong> in the SnapLogic ecosystem."
+                </div>
+
+                <h3>Who Benefits?</h3>
+                <div class="stats">
+                    <div class="stat-card">
+                        <h3>QA / Test Engineers</h3>
+                        <div class="label-text">Automated testing without real systems</div>
+                    </div>
+                    <div class="stat-card blue">
+                        <h3>Snaps Team</h3>
+                        <div class="label-text">No paid licenses needed for testing</div>
+                    </div>
+                    <div class="stat-card purple">
+                        <h3>Pipeline Developers</h3>
+                        <div class="label-text">Fast feedback loop locally</div>
+                    </div>
+                    <div class="stat-card orange">
+                        <h3>CI/CD Pipelines</h3>
+                        <div class="label-text">Runs in GitHub Actions, Jenkins, etc.</div>
+                    </div>
+                </div>
+
+                <h3>The Bigger Vision</h3>
+                <div class="flow-step">
+                    <div class="flow-number">1</div>
+                    <div class="flow-content">
+                        <h4>SLIM extracts metadata from pipeline packages</h4>
+                        <p>Knows which Salesforce objects, SAP tables, and API calls each pipeline uses.</p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number blue">2</div>
+                    <div class="flow-content">
+                        <h4>Auto-generate mock schemas from that metadata</h4>
+                        <p>No manual JSON files &mdash; SLIM builds the mock configuration automatically.</p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number purple">3</div>
+                    <div class="flow-content">
+                        <h4>Run tests against the mock service</h4>
+                        <p>Robot Framework tests execute pipelines against the mock &mdash; instant, free, repeatable.</p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number orange">4</div>
+                    <div class="flow-content">
+                        <h4>Iterate with coding agents (Claude)</h4>
+                        <p>Claude generates pipelines, runs them against mocks, fixes failures &mdash; automated development loop.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         JavaScript: Tab Navigation
+         ═══════════════════════════════════════════════════════════════ -->
+    <script>
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            const tabEl = document.getElementById(tabId);
+            if (tabEl) tabEl.classList.add('active');
+            const btnEl = document.querySelector(`[data-tab="${tabId}"]`);
+            if (btnEl) btnEl.classList.add('active');
+
+            // Update URL hash for bookmarking
+            history.replaceState(null, '', '#' + tabId);
+        }
+
+        // Load tab from URL hash on page load
+        window.addEventListener('load', () => {
+            const hash = window.location.hash.substring(1);
+            if (hash && document.getElementById(hash)) {
+                showTab(hash);
+            }
+        });
+    </script>
+</body>
+</html>
