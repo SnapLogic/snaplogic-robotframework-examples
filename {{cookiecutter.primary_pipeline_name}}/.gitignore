@@ -277,5 +277,12 @@ tmp/
 *.zip
 
 # ==========================================
+# Generated Documentation
+# ==========================================
+
+# Libdocs copied from installed snaplogic-common-robot package (make show-libdocs)
+docs/libdocs/
+
+# ==========================================
 # End of .gitignore
 # ==========================================

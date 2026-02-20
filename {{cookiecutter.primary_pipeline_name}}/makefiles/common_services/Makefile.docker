@@ -7,7 +7,8 @@
 
 .PHONY: check-env start-tools-service-only stop-tools-service-only start-services stop-services \
         clean-start clean-start-tools reload-env-files \
-        reinstall-requirements reinstall-snaplogic-common-robot upgrade-snaplogic-common-robot show-snaplogic-common-robot-version
+        reinstall-requirements reinstall-snaplogic-common-robot upgrade-snaplogic-common-robot show-snaplogic-common-robot-version \
+        show-libdocs
 
 # Include common configuration
 include makefiles/common_services/Makefile.common
@@ -446,7 +447,7 @@ reinstall-snaplogic-common-robot:
 upgrade-snaplogic-common-robot:
 	@echo "🚀 Upgrading snaplogic-common-robot (no dependency changes)..."
 	@echo ""
-	@echo "📋 Step 1/4: Checking if container is running..."
+	@echo "📋 Step 1/3: Checking if container is running..."
 	@if ! docker ps | grep -q snaplogic-test-example-tools-container; then \
 		echo "❌ Error: Container 'snaplogic-test-example-tools-container' is not running!"; \
 		echo "💡 Start it first with: make start-tools-service-only"; \
@@ -483,6 +484,49 @@ show-snaplogic-common-robot-version:
 	fi
 	@docker exec snaplogic-test-example-tools-container pip show snaplogic-common-robot | grep -E "^(Name|Version|Location):" || echo "❌ snaplogic-common-robot not installed"
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# =============================================================================
+# 📚 SHOW-LIBDOCS: Copy libdocs from installed package and open in browser
+# =============================================================================
+# What it does:
+#   - Finds the libdocs folder inside the installed snaplogic-common-robot package
+#   - Copies the HTML docs from the container to a local docs/ folder
+#   - Opens the documentation in your default browser
+#
+# When to use:
+#   - To view the keyword documentation for the installed version
+#   - After upgrading snaplogic-common-robot to see updated docs
+#
+# Usage:
+#   make show-libdocs
+# =============================================================================
+show-libdocs:
+	@echo "📚 Extracting libdocs from installed snaplogic-common-robot..."
+	@echo ""
+	@echo "📋 Step 1/3: Checking if container is running..."
+	@if ! docker ps | grep -q snaplogic-test-example-tools-container; then \
+		echo "❌ Error: Container 'snaplogic-test-example-tools-container' is not running!"; \
+		echo "💡 Start it first with: make start-tools-service-only"; \
+		exit 1; \
+	fi
+	@echo "✅ Container is running"
+	@echo ""
+	@echo "📦 Step 2/3: Copying libdocs from container..."
+	@mkdir -p docs/libdocs
+	@docker cp snaplogic-test-example-tools-container:/usr/local/lib/python3.12/site-packages/snaplogic_common_robot/libdocs/. docs/libdocs/
+	@echo "✅ Libdocs copied to docs/libdocs/"
+	@echo ""
+	@echo "🌐 Step 3/3: Opening documentation in browser..."
+	@if [ -f docs/libdocs/index.html ]; then \
+		open docs/libdocs/index.html 2>/dev/null || \
+		xdg-open docs/libdocs/index.html 2>/dev/null || \
+		echo "📂 Open docs/libdocs/index.html in your browser"; \
+	else \
+		echo "⚠️ index.html not found. Available files:"; \
+		ls docs/libdocs/; \
+	fi
+	@echo ""
+	@echo "🎉 Done! Libdocs are available at: docs/libdocs/"
 
 
 
