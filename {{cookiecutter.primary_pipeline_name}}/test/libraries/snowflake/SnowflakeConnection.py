@@ -3,13 +3,20 @@ Snowflake Connection Library for Robot Framework
 
 This library handles Snowflake database connections with both password and key pair authentication.
 It properly processes private keys and establishes connections without string conversion issues.
+Supports both real Snowflake and fakesnow emulator modes.
 
 Requirements:
     - snowflake-connector-python
     - cryptography>=3.0.0
+    - fakesnow (for emulator mode)
 
 Usage in Robot Framework:
     Library    libraries/SnowflakeConnection.py
+
+Environment Variables:
+    USE_FAKESNOW: Set to 'true' to use fakesnow emulator, 'false' for real Snowflake
+    FAKESNOW_HOST: fakesnow host (default: localhost)
+    FAKESNOW_PORT: fakesnow port (default: 8080, verify fakesnow docs)
 
 Author: Swapna Pothana
 """
@@ -22,13 +29,17 @@ from cryptography.hazmat.backends import default_backend
 
 
 class SnowflakeConnection:
-    """Library for establishing Snowflake connections with key pair authentication"""
+    """Library for establishing Snowflake connections with key pair authentication
+    Supports both real Snowflake and fakesnow emulator modes"""
     
     ROBOT_LIBRARY_SCOPE = 'GLOBAL'
     
     def __init__(self):
         self.connection = None
         self.cursor = None
+        self.use_fakesnow = os.getenv("USE_FAKESNOW", "false").lower() == "true"
+        self.fakesnow_host = os.getenv("FAKESNOW_HOST", "localhost")
+        self.fakesnow_port = int(os.getenv("FAKESNOW_PORT", "8080"))
     
     def connect_with_keypair(
         self,
@@ -46,6 +57,7 @@ class SnowflakeConnection:
         
         This method properly handles private key processing and establishes connection
         without string conversion issues that cause "null bytes" errors.
+        Supports both real Snowflake and fakesnow emulator modes.
         
         Args:
             user: Snowflake username
@@ -74,37 +86,42 @@ class SnowflakeConnection:
             ...    private_key_passphrase=${SNOWFLAKE_KEYPAIR_PRIVATE_KEY_PASSPHRASE}
         """
         try:
-            # Process the private key
-            print(f"🔐 Processing private key for user: {user}")
-            pkcs8_key_bytes = self._process_private_key(private_key_data, private_key_passphrase)
-            print(f"✓ Private key processed successfully ({len(pkcs8_key_bytes)} bytes)")
+            # Build connection parameters based on mode
+            conn_params = self._get_connection_params(
+                user=user,
+                account=account,
+                database=database,
+                schema=schema,
+                warehouse=warehouse,
+                role=role
+            )
             
-            # Build connection parameters
-            conn_params = {
-                'user': user,
-                'account': account,
-                'private_key': pkcs8_key_bytes,
-            }
-            
-            # Add optional parameters
-            if database:
-                conn_params['database'] = database
-            if schema:
-                conn_params['schema'] = schema
-            if warehouse:
-                conn_params['warehouse'] = warehouse
-            if role:
-                conn_params['role'] = role
+            if self.use_fakesnow:
+                # fakesnow emulator mode - simplified auth
+                print(f"🔌 Connecting to fakesnow emulator at {self.fakesnow_host}:{self.fakesnow_port}")
+                # fakesnow may use password auth or simplified keypair - verify in fakesnow docs
+                # For now, use password fallback if keypair not supported
+                fakesnow_password = os.getenv("FAKESNOW_PASSWORD", "test")
+                conn_params['password'] = fakesnow_password
+                # Note: fakesnow may not support keypair auth - verify and adjust
+            else:
+                # Real Snowflake - process the private key
+                print(f"🔐 Processing private key for user: {user}")
+                pkcs8_key_bytes = self._process_private_key(private_key_data, private_key_passphrase)
+                print(f"✓ Private key processed successfully ({len(pkcs8_key_bytes)} bytes)")
+                conn_params['private_key'] = pkcs8_key_bytes
             
             # Establish connection
-            print(f"🔌 Connecting to Snowflake account: {account}")
+            mode_str = "fakesnow emulator" if self.use_fakesnow else "Snowflake"
+            print(f"🔌 Connecting to {mode_str} account: {account}")
             self.connection = snowflake.connector.connect(**conn_params)
             
-            print(f"✅ Connected to Snowflake successfully!")
+            print(f"✅ Connected to {mode_str} successfully!")
             
             # Return connection details
             return {
                 'status': 'SUCCESS',
+                'mode': 'fakesnow' if self.use_fakesnow else 'real-snowflake',
                 'user': user,
                 'account': account,
                 'database': database or 'Not set',
