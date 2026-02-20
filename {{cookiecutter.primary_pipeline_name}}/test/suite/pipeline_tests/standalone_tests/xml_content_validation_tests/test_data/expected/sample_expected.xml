@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pipeline_config version="2.0" environment="DEV">
+    <status>active</status>
+    <pipeline_name>EBAS_to_CBS</pipeline_name>
+    <project>EBAS2CBS</project>
+    <jira_ticket>EBAS-5042</jira_ticket>
+    <approved_by>srilekha.polati</approved_by>
+    <reviewed_by>dev_lead_rao</reviewed_by>
+    <record_count>150</record_count>
+    <max_duration_threshold>120</max_duration_threshold>
+    <expected_total>450</expected_total>
+    <source_table_1_count>100</source_table_1_count>
+    <source_table_2_count>200</source_table_2_count>
+    <source_table_3_count>150</source_table_3_count>
+    <source_total>450</source_total>
+    <target_total>450</target_total>
+    <output_columns>
+        <column>DCEVENTHEADERS_USERID</column>
+        <column>TY2024_TAXFILING_REFUNDBALDUEAMOUNT_FED</column>
+        <column>TY2024_TAXFILING_EFILESTATUS_STATEREJECTED</column>
+        <column>TY2024_TTOGTKM_TOTALREVENUE</column>
+        <column>TY2024_COMMERCE_COMPLETEDSKU</column>
+    </output_columns>
+    <accounts>
+        <DEV>../shared/EBAS2CBS_SQL_All</DEV>
+        <QA>../shared/EBAS2CBS_SQL_All</QA>
+        <PREPROD>../shared/EBAS2CBS_SQL_All</PREPROD>
+        <PROD>../shared/EBAS2CBS_SQL_All</PROD>
+    </accounts>
+    <paths>
+        <account_path>../shared/EBAS2CBS_SQL_All</account_path>
+        <upload_source_path>../shared/EBAS2CBS/uploads</upload_source_path>
+        <output_path>file:///mnt/data/EBAS2CBS/output</output_path>
+    </paths>
+    <schema>dbo</schema>
+    <expression_file>EBAS_to_CBS.expr</expression_file>
+    <expression_file_size>560</expression_file_size>
+</pipeline_config>

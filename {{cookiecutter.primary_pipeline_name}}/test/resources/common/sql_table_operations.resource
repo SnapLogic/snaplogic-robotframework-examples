@@ -1,23 +1,28 @@
 *** Settings ***
-Documentation       SQL Table Operations Resource File
-...                 Contains all database-agnostic keywords for common SQL operations:
-...                 - Table management (create, drop, truncate, rename)
-...                 - CRUD operations (insert, update, delete, select)
-...                 - Query execution and result processing
-...                 - Table structure operations (columns, indexes, constraints)
-...                 - Data validation and verification
-...                 - Transaction management
-...                 - Data export/import (CSV, JSON)
+Documentation       SQL Table Operations — Database-agnostic keywords for common SQL operations.
 ...
-...                 Prerequisites:
-...                 - DatabaseLibrary must be installed
+...                 *Sections:*
+...                 - *Table management* — create, drop, truncate, rename
+...                 - *CRUD operations* — insert, update, delete, select
+...                 - *Query execution* — custom queries, count, single value, result processing
+...                 - *SQL execution* — safe execution, script files, templates
+...                 - *Table structure* — columns, indexes, views, constraints
+...                 - *Validation* — table existence, row counts, column verification
+...                 - *Transaction management* — begin, commit, rollback, atomic execution
+...                 - *Data conversion* — query results to dictionaries, filtering, extraction
+...                 - *Data export/import* — CSV export, JSON export, table-to-CSV comparison
+...                 - *Stored procedures* — create, drop, call
+...                 - *Performance* — analyze, table size
+...
+...                 *Prerequisites:*
+...                 - ``DatabaseLibrary`` must be installed
 ...                 - Database connection must be established before using these keywords
-...                 - Use database_connections.resource or database-specific resource files for connections
+...                 - Use ``database_connections.resource`` or database-specific resource files for connections
 ...
-...                 Usage Example:
+...                 *Example:*
 ...                 | *** Settings ***
 ...                 | Resource    database_connections.resource
-...                 | Resource    sql_operations.resource
+...                 | Resource    sql_table_operations.resource
 ...                 |
 ...                 | *** Test Cases ***
 ...                 | Test CRUD Operations
@@ -44,11 +49,23 @@ ${DB_TYPE}      ${NONE}
 # ==================== HELPER OPERATIONS ====================
 
 Get Qualified Table Name
-    [Documentation]    Returns fully qualified table name with schema if provided
-    ...    Handles cases where table_name already includes schema (schema.table)
-    ...    Arguments:
-    ...    - table_name: Table name (may already include schema)
-    ...    - schema: Optional schema to prepend (ignored if table_name already has schema)
+    [Documentation]    Returns fully qualified table name with schema prefix if provided.
+    ...
+    ...    Handles cases where ``table_name`` already includes a schema (e.g. ``schema.table``).
+    ...    If the table name already contains a dot, the schema argument is ignored.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name (may already include schema)
+    ...    - ``schema``: Optional schema to prepend (default: empty — ignored if table_name already has schema)
+    ...
+    ...    *Returns:*
+    ...    - Fully qualified table name string (e.g. ``myschema.employees``)
+    ...
+    ...    *Example:*
+    ...    | ${name}= | Get Qualified Table Name | employees | schema=dbo |
+    ...    | # Returns: dbo.employees |
+    ...    | ${name}= | Get Qualified Table Name | dbo.employees | |
+    ...    | # Returns: dbo.employees (schema ignored) |
     [Arguments]    ${table_name}    ${schema}=${EMPTY}
 
     ${has_schema}=    Run Keyword And Return Status    Should Contain    ${table_name}    .
@@ -64,12 +81,22 @@ Get Qualified Table Name
 # ==================== TABLE MANAGEMENT OPERATIONS ====================
 
 Create Table
-    [Documentation]    Creates a table with the specified definition
-    ...    Arguments:
-    ...    - table_name: Name of the table to create (can include schema)
-    ...    - table_definition: SQL column definitions (e.g., "(id INT, name VARCHAR(100))")
-    ...    - drop_if_exists: If TRUE, drops existing table before creating (default: TRUE)
-    ...    - schema: Optional schema name (if not included in table_name)
+    [Documentation]    Creates a new database table with the specified column definitions.
+    ...
+    ...    By default, drops any existing table with the same name before creating.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Name of the table to create (can include schema, e.g. ``dbo.employees``)
+    ...    - ``table_definition``: SQL column definitions (e.g. ``(id INT, name VARCHAR(100))``)
+    ...    - ``drop_if_exists``: If TRUE, drops existing table before creating (default: TRUE)
+    ...    - ``schema``: Optional schema name if not included in ``table_name``
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Create Table | employees | (id INT, name VARCHAR(100), salary DECIMAL) |
+    ...    | Create Table | employees | (id INT) | drop_if_exists=${FALSE} | schema=dbo |
     [Arguments]    ${table_name}    ${table_definition}    ${drop_if_exists}=${TRUE}    ${schema}=${EMPTY}
 
     ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
@@ -85,8 +112,23 @@ Create Table
     RETURN    ${TRUE}
 
 Create Table If Not Exists
-    [Documentation]    Creates a table only if it doesn't already exist
-    ...    Note: Not all databases support IF NOT EXISTS clause
+    [Documentation]    Creates a table only if it does not already exist.
+    ...
+    ...    Uses the ``CREATE TABLE IF NOT EXISTS`` SQL clause.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Name of the table to create
+    ...    - ``table_definition``: SQL column definitions
+    ...    - ``schema``: Optional schema name
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Note:*
+    ...    Not all databases support the ``IF NOT EXISTS`` clause.
+    ...
+    ...    *Example:*
+    ...    | Create Table If Not Exists | staging_data | (id INT, value TEXT) |
     [Arguments]    ${table_name}    ${table_definition}    ${schema}=${EMPTY}
 
     ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
@@ -96,7 +138,15 @@ Create Table If Not Exists
     RETURN    ${TRUE}
 
 Create Table From Template
-    [Documentation]    Creates table using SQL from template or direct SQL statement
+    [Documentation]    Creates a table using a raw SQL statement or template.
+    ...
+    ...    Accepts any valid ``CREATE TABLE`` SQL and executes it safely.
+    ...
+    ...    *Arguments:*
+    ...    - ``sql_query``: Complete SQL statement for table creation
+    ...
+    ...    *Example:*
+    ...    | Create Table From Template | CREATE TABLE staging AS SELECT * FROM production WHERE 1=0 |
     [Arguments]    ${sql_query}
 
     Log    Creating table from template...    console=yes
@@ -106,11 +156,22 @@ Create Table From Template
     Log    Table created successfully    console=yes
 
 Drop Table
-    [Documentation]    Drops a table from the database
-    ...    Arguments:
-    ...    - table_name: Table name (can be 'table' or 'schema.table')
-    ...    - if_exists: Whether to use IF EXISTS clause (default: TRUE)
-    ...    - schema: Optional schema name (if not included in table_name)
+    [Documentation]    Drops a table from the database.
+    ...
+    ...    Supports optional ``IF EXISTS`` clause to prevent errors when the table
+    ...    does not exist.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name (can be ``table`` or ``schema.table``)
+    ...    - ``if_exists``: Whether to use ``IF EXISTS`` clause (default: TRUE)
+    ...    - ``schema``: Optional schema name if not included in ``table_name``
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Drop Table | staging_data |
+    ...    | Drop Table | employees | if_exists=${FALSE} | schema=dbo |
     [Arguments]    ${table_name}    ${if_exists}=${TRUE}    ${schema}=${EMPTY}
 
     ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
@@ -127,7 +188,18 @@ Drop Table
     RETURN    ${TRUE}
 
 Drop Table If Exists
-    [Documentation]    Safely drops a table if it exists (with optional CASCADE)
+    [Documentation]    Safely drops a table if it exists, with optional ``CASCADE``.
+    ...
+    ...    Uses safe execution with error handling so the keyword does not fail
+    ...    if the table does not exist or permissions are insufficient.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Name of the table to drop
+    ...    - ``cascade``: If TRUE, appends ``CASCADE`` to drop dependent objects (default: FALSE)
+    ...
+    ...    *Example:*
+    ...    | Drop Table If Exists | temp_staging |
+    ...    | Drop Table If Exists | parent_table | cascade=${TRUE} |
     [Arguments]    ${table_name}    ${cascade}=${FALSE}
 
     Log    Dropping table if exists: ${table_name}    console=yes
@@ -139,10 +211,18 @@ Drop Table If Exists
     Log    Table '${table_name}' dropped successfully    console=yes
 
 Truncate Table
-    [Documentation]    Removes all rows from a table but keeps the table structure
-    ...    Arguments:
-    ...    - table_name: Table name (can include schema)
-    ...    - schema: Optional schema name (if not included in table_name)
+    [Documentation]    Removes all rows from a table while preserving the table structure.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name (can include schema, e.g. ``dbo.employees``)
+    ...    - ``schema``: Optional schema name if not included in ``table_name``
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Truncate Table | staging_data |
+    ...    | Truncate Table | employees | schema=dbo |
     [Arguments]    ${table_name}    ${schema}=${EMPTY}
 
     ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
@@ -151,13 +231,22 @@ Truncate Table
     RETURN    ${TRUE}
 
 Truncate Table If Exists
-    [Documentation]    Removes all rows from a table but keeps the table structure
-    ...    If table doesn't exist, logs a warning and continues without failing
-    ...    Arguments:
-    ...    - table_name: Table name (can include schema)
-    ...    - schema: Optional schema name
-    ...    - verify_empty: Whether to verify table is empty after truncation (default: TRUE)
-    ...    Returns: ${TRUE} if truncated, ${FALSE} if table doesn't exist
+    [Documentation]    Removes all rows from a table if it exists, with optional verification.
+    ...
+    ...    If the table does not exist, logs a warning and continues without failing.
+    ...    Optionally verifies the table is empty after truncation.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name (can include schema)
+    ...    - ``schema``: Optional schema name
+    ...    - ``verify_empty``: Whether to verify table has 0 rows after truncation (default: TRUE)
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` if truncated successfully, ``${FALSE}`` if table does not exist
+    ...
+    ...    *Example:*
+    ...    | ${result}= | Truncate Table If Exists | staging_data |
+    ...    | Truncate Table If Exists | employees | schema=dbo | verify_empty=${FALSE} |
     [Arguments]    ${table_name}    ${schema}=${EMPTY}    ${verify_empty}=${TRUE}
 
     ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
@@ -182,8 +271,21 @@ Truncate Table If Exists
     END
 
 Rename Table
-    [Documentation]    Renames a table
-    ...    Note: Syntax may vary between databases
+    [Documentation]    Renames a database table using ``ALTER TABLE ... RENAME TO``.
+    ...
+    ...    *Arguments:*
+    ...    - ``old_table_name``: Current table name
+    ...    - ``new_table_name``: New table name
+    ...    - ``schema``: Optional schema name
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Note:*
+    ...    Rename syntax may vary between database engines.
+    ...
+    ...    *Example:*
+    ...    | Rename Table | old_employees | employees_archive |
     [Arguments]    ${old_table_name}    ${new_table_name}    ${schema}=${EMPTY}
 
     ${old_qualified}=    Get Qualified Table Name    ${old_table_name}    ${schema}
@@ -196,12 +298,20 @@ Rename Table
 # ==================== DATA MANIPULATION OPERATIONS (CRUD) ====================
 
 Insert Into Table
-    [Documentation]    Inserts a single row into a table
-    ...    Arguments:
-    ...    - table_name: Target table (can include schema)
-    ...    - columns: Comma-separated column names
-    ...    - values: Values to insert (with proper SQL formatting)
-    ...    - schema: Optional schema name
+    [Documentation]    Inserts a single row into a database table.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Target table (can include schema, e.g. ``dbo.employees``)
+    ...    - ``columns``: Comma-separated column names (e.g. ``id, name, salary``)
+    ...    - ``values``: Values to insert with proper SQL formatting (e.g. ``1, 'John', 50000``)
+    ...    - ``schema``: Optional schema name
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Insert Into Table | employees | id, name | 1, 'John Doe' |
+    ...    | Insert Into Table | dbo.employees | id, name | 2, 'Jane' | schema=dbo |
     [Arguments]    ${table_name}    ${columns}    ${values}    ${schema}=${EMPTY}
 
     ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
@@ -211,11 +321,19 @@ Insert Into Table
     RETURN    ${TRUE}
 
 Bulk Insert Into Table
-    [Documentation]    Inserts multiple rows into a table
-    ...    Arguments:
-    ...    - table_name: Target table
-    ...    - columns: Comma-separated column names
-    ...    - rows: List of value strings
+    [Documentation]    Inserts multiple rows into a table by calling ``Insert Into Table`` for each row.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Target table name
+    ...    - ``columns``: Comma-separated column names
+    ...    - ``@{rows}``: List of value strings, each representing one row
+    ...
+    ...    *Returns:*
+    ...    - Number of rows inserted
+    ...
+    ...    *Example:*
+    ...    | ${count}= | Bulk Insert Into Table | employees | id, name |
+    ...    | ... | 1, 'Alice' | 2, 'Bob' | 3, 'Charlie' |
     [Arguments]    ${table_name}    ${columns}    @{rows}
 
     ${row_count}=    Set Variable    ${0}
@@ -228,12 +346,22 @@ Bulk Insert Into Table
     RETURN    ${row_count}
 
 Update Table
-    [Documentation]    Updates rows in a table based on a condition
-    ...    Arguments:
-    ...    - table_name: Name of the table to update
-    ...    - set_clause: SET clause (e.g., "column1 = value1, column2 = value2")
-    ...    - where_clause: Optional WHERE condition
-    ...    - schema: Optional schema name
+    [Documentation]    Updates rows in a table based on a ``WHERE`` condition.
+    ...
+    ...    If no ``where_clause`` is provided, updates ALL rows and logs a warning.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Name of the table to update
+    ...    - ``set_clause``: SQL SET clause (e.g. ``column1 = 'value1', column2 = 42``)
+    ...    - ``where_clause``: Optional WHERE condition to filter rows (default: empty — updates all)
+    ...    - ``schema``: Optional schema name
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Update Table | employees | salary = 60000 | id = 1 |
+    ...    | Update Table | employees | status = 'inactive' | department = 'HR' | schema=dbo |
     [Arguments]    ${table_name}    ${set_clause}    ${where_clause}=${EMPTY}    ${schema}=${EMPTY}
 
     ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
@@ -252,8 +380,21 @@ Update Table
     RETURN    ${TRUE}
 
 Delete From Table
-    [Documentation]    Deletes rows from a table based on a condition
-    ...    If no where_clause provided, deletes all rows (use with caution!)
+    [Documentation]    Deletes rows from a table based on a ``WHERE`` condition.
+    ...
+    ...    If no ``where_clause`` is provided, deletes ALL rows and logs a warning.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Name of the table
+    ...    - ``where_clause``: Optional WHERE condition to filter rows (default: empty — deletes all)
+    ...    - ``schema``: Optional schema name
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Delete From Table | staging_data | status = 'processed' |
+    ...    | Delete From Table | employees | id > 100 | schema=dbo |
     [Arguments]    ${table_name}    ${where_clause}=${EMPTY}    ${schema}=${EMPTY}
 
     ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
@@ -271,8 +412,26 @@ Delete From Table
     RETURN    ${TRUE}
 
 Upsert Into Table
-    [Documentation]    Insert or update based on primary key (database-specific)
-    ...    Note: Actual syntax varies by database (MySQL, PostgreSQL, Snowflake)
+    [Documentation]    Inserts or updates a row based on primary key conflict.
+    ...
+    ...    Falls back to a standard ``INSERT`` in the default implementation.
+    ...    Override this keyword for database-specific upsert syntax.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Target table name
+    ...    - ``columns``: Comma-separated column names
+    ...    - ``values``: Values to insert
+    ...    - ``update_clause``: SQL clause for conflict resolution
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Note:*
+    ...    Actual upsert syntax varies by database (MySQL ``ON DUPLICATE KEY``,
+    ...    PostgreSQL ``ON CONFLICT``, Snowflake ``MERGE``).
+    ...
+    ...    *Example:*
+    ...    | Upsert Into Table | employees | id, name | 1, 'John' | name = 'John' |
     [Arguments]    ${table_name}    ${columns}    ${values}    ${update_clause}
 
     Log    UPSERT operation varies by database type    WARN
@@ -283,13 +442,23 @@ Upsert Into Table
 # ==================== QUERY OPERATIONS ====================
 
 Select All From Table
-    [Documentation]    Selects all records from a table
-    ...    Arguments:
-    ...    - table_name: Table name (can include schema)
-    ...    - columns: Columns to select (default: *)
-    ...    - order_by: Optional ORDER BY clause
-    ...    - limit: Optional LIMIT clause
-    ...    - schema: Optional schema name
+    [Documentation]    Selects all records from a database table.
+    ...
+    ...    Supports optional column selection, ordering, limiting, and schema qualification.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name (can include schema)
+    ...    - ``columns``: Columns to select (default: ``*``)
+    ...    - ``order_by``: Optional ``ORDER BY`` clause (e.g. ``id ASC``)
+    ...    - ``limit``: Optional ``LIMIT`` value
+    ...    - ``schema``: Optional schema name
+    ...
+    ...    *Returns:*
+    ...    - List of result rows (each row is a tuple)
+    ...
+    ...    *Example:*
+    ...    | ${rows}= | Select All From Table | employees |
+    ...    | ${rows}= | Select All From Table | employees | columns=id, name | order_by=id |
     [Arguments]    ${table_name}    ${columns}=*    ${order_by}=${EMPTY}    ${limit}=${EMPTY}    ${schema}=${EMPTY}
 
     ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
@@ -313,7 +482,22 @@ Select All From Table
     RETURN    ${results}
 
 Select Where
-    [Documentation]    Selects records based on a WHERE condition
+    [Documentation]    Selects records from a table filtered by a ``WHERE`` condition.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name (can include schema)
+    ...    - ``where_clause``: SQL WHERE condition (e.g. ``status = 'active'``)
+    ...    - ``columns``: Columns to select (default: ``*``)
+    ...    - ``order_by``: Optional ``ORDER BY`` clause
+    ...    - ``limit``: Optional ``LIMIT`` value
+    ...    - ``schema``: Optional schema name
+    ...
+    ...    *Returns:*
+    ...    - List of result rows matching the condition
+    ...
+    ...    *Example:*
+    ...    | ${rows}= | Select Where | employees | status = 'active' |
+    ...    | ${rows}= | Select Where | employees | salary > 50000 | columns=id, name | order_by=salary DESC |
     [Arguments]
     ...    ${table_name}
     ...    ${where_clause}
@@ -343,11 +527,21 @@ Select Where
     RETURN    ${results}
 
 Get Row Count
-    [Documentation]    Returns the number of rows in a table
-    ...    Arguments:
-    ...    - table_name: Table name (can include schema)
-    ...    - where_clause: Optional WHERE condition
-    ...    - schema: Optional schema name
+    [Documentation]    Returns the number of rows in a table using ``SELECT COUNT(*)``.
+    ...
+    ...    Supports optional ``WHERE`` filtering.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name (can include schema)
+    ...    - ``where_clause``: Optional WHERE condition to filter counted rows
+    ...    - ``schema``: Optional schema name
+    ...
+    ...    *Returns:*
+    ...    - Integer row count
+    ...
+    ...    *Example:*
+    ...    | ${count}= | Get Row Count | employees |
+    ...    | ${count}= | Get Row Count | employees | where_clause=status = 'active' |
     [Arguments]    ${table_name}    ${where_clause}=${EMPTY}    ${schema}=${EMPTY}
 
     ${qualified_name}=    Get Qualified Table Name    ${table_name}    ${schema}
@@ -366,7 +560,21 @@ Get Row Count
     RETURN    ${count}
 
 Get Table Row Count
-    [Documentation]    Gets the total number of rows in a table (alias for Get Row Count)
+    [Documentation]    Gets the total number of rows in a table.
+    ...
+    ...    Simplified alias for ``Get Row Count`` without filtering options.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to count rows from
+    ...
+    ...    *Returns:*
+    ...    - Integer row count
+    ...
+    ...    *Example:*
+    ...    | ${count}= | Get Table Row Count | employees |
+    ...
+    ...    *See also:*
+    ...    ``Get Row Count``
     [Arguments]    ${table_name}
 
     ${query}=    Set Variable    SELECT COUNT(*) FROM ${table_name}
@@ -377,7 +585,23 @@ Get Table Row Count
     RETURN    ${count}
 
 Get Column Values
-    [Documentation]    Returns all values from a specific column
+    [Documentation]    Returns all values from a specific column in a table.
+    ...
+    ...    Supports optional ``DISTINCT`` filtering and ``WHERE`` conditions.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name (can include schema)
+    ...    - ``column_name``: Name of the column to retrieve values from
+    ...    - ``distinct``: If TRUE, returns only unique values (default: FALSE)
+    ...    - ``where_clause``: Optional WHERE condition
+    ...    - ``schema``: Optional schema name
+    ...
+    ...    *Returns:*
+    ...    - List of column values
+    ...
+    ...    *Example:*
+    ...    | ${names}= | Get Column Values | employees | name |
+    ...    | ${depts}= | Get Column Values | employees | department | distinct=${TRUE} |
     [Arguments]
     ...    ${table_name}
     ...    ${column_name}
@@ -413,7 +637,16 @@ Get Column Values
     RETURN    ${values}
 
 Execute Custom Query
-    [Documentation]    Executes any SELECT query and returns results
+    [Documentation]    Executes any ``SELECT`` query and returns the full result set.
+    ...
+    ...    *Arguments:*
+    ...    - ``query``: Complete SQL SELECT query string
+    ...
+    ...    *Returns:*
+    ...    - List of result rows
+    ...
+    ...    *Example:*
+    ...    | ${results}= | Execute Custom Query | SELECT id, name FROM employees WHERE salary > 50000 |
     [Arguments]    ${query}
 
     Log    Executing custom query: ${query}    console=yes
@@ -424,7 +657,19 @@ Execute Custom Query
     RETURN    ${results}
 
 Execute Custom Command
-    [Documentation]    Executes any SQL command (DDL/DML) without returning results
+    [Documentation]    Executes any SQL command (DDL/DML) without returning results.
+    ...
+    ...    Use for ``CREATE``, ``ALTER``, ``DROP``, ``INSERT``, ``UPDATE``, ``DELETE``
+    ...    and other non-query statements.
+    ...
+    ...    *Arguments:*
+    ...    - ``command``: Complete SQL command string
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Execute Custom Command | ALTER TABLE employees ADD COLUMN department VARCHAR(50) |
     [Arguments]    ${command}
 
     Log    Executing command: ${command}    console=yes
@@ -433,7 +678,18 @@ Execute Custom Command
     RETURN    ${TRUE}
 
 Execute SQL Query And Get Count
-    [Documentation]    Executes a COUNT query and returns the result as integer
+    [Documentation]    Executes a ``COUNT`` query and returns the scalar result as an integer.
+    ...
+    ...    Expects the query to return a single row with a single numeric column.
+    ...
+    ...    *Arguments:*
+    ...    - ``sql_query``: SQL query that returns a count (e.g. ``SELECT COUNT(*) FROM ...``)
+    ...
+    ...    *Returns:*
+    ...    - Integer count value
+    ...
+    ...    *Example:*
+    ...    | ${count}= | Execute SQL Query And Get Count | SELECT COUNT(*) FROM employees WHERE status = 'active' |
     [Arguments]    ${sql_query}
 
     Log    Executing count query: ${sql_query}    console=yes
@@ -446,7 +702,20 @@ Execute SQL Query And Get Count
     RETURN    ${count_value}
 
 Execute SQL Query And Get Results
-    [Documentation]    Executes SQL query and returns all results
+    [Documentation]    Executes a SQL query and returns all result rows.
+    ...
+    ...    Includes error handling — fails with a descriptive message if the query errors.
+    ...
+    ...    *Arguments:*
+    ...    - ``sql_query``: Complete SQL query string
+    ...    - ``fetch_all``: If TRUE, returns list of tuples; if FALSE, returns as dictionaries (default: TRUE)
+    ...
+    ...    *Returns:*
+    ...    - List of result rows
+    ...
+    ...    *Example:*
+    ...    | ${results}= | Execute SQL Query And Get Results | SELECT * FROM employees |
+    ...    | ${dicts}= | Execute SQL Query And Get Results | SELECT * FROM employees | fetch_all=${FALSE} |
     [Arguments]    ${sql_query}    ${fetch_all}=${TRUE}
 
     Log    Executing query: ${sql_query}    console=yes
@@ -467,7 +736,19 @@ Execute SQL Query And Get Results
     END
 
 Execute SQL Query And Get Single Value
-    [Documentation]    Executes SQL query and returns single scalar value
+    [Documentation]    Executes a SQL query and returns a single scalar value.
+    ...
+    ...    Fails if the query returns more or fewer than exactly one row.
+    ...
+    ...    *Arguments:*
+    ...    - ``sql_query``: SQL query expected to return exactly one row with one column
+    ...
+    ...    *Returns:*
+    ...    - The single scalar value from the query result
+    ...
+    ...    *Example:*
+    ...    | ${name}= | Execute SQL Query And Get Single Value | SELECT name FROM employees WHERE id = 1 |
+    ...    | ${max}= | Execute SQL Query And Get Single Value | SELECT MAX(salary) FROM employees |
     [Arguments]    ${sql_query}
 
     Log    Executing single value query: ${sql_query}    console=yes
@@ -487,7 +768,15 @@ Execute SQL Query And Get Single Value
 # ==================== SQL EXECUTION WITH ERROR HANDLING ====================
 
 Execute SQL String Safe
-    [Documentation]    Safely executes SQL string with error handling
+    [Documentation]    Safely executes a SQL statement with ``TRY/EXCEPT`` error handling.
+    ...
+    ...    Catches execution errors and fails with a descriptive message.
+    ...
+    ...    *Arguments:*
+    ...    - ``sql_statement``: Complete SQL statement to execute
+    ...
+    ...    *Example:*
+    ...    | Execute SQL String Safe | CREATE TABLE staging (id INT, data TEXT) |
     [Arguments]    ${sql_statement}
 
     Log    Executing SQL statement...    console=yes
@@ -502,7 +791,16 @@ Execute SQL String Safe
     END
 
 Execute SQL Script From File
-    [Documentation]    Executes SQL statements from a script file
+    [Documentation]    Reads and executes SQL statements from a script file.
+    ...
+    ...    Splits the file content by semicolons and executes each statement.
+    ...    Comments (lines starting with ``--``) and empty lines are skipped.
+    ...
+    ...    *Arguments:*
+    ...    - ``script_path``: Path to the ``.sql`` script file
+    ...
+    ...    *Example:*
+    ...    | Execute SQL Script From File | ${CURDIR}/setup_tables.sql |
     [Arguments]    ${script_path}
 
     File Should Exist    ${script_path}
@@ -524,7 +822,18 @@ Execute SQL Script From File
     Log    SQL script executed successfully (${executed_count} statements)    console=yes
 
 Split SQL Script Content
-    [Documentation]    Splits SQL script content into individual executable statements
+    [Documentation]    Splits raw SQL script content into individual executable statements.
+    ...
+    ...    Removes comment lines (``--``) and empty lines, then splits by semicolons.
+    ...
+    ...    *Arguments:*
+    ...    - ``sql_content``: Raw SQL script content as a string
+    ...
+    ...    *Returns:*
+    ...    - List of individual SQL statements (trimmed and filtered)
+    ...
+    ...    *Example:*
+    ...    | ${stmts}= | Split SQL Script Content | ${sql_text} |
     [Arguments]    ${sql_content}
 
     ${lines}=    Split To Lines    ${sql_content}
@@ -552,7 +861,18 @@ Split SQL Script Content
     RETURN    ${filtered_statements}
 
 Execute SQL File
-    [Documentation]    Executes SQL statements from a file
+    [Documentation]    Reads a SQL file and executes all statements split by a delimiter.
+    ...
+    ...    *Arguments:*
+    ...    - ``file_path``: Path to the SQL file
+    ...    - ``delimiter``: Statement delimiter (default: ``;``)
+    ...
+    ...    *Returns:*
+    ...    - ``${success}`` count and ``${errors}`` count
+    ...
+    ...    *Example:*
+    ...    | ${ok} | ${err}= | Execute SQL File | ${CURDIR}/migrations.sql |
+    ...    | ${ok} | ${err}= | Execute SQL File | ${CURDIR}/procs.sql | delimiter=GO |
     [Arguments]    ${file_path}    ${delimiter}=;
 
     ${file_content}=    Get File    ${file_path}
@@ -564,7 +884,19 @@ Execute SQL File
     RETURN    ${success}    ${errors}
 
 Execute SQL Script
-    [Documentation]    Executes multiple SQL statements from a list
+    [Documentation]    Executes multiple SQL statements from a list with error tracking.
+    ...
+    ...    Skips empty statements and comment lines (``--``, ``#``).
+    ...    Continues execution on error and reports success/failure counts.
+    ...
+    ...    *Arguments:*
+    ...    - ``@{statements}``: List of SQL statement strings
+    ...
+    ...    *Returns:*
+    ...    - ``${success_count}`` and ``${error_count}``
+    ...
+    ...    *Example:*
+    ...    | ${ok} | ${err}= | Execute SQL Script | CREATE TABLE t1 (id INT) | INSERT INTO t1 VALUES (1) |
     [Arguments]    @{statements}
 
     ${success_count}=    Set Variable    ${0}
@@ -593,7 +925,17 @@ Execute SQL Script
     RETURN    ${success_count}    ${error_count}
 
 Execute SQL Template
-    [Documentation]    Executes SQL with variable substitution from template
+    [Documentation]    Executes a SQL template with variable substitution.
+    ...
+    ...    Replaces ``{variable_name}`` placeholders in the template with provided values.
+    ...
+    ...    *Arguments:*
+    ...    - ``sql_template``: SQL string with ``{placeholder}`` tokens
+    ...    - ``&{variables}``: Named variables to substitute into the template
+    ...
+    ...    *Example:*
+    ...    | Execute SQL Template | INSERT INTO {table} ({col}) VALUES ('{val}') |
+    ...    | ... | table=employees | col=name | val=John |
     [Arguments]    ${sql_template}    &{variables}
 
     Log    Executing SQL template with variables...    console=yes
@@ -611,7 +953,18 @@ Execute SQL Template
 # ==================== TABLE STRUCTURE OPERATIONS ====================
 
 Add Column To Table
-    [Documentation]    Adds a new column to an existing table
+    [Documentation]    Adds a new column to an existing table using ``ALTER TABLE ADD COLUMN``.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Target table name
+    ...    - ``column_name``: Name of the new column
+    ...    - ``column_definition``: Column type and constraints (e.g. ``VARCHAR(100) NOT NULL``)
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Add Column To Table | employees | department | VARCHAR(50) DEFAULT 'General' |
     [Arguments]    ${table_name}    ${column_name}    ${column_definition}
 
     ${alter_sql}=    Set Variable    ALTER TABLE ${table_name} ADD COLUMN ${column_name} ${column_definition}
@@ -620,7 +973,17 @@ Add Column To Table
     RETURN    ${TRUE}
 
 Drop Column From Table
-    [Documentation]    Removes a column from a table
+    [Documentation]    Removes a column from a table using ``ALTER TABLE DROP COLUMN``.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Target table name
+    ...    - ``column_name``: Name of the column to remove
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Drop Column From Table | employees | legacy_field |
     [Arguments]    ${table_name}    ${column_name}
 
     ${alter_sql}=    Set Variable    ALTER TABLE ${table_name} DROP COLUMN ${column_name}
@@ -629,8 +992,23 @@ Drop Column From Table
     RETURN    ${TRUE}
 
 Modify Column
-    [Documentation]    Modifies a column definition
-    ...    Note: Syntax varies between databases (MODIFY/ALTER COLUMN)
+    [Documentation]    Modifies a column's data type or constraints.
+    ...
+    ...    Uses ``ALTER TABLE ... ALTER COLUMN`` syntax.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Target table name
+    ...    - ``column_name``: Column to modify
+    ...    - ``new_definition``: New type/constraint definition
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Note:*
+    ...    Syntax varies between databases (``MODIFY COLUMN`` in MySQL, ``ALTER COLUMN`` in SQL Server).
+    ...
+    ...    *Example:*
+    ...    | Modify Column | employees | salary | DECIMAL(12,2) |
     [Arguments]    ${table_name}    ${column_name}    ${new_definition}
 
     ${alter_sql}=    Set Variable    ALTER TABLE ${table_name} ALTER COLUMN ${column_name} ${new_definition}
@@ -639,7 +1017,18 @@ Modify Column
     RETURN    ${TRUE}
 
 Rename Column
-    [Documentation]    Renames a column in a table
+    [Documentation]    Renames a column in a table using ``ALTER TABLE ... RENAME COLUMN``.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Target table name
+    ...    - ``old_column_name``: Current column name
+    ...    - ``new_column_name``: New column name
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Rename Column | employees | emp_name | employee_name |
     [Arguments]    ${table_name}    ${old_column_name}    ${new_column_name}
 
     ${alter_sql}=    Set Variable    ALTER TABLE ${table_name} RENAME COLUMN ${old_column_name} TO ${new_column_name}
@@ -648,8 +1037,22 @@ Rename Column
     RETURN    ${TRUE}
 
 Get Table Columns
-    [Documentation]    Gets column names from database table
-    ...    Can accept table name in format: table_name or schema.table_name
+    [Documentation]    Gets column names from a database table.
+    ...
+    ...    Tries multiple approaches to retrieve columns (INFORMATION_SCHEMA, uppercase,
+    ...    no-schema, DESCRIBE TABLE) to support different database engines including
+    ...    Snowflake, Oracle, SQL Server, PostgreSQL, and MySQL.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name (can be ``table`` or ``schema.table``)
+    ...    - ``schema``: Optional schema name (default: auto-detected)
+    ...
+    ...    *Returns:*
+    ...    - List of column name strings
+    ...
+    ...    *Example:*
+    ...    | @{cols}= | Get Table Columns | employees |
+    ...    | @{cols}= | Get Table Columns | dbo.employees |
     [Arguments]    ${table_name}    ${schema}=${NONE}
 
     ${contains_dot}=    Run Keyword And Return Status    Should Contain    ${table_name}    .
@@ -735,7 +1138,19 @@ Get Table Columns
     RETURN    ${columns}
 
 Get Table Schema Info
-    [Documentation]    Gets detailed schema information for a table
+    [Documentation]    Gets detailed schema information for a table from ``INFORMATION_SCHEMA``.
+    ...
+    ...    Returns column name, data type, nullability, default value, and max character length.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to inspect
+    ...    - ``schema``: Schema name (default: ``public``)
+    ...
+    ...    *Returns:*
+    ...    - List of rows with column metadata (column_name, data_type, is_nullable, column_default, character_maximum_length)
+    ...
+    ...    *Example:*
+    ...    | ${info}= | Get Table Schema Info | employees | schema=dbo |
     [Arguments]    ${table_name}    ${schema}=public
 
     Log    Getting schema info for table: ${table_name}    console=yes
@@ -752,7 +1167,22 @@ Get Table Schema Info
     RETURN    ${results}
 
 Check If Table Exists
-    [Documentation]    Checks if a table exists in the database
+    [Documentation]    Checks if a table exists in the database using ``INFORMATION_SCHEMA``.
+    ...
+    ...    Returns a boolean — does not fail if the table does not exist.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to check
+    ...    - ``schema``: Schema name (default: ``public``)
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` if table exists, ``${FALSE}`` otherwise
+    ...
+    ...    *Example:*
+    ...    | ${exists}= | Check If Table Exists | employees | schema=dbo |
+    ...
+    ...    *See also:*
+    ...    ``Table Should Exist``, ``Table Should Not Exist``
     [Arguments]    ${table_name}    ${schema}=public
 
     ${query}=    Set Variable
@@ -770,7 +1200,13 @@ Check If Table Exists
     RETURN    ${exists}
 
 Get Default Schema
-    [Documentation]    Returns default schema based on database type
+    [Documentation]    Returns the default schema name based on the detected database type.
+    ...
+    ...    *Returns:*
+    ...    - Schema name string (e.g. ``dbo`` for SQL Server, ``public`` for PostgreSQL)
+    ...
+    ...    *Example:*
+    ...    | ${schema}= | Get Default Schema |
     ${db_type}=    Get Database Type
     IF    '${db_type}' == 'SQLSERVER'
         RETURN    dbo
@@ -783,7 +1219,16 @@ Get Default Schema
     END
 
 Get Database Type
-    [Documentation]    Returns cached or detected database type
+    [Documentation]    Detects and returns the database engine type.
+    ...
+    ...    Uses cached result if available. Otherwise probes the connection with
+    ...    engine-specific queries (Snowflake, Oracle, SQL Server, PostgreSQL, MySQL).
+    ...
+    ...    *Returns:*
+    ...    - Database type string: ``SNOWFLAKE``, ``ORACLE``, ``SQLSERVER``, ``POSTGRESQL``, ``MYSQL``, or ``GENERIC``
+    ...
+    ...    *Example:*
+    ...    | ${type}= | Get Database Type |
     IF    '${DB_TYPE}' != '${NONE}'    RETURN    ${DB_TYPE}
 
     ${is_snowflake}=    Run Keyword And Return Status    Query    SELECT CURRENT_WAREHOUSE()
@@ -820,7 +1265,21 @@ Get Database Type
     RETURN    GENERIC
 
 Get Columns Query
-    [Documentation]    Returns appropriate query based on database type
+    [Documentation]    Returns the appropriate ``INFORMATION_SCHEMA`` query for column retrieval
+    ...    based on the detected database type.
+    ...
+    ...    Generates engine-specific SQL for Snowflake, Oracle, SQL Server, PostgreSQL,
+    ...    MySQL, or a generic fallback.
+    ...
+    ...    *Arguments:*
+    ...    - ``table``: Table name (without schema)
+    ...    - ``schema``: Schema name
+    ...
+    ...    *Returns:*
+    ...    - SQL query string for retrieving column names
+    ...
+    ...    *Example:*
+    ...    | ${query}= | Get Columns Query | employees | dbo |
     [Arguments]    ${table}    ${schema}
 
     ${db_type}=    Get Database Type
@@ -845,7 +1304,20 @@ Get Columns Query
 # ==================== INDEX OPERATIONS ====================
 
 Create Index
-    [Documentation]    Creates an index on a table
+    [Documentation]    Creates an index on a table, optionally unique.
+    ...
+    ...    *Arguments:*
+    ...    - ``index_name``: Name of the index to create
+    ...    - ``table_name``: Target table name
+    ...    - ``columns``: Comma-separated column names to index
+    ...    - ``unique``: If TRUE, creates a ``UNIQUE`` index (default: FALSE)
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Create Index | idx_emp_name | employees | name |
+    ...    | Create Index | uq_emp_email | employees | email | unique=${TRUE} |
     [Arguments]    ${index_name}    ${table_name}    ${columns}    ${unique}=${FALSE}
 
     IF    ${unique}
@@ -859,8 +1331,21 @@ Create Index
     RETURN    ${TRUE}
 
 Drop Index
-    [Documentation]    Drops an index
-    ...    Note: Syntax varies between databases
+    [Documentation]    Drops an index from the database.
+    ...
+    ...    *Arguments:*
+    ...    - ``index_name``: Name of the index to drop
+    ...    - ``table_name``: Table name (required by some databases like MySQL, optional for others)
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Note:*
+    ...    Drop index syntax varies: MySQL requires ``ON table``, PostgreSQL does not.
+    ...
+    ...    *Example:*
+    ...    | Drop Index | idx_emp_name |
+    ...    | Drop Index | idx_emp_name | employees |
     [Arguments]    ${index_name}    ${table_name}=${EMPTY}
 
     IF    '${table_name}' != '${EMPTY}'
@@ -876,7 +1361,18 @@ Drop Index
 # ==================== VIEW OPERATIONS ====================
 
 Create View
-    [Documentation]    Creates a view based on a SELECT query
+    [Documentation]    Creates a database view based on a ``SELECT`` query.
+    ...
+    ...    *Arguments:*
+    ...    - ``view_name``: Name of the view to create
+    ...    - ``select_query``: The ``SELECT`` query defining the view
+    ...    - ``replace``: If TRUE, uses ``CREATE OR REPLACE`` (default: TRUE)
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Create View | active_employees | SELECT * FROM employees WHERE status = 'active' |
     [Arguments]    ${view_name}    ${select_query}    ${replace}=${TRUE}
 
     IF    ${replace}
@@ -890,7 +1386,17 @@ Create View
     RETURN    ${TRUE}
 
 Drop View
-    [Documentation]    Drops a view
+    [Documentation]    Drops a database view.
+    ...
+    ...    *Arguments:*
+    ...    - ``view_name``: Name of the view to drop
+    ...    - ``if_exists``: If TRUE, uses ``IF EXISTS`` to avoid errors (default: TRUE)
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Drop View | active_employees |
     [Arguments]    ${view_name}    ${if_exists}=${TRUE}
 
     IF    ${if_exists}
@@ -905,7 +1411,19 @@ Drop View
 # ==================== CONSTRAINT OPERATIONS ====================
 
 Add Primary Key
-    [Documentation]    Adds a primary key constraint to a table
+    [Documentation]    Adds a primary key constraint to a table.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Target table name
+    ...    - ``constraint_name``: Name for the constraint
+    ...    - ``columns``: Comma-separated column names forming the primary key
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Add Primary Key | employees | pk_employees | id |
+    ...    | Add Primary Key | order_items | pk_order_items | order_id, item_id |
     [Arguments]    ${table_name}    ${constraint_name}    ${columns}
 
     ${alter_sql}=    Set Variable
@@ -915,7 +1433,20 @@ Add Primary Key
     RETURN    ${TRUE}
 
 Add Foreign Key
-    [Documentation]    Adds a foreign key constraint
+    [Documentation]    Adds a foreign key constraint linking a column to a referenced table.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table containing the foreign key column
+    ...    - ``constraint_name``: Name for the constraint
+    ...    - ``column``: Column in the source table
+    ...    - ``ref_table``: Referenced (parent) table
+    ...    - ``ref_column``: Referenced column in the parent table
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Add Foreign Key | orders | fk_orders_customer | customer_id | customers | id |
     [Arguments]    ${table_name}    ${constraint_name}    ${column}    ${ref_table}    ${ref_column}
 
     ${alter_sql}=    Set Variable
@@ -925,7 +1456,18 @@ Add Foreign Key
     RETURN    ${TRUE}
 
 Add Unique Constraint
-    [Documentation]    Adds a unique constraint to columns
+    [Documentation]    Adds a unique constraint to one or more columns.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Target table name
+    ...    - ``constraint_name``: Name for the constraint
+    ...    - ``columns``: Comma-separated column names
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Add Unique Constraint | employees | uq_emp_email | email |
     [Arguments]    ${table_name}    ${constraint_name}    ${columns}
 
     ${alter_sql}=    Set Variable    ALTER TABLE ${table_name} ADD CONSTRAINT ${constraint_name} UNIQUE (${columns})
@@ -934,7 +1476,17 @@ Add Unique Constraint
     RETURN    ${TRUE}
 
 Drop Constraint
-    [Documentation]    Drops a constraint from a table
+    [Documentation]    Drops a named constraint from a table.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table containing the constraint
+    ...    - ``constraint_name``: Name of the constraint to drop
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Drop Constraint | employees | uq_emp_email |
     [Arguments]    ${table_name}    ${constraint_name}
 
     ${alter_sql}=    Set Variable    ALTER TABLE ${table_name} DROP CONSTRAINT ${constraint_name}
@@ -945,7 +1497,23 @@ Drop Constraint
 # ==================== VALIDATION OPERATIONS ====================
 
 Table Should Exist
-    [Documentation]    Verifies that a table exists in the database
+    [Documentation]    Asserts that a table exists in the database. Fails if not found.
+    ...
+    ...    Uses case-insensitive lookup via ``INFORMATION_SCHEMA``.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to verify
+    ...    - ``schema``: Optional schema name
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success (fails if table does not exist)
+    ...
+    ...    *Example:*
+    ...    | Table Should Exist | employees |
+    ...    | Table Should Exist | employees | schema=dbo |
+    ...
+    ...    *See also:*
+    ...    ``Table Should Not Exist``, ``Check If Table Exists``
     [Arguments]    ${table_name}    ${schema}=${EMPTY}
 
     IF    '${schema}' == '${EMPTY}'
@@ -964,7 +1532,20 @@ Table Should Exist
     RETURN    ${TRUE}
 
 Table Should Not Exist
-    [Documentation]    Verifies that a table does not exist in the database
+    [Documentation]    Asserts that a table does NOT exist in the database. Fails if found.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to verify is absent
+    ...    - ``schema``: Optional schema name
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success (fails if table exists)
+    ...
+    ...    *Example:*
+    ...    | Table Should Not Exist | temp_staging |
+    ...
+    ...    *See also:*
+    ...    ``Table Should Exist``, ``Check If Table Exists``
     [Arguments]    ${table_name}    ${schema}=${EMPTY}
 
     IF    '${schema}' == '${EMPTY}'
@@ -983,7 +1564,21 @@ Table Should Not Exist
     RETURN    ${TRUE}
 
 Column Should Exist
-    [Documentation]    Verifies that a column exists in a table
+    [Documentation]    Asserts that a column exists in a table. Fails if not found.
+    ...
+    ...    Uses case-insensitive lookup via ``INFORMATION_SCHEMA``.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to check
+    ...    - ``column_name``: Column name to verify
+    ...    - ``schema``: Optional schema name
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success (fails if column does not exist)
+    ...
+    ...    *Example:*
+    ...    | Column Should Exist | employees | email |
+    ...    | Column Should Exist | employees | salary | schema=dbo |
     [Arguments]    ${table_name}    ${column_name}    ${schema}=${EMPTY}
 
     IF    '${schema}' == '${EMPTY}'
@@ -1002,7 +1597,19 @@ Column Should Exist
     RETURN    ${TRUE}
 
 Row Count Should Be
-    [Documentation]    Verifies that a table has the expected number of rows
+    [Documentation]    Asserts that a table has exactly the expected number of rows.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to check
+    ...    - ``expected_count``: Expected row count
+    ...    - ``where_clause``: Optional WHERE condition to filter counted rows
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success (fails if count does not match)
+    ...
+    ...    *Example:*
+    ...    | Row Count Should Be | employees | 100 |
+    ...    | Row Count Should Be | employees | 5 | where_clause=department = 'HR' |
     [Arguments]    ${table_name}    ${expected_count}    ${where_clause}=${EMPTY}
 
     ${actual_count}=    Get Row Count    ${table_name}    ${where_clause}
@@ -1014,7 +1621,19 @@ Row Count Should Be
     RETURN    ${TRUE}
 
 Row Count Should Be Greater Than
-    [Documentation]    Verifies that row count is greater than a threshold
+    [Documentation]    Asserts that a table's row count exceeds a minimum threshold.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to check
+    ...    - ``min_count``: Minimum row count (exclusive)
+    ...    - ``where_clause``: Optional WHERE condition
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Row Count Should Be Greater Than | employees | 0 |
+    ...    | Row Count Should Be Greater Than | orders | 10 | where_clause=status = 'pending' |
     [Arguments]    ${table_name}    ${min_count}    ${where_clause}=${EMPTY}
 
     ${actual_count}=    Get Row Count    ${table_name}    ${where_clause}
@@ -1026,7 +1645,18 @@ Row Count Should Be Greater Than
     RETURN    ${TRUE}
 
 Row Count Should Be Less Than
-    [Documentation]    Verifies that row count is less than a threshold
+    [Documentation]    Asserts that a table's row count is below a maximum threshold.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to check
+    ...    - ``max_count``: Maximum row count (exclusive)
+    ...    - ``where_clause``: Optional WHERE condition
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Row Count Should Be Less Than | error_log | 100 |
     [Arguments]    ${table_name}    ${max_count}    ${where_clause}=${EMPTY}
 
     ${actual_count}=    Get Row Count    ${table_name}    ${where_clause}
@@ -1038,7 +1668,17 @@ Row Count Should Be Less Than
     RETURN    ${TRUE}
 
 Validate Table Data Count
-    [Documentation]    Validates that table contains expected number of rows
+    [Documentation]    Validates that a table contains exactly the expected number of rows.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to validate
+    ...    - ``expected_count``: Expected row count
+    ...
+    ...    *Example:*
+    ...    | Validate Table Data Count | employees | 50 |
+    ...
+    ...    *See also:*
+    ...    ``Row Count Should Be``
     [Arguments]    ${table_name}    ${expected_count}
 
     Log    Validating data count for table: ${table_name}    console=yes
@@ -1052,7 +1692,16 @@ Validate Table Data Count
     Log    Table data count validation passed: ${actual_count} rows    console=yes
 
 Compare Table Row Counts
-    [Documentation]    Compares row counts between two tables
+    [Documentation]    Compares the row counts between two database tables.
+    ...
+    ...    *Arguments:*
+    ...    - ``table1``: First table name
+    ...    - ``table2``: Second table name
+    ...    - ``should_match``: If TRUE, asserts counts are equal; if FALSE, asserts they differ (default: TRUE)
+    ...
+    ...    *Example:*
+    ...    | Compare Table Row Counts | source_table | target_table |
+    ...    | Compare Table Row Counts | staging | archive | should_match=${FALSE} |
     [Arguments]    ${table1}    ${table2}    ${should_match}=${TRUE}
 
     Log    Comparing row counts between tables...    console=yes
@@ -1074,7 +1723,18 @@ Compare Table Row Counts
     END
 
 Validate Table Has Data
-    [Documentation]    Validates that table contains at least one row
+    [Documentation]    Asserts that a table contains at least one row.
+    ...
+    ...    Fails if the table is empty (0 rows).
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to validate
+    ...
+    ...    *Example:*
+    ...    | Validate Table Has Data | employees |
+    ...
+    ...    *See also:*
+    ...    ``Validate Table Is Empty``
     [Arguments]    ${table_name}
 
     Log    Validating table has data: ${table_name}    console=yes
@@ -1087,7 +1747,18 @@ Validate Table Has Data
     Log    Table '${table_name}' contains data: ${count} rows    console=yes
 
 Validate Table Is Empty
-    [Documentation]    Validates that table is empty (0 rows)
+    [Documentation]    Asserts that a table contains zero rows.
+    ...
+    ...    Fails if the table has any data.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to validate
+    ...
+    ...    *Example:*
+    ...    | Validate Table Is Empty | staging_data |
+    ...
+    ...    *See also:*
+    ...    ``Validate Table Has Data``
     [Arguments]    ${table_name}
 
     Log    Validating table is empty: ${table_name}    console=yes
@@ -1100,8 +1771,23 @@ Validate Table Is Empty
     Log    Table '${table_name}' is empty as expected    console=yes
 
 Verify Table Columns
-    [Documentation]    Verifies that a table has all expected columns
-    ...    Handles case-insensitive comparison for databases like Snowflake
+    [Documentation]    Verifies that a table contains all expected columns.
+    ...
+    ...    Uses case-insensitive comparison to handle databases like Snowflake
+    ...    that uppercase column names. Reports missing and extra columns.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to verify
+    ...    - ``@{expected_columns}``: List of expected column names
+    ...
+    ...    *Returns:*
+    ...    - List of actual column names (fails if any expected columns are missing)
+    ...
+    ...    *Example:*
+    ...    | @{cols}= | Verify Table Columns | employees | id | name | email | salary |
+    ...
+    ...    *See also:*
+    ...    ``Verify Table Columns Match Exactly``, ``Verify Table Has Minimum Columns``
     [Arguments]    ${table_name}    @{expected_columns}
 
     Log    ========== VERIFYING TABLE COLUMNS ==========    console=yes
@@ -1172,7 +1858,22 @@ Verify Table Columns
     RETURN    ${actual_columns}
 
 Verify Table Columns Match Exactly
-    [Documentation]    Verifies that table columns match exactly (count and names)
+    [Documentation]    Verifies that a table's columns match exactly — both names and count.
+    ...
+    ...    Fails if there are missing columns OR extra columns beyond the expected list.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to verify
+    ...    - ``@{expected_columns}``: Exact list of expected column names
+    ...
+    ...    *Returns:*
+    ...    - List of actual column names
+    ...
+    ...    *Example:*
+    ...    | @{cols}= | Verify Table Columns Match Exactly | employees | id | name | email |
+    ...
+    ...    *See also:*
+    ...    ``Verify Table Columns``
     [Arguments]    ${table_name}    @{expected_columns}
 
     @{actual_columns}=    Verify Table Columns    ${table_name}    @{expected_columns}
@@ -1189,7 +1890,22 @@ Verify Table Columns Match Exactly
     RETURN    ${actual_columns}
 
 Verify Table Has Minimum Columns
-    [Documentation]    Verifies that table has at least the expected columns
+    [Documentation]    Verifies that a table has at least the specified required columns.
+    ...
+    ...    Additional columns beyond the required list are allowed.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to verify
+    ...    - ``@{required_columns}``: List of minimum required column names
+    ...
+    ...    *Returns:*
+    ...    - List of actual column names
+    ...
+    ...    *Example:*
+    ...    | @{cols}= | Verify Table Has Minimum Columns | employees | id | name |
+    ...
+    ...    *See also:*
+    ...    ``Verify Table Columns``, ``Verify Table Columns Match Exactly``
     [Arguments]    ${table_name}    @{required_columns}
 
     @{actual_columns}=    Verify Table Columns    ${table_name}    @{required_columns}
@@ -1206,28 +1922,63 @@ Verify Table Has Minimum Columns
 # ==================== TRANSACTION MANAGEMENT ====================
 
 Begin Transaction
-    [Documentation]    Starts a database transaction
+    [Documentation]    Starts a new database transaction.
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Begin Transaction |
+    ...
+    ...    *See also:*
+    ...    ``Commit Transaction``, ``Rollback Transaction``, ``Execute In Transaction``
 
     Execute Sql String    BEGIN TRANSACTION
     Log    Transaction started    console=yes
     RETURN    ${TRUE}
 
 Commit Transaction
-    [Documentation]    Commits the current transaction
+    [Documentation]    Commits the current database transaction.
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Commit Transaction |
 
     Execute Sql String    COMMIT
     Log    Transaction committed    console=yes
     RETURN    ${TRUE}
 
 Rollback Transaction
-    [Documentation]    Rolls back the current transaction
+    [Documentation]    Rolls back the current database transaction, undoing all changes.
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Rollback Transaction |
 
     Execute Sql String    ROLLBACK
     Log    Transaction rolled back    console=yes
     RETURN    ${TRUE}
 
 Execute In Transaction
-    [Documentation]    Executes statements within a transaction with automatic rollback on error
+    [Documentation]    Executes multiple SQL statements within a transaction.
+    ...
+    ...    Automatically rolls back all changes if any statement fails.
+    ...    Commits on success.
+    ...
+    ...    *Arguments:*
+    ...    - ``@{statements}``: List of SQL statements to execute atomically
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success (fails and rolls back on any error)
+    ...
+    ...    *Example:*
+    ...    | Execute In Transaction |
+    ...    | ... | INSERT INTO accounts (id, balance) VALUES (1, 1000) |
+    ...    | ... | UPDATE accounts SET balance = balance - 100 WHERE id = 2 |
     [Arguments]    @{statements}
 
     Begin Transaction
@@ -1246,7 +1997,21 @@ Execute In Transaction
     END
 
 Execute SQL With Transaction
-    [Documentation]    Executes SQL statements within a transaction with automatic rollback on error
+    [Documentation]    Executes SQL statement(s) within a transaction with optional auto-commit.
+    ...
+    ...    Accepts a single SQL string or a list of SQL strings.
+    ...    Rolls back automatically on error.
+    ...
+    ...    *Arguments:*
+    ...    - ``sql_statements``: Single SQL string or list of SQL strings
+    ...    - ``auto_commit``: If TRUE, commits after execution (default: TRUE)
+    ...
+    ...    *Example:*
+    ...    | Execute SQL With Transaction | INSERT INTO log (msg) VALUES ('test') |
+    ...    | Execute SQL With Transaction | ${list_of_statements} | auto_commit=${FALSE} |
+    ...
+    ...    *See also:*
+    ...    ``Execute In Transaction``
     [Arguments]    ${sql_statements}    ${auto_commit}=${TRUE}
 
     Log    Executing SQL with transaction management...    console=yes
@@ -1279,7 +2044,19 @@ Execute SQL With Transaction
 # ==================== UTILITY OPERATIONS ====================
 
 Get Table List
-    [Documentation]    Returns list of all tables in the database/schema
+    [Documentation]    Returns a list of all base tables in the database or schema.
+    ...
+    ...    Queries ``INFORMATION_SCHEMA.TABLES`` for tables of type ``BASE TABLE``.
+    ...
+    ...    *Arguments:*
+    ...    - ``schema``: Optional schema name to filter tables
+    ...
+    ...    *Returns:*
+    ...    - List of table name strings
+    ...
+    ...    *Example:*
+    ...    | @{tables}= | Get Table List |
+    ...    | @{tables}= | Get Table List | schema=dbo |
     [Arguments]    ${schema}=${EMPTY}
 
     IF    '${schema}' == '${EMPTY}'
@@ -1302,7 +2079,26 @@ Get Table List
     RETURN    ${table_list}
 
 Compare Table Data
-    [Documentation]    Compares data between two tables
+    [Documentation]    Compares data between two database tables directly in memory.
+    ...
+    ...    Queries both tables and asserts the result sets are identical using
+    ...    ``Lists Should Be Equal``. No CSV export is involved.
+    ...
+    ...    *Arguments:*
+    ...    - ``table1``: First table name
+    ...    - ``table2``: Second table name
+    ...    - ``columns``: Columns to compare (default: ``*``)
+    ...    - ``order_by``: Optional ``ORDER BY`` clause for consistent ordering
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` if data is identical (fails on mismatch)
+    ...
+    ...    *Example:*
+    ...    | Compare Table Data | source_table | target_table |
+    ...    | Compare Table Data | staging | production | columns=id, name | order_by=id |
+    ...
+    ...    *See also:*
+    ...    ``Compare Two Tables``, ``Verify Tables Are Identical``
     [Arguments]    ${table1}    ${table2}    ${columns}=*    ${order_by}=${EMPTY}
 
     ${data1}=    Select All From Table    ${table1}    ${columns}    ${order_by}
@@ -1321,7 +2117,21 @@ Compare Table Data
     RETURN    ${TRUE}
 
 Backup Table
-    [Documentation]    Creates a backup copy of a table
+    [Documentation]    Creates a backup copy of a table using ``CREATE TABLE ... AS SELECT``.
+    ...
+    ...    *Arguments:*
+    ...    - ``source_table``: Source table to back up
+    ...    - ``backup_table``: Name for the backup table
+    ...    - ``drop_if_exists``: If TRUE, drops existing backup table first (default: TRUE)
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Backup Table | employees | employees_backup |
+    ...
+    ...    *See also:*
+    ...    ``Backup Table Data``
     [Arguments]    ${source_table}    ${backup_table}    ${drop_if_exists}=${TRUE}
 
     IF    ${drop_if_exists}
@@ -1336,7 +2146,21 @@ Backup Table
     RETURN    ${TRUE}
 
 Backup Table Data
-    [Documentation]    Creates a backup of table data (with verification)
+    [Documentation]    Creates a backup of a table with row count verification.
+    ...
+    ...    After creating the backup, verifies the row counts match between
+    ...    source and backup tables.
+    ...
+    ...    *Arguments:*
+    ...    - ``source_table``: Source table to back up
+    ...    - ``backup_table``: Name for the backup table
+    ...    - ``drop_if_exists``: If TRUE, drops existing backup table first (default: TRUE)
+    ...
+    ...    *Example:*
+    ...    | Backup Table Data | employees | employees_bak |
+    ...
+    ...    *See also:*
+    ...    ``Backup Table``
     [Arguments]    ${source_table}    ${backup_table}    ${drop_if_exists}=${TRUE}
 
     Log    Creating backup of table: ${source_table} -> ${backup_table}    console=yes
@@ -1355,14 +2179,34 @@ Backup Table Data
     Log    Table backup completed: ${backup_count} rows copied    console=yes
 
 Clear Table Data
-    [Documentation]    Removes all data from a table (alias for Truncate Table)
+    [Documentation]    Removes all data from a table. Alias for ``Truncate Table``.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to clear
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Clear Table Data | staging_data |
     [Arguments]    ${table_name}
 
     Truncate Table    ${table_name}
     RETURN    ${TRUE}
 
 Clean Database Tables
-    [Documentation]    Cleans up test tables by truncating or dropping them
+    [Documentation]    Cleans up test tables by truncating or dropping them.
+    ...
+    ...    Accepts a list of table names or a single table name.
+    ...    Continues on error so one failed cleanup does not block others.
+    ...
+    ...    *Arguments:*
+    ...    - ``tables``: Table name string or list of table name strings
+    ...    - ``operation``: ``TRUNCATE`` or ``DROP`` (default: ``TRUNCATE``)
+    ...
+    ...    *Example:*
+    ...    | Clean Database Tables | ${table_list} |
+    ...    | Clean Database Tables | ${table_list} | operation=DROP |
     [Arguments]    ${tables}    ${operation}=TRUNCATE
 
     Log    Cleaning database tables (${operation})...    console=yes
@@ -1388,7 +2232,16 @@ Clean Database Tables
     Log    Database cleanup completed    console=yes
 
 Clean Table
-    [Documentation]    Truncates a table before test execution to ensure clean state
+    [Documentation]    Truncates a table before test execution to ensure a clean state.
+    ...
+    ...    Wrapper around ``Truncate Table If Exists`` with schema support.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to clean
+    ...    - ``schema_name``: Schema name for the table
+    ...
+    ...    *Example:*
+    ...    | Clean Table | staging_data | dbo |
     [Arguments]    ${table_name}    ${schema_name}
     Log    Cleaning table before execution    console=yes
     Truncate Table If Exists    ${table_name}    schema=${schema_name}
@@ -1396,8 +2249,19 @@ Clean Table
 # ==================== DATABASE/SCHEMA MANAGEMENT ====================
 
 Use Database
-    [Documentation]    Switch to a different database
-    ...    Note: Not all databases support this operation
+    [Documentation]    Switches the active database context.
+    ...
+    ...    *Arguments:*
+    ...    - ``database_name``: Name of the database to switch to
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Note:*
+    ...    Not all databases support ``USE DATABASE`` (e.g. PostgreSQL does not).
+    ...
+    ...    *Example:*
+    ...    | Use Database | analytics_db |
     [Arguments]    ${database_name}
 
     Execute Sql String    USE DATABASE ${database_name}
@@ -1405,8 +2269,19 @@ Use Database
     RETURN    ${TRUE}
 
 Use Schema
-    [Documentation]    Switch to a different schema
-    ...    Note: Schema support varies by database
+    [Documentation]    Switches the active schema context.
+    ...
+    ...    *Arguments:*
+    ...    - ``schema_name``: Name of the schema to switch to
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Note:*
+    ...    Schema support varies by database engine.
+    ...
+    ...    *Example:*
+    ...    | Use Schema | analytics |
     [Arguments]    ${schema_name}
 
     Execute Sql String    USE SCHEMA ${schema_name}
@@ -1414,7 +2289,16 @@ Use Schema
     RETURN    ${TRUE}
 
 Get Current Database Context
-    [Documentation]    Get current database context information
+    [Documentation]    Returns the current database context information.
+    ...
+    ...    Queries ``SELECT DATABASE()`` to identify the active database.
+    ...
+    ...    *Returns:*
+    ...    - Dictionary with ``database`` key, or empty string if unsupported
+    ...
+    ...    *Example:*
+    ...    | ${ctx}= | Get Current Database Context |
+    ...    | Log | Current DB: ${ctx}[database] |
     TRY
         ${db_result}=    Query    SELECT DATABASE() as current_db
         ${current_db}=    Set Variable    ${db_result[0][0]}
@@ -1432,7 +2316,20 @@ Get Current Database Context
 # ==================== DATA CONVERSION OPERATIONS ====================
 
 Convert Query Results To Dictionary
-    [Documentation]    Converts query results to a list of dictionaries
+    [Documentation]    Converts query result tuples to a list of dictionaries.
+    ...
+    ...    Maps each result row to a dictionary using the provided column names.
+    ...
+    ...    *Arguments:*
+    ...    - ``query_results``: List of result row tuples from a ``Query`` call
+    ...    - ``column_names``: List of column name strings (must match column order)
+    ...
+    ...    *Returns:*
+    ...    - List of dictionaries (one per row)
+    ...
+    ...    *Example:*
+    ...    | ${results}= | Query | SELECT id, name FROM employees |
+    ...    | ${dicts}= | Convert Query Results To Dictionary | ${results} | id | name |
     [Arguments]    ${query_results}    ${column_names}
 
     @{dict_results}=    Create List
@@ -1453,7 +2350,21 @@ Convert Query Results To Dictionary
     RETURN    ${dict_results}
 
 Get First Row As Dictionary
-    [Documentation]    Returns the first row of a query result as a dictionary
+    [Documentation]    Returns the first row from a table as a dictionary.
+    ...
+    ...    Automatically retrieves column names and maps the first row's values.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to query
+    ...    - ``where_clause``: Optional WHERE condition to filter rows
+    ...
+    ...    *Returns:*
+    ...    - Dictionary with column names as keys and first row values as values
+    ...
+    ...    *Example:*
+    ...    | ${row}= | Get First Row As Dictionary | employees |
+    ...    | ${row}= | Get First Row As Dictionary | employees | where_clause=id = 1 |
+    ...    | Log | Name: ${row}[name] |
     [Arguments]    ${table_name}    ${where_clause}=${EMPTY}
 
     ${is_empty}=    Run Keyword And Return Status    Should Be Empty    ${where_clause}
@@ -1482,7 +2393,21 @@ Get First Row As Dictionary
     RETURN    ${row_dict}
 
 Get Table Data As Dictionary
-    [Documentation]    Select all records from a table and return as a list of dictionaries
+    [Documentation]    Selects all records from a table and returns them as a list of dictionaries.
+    ...
+    ...    Each row is a dictionary with column names as keys.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to query
+    ...    - ``order_by``: Optional ``ORDER BY`` clause
+    ...    - ``where_clause``: Optional WHERE condition
+    ...
+    ...    *Returns:*
+    ...    - List of row dictionaries
+    ...
+    ...    *Example:*
+    ...    | @{data}= | Get Table Data As Dictionary | employees | order_by=id |
+    ...    | Log | First employee: ${data}[0][name] |
     [Arguments]    ${table_name}    ${order_by}=${EMPTY}    ${where_clause}=${EMPTY}
 
     Log    ========== GETTING TABLE DATA AS DICTIONARY ==========    console=yes
@@ -1517,7 +2442,18 @@ Get Table Data As Dictionary
     RETURN    ${dict_results}
 
 Extract Column Values From Dictionary
-    [Documentation]    Extract all values for a specific column from dictionary results
+    [Documentation]    Extracts all values for a specific column from dictionary results.
+    ...
+    ...    *Arguments:*
+    ...    - ``dict_results``: List of row dictionaries (from ``Get Table Data As Dictionary``)
+    ...    - ``column_name``: Column name to extract
+    ...
+    ...    *Returns:*
+    ...    - List of values for the specified column
+    ...
+    ...    *Example:*
+    ...    | @{data}= | Get Table Data As Dictionary | employees |
+    ...    | @{names}= | Extract Column Values From Dictionary | ${data} | name |
     [Arguments]    ${dict_results}    ${column_name}
 
     @{column_values}=    Create List
@@ -1539,7 +2475,21 @@ Extract Column Values From Dictionary
     RETURN    ${column_values}
 
 Extract Multiple Columns From Dictionary
-    [Documentation]    Extract values for multiple columns from dictionary results
+    [Documentation]    Extracts values for multiple columns from dictionary results.
+    ...
+    ...    Returns a dictionary where each key is a column name and each value
+    ...    is a list of that column's values across all rows.
+    ...
+    ...    *Arguments:*
+    ...    - ``dict_results``: List of row dictionaries
+    ...    - ``@{column_names}``: Column names to extract
+    ...
+    ...    *Returns:*
+    ...    - Dictionary of ``{column_name: [values]}``
+    ...
+    ...    *Example:*
+    ...    | ${extracted}= | Extract Multiple Columns From Dictionary | ${data} | name | salary |
+    ...    | Log | Names: ${extracted}[name] |
     [Arguments]    ${dict_results}    @{column_names}
 
     &{extracted_data}=    Create Dictionary
@@ -1565,7 +2515,19 @@ Extract Multiple Columns From Dictionary
     RETURN    ${extracted_data}
 
 Get Unique Column Values
-    [Documentation]    Extract unique values for a specific column from dictionary results
+    [Documentation]    Extracts unique (deduplicated) values for a column from dictionary results.
+    ...
+    ...    Returns sorted unique values.
+    ...
+    ...    *Arguments:*
+    ...    - ``dict_results``: List of row dictionaries
+    ...    - ``column_name``: Column name to extract unique values from
+    ...
+    ...    *Returns:*
+    ...    - Sorted list of unique values
+    ...
+    ...    *Example:*
+    ...    | @{departments}= | Get Unique Column Values | ${data} | department |
     [Arguments]    ${dict_results}    ${column_name}
 
     @{all_values}=    Extract Column Values From Dictionary    ${dict_results}    ${column_name}
@@ -1578,8 +2540,22 @@ Get Unique Column Values
     RETURN    ${unique_values}
 
 Filter Dictionary Results By Column Value
-    [Documentation]    Filter dictionary results based on a column value condition
-    ...    Supported operators: ==, !=, >, >=, <, <=, IN, LIKE
+    [Documentation]    Filters dictionary results based on a column value condition.
+    ...
+    ...    Supported operators: ``==``, ``!=``, ``>``, ``>=``, ``<``, ``<=``, ``IN``, ``LIKE``.
+    ...
+    ...    *Arguments:*
+    ...    - ``dict_results``: List of row dictionaries
+    ...    - ``column_name``: Column name to filter on
+    ...    - ``operator``: Comparison operator
+    ...    - ``value``: Value to compare against
+    ...
+    ...    *Returns:*
+    ...    - Filtered list of row dictionaries matching the condition
+    ...
+    ...    *Example:*
+    ...    | ${active}= | Filter Dictionary Results By Column Value | ${data} | status | == | active |
+    ...    | ${high_sal}= | Filter Dictionary Results By Column Value | ${data} | salary | > | 50000 |
     [Arguments]    ${dict_results}    ${column_name}    ${operator}    ${value}
 
     @{filtered_results}=    Create List
@@ -1602,7 +2578,17 @@ Filter Dictionary Results By Column Value
     RETURN    ${filtered_results}
 
 Evaluate Column Condition
-    [Documentation]    Helper keyword to evaluate conditions for filtering
+    [Documentation]    Helper keyword to evaluate a single condition for column filtering.
+    ...
+    ...    Used internally by ``Filter Dictionary Results By Column Value``.
+    ...
+    ...    *Arguments:*
+    ...    - ``actual_value``: The actual column value from the row
+    ...    - ``operator``: Comparison operator (``==``, ``!=``, ``>``, ``>=``, ``<``, ``<=``, ``IN``, ``LIKE``)
+    ...    - ``expected_value``: The value to compare against
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` if condition matches, ``${FALSE}`` otherwise
     [Arguments]    ${actual_value}    ${operator}    ${expected_value}
 
     IF    '${operator}' == '=='
@@ -1628,7 +2614,21 @@ Evaluate Column Condition
     RETURN    ${result}
 
 Build Insert SQL From Dict
-    [Documentation]    Builds INSERT SQL statement from dictionary/associative data
+    [Documentation]    Builds an ``INSERT`` SQL statement from a dictionary row and table column list.
+    ...
+    ...    Maps dictionary keys to table columns (case-insensitive), handles NULL values,
+    ...    escapes quotes, and detects column name casing conventions.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Target table name
+    ...    - ``row_dict``: Dictionary representing one row of data
+    ...    - ``table_columns``: List of column names from the target table
+    ...
+    ...    *Returns:*
+    ...    - Complete ``INSERT INTO ... VALUES (...)`` SQL string
+    ...
+    ...    *Example:*
+    ...    | ${sql}= | Build Insert SQL From Dict | employees | ${row_data} | ${columns} |
     [Arguments]    ${table_name}    ${row_dict}    ${table_columns}
 
     ${columns}=    Create List
@@ -1707,7 +2707,25 @@ Build Insert SQL From Dict
 # ==================== DATA EXPORT/IMPORT OPERATIONS ====================
 
 Export Table To CSV
-    [Documentation]    Exports any database table to a CSV file
+    [Documentation]    Exports a database table to a CSV file.
+    ...
+    ...    Retrieves all data from the table, formats values for CSV (handling NULLs,
+    ...    quoting, special characters), and writes to the specified output file.
+    ...    Logs progress every 100 rows.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to export
+    ...    - ``output_file``: Path for the output CSV file
+    ...    - ``include_headers``: Whether to include column headers as first row (default: TRUE)
+    ...    - ``order_by``: Optional ``ORDER BY`` clause
+    ...    - ``where_clause``: Optional WHERE condition to filter exported rows
+    ...
+    ...    *Returns:*
+    ...    - Dictionary with keys: ``file_path``, ``row_count``, ``columns``, ``table_name``, ``include_headers``
+    ...
+    ...    *Example:*
+    ...    | ${result}= | Export Table To CSV | employees | /tmp/employees.csv |
+    ...    | ${result}= | Export Table To CSV | orders | /tmp/orders.csv | order_by=id | where_clause=status='active' |
     [Arguments]
     ...    ${table_name}
     ...    ${output_file}
@@ -1770,7 +2788,16 @@ Export Table To CSV
     RETURN    ${export_result}
 
 Format Value For CSV
-    [Documentation]    Formats a single value for CSV output
+    [Documentation]    Formats a single value for CSV output.
+    ...
+    ...    Handles NULL conversion to empty string, escapes double quotes,
+    ...    and wraps values containing commas, quotes, or newlines in double quotes.
+    ...
+    ...    *Arguments:*
+    ...    - ``value``: The value to format
+    ...
+    ...    *Returns:*
+    ...    - CSV-safe string representation of the value
     [Arguments]    ${value}
 
     ${str_value}=    Convert To String    ${value}
@@ -1796,7 +2823,29 @@ Format Value For CSV
     RETURN    ${str_value}
 
 Compare Table With CSV File
-    [Documentation]    Compares database table data with expected CSV file
+    [Documentation]    Compares a database table's data against an expected CSV file.
+    ...
+    ...    Exports the table to a temporary CSV, then delegates to ``Compare CSV Files``
+    ...    for a detailed diff. On success, cleans up the temp file (unless ``KEEP_ACTUAL_FILES``
+    ...    is set). On failure, preserves the actual CSV for investigation.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to compare
+    ...    - ``expected_csv``: Path to the expected CSV file
+    ...    - ``ignore_order``: If TRUE, compares rows regardless of order (default: FALSE)
+    ...    - ``order_by``: Optional ``ORDER BY`` clause for consistent ordering
+    ...    - ``where_clause``: Optional WHERE condition to filter table data
+    ...    - ``temp_dir``: Directory for temporary CSV (default: ``ACTUAL_DATA_DIR`` or ``/tmp``)
+    ...
+    ...    *Returns:*
+    ...    - Comparison result dictionary with ``status``, ``total_differences``, ``actual_file``, ``export_details``
+    ...
+    ...    *Example:*
+    ...    | ${result}= | Compare Table With CSV File | employees | ${EXPECTED_DIR}/employees.csv |
+    ...    | Should Be Equal | ${result}[status] | IDENTICAL |
+    ...
+    ...    *See also:*
+    ...    ``Verify Table Matches CSV``, ``Compare Two Tables``
     [Arguments]
     ...    ${table_name}
     ...    ${expected_csv}
@@ -1858,7 +2907,27 @@ Compare Table With CSV File
     RETURN    ${comparison_result}
 
 Verify Table Matches CSV
-    [Documentation]    High-level keyword that verifies table matches expected CSV
+    [Documentation]    High-level assertion that verifies a table's data matches an expected CSV file.
+    ...
+    ...    Wraps ``Compare Table With CSV File`` and asserts the result status is ``IDENTICAL``.
+    ...    Fails with the number of differences and path to the actual data file.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to verify
+    ...    - ``expected_csv``: Path to the expected CSV file
+    ...    - ``ignore_order``: If TRUE, compares rows regardless of order (default: FALSE)
+    ...    - ``order_by``: Optional ``ORDER BY`` clause
+    ...    - ``temp_dir``: Directory for temporary CSV
+    ...
+    ...    *Returns:*
+    ...    - Comparison result dictionary (fails if not ``IDENTICAL``)
+    ...
+    ...    *Example:*
+    ...    | Verify Table Matches CSV | employees | ${EXPECTED_DIR}/employees.csv |
+    ...    | Verify Table Matches CSV | orders | ${EXPECTED_DIR}/orders.csv | ignore_order=${TRUE} |
+    ...
+    ...    *See also:*
+    ...    ``Compare Table With CSV File``
     [Arguments]
     ...    ${table_name}
     ...    ${expected_csv}
@@ -1882,7 +2951,24 @@ Verify Table Matches CSV
     RETURN    ${comparison}
 
 Export Query Results To CSV
-    [Documentation]    Exports custom query results to CSV file
+    [Documentation]    Executes a custom SQL query and exports the results to a CSV file.
+    ...
+    ...    Unlike ``Export Table To CSV`` which takes a table name, this keyword
+    ...    accepts a raw SQL query for flexible data extraction.
+    ...
+    ...    *Arguments:*
+    ...    - ``query``: SQL SELECT query to execute
+    ...    - ``output_file``: Path for the output CSV file
+    ...    - ``@{column_names}``: Optional column names for the CSV header
+    ...    - ``include_headers``: Whether to write headers (default: TRUE, requires ``column_names``)
+    ...
+    ...    *Returns:*
+    ...    - Dictionary with keys: ``file_path``, ``row_count``, ``query``
+    ...
+    ...    *Example:*
+    ...    | ${result}= | Export Query Results To CSV |
+    ...    | ... | SELECT id, name FROM employees WHERE dept = 'HR' |
+    ...    | ... | /tmp/hr_employees.csv | id | name |
     [Arguments]    ${query}    ${output_file}    @{column_names}    ${include_headers}=${TRUE}
 
     Log    Executing query and exporting to CSV...    console=yes
@@ -1921,7 +3007,27 @@ Export Query Results To CSV
     RETURN    ${result}
 
 Compare Two Tables
-    [Documentation]    Compares data between two database tables
+    [Documentation]    Compares data between two database tables via CSV export.
+    ...
+    ...    Exports both tables to temporary CSV files, then delegates to
+    ...    ``Compare CSV Files`` for a detailed diff. Cleans up temp files after comparison.
+    ...
+    ...    *Arguments:*
+    ...    - ``table1``: First table name
+    ...    - ``table2``: Second table name
+    ...    - ``ignore_order``: If TRUE, compares rows regardless of order (default: FALSE)
+    ...    - ``order_by``: Optional ``ORDER BY`` clause for consistent ordering
+    ...    - ``temp_dir``: Directory for temporary CSV files (default: ``/tmp``)
+    ...
+    ...    *Returns:*
+    ...    - Comparison result dictionary with ``status``, ``total_differences``, ``table1``, ``table2``
+    ...
+    ...    *Example:*
+    ...    | ${result}= | Compare Two Tables | source_table | target_table |
+    ...    | ${result}= | Compare Two Tables | staging | production | ignore_order=${TRUE} | order_by=id |
+    ...
+    ...    *See also:*
+    ...    ``Verify Tables Are Identical``, ``Compare Table Data``
     [Arguments]    ${table1}    ${table2}    ${ignore_order}=${FALSE}    ${order_by}=${EMPTY}    ${temp_dir}=/tmp
 
     Log    ========== COMPARING TWO TABLES ==========    console=yes
@@ -1952,7 +3058,24 @@ Compare Two Tables
     RETURN    ${comparison}
 
 Verify Tables Are Identical
-    [Documentation]    Verifies two tables contain identical data
+    [Documentation]    Asserts that two database tables contain identical data.
+    ...
+    ...    Wraps ``Compare Two Tables`` and asserts the result status is ``IDENTICAL``.
+    ...
+    ...    *Arguments:*
+    ...    - ``table1``: First table name
+    ...    - ``table2``: Second table name
+    ...    - ``ignore_order``: If TRUE, compares rows regardless of order (default: FALSE)
+    ...    - ``order_by``: Optional ``ORDER BY`` clause
+    ...
+    ...    *Returns:*
+    ...    - Comparison result dictionary (fails if not ``IDENTICAL``)
+    ...
+    ...    *Example:*
+    ...    | Verify Tables Are Identical | source_table | target_table |
+    ...
+    ...    *See also:*
+    ...    ``Compare Two Tables``, ``Compare Table Data``
     [Arguments]    ${table1}    ${table2}    ${ignore_order}=${FALSE}    ${order_by}=${EMPTY}
 
     ${comparison}=    Compare Two Tables
@@ -1968,7 +3091,22 @@ Verify Tables Are Identical
     RETURN    ${comparison}
 
 Export Table To JSON
-    [Documentation]    Exports database table to JSON file
+    [Documentation]    Exports a database table to a JSON file.
+    ...
+    ...    Converts table data to a list of dictionaries and writes as formatted JSON.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to export
+    ...    - ``output_file``: Path for the output JSON file
+    ...    - ``order_by``: Optional ``ORDER BY`` clause
+    ...    - ``where_clause``: Optional WHERE condition
+    ...
+    ...    *Returns:*
+    ...    - Dictionary with keys: ``file_path``, ``row_count``, ``table_name``
+    ...
+    ...    *Example:*
+    ...    | ${result}= | Export Table To JSON | employees | /tmp/employees.json |
+    ...    | ${result}= | Export Table To JSON | orders | /tmp/orders.json | order_by=id | where_clause=status='active' |
     [Arguments]    ${table_name}    ${output_file}    ${order_by}=${EMPTY}    ${where_clause}=${EMPTY}
 
     Log    Exporting ${table_name} to JSON...    console=yes
@@ -1997,7 +3135,20 @@ Export Table To JSON
     RETURN    ${result}
 
 Export DB Table Data To CSV
-    [Documentation]    Exports data from database table to a CSV file for verification
+    [Documentation]    Simplified wrapper to export a database table to CSV for verification.
+    ...
+    ...    Delegates to ``Export Table To CSV`` with headers enabled.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to export
+    ...    - ``order_by_column``: Column name to order results by
+    ...    - ``output_file``: Path for the output CSV file
+    ...
+    ...    *Example:*
+    ...    | Export DB Table Data To CSV | employees | id | /tmp/employees_actual.csv |
+    ...
+    ...    *See also:*
+    ...    ``Export Table To CSV``
     [Arguments]    ${table_name}    ${order_by_column}    ${output_file}
 
     ${export_result}=    Export Table To CSV
@@ -2010,7 +3161,19 @@ Export DB Table Data To CSV
     Log    CSV file location: ${output_file}    console=yes
 
 Capture And Verify Number of records From DB Table
-    [Documentation]    Verifies data in table by executing a query and comparing row count
+    [Documentation]    Queries a table and verifies the row count matches the expected value.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to query
+    ...    - ``schema_name``: Schema name for the table
+    ...    - ``order_by_column``: Column name to order results by
+    ...    - ``expected_records_count``: Expected number of rows
+    ...
+    ...    *Example:*
+    ...    | Capture And Verify Number of records From DB Table | employees | dbo | id | 150 |
+    ...
+    ...    *See also:*
+    ...    ``Row Count Should Be``, ``Validate Table Data Count``
     [Arguments]    ${table_name}    ${schema_name}    ${order_by_column}    ${expected_records_count}
 
     ${results}=    Select All From Table
@@ -2025,7 +3188,20 @@ Capture And Verify Number of records From DB Table
 # ==================== STORED PROCEDURE OPERATIONS ====================
 
 Create Stored Procedure
-    [Documentation]    Creates a stored procedure (syntax varies by database)
+    [Documentation]    Creates a stored procedure by executing the provided SQL body.
+    ...
+    ...    *Arguments:*
+    ...    - ``procedure_name``: Name of the procedure (used for logging)
+    ...    - ``procedure_body``: Complete ``CREATE PROCEDURE`` SQL statement
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Note:*
+    ...    Stored procedure syntax varies between database engines.
+    ...
+    ...    *Example:*
+    ...    | Create Stored Procedure | sp_cleanup | CREATE PROCEDURE sp_cleanup AS DELETE FROM staging WHERE processed = 1 |
     [Arguments]    ${procedure_name}    ${procedure_body}
 
     Log    Creating stored procedure: ${procedure_name}    console=yes
@@ -2034,7 +3210,17 @@ Create Stored Procedure
     RETURN    ${TRUE}
 
 Drop Stored Procedure
-    [Documentation]    Drops a stored procedure
+    [Documentation]    Drops a stored procedure from the database.
+    ...
+    ...    *Arguments:*
+    ...    - ``procedure_name``: Name of the procedure to drop
+    ...    - ``if_exists``: If TRUE, uses ``IF EXISTS`` clause (default: TRUE)
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Drop Stored Procedure | sp_cleanup |
     [Arguments]    ${procedure_name}    ${if_exists}=${TRUE}
 
     IF    ${if_exists}
@@ -2047,7 +3233,17 @@ Drop Stored Procedure
     RETURN    ${TRUE}
 
 Call Stored Procedure
-    [Documentation]    Calls a stored procedure with parameters
+    [Documentation]    Calls a stored procedure with the specified parameters.
+    ...
+    ...    *Arguments:*
+    ...    - ``procedure_name``: Name of the procedure to call
+    ...    - ``@{parameters}``: List of parameter values
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Call Stored Procedure | sp_process_batch | 2024 | Q1 |
     [Arguments]    ${procedure_name}    @{parameters}
 
     ${params}=    Evaluate    ', '.join(${parameters})
@@ -2060,7 +3256,16 @@ Call Stored Procedure
 # ==================== PERFORMANCE OPERATIONS ====================
 
 Analyze Table
-    [Documentation]    Analyzes table statistics for query optimization
+    [Documentation]    Runs ``ANALYZE TABLE`` to update table statistics for query optimization.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to analyze
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Example:*
+    ...    | Analyze Table | employees |
     [Arguments]    ${table_name}
 
     Execute Sql String    ANALYZE TABLE ${table_name}
@@ -2068,7 +3273,16 @@ Analyze Table
     RETURN    ${TRUE}
 
 Get Table Size
-    [Documentation]    Returns the approximate size of a table (database-specific)
+    [Documentation]    Returns the approximate size of a table as a row count.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to measure
+    ...
+    ...    *Returns:*
+    ...    - Row count (as a proxy for table size)
+    ...
+    ...    *Example:*
+    ...    | ${size}= | Get Table Size | employees |
     [Arguments]    ${table_name}
 
     ${count}=    Get Row Count    ${table_name}
