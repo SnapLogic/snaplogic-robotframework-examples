@@ -9,7 +9,7 @@
 
 Comprehensive guide for setting up and using the SAP mock server for SnapLogic pipeline testing.
 
-[View SAP Mock Server Guide (HTML)](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/%7B%7Bcookiecutter.primary_pipeline_name%7D%7D/docs/mockservices_decisions/sap-mock-server-guide.html)
+[View SAP Mock Server Guide (HTML)](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/mockservices_decisions/sap-mock-server-guide.html)
 
 ---
 
@@ -17,5 +17,5 @@ Comprehensive guide for setting up and using the SAP mock server for SnapLogic p
 
 Architecture decision record covering all options for locally emulating Snowflake DB for SnapLogic JDBC-based pipeline testing. Includes LocalStack, fakesnow, Go Emulator, Snowflake Trial, snowflake-vcrpy, DuckDB + SQLGlot, and a phased recommendation.
 
-[View Snowflake Emulation Research (HTML)](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/%7B%7Bcookiecutter.primary_pipeline_name%7D%7D/docs/mockservices_decisions/snowflake_emulation_research.html)
+[View Snowflake Emulation Research (HTML)](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/mockservices_decisions/snowflake_emulation_research.html)
 

@@ -7,8 +7,6 @@ include:
   - docker/sqlserver/docker-compose.sqlserver.yml
   - docker/mysql/docker-compose.mysql.yml
   - docker/db2/docker-compose.db2.yml
-  - docker/salesforce/docker-compose.salesforce-mock.yml
-  - docker/salesforce/docker-compose.salesforce-custom.yml
   - docker/salesforce/docker-compose.salesforce-django.yml
   - docker/kafka/docker-compose.kafka.yml
   - docker/email/docker-compose.email-mock.yml
