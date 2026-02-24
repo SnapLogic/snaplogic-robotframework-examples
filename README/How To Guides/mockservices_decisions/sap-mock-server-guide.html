@@ -553,8 +553,6 @@
                 <button class="tab-btn" data-tab="snaplogic-snaps" onclick="showTab('snaplogic-snaps')">SnapLogic SAP Snaps</button>
                 <button class="tab-btn blue-tab" data-tab="odata-urls" onclick="showTab('odata-urls')">OData URL Patterns</button>
                 <button class="tab-btn gray-tab" data-tab="mock-strategy" onclick="showTab('mock-strategy')">Mock Strategy</button>
-                <button class="tab-btn blue-tab" data-tab="jco-pyrfc" onclick="showTab('jco-pyrfc')">PyRFC vs JCo</button>
-                <button class="tab-btn purple-tab" data-tab="impl-plan" onclick="showTab('impl-plan')">Implementation Plan</button>
             </div>
         </div>
 
@@ -1443,13 +1441,140 @@ IDoc Database Tables (EDIDC, EDID4, EDIDS)</div>
                 <p>While Django alone cannot mock SAP RFC protocol, there <strong>are</strong> ways to mock SAP IDoc/BAPI snaps. Here are all the options, from easiest to most complex:</p>
 
                 <div class="info-box">
-                    <strong>Key insight:</strong> Instead of trying to mock SAP's proprietary binary protocol, the cleanest approach is to <strong>mock at the SnapLogic layer</strong> (Option 1) &mdash; capture a real IDoc response and replay it. For true RFC-level testing, the most promising path is <strong>Snap Mock Mode</strong> (Option 6) &mdash; intercept inside the snap at the XML layer before binary encoding, and redirect to a Django mock server. Raw TCP binary mocking (Option 3) is <strong>not viable</strong> because the RFC protocol is proprietary.
+                    <strong>Key insight:</strong> Instead of trying to mock SAP's proprietary binary protocol, the best approach is <strong>Snap Mock Mode</strong> (Option 1) &mdash; intercept inside the snap at the XML layer before binary encoding, and redirect to a Django mock server. For a quick win today, <strong>mock at the SnapLogic layer</strong> (Option 2) &mdash; capture a real IDoc response and replay it. Raw TCP binary mocking (Option 4) is <strong>not viable</strong> because the RFC protocol is proprietary.
                 </div>
             </div>
 
-            <!-- Option 1: Mock at SnapLogic Layer (RECOMMENDED) -->
+            <!-- Option 1: Snap Mock Mode (RECOMMENDED) -->
             <div class="data-section">
-                <h2>Option 1: Mock at the SnapLogic Layer <span class="badge">Recommended</span></h2>
+                <h2>Option 1: Snap Mock Mode (Intercept Inside the Snap) <span class="badge" style="background:#8e24aa;">Recommended</span></h2>
+
+                <p>Instead of mocking the server at the other end of the network, <strong>change the snap code itself</strong> to run in a "mock mode." When the snap is in mock mode, it intercepts the data <strong>before</strong> it gets serialized to binary RFC and redirects it to something we can talk to (HTTP/JMS/in-process).</p>
+
+                <div class="info-box" style="background:#f3e5f5; border-left-color:#8e24aa;">
+                    <strong>Key insight:</strong> With all our other mocks (Salesforce, NetSuite, etc.), the snap is unchanged &mdash; it reaches across the network normally, and we just replace what's at the other end. With SAP RFC snaps, you <strong>can't</strong> replace what's at the other end (proprietary binary). So instead, you modify the snap itself to create an alternate path.
+                </div>
+
+                <h3>How It Works</h3>
+
+                <div class="code-block">
+<span class="label">NORMAL MODE (production):</span>
+<span class="dim">─────────────────────────────────────────────────────────────────</span>
+  SAP IDoc Snap
+       <span class="dim">|</span>
+       <span class="dim">v</span>  Internal: builds XML representation of RFC call
+       <span class="dim">|</span>
+       <span class="dim">v</span>  JCo serializes XML → <span class="danger">proprietary binary</span>
+       <span class="dim">|</span>
+       <span class="dim">v</span>  Sends binary over TCP port 3300
+       <span class="dim">|</span>
+       <span class="dim">v</span>
+    <span class="dim">Real SAP System</span>
+
+
+<span class="label">MOCK MODE (testing):</span>
+<span class="dim">─────────────────────────────────────────────────────────────────</span>
+  SAP IDoc Snap  <span class="match">(running with MOCK_MODE=true)</span>
+       <span class="dim">|</span>
+       <span class="dim">v</span>  Internal: builds XML representation of RFC call
+       <span class="dim">|</span>
+       <span class="dim">v</span>  <span class="success">INTERCEPT HERE! XML is clean, structured, readable</span>
+       <span class="dim">|</span>
+       <span class="dim">v</span>  Instead of JCo binary serialization,
+       <span class="dim">|</span>  redirect the XML to an HTTP endpoint
+       <span class="dim">v</span>
+    <span class="match">Django Mock Server (port 8080)</span>  ← <span class="success">We know how to build this!</span>
+       <span class="dim">|</span>
+       <span class="dim">v</span>  Django receives XML, does CRUD on in-memory database,
+       <span class="dim">|</span>  returns XML response
+       <span class="dim">v</span>
+    Snap receives response as if from SAP</div>
+
+                <h3>Why This Works</h3>
+
+                <p>Right before the data hits the network and gets serialized to binary, <strong>everything is clean, structured XML</strong>. The XML contains the function name, all parameters, and all data in a readable format. If the snap can be modified to redirect this XML to an HTTP endpoint instead of the JCo binary path, then the entire problem reduces to <strong>HTTP/XML mocking &mdash; which we already know how to do with Django</strong>.</p>
+
+                <div class="code-block">
+<span class="label">The XML representation (what exists INSIDE the snap before binary):</span>
+<span class="dim">─────────────────────────────────────────────────────────────────</span>
+
+<span class="string">&lt;RFC name="IDOC_INBOUND_ASYNCHRONOUS"&gt;</span>
+  <span class="string">&lt;IMPORTING&gt;</span>
+    <span class="string">&lt;IDOC_CONTROL_REC_40&gt;</span>
+      <span class="string">&lt;DOCNUM&gt;</span>0000000012345<span class="string">&lt;/DOCNUM&gt;</span>
+      <span class="string">&lt;IDOCTP&gt;</span>ORDERS05<span class="string">&lt;/IDOCTP&gt;</span>
+      <span class="string">&lt;MESTYP&gt;</span>ORDERS<span class="string">&lt;/MESTYP&gt;</span>
+    <span class="string">&lt;/IDOC_CONTROL_REC_40&gt;</span>
+  <span class="string">&lt;/IMPORTING&gt;</span>
+  <span class="string">&lt;TABLES&gt;</span>
+    <span class="string">&lt;IDOC_DATA_REC_40&gt;</span>
+      <span class="string">&lt;item&gt;</span>
+        <span class="string">&lt;SEGNAM&gt;</span>E1EDK01<span class="string">&lt;/SEGNAM&gt;</span>
+        <span class="string">&lt;SDATA&gt;</span>...<span class="string">&lt;/SDATA&gt;</span>
+      <span class="string">&lt;/item&gt;</span>
+    <span class="string">&lt;/IDOC_DATA_REC_40&gt;</span>
+  <span class="string">&lt;/TABLES&gt;</span>
+<span class="string">&lt;/RFC&gt;</span>
+
+<span class="success">This is readable! This is mockable! This is what Django can handle!</span></div>
+
+                <h3>What Needs to Happen</h3>
+
+                <div class="flow-step">
+                    <div class="flow-number">1</div>
+                    <div class="flow-content">
+                        <h4>Snaps team adds "mock mode" to SAP snaps</h4>
+                        <p>A configuration flag (e.g., <code>MOCK_MODE=true</code> or an account property) that tells the snap to redirect RFC calls to an HTTP endpoint instead of the JCo binary path.</p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number blue">2</div>
+                    <div class="flow-content">
+                        <h4>Snap sends XML to Django mock server</h4>
+                        <p>Instead of <code>JCoFunction.execute(destination)</code>, the snap serializes the function call as XML/JSON and POSTs it to <code>http://mock-server:8080/rfc/IDOC_INBOUND_ASYNCHRONOUS</code>.</p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number purple">3</div>
+                    <div class="flow-content">
+                        <h4>Django mock server handles it like any other mock</h4>
+                        <p>The Django server receives the XML/JSON, routes it to a CRUD handler, stores data in the in-memory database, and returns a response. Same pattern as Salesforce mock &mdash; just different input format (XML instead of JSON).</p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number" style="background:#e74c3c;">4</div>
+                    <div class="flow-content">
+                        <h4>Robot Framework tests work the same way</h4>
+                        <p>Tests trigger pipelines, pipelines talk to Django mock, tests validate via admin API. Identical workflow to Salesforce mock testing.</p>
+                    </div>
+                </div>
+
+                <h3>GroundPlex / JCC Consideration</h3>
+
+                <p>The GroundPlex JCC (Java Container Controller) already has a <strong>built-in web server</strong>. In mock mode, Robot Framework could potentially talk to this built-in endpoint to inspect mocked data, without needing a separate Django container. This is worth exploring with the Snaps team.</p>
+
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Pros</th><th>Cons</th></tr></thead>
+                        <tbody>
+                            <tr><td style="color:#27ae60;">Solves the binary protocol problem completely &mdash; intercepts before binary</td><td><strong>Requires Snaps team to modify snap code</strong></td></tr>
+                            <tr><td style="color:#27ae60;">Mock server side is pure Django/HTTP &mdash; same pattern as Salesforce</td><td>Need buy-in from Snaps team (historically resistant)</td></tr>
+                            <tr><td style="color:#27ae60;">XML data is clean, readable, structured &mdash; easy to parse</td><td>Mock mode code must be maintained alongside production snap code</td></tr>
+                            <tr><td style="color:#27ae60;">Can prove what the snap "put on the wire" without leaving the network</td><td>Only works for SnapLogic &mdash; not reusable for other SAP clients</td></tr>
+                            <tr><td style="color:#27ae60;">Could work for ANY snap, not just SAP (general mock mode pattern)</td><td>Requires coordination between QA and Snaps engineering teams</td></tr>
+                            <tr><td style="color:#27ae60;">No SAP infrastructure needed at all</td><td>&mdash;</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="info-box" style="background:#f3e5f5; border-left-color:#8e24aa;">
+                    <strong>Why this is powerful:</strong> If the Snaps team adds mock mode to SAP snaps, the same pattern can be applied to <strong>every snap in SnapLogic</strong>. Every snap is just making an API call behind the scenes. Mock mode redirects that call to a Django endpoint. One pattern to mock them all. This is the long-term vision &mdash; a coding-agent-assisted approach where we can build mocks for any snap rapidly.
+                </div>
+            </div>
+
+            <!-- Option 2: Mock at SnapLogic Layer -->
+            <div class="data-section">
+                <h2>Option 2: Mock at the SnapLogic Layer <span class="badge">Quick Win</span></h2>
 
                 <p>Instead of mocking the SAP protocol, <strong>mock the output of the SAP IDoc Snap</strong>. This is the cleanest approach for Robot Framework automation, CI pipelines, and local testing.</p>
 
@@ -1573,9 +1698,9 @@ IDoc Database Tables (EDIDC, EDID4, EDIDS)</div>
                 </div>
             </div>
 
-            <!-- Option 2: PyRFC Smart Mock -->
+            <!-- Option 3: PyRFC Smart Mock -->
             <div class="data-section">
-                <h2>Option 2: PyRFC Smart Mock Server (Python) <span class="badge blue">Advanced</span></h2>
+                <h2>Option 3: PyRFC Smart Mock Server (Python) <span class="badge blue">Advanced</span></h2>
 
                 <p><strong>PyRFC</strong> is an open-source Python library that wraps SAP's C-based RFC SDK. It can work in <strong>server mode</strong> &mdash; listening for incoming RFC calls. We build it as a <strong>stateful smart mock</strong> with an in-memory database, exactly like our Salesforce Django mock server.</p>
 
@@ -1866,9 +1991,9 @@ server.<span class="function">serve</span>()</div>
                 </div>
             </div>
 
-            <!-- Option 3: Raw TCP RFC Mock Server — NOT VIABLE -->
+            <!-- Option 4: Raw TCP RFC Mock Server — NOT VIABLE -->
             <div class="data-section">
-                <h2>Option 3: Raw TCP RFC Mock Server (Python) <span class="badge" style="background:#95a5a6;">Not Viable</span></h2>
+                <h2>Option 4: Raw TCP RFC Mock Server (Python) <span class="badge" style="background:#95a5a6;">Not Viable</span></h2>
 
                 <p><strong>Original idea:</strong> Build a pure Python TCP socket server that speaks the RFC binary protocol directly on port 3300, with no SAP dependencies at all.</p>
 
@@ -1911,7 +2036,7 @@ server.<span class="function">serve</span>()</div>
                 <p>There <strong>is</strong> an XML representation of RFC data. Right before data hits the network and gets serialized to binary, it exists as clean, structured XML. This is used internally by middleware like Apache Camel's SAP component. However:</p>
 
                 <div class="info-box" style="background:#fff8e1; border-left-color:#f57f17;">
-                    <strong>The XML exists inside the JCo/SDK library</strong> &mdash; there is no external interception point. The XML &rarr; binary conversion happens within the NW RFC SDK C library itself. You cannot hook into this layer from outside the snap. This is why Option 3 (Snap Mock Mode) takes a different approach &mdash; intercepting <strong>inside</strong> the snap before the binary encoding happens.
+                    <strong>The XML exists inside the JCo/SDK library</strong> &mdash; there is no external interception point. The XML &rarr; binary conversion happens within the NW RFC SDK C library itself. You cannot hook into this layer from outside the snap. This is why Option 1 (Snap Mock Mode) takes a different approach &mdash; intercepting <strong>inside</strong> the snap before the binary encoding happens.
                 </div>
 
                 <h3>Existing Tools That Were Explored</h3>
@@ -1934,7 +2059,7 @@ server.<span class="function">serve</span>()</div>
                 </div>
 
                 <div class="info-box" style="background:#f5f5f5; border-left-color:#95a5a6;">
-                    <strong>Conclusion:</strong> No free, open-source tool exists that can mock SAP's binary RFC protocol. The only commercial option (Broadcom DevTest) is cost-prohibitive. This confirms that for RFC-level SAP snaps, you need a different approach entirely &mdash; either mock at the SnapLogic layer (Option 1) or intercept inside the snap before binary encoding (Option 3 below).
+                    <strong>Conclusion:</strong> No free, open-source tool exists that can mock SAP's binary RFC protocol. The only commercial option (Broadcom DevTest) is cost-prohibitive. This confirms that for RFC-level SAP snaps, you need a different approach entirely &mdash; either intercept inside the snap before binary encoding (Option 1) or mock at the SnapLogic layer (Option 2).
                 </div>
 
                 <h3>For SAP OData Snaps &mdash; Plenty of Options</h3>
@@ -1954,9 +2079,9 @@ server.<span class="function">serve</span>()</div>
                 </div>
             </div>
 
-            <!-- Option 4: JCo Server -->
+            <!-- Option 5: JCo Server -->
             <div class="data-section">
-                <h2>Option 4: JCo Server (Java) <span class="badge blue">Alternative</span></h2>
+                <h2>Option 5: JCo Server (Java) <span class="badge blue">Alternative</span></h2>
 
                 <p>SAP JCo has a built-in <strong>Server mode</strong> &mdash; a Java program that registers as an RFC destination and responds to incoming calls.</p>
 
@@ -1982,9 +2107,9 @@ server.<span class="function">serve</span>()</div>
                 </div>
             </div>
 
-            <!-- Option 5: WebSocket RFC -->
+            <!-- Option 6: WebSocket RFC -->
             <div class="data-section">
-                <h2>Option 5: WebSocket RFC (Future) <span class="badge purple">Experimental</span></h2>
+                <h2>Option 6: WebSocket RFC (Future) <span class="badge purple">Experimental</span></h2>
 
                 <p>SAP has introduced <strong>WebSocket RFC</strong> &mdash; RFC calls tunneled over HTTP/WebSocket. If SnapLogic snaps support WebSocket RFC, we could potentially mock with a Python WebSocket server.</p>
 
@@ -2010,133 +2135,6 @@ server.<span class="function">serve</span>()</div>
 
                 <div class="info-box purple">
                     <strong>Verdict:</strong> Unlikely to work today, but worth watching for the future as SAP modernizes.
-                </div>
-            </div>
-
-            <!-- Option 6: Snap Mock Mode -->
-            <div class="data-section">
-                <h2>Option 6: Snap Mock Mode (Intercept Inside the Snap) <span class="badge" style="background:#8e24aa;">Requires Snap Team</span></h2>
-
-                <p>Instead of mocking the server at the other end of the network, <strong>change the snap code itself</strong> to run in a "mock mode." When the snap is in mock mode, it intercepts the data <strong>before</strong> it gets serialized to binary RFC and redirects it to something we can talk to (HTTP/JMS/in-process).</p>
-
-                <div class="info-box" style="background:#f3e5f5; border-left-color:#8e24aa;">
-                    <strong>Key insight:</strong> With all our other mocks (Salesforce, NetSuite, etc.), the snap is unchanged &mdash; it reaches across the network normally, and we just replace what's at the other end. With SAP RFC snaps, you <strong>can't</strong> replace what's at the other end (proprietary binary). So instead, you modify the snap itself to create an alternate path.
-                </div>
-
-                <h3>How It Works</h3>
-
-                <div class="code-block">
-<span class="label">NORMAL MODE (production):</span>
-<span class="dim">─────────────────────────────────────────────────────────────────</span>
-  SAP IDoc Snap
-       <span class="dim">|</span>
-       <span class="dim">v</span>  Internal: builds XML representation of RFC call
-       <span class="dim">|</span>
-       <span class="dim">v</span>  JCo serializes XML → <span class="danger">proprietary binary</span>
-       <span class="dim">|</span>
-       <span class="dim">v</span>  Sends binary over TCP port 3300
-       <span class="dim">|</span>
-       <span class="dim">v</span>
-    <span class="dim">Real SAP System</span>
-
-
-<span class="label">MOCK MODE (testing):</span>
-<span class="dim">─────────────────────────────────────────────────────────────────</span>
-  SAP IDoc Snap  <span class="match">(running with MOCK_MODE=true)</span>
-       <span class="dim">|</span>
-       <span class="dim">v</span>  Internal: builds XML representation of RFC call
-       <span class="dim">|</span>
-       <span class="dim">v</span>  <span class="success">INTERCEPT HERE! XML is clean, structured, readable</span>
-       <span class="dim">|</span>
-       <span class="dim">v</span>  Instead of JCo binary serialization,
-       <span class="dim">|</span>  redirect the XML to an HTTP endpoint
-       <span class="dim">v</span>
-    <span class="match">Django Mock Server (port 8080)</span>  ← <span class="success">We know how to build this!</span>
-       <span class="dim">|</span>
-       <span class="dim">v</span>  Django receives XML, does CRUD on in-memory database,
-       <span class="dim">|</span>  returns XML response
-       <span class="dim">v</span>
-    Snap receives response as if from SAP</div>
-
-                <h3>Why This Works</h3>
-
-                <p>Right before the data hits the network and gets serialized to binary, <strong>everything is clean, structured XML</strong>. The XML contains the function name, all parameters, and all data in a readable format. If the snap can be modified to redirect this XML to an HTTP endpoint instead of the JCo binary path, then the entire problem reduces to <strong>HTTP/XML mocking &mdash; which we already know how to do with Django</strong>.</p>
-
-                <div class="code-block">
-<span class="label">The XML representation (what exists INSIDE the snap before binary):</span>
-<span class="dim">─────────────────────────────────────────────────────────────────</span>
-
-<span class="string">&lt;RFC name="IDOC_INBOUND_ASYNCHRONOUS"&gt;</span>
-  <span class="string">&lt;IMPORTING&gt;</span>
-    <span class="string">&lt;IDOC_CONTROL_REC_40&gt;</span>
-      <span class="string">&lt;DOCNUM&gt;</span>0000000012345<span class="string">&lt;/DOCNUM&gt;</span>
-      <span class="string">&lt;IDOCTP&gt;</span>ORDERS05<span class="string">&lt;/IDOCTP&gt;</span>
-      <span class="string">&lt;MESTYP&gt;</span>ORDERS<span class="string">&lt;/MESTYP&gt;</span>
-    <span class="string">&lt;/IDOC_CONTROL_REC_40&gt;</span>
-  <span class="string">&lt;/IMPORTING&gt;</span>
-  <span class="string">&lt;TABLES&gt;</span>
-    <span class="string">&lt;IDOC_DATA_REC_40&gt;</span>
-      <span class="string">&lt;item&gt;</span>
-        <span class="string">&lt;SEGNAM&gt;</span>E1EDK01<span class="string">&lt;/SEGNAM&gt;</span>
-        <span class="string">&lt;SDATA&gt;</span>...<span class="string">&lt;/SDATA&gt;</span>
-      <span class="string">&lt;/item&gt;</span>
-    <span class="string">&lt;/IDOC_DATA_REC_40&gt;</span>
-  <span class="string">&lt;/TABLES&gt;</span>
-<span class="string">&lt;/RFC&gt;</span>
-
-<span class="success">This is readable! This is mockable! This is what Django can handle!</span></div>
-
-                <h3>What Needs to Happen</h3>
-
-                <div class="flow-step">
-                    <div class="flow-number">1</div>
-                    <div class="flow-content">
-                        <h4>Snaps team adds "mock mode" to SAP snaps</h4>
-                        <p>A configuration flag (e.g., <code>MOCK_MODE=true</code> or an account property) that tells the snap to redirect RFC calls to an HTTP endpoint instead of the JCo binary path.</p>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number blue">2</div>
-                    <div class="flow-content">
-                        <h4>Snap sends XML to Django mock server</h4>
-                        <p>Instead of <code>JCoFunction.execute(destination)</code>, the snap serializes the function call as XML/JSON and POSTs it to <code>http://mock-server:8080/rfc/IDOC_INBOUND_ASYNCHRONOUS</code>.</p>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number purple">3</div>
-                    <div class="flow-content">
-                        <h4>Django mock server handles it like any other mock</h4>
-                        <p>The Django server receives the XML/JSON, routes it to a CRUD handler, stores data in the in-memory database, and returns a response. Same pattern as Salesforce mock &mdash; just different input format (XML instead of JSON).</p>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number" style="background:#e74c3c;">4</div>
-                    <div class="flow-content">
-                        <h4>Robot Framework tests work the same way</h4>
-                        <p>Tests trigger pipelines, pipelines talk to Django mock, tests validate via admin API. Identical workflow to Salesforce mock testing.</p>
-                    </div>
-                </div>
-
-                <h3>GroundPlex / JCC Consideration</h3>
-
-                <p>The GroundPlex JCC (Java Container Controller) already has a <strong>built-in web server</strong>. In mock mode, Robot Framework could potentially talk to this built-in endpoint to inspect mocked data, without needing a separate Django container. This is worth exploring with the Snaps team.</p>
-
-                <div class="table-container">
-                    <table>
-                        <thead><tr><th>Pros</th><th>Cons</th></tr></thead>
-                        <tbody>
-                            <tr><td style="color:#27ae60;">Solves the binary protocol problem completely &mdash; intercepts before binary</td><td><strong>Requires Snaps team to modify snap code</strong></td></tr>
-                            <tr><td style="color:#27ae60;">Mock server side is pure Django/HTTP &mdash; same pattern as Salesforce</td><td>Need buy-in from Snaps team (historically resistant)</td></tr>
-                            <tr><td style="color:#27ae60;">XML data is clean, readable, structured &mdash; easy to parse</td><td>Mock mode code must be maintained alongside production snap code</td></tr>
-                            <tr><td style="color:#27ae60;">Can prove what the snap "put on the wire" without leaving the network</td><td>Only works for SnapLogic &mdash; not reusable for other SAP clients</td></tr>
-                            <tr><td style="color:#27ae60;">Could work for ANY snap, not just SAP (general mock mode pattern)</td><td>Requires coordination between QA and Snaps engineering teams</td></tr>
-                            <tr><td style="color:#27ae60;">No SAP infrastructure needed at all</td><td>&mdash;</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="info-box" style="background:#f3e5f5; border-left-color:#8e24aa;">
-                    <strong>Why this is powerful:</strong> If the Snaps team adds mock mode to SAP snaps, the same pattern can be applied to <strong>every snap in SnapLogic</strong>. Every snap is just making an API call behind the scenes. Mock mode redirects that call to a Django endpoint. One pattern to mock them all. This is the long-term vision &mdash; a coding-agent-assisted approach where we can build mocks for any snap rapidly.
                 </div>
             </div>
 
@@ -2231,53 +2229,53 @@ rfc_thread.start()
                             </tr>
                         </thead>
                         <tbody>
-                            <tr style="background:#f0fff0;">
+                            <tr style="background:#f3e5f5;">
                                 <td><strong>★</strong></td>
-                                <td><strong>Mock at SnapLogic Layer</strong> (Option 1)</td>
+                                <td><strong>Snap Mock Mode</strong> (Option 1)</td>
+                                <td>Java + Python</td>
+                                <td style="color:#e67e22; font-weight:bold;">Medium</td>
+                                <td>Intercept inside snap before binary &mdash; mock with Django</td>
+                                <td><span class="status-badge partial">Needs Snaps Team</span></td>
+                            </tr>
+                            <tr style="background:#f0fff0;">
+                                <td><strong>2</strong></td>
+                                <td><strong>Mock at SnapLogic Layer</strong> (Option 2)</td>
                                 <td>SnapLogic</td>
                                 <td style="color:#27ae60; font-weight:bold;">Very Low</td>
-                                <td>90% of testing value, 10% of effort</td>
+                                <td>90% of testing value, 10% of effort &mdash; quick win today</td>
                                 <td><span class="status-badge yes">YES</span></td>
                             </tr>
                             <tr>
-                                <td><strong>2</strong></td>
-                                <td><strong>PyRFC Smart Mock</strong> (Option 2)</td>
+                                <td><strong>3</strong></td>
+                                <td><strong>PyRFC Smart Mock</strong> (Option 3)</td>
                                 <td>Python</td>
                                 <td style="color:#e67e22; font-weight:bold;">Medium</td>
                                 <td>Stateful CRUD mock, same as Salesforce pattern</td>
                                 <td><span class="status-badge partial">Needs SDK + Gateway</span></td>
                             </tr>
                             <tr style="background:#fff0f0;">
-                                <td><s>3</s></td>
-                                <td><s><strong>Raw TCP RFC Mock</strong> (Option 3)</s></td>
+                                <td><s>4</s></td>
+                                <td><s><strong>Raw TCP RFC Mock</strong> (Option 4)</s></td>
                                 <td>Python</td>
                                 <td style="color:#95a5a6; font-weight:bold;">N/A</td>
                                 <td style="color:#95a5a6;">Not viable &mdash; can't reverse-engineer proprietary binary</td>
                                 <td><span class="status-badge no">NOT VIABLE</span></td>
                             </tr>
                             <tr>
-                                <td><strong>4</strong></td>
-                                <td><strong>JCo Server</strong> (Option 4)</td>
+                                <td><strong>5</strong></td>
+                                <td><strong>JCo Server</strong> (Option 5)</td>
                                 <td>Java</td>
                                 <td style="color:#e74c3c; font-weight:bold;">High</td>
                                 <td>Most stable but different language</td>
                                 <td><span class="status-badge partial">Needs JCo + Gateway</span></td>
                             </tr>
                             <tr>
-                                <td><strong>5</strong></td>
-                                <td><strong>WebSocket RFC</strong> (Option 5)</td>
+                                <td><strong>6</strong></td>
+                                <td><strong>WebSocket RFC</strong> (Option 6)</td>
                                 <td>Python</td>
                                 <td style="color:#e74c3c; font-weight:bold;">Unknown</td>
                                 <td>Future possibility</td>
                                 <td><span class="status-badge no">NO</span></td>
-                            </tr>
-                            <tr style="background:#f3e5f5;">
-                                <td><strong>6</strong></td>
-                                <td><strong>Snap Mock Mode</strong> (Option 6)</td>
-                                <td>Java + Python</td>
-                                <td style="color:#e67e22; font-weight:bold;">Medium</td>
-                                <td>Intercept inside snap before binary &mdash; mock with Django</td>
-                                <td><span class="status-badge partial">Needs Snaps Team</span></td>
                             </tr>
                             <tr>
                                 <td><strong>7</strong></td>
@@ -2293,10 +2291,10 @@ rfc_thread.start()
 
                 <div class="info-box">
                     <strong>Practical next steps:</strong><br>
-                    <strong>1. Right now:</strong> Use <strong>Option 1 (Mock at SnapLogic Layer)</strong> &mdash; capture real IDoc responses as JSON, or bypass the SAP snap with a JSON Generator/Parser. Zero setup, works immediately. This gives you 90% of testing value.<br>
-                    <strong>2. Long-term (best approach):</strong> Push for <strong>Option 6 (Snap Mock Mode)</strong> &mdash; Snaps team adds mock mode to SAP snaps, intercepting at the XML layer before binary encoding. Django mock server handles the rest. This pattern can extend to <strong>every snap in SnapLogic</strong>.<br>
+                    <strong>1. Right now:</strong> Use <strong>Option 2 (Mock at SnapLogic Layer)</strong> &mdash; capture real IDoc responses as JSON, or bypass the SAP snap with a JSON Generator/Parser. Zero setup, works immediately. This gives you 90% of testing value.<br>
+                    <strong>2. Long-term (best approach):</strong> Push for <strong>Option 1 (Snap Mock Mode)</strong> &mdash; Snaps team adds mock mode to SAP snaps, intercepting at the XML layer before binary encoding. Django mock server handles the rest. This pattern can extend to <strong>every snap in SnapLogic</strong>.<br>
                     <strong>3. For OData snaps:</strong> Multiple free tools exist today &mdash; our Django mock, SAP CAP Mock Server, SAP FE MockServer, WireMock. OData is HTTP-based, so <strong>no special handling needed</strong>.<br>
-                    <strong>4. Not viable:</strong> <s>Option 3 (Raw TCP)</s> &mdash; RFC binary is proprietary and cannot be reverse-engineered. Options 2, 4, and 7 all require SAP Gateway infrastructure. The only commercial tool for RFC mocking (Broadcom DevTest) is cost-prohibitive.
+                    <strong>4. Not viable:</strong> <s>Option 4 (Raw TCP)</s> &mdash; RFC binary is proprietary and cannot be reverse-engineered. Options 3, 5, and 7 all require SAP Gateway infrastructure. The only commercial tool for RFC mocking (Broadcom DevTest) is cost-prohibitive.
                 </div>
             </div>
         </div>
@@ -2753,1181 +2751,6 @@ https://<span class="match">sap-mock:8443</span><span class="url-fixed">/sap/opu
                     <strong>3.</strong> IDoc/BAPI mocking: <strong>PyRFC Server</strong> (Python) is the recommended approach. Requires SAP NW RFC SDK &mdash; check licensing for dev/test use.<br>
                     <strong>4.</strong> Quick win for IDoc testing: Use <strong>Pipeline Bypass</strong> &mdash; replace SAP snap with JSON Generator containing mock IDoc output.<br>
                     <strong>5.</strong> Long-term: <strong>PyRFC + Django Hybrid</strong> gives a unified mock service for ALL protocols (HTTP + RFC) in one container.
-                </div>
-            </div>
-        </div>
-
-        <!-- ═══════════════════════════════════════════════════════════════
-             TAB 11: JCo ↔ PyRFC COMPATIBILITY
-             ═══════════════════════════════════════════════════════════════ -->
-        <div id="jco-pyrfc" class="tab-content">
-            <div class="data-section">
-                <h2>PyRFC vs JCo &mdash; Compatibility &amp; Comparison <span class="badge blue">Key Question Answered</span></h2>
-
-                <div class="info-box" style="background:#e8f5e9; border-left-color:#27ae60;">
-                    <strong>Question:</strong> SnapLogic's SAP snaps use JCo (Java) internally. Can our PyRFC (Python) mock server still work?<br><br>
-                    <strong>Answer: YES!</strong> JCo and PyRFC both speak the <strong>same RFC protocol</strong> over the wire. A JCo client talking to a PyRFC server is no different from a JCo client talking to a real SAP ABAP server.
-                </div>
-
-                <h3>Why JCo Client ↔ PyRFC Server Works</h3>
-                <p>Both JCo and PyRFC are just <strong>wrappers around the same underlying C library</strong> (SAP NW RFC SDK). They produce <strong>identical binary RFC protocol</strong> on the wire:</p>
-
-                <div class="code-block">
-<span class="label">Both libraries wrap the SAME C engine:</span>
-
-  <span class="warn">JCo (Java Connector)</span>                      <span class="success">PyRFC (Python Connector)</span>
-  Used by: <span class="variable">SnapLogic</span> (client)                Used by: <span class="variable">Our Mock Server</span> (server)
-       <span class="dim">│</span>                                              <span class="dim">│</span>
-       <span class="dim">v</span>                                              <span class="dim">v</span>
-  <span class="dim">┌──────────────────────┐</span>                    <span class="dim">┌──────────────────────┐</span>
-  <span class="dim">│</span> Java Native Interface<span class="dim">│</span>                    <span class="dim">│</span> Python C Extension   <span class="dim">│</span>
-  <span class="dim">│</span> (JNI bridge)         <span class="dim">│</span>                    <span class="dim">│</span> (ctypes/cffi bridge) <span class="dim">│</span>
-  <span class="dim">└──────────┬───────────┘</span>                    <span class="dim">└──────────┬───────────┘</span>
-             <span class="dim">│</span>                                              <span class="dim">│</span>
-             <span class="dim">v</span>                                              <span class="dim">v</span>
-       <span class="match">┌───────────────────────────────────────────────────┐</span>
-       <span class="match">│        SAP NW RFC SDK (C library)                  │</span>
-       <span class="match">│        ═══════════════════════════                  │</span>
-       <span class="match">│        Same C code. Same binary protocol.           │</span>
-       <span class="match">│        Same wire format. Same everything.            │</span>
-       <span class="match">└───────────────────────┬───────────────────────────┘</span>
-                               <span class="dim">│</span>
-                               <span class="dim">v</span>
-                    <span class="variable">RFC Binary Protocol over TCP</span>
-                    <span class="variable">Port 3300-3399</span>
-
-<span class="success">═══════════════════════════════════════════════════════════</span>
-<span class="success">JCo and PyRFC produce IDENTICAL bytes on the wire.</span>
-<span class="success">The SAP server (or mock) cannot tell which library sent it.</span>
-<span class="success">═══════════════════════════════════════════════════════════</span></div>
-
-                <h3>HTTP Analogy &mdash; Same Concept, Already Proven</h3>
-                <p>This is exactly the same as what we already do with Salesforce:</p>
-
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr><th></th><th>Salesforce Mock (working today)</th><th>SAP PyRFC Mock (same concept)</th></tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><strong>SnapLogic uses</strong></td>
-                                <td>Java HTTP client (internally)</td>
-                                <td>JCo &mdash; Java RFC client (internally)</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Our mock uses</strong></td>
-                                <td>Python Django (HTTP server)</td>
-                                <td>Python PyRFC (RFC server)</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Protocol on wire</strong></td>
-                                <td>HTTP &mdash; same regardless of language</td>
-                                <td>RFC &mdash; same regardless of language</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Does it work?</strong></td>
-                                <td style="color:#27ae60; font-weight:bold;">YES &mdash; Java client ↔ Python server</td>
-                                <td style="color:#27ae60; font-weight:bold;">YES &mdash; Java client ↔ Python server</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Why it works</strong></td>
-                                <td>HTTP is HTTP, doesn't matter who sends it</td>
-                                <td>RFC is RFC, doesn't matter who sends it</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="info-box" style="background:#e3f2fd; border-left-color:#1976d2;">
-                    <strong>Think of it like phone calls:</strong> It doesn't matter if you're calling from an iPhone (JCo/Java) or an Android phone (PyRFC/Python) &mdash; the cellular network protocol is the same. The person on the other end can't tell which phone you used.
-                </div>
-
-                <h3>Account Validation &mdash; Step by Step</h3>
-                <p>When SnapLogic validates a SAP account, the SAP snap does the following. <strong>PyRFC in server mode handles all of these:</strong></p>
-
-                <div class="code-block">
-<span class="label">SnapLogic SAP Account Validation Flow:</span>
-
-  <span class="dim">Step 1:</span> <span class="variable">TCP Connect</span> to SAP host on port 33xx
-          SnapLogic (JCo):  TCP SYN to port 3300
-          PyRFC Mock:       <span class="success">✅ Listening on port 3300, accepts connection</span>
-
-  <span class="dim">Step 2:</span> <span class="variable">Authenticate</span> with SysID, Client, User, Password
-          SnapLogic (JCo):  Sends credentials via RFC handshake
-          PyRFC Mock:       <span class="success">✅ Accepts ANY credentials (like Salesforce OAuth mock)</span>
-
-  <span class="dim">Step 3:</span> <span class="variable">Test Call</span> — RFC_PING or RFC_SYSTEM_INFO
-          SnapLogic (JCo):  Calls RFC_PING to verify connectivity
-          PyRFC Mock:       <span class="success">✅ Returns success response</span>
-
-  <span class="dim">Step 4:</span> <span class="variable">Result</span>
-          SnapLogic:        <span class="success">✅ Account validated successfully!</span></div>
-
-                <h3>SAP Account Configuration &mdash; Real vs Mock</h3>
-                <p>The only thing that changes is the <strong>Application Server</strong> hostname &mdash; everything else stays the same:</p>
-
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr><th>SAP Account Parameter</th><th>Real SAP Value</th><th>Mock Server Value</th></tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><strong>Application Server</strong></td>
-                                <td><code>sap-prod.company.com</code></td>
-                                <td><code>sap-mock-server</code> <span class="comment">(Docker container name)</span></td>
-                            </tr>
-                            <tr>
-                                <td><strong>System Number</strong></td>
-                                <td><code>00</code></td>
-                                <td><code>00</code> (same)</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Client</strong></td>
-                                <td><code>100</code></td>
-                                <td><code>100</code> (same)</td>
-                            </tr>
-                            <tr>
-                                <td><strong>User</strong></td>
-                                <td><code>SNAP_USER</code></td>
-                                <td><code>MOCK_USER</code> (accepts anything)</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Password</strong></td>
-                                <td><code>realPassword</code></td>
-                                <td><code>anything</code> (accepts anything)</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Language</strong></td>
-                                <td><code>EN</code></td>
-                                <td><code>EN</code> (same)</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="code-block">
-<span class="label">Salesforce Account (what we do today):</span>
-<span class="dim">─────────────────────────────────────────────────────────</span>
-  Real:  Login URL = <span class="danger">https://login.salesforce.com</span>
-  Mock:  Login URL = <span class="success">https://salesforce-api-mock:8443</span>
-                     <span class="dim">^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>
-                     <span class="comment">Just change the hostname!</span>
-
-<span class="label">SAP Account (same approach):</span>
-<span class="dim">─────────────────────────────────────────────────────────</span>
-  Real:  App Server = <span class="danger">sap-prod.company.com</span>
-  Mock:  App Server = <span class="success">sap-mock-server</span>
-                      <span class="dim">^^^^^^^^^^^^^^^</span>
-                      <span class="comment">Just change the hostname!</span></div>
-
-                <h3>Docker Compose &mdash; SAP Mock Server</h3>
-                <div class="code-label">docker-compose.yml — SAP PyRFC Mock alongside Salesforce Mock</div>
-                <div class="code-block">
-<span class="keyword">services:</span>
-
-  <span class="comment"># Salesforce mock (already working)</span>
-  <span class="match">salesforce-api-mock:</span>
-    build: ./docker/salesforce/django-server
-    ports:
-      - <span class="string">"8080:8080"</span>     <span class="comment"># HTTP</span>
-      - <span class="string">"8443:8443"</span>     <span class="comment"># HTTPS</span>
-
-  <span class="comment"># SAP RFC mock (new — PyRFC Smart Mock Server)</span>
-  <span class="match">sap-mock-server:</span>
-    build: ./docker/sap/pyrfc-server
-    ports:
-      - <span class="string">"3300:3300"</span>     <span class="comment"># RFC protocol (SAP Gateway port)</span>
-    environment:
-      - SAP_SYSNR=00
-      - SAP_CLIENT=100
-      - SAP_PROGRAM_ID=MOCK_SAP_SERVER</div>
-
-                <h3>Common Concern: "But JCo is Licensed..."</h3>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr><th>Concern</th><th>Answer</th></tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>JCo is licensed and proprietary</td>
-                                <td>We don't use JCo. SnapLogic does. We use <strong>PyRFC</strong> (open source, Apache 2.0)</td>
-                            </tr>
-                            <tr>
-                                <td>Do we need JCo on the mock server?</td>
-                                <td><strong>No.</strong> JCo is only on the client side (SnapLogic). Our server uses PyRFC.</td>
-                            </tr>
-                            <tr>
-                                <td>Does PyRFC need a license?</td>
-                                <td>PyRFC itself is free (Apache 2.0). But it needs the <strong>SAP NW RFC SDK</strong> (C library) which requires SAP download access.</td>
-                            </tr>
-                            <tr>
-                                <td>Is SAP NW RFC SDK free?</td>
-                                <td>Free to download if you have an SAP account. Check if your SAP license covers dev/test usage.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-            </div>
-
-            <!-- ═══════════════════════════════════════════════════════════
-                 PART 2: PyRFC vs JCo — Full Comparison
-                 ═══════════════════════════════════════════════════════════ -->
-            <div class="data-section">
-                <h2>PyRFC vs JCo &mdash; Weight, Size &amp; Features <span class="badge">Comparison</span></h2>
-
-                <div class="info-box" style="background:#e8f5e9; border-left-color:#27ae60;">
-                    <strong>Short answer:</strong> PyRFC is significantly more lightweight than JCo. Smaller Docker image, less memory, faster startup, and it fits our Python stack perfectly.
-                </div>
-
-                <h3>Resource Footprint</h3>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr><th>Resource</th><th>PyRFC (Python)</th><th>JCo (Java)</th></tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><strong>Language Runtime</strong></td>
-                                <td>Python (~50 MB)</td>
-                                <td>JVM (~200-300 MB)</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Library Size</strong></td>
-                                <td>PyRFC wheel (few MB) + SAP NW RFC SDK (~30 MB)</td>
-                                <td>sapjco3.jar + native .so/.dll + SAP NW RFC SDK (~30 MB)</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Startup Memory</strong></td>
-                                <td style="color:#27ae60; font-weight:bold;">~20-50 MB (Python process)</td>
-                                <td style="color:#e74c3c; font-weight:bold;">~256 MB minimum (JVM heap requirement)</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Large IDoc Processing</strong></td>
-                                <td>Python dicts, low overhead</td>
-                                <td>Can consume 2-3 GB heap for large IDoc batch files</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Docker Image Size</strong></td>
-                                <td style="color:#27ae60; font-weight:bold;">~150-200 MB</td>
-                                <td style="color:#e74c3c; font-weight:bold;">~400-600 MB</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Startup Time</strong></td>
-                                <td style="color:#27ae60; font-weight:bold;">Seconds (Python starts fast)</td>
-                                <td style="color:#e74c3c; font-weight:bold;">5-15 seconds (JVM warmup + class loading)</td>
-                            </tr>
-                            <tr>
-                                <td><strong>License</strong></td>
-                                <td style="color:#27ae60;">Apache 2.0 (open source, free)</td>
-                                <td style="color:#e74c3c;">SAP proprietary (cannot redistribute)</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <h3>Architecture Layers &mdash; PyRFC Has Fewer Layers</h3>
-                <p>PyRFC calls the C library <strong>directly</strong> from Python. JCo adds an extra Java &rarr; JNI &rarr; C translation layer:</p>
-
-                <div class="code-block">
-<span class="success">PyRFC (Lightweight — fewer layers):</span>
-<span class="dim">══════════════════════════════════════</span>
-
-  <span class="success">Python Process</span> (~30 MB)
-       <span class="dim">│</span>
-       <span class="dim">v</span>
-  <span class="success">PyRFC</span> (Python C Extension, few MB)
-       <span class="dim">│</span>  <span class="comment">Direct C call — no translation layer</span>
-       <span class="dim">v</span>
-  <span class="match">SAP NW RFC SDK</span> (C library, ~30 MB)
-       <span class="dim">│</span>
-       <span class="dim">v</span>
-  RFC Protocol on wire
-
-
-<span class="warn">JCo (Heavyweight — extra layers):</span>
-<span class="dim">══════════════════════════════════════</span>
-
-  <span class="warn">JVM</span> (200-300 MB minimum heap)
-       <span class="dim">│</span>
-       <span class="dim">v</span>
-  <span class="warn">sapjco3.jar</span> (Java library)
-       <span class="dim">│</span>
-       <span class="dim">v</span>
-  <span class="warn">JNI Bridge</span> (Java ↔ C translation)   <span class="comment">← extra layer</span>
-       <span class="dim">│</span>
-       <span class="dim">v</span>
-  <span class="warn">Native library</span> (libsapjco3.so / .dll)
-       <span class="dim">│</span>
-       <span class="dim">v</span>
-  <span class="match">SAP NW RFC SDK</span> (C library, ~30 MB)
-       <span class="dim">│</span>
-       <span class="dim">v</span>
-  RFC Protocol on wire</div>
-
-                <h3>RFC Feature Support</h3>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr><th>Feature</th><th>PyRFC</th><th>JCo</th><th>Need for Mock?</th></tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><strong>Client mode</strong> (call SAP)</td>
-                                <td><span class="status-badge yes">YES</span></td>
-                                <td><span class="status-badge yes">YES</span></td>
-                                <td><span class="dim">Not needed &mdash; we are the server</span></td>
-                            </tr>
-                            <tr>
-                                <td><strong>Server mode</strong> (receive calls)</td>
-                                <td><span class="status-badge yes">YES</span></td>
-                                <td><span class="status-badge yes">YES</span></td>
-                                <td style="color:#27ae60; font-weight:bold;">✅ This is what we use</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Synchronous RFC (sRFC)</strong></td>
-                                <td><span class="status-badge yes">YES</span></td>
-                                <td><span class="status-badge yes">YES</span></td>
-                                <td style="color:#27ae60; font-weight:bold;">✅ IDoc Read uses sRFC</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Asynchronous RFC (aRFC)</strong></td>
-                                <td><span class="status-badge yes">YES</span></td>
-                                <td><span class="status-badge yes">YES</span></td>
-                                <td><span class="dim">Maybe for IDoc Write</span></td>
-                            </tr>
-                            <tr>
-                                <td><strong>Transactional RFC (tRFC)</strong></td>
-                                <td><span class="status-badge yes">YES</span></td>
-                                <td><span class="status-badge yes">YES</span></td>
-                                <td><span class="dim">Maybe for guaranteed delivery</span></td>
-                            </tr>
-                            <tr>
-                                <td><strong>Queued RFC (qRFC)</strong></td>
-                                <td><span class="status-badge no">NO</span></td>
-                                <td><span class="status-badge yes">YES</span></td>
-                                <td><span class="dim">Not needed for basic mocking</span></td>
-                            </tr>
-                            <tr>
-                                <td><strong>Background RFC (bgRFC)</strong></td>
-                                <td><span class="status-badge no">NO</span></td>
-                                <td><span class="status-badge yes">YES</span></td>
-                                <td><span class="dim">Not needed for basic mocking</span></td>
-                            </tr>
-                            <tr>
-                                <td><strong>WebSocket RFC</strong></td>
-                                <td><span class="status-badge no">NO</span></td>
-                                <td><span class="status-badge yes">YES</span></td>
-                                <td><span class="dim">Future — SnapLogic doesn't use it yet</span></td>
-                            </tr>
-                            <tr>
-                                <td><strong>AS ABAP communication</strong></td>
-                                <td><span class="status-badge yes">YES</span></td>
-                                <td><span class="status-badge yes">YES</span></td>
-                                <td style="color:#27ae60; font-weight:bold;">✅ Our mock acts as ABAP server</td>
-                            </tr>
-                            <tr>
-                                <td><strong>AS Java communication</strong></td>
-                                <td><span class="status-badge no">NO</span></td>
-                                <td><span class="status-badge yes">YES</span></td>
-                                <td><span class="dim">Not needed — mock is ABAP-type</span></td>
-                            </tr>
-                            <tr>
-                                <td><strong>Connection pooling</strong></td>
-                                <td>Basic</td>
-                                <td>Advanced (built-in pool manager)</td>
-                                <td><span class="dim">Not critical for mock server</span></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="info-box" style="background:#fff3e0; border-left-color:#e67e22;">
-                    <strong>Key limitation:</strong> PyRFC does <strong>NOT</strong> support communication with SAP AS Java stack &mdash; only ABAP stack. But this doesn't affect our mock server because: (1) We run as a <strong>server</strong> receiving calls, not a client calling SAP. (2) SnapLogic's SAP snap connects to our mock as if it were a standard ABAP system. (3) We're not connecting <em>to</em> a Java Application Server.
-                </div>
-
-                <h3>Server Mode Documentation &amp; Maturity</h3>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr><th>Aspect</th><th>PyRFC</th><th>JCo</th></tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><strong>Server mode documentation</strong></td>
-                                <td style="color:#e67e22;">Limited &mdash; examples exist but sparse docs</td>
-                                <td style="color:#27ae60;">Extensive &mdash; official SAP guides + many blogs</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Server mode maturity</strong></td>
-                                <td style="color:#e67e22;">Works but less battle-tested in production</td>
-                                <td style="color:#27ae60;">Production-grade, used in enterprise integrations</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Community size</strong></td>
-                                <td>Smaller (GitHub ~500 stars)</td>
-                                <td>Large (enterprise standard for decades)</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Server example code</strong></td>
-                                <td>Available on GitHub (examples/server/)</td>
-                                <td>Available in SAP Community blogs + official docs</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <p><strong>For our use case</strong> (lightweight mock server, not production SAP integration), PyRFC's server mode documentation is sufficient. We are building a test mock, not a production middleware.</p>
-
-                <h3>The Shared State Advantage &mdash; Why PyRFC Is the Clear Winner</h3>
-                <p>This is the <strong>biggest reason</strong> PyRFC wins over JCo for our mock server:</p>
-
-                <div class="code-block">
-<span class="success">PyRFC — Same Python process, shared in-memory dict:</span>
-<span class="dim">══════════════════════════════════════════════════════════</span>
-
-  <span class="dim">┌──────────────────────────────────────────────────┐</span>
-  <span class="dim">│</span>           <span class="success">Single Python Process</span>                   <span class="dim">│</span>
-  <span class="dim">│</span>                                                  <span class="dim">│</span>
-  <span class="dim">│</span>  <span class="success">PyRFC Server Thread</span>     <span class="success">Django Server Thread</span>  <span class="dim">│</span>
-  <span class="dim">│</span>  (RFC on port 3300)      (HTTP on port 8443)     <span class="dim">│</span>
-  <span class="dim">│</span>       <span class="dim">│</span>                          <span class="dim">│</span>               <span class="dim">│</span>
-  <span class="dim">│</span>       <span class="dim">v</span>                          <span class="dim">v</span>               <span class="dim">│</span>
-  <span class="dim">│</span>  <span class="match">┌────────────────────────────────────────────┐</span>  <span class="dim">│</span>
-  <span class="dim">│</span>  <span class="match">│     database = {}  (shared Python dict)    │</span>  <span class="dim">│</span>
-  <span class="dim">│</span>  <span class="match">│     Both threads read/write same dict!      │</span>  <span class="dim">│</span>
-  <span class="dim">│</span>  <span class="match">└────────────────────────────────────────────┘</span>  <span class="dim">│</span>
-  <span class="dim">│</span>                                                  <span class="dim">│</span>
-  <span class="dim">│</span>  <span class="success">Zero overhead. No network. No serialization.</span>   <span class="dim">│</span>
-  <span class="dim">└──────────────────────────────────────────────────┘</span>
-
-
-<span class="danger">JCo — Separate JVM process, needs IPC:</span>
-<span class="dim">══════════════════════════════════════════════════════════</span>
-
-  <span class="dim">┌───────────────────┐</span>       <span class="dim">┌───────────────────┐</span>
-  <span class="dim">│</span> <span class="warn">JVM Process</span>       <span class="dim">│</span>       <span class="dim">│</span> <span class="warn">Python Process</span>    <span class="dim">│</span>
-  <span class="dim">│</span> JCo Server         <span class="dim">│</span>       <span class="dim">│</span> Django Server      <span class="dim">│</span>
-  <span class="dim">│</span> (RFC on port 3300) <span class="dim">│</span>       <span class="dim">│</span> (HTTP on port 8443)<span class="dim">│</span>
-  <span class="dim">│</span>     <span class="dim">│</span>              <span class="dim">│</span>       <span class="dim">│</span>      <span class="dim">│</span>             <span class="dim">│</span>
-  <span class="dim">│</span>     <span class="dim">v</span>              <span class="dim">│</span>       <span class="dim">│</span>      <span class="dim">v</span>             <span class="dim">│</span>
-  <span class="dim">│</span> <span class="warn">Java HashMap</span>      <span class="dim">│</span> <span class="danger">←?→</span>  <span class="dim">│</span> <span class="warn">Python dict</span>       <span class="dim">│</span>
-  <span class="dim">│</span> (JCo's data)      <span class="dim">│</span>       <span class="dim">│</span> (Django's data)    <span class="dim">│</span>
-  <span class="dim">└───────────────────┘</span>       <span class="dim">└───────────────────┘</span>
-                        <span class="dim">│</span>
-                        <span class="dim">v</span>
-            <span class="danger">How to sync data between them?</span>
-            <span class="danger">Redis? REST API? Shared DB?</span>
-            <span class="danger">Extra complexity, extra latency!</span></div>
-
-                <p>With <strong>PyRFC</strong>, the SAP RFC mock and the Salesforce Django mock can share the <strong>exact same Python dictionary</strong> in memory &mdash; zero overhead. A record created via Salesforce REST can be read via SAP RFC, or vice versa. With JCo, you'd need to build a whole synchronization layer between two separate processes.</p>
-
-                <h3>Final Verdict &mdash; PyRFC Wins for Our Mock Server</h3>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr><th>Criteria</th><th>PyRFC</th><th>JCo</th><th>Winner</th></tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><strong>Lightweight</strong></td>
-                                <td>~150 MB Docker image</td>
-                                <td>~500 MB Docker image</td>
-                                <td style="color:#27ae60; font-weight:bold;">PyRFC ✅</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Startup memory</strong></td>
-                                <td>~30-50 MB</td>
-                                <td>~256 MB+ minimum</td>
-                                <td style="color:#27ae60; font-weight:bold;">PyRFC ✅</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Startup speed</strong></td>
-                                <td>Seconds</td>
-                                <td>5-15 seconds</td>
-                                <td style="color:#27ae60; font-weight:bold;">PyRFC ✅</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Fits our stack</strong></td>
-                                <td>Python (same as Django mock)</td>
-                                <td>Java (different language)</td>
-                                <td style="color:#27ae60; font-weight:bold;">PyRFC ✅</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Shared state with Django</strong></td>
-                                <td>Same process, shared dict</td>
-                                <td>Separate process, needs IPC</td>
-                                <td style="color:#27ae60; font-weight:bold;">PyRFC ✅</td>
-                            </tr>
-                            <tr>
-                                <td><strong>License</strong></td>
-                                <td>Apache 2.0 (free, open source)</td>
-                                <td>SAP proprietary</td>
-                                <td style="color:#27ae60; font-weight:bold;">PyRFC ✅</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Server mode docs</strong></td>
-                                <td>Limited</td>
-                                <td>Extensive</td>
-                                <td style="color:#2980b9; font-weight:bold;">JCo</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Server mode maturity</strong></td>
-                                <td>Works, less battle-tested</td>
-                                <td>Production-grade</td>
-                                <td style="color:#2980b9; font-weight:bold;">JCo</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Advanced RFC types</strong></td>
-                                <td>sRFC, aRFC, tRFC</td>
-                                <td>sRFC, aRFC, tRFC, qRFC, bgRFC</td>
-                                <td style="color:#2980b9; font-weight:bold;">JCo</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="info-box" style="background:#e8f5e9; border-left-color:#27ae60;">
-                    <strong>Bottom line:</strong> JCo wins on documentation and maturity. But for our use case &mdash; a <strong>lightweight test mock server</strong> that shares state with Django &mdash; PyRFC wins on every criteria that matters: weight, speed, memory, license, language fit, and shared state. We're building a test mock, not a production SAP middleware. PyRFC gives us everything we need with a fraction of the overhead.
-                </div>
-            </div>
-
-            <div class="data-section">
-                <h2>Summary <span class="badge">Key Takeaways</span></h2>
-
-                <div class="info-box">
-                    <strong>1. Compatibility:</strong> JCo (client) ↔ PyRFC (server) is a fully supported combination. They both wrap the same SAP NW RFC SDK (C library) and produce identical RFC protocol on the wire. The SAP snap cannot tell the difference between our PyRFC mock server and a real SAP system.<br><br>
-                    <strong>2. Lightweight:</strong> PyRFC is significantly lighter than JCo &mdash; ~150 MB vs ~500 MB Docker image, ~30 MB vs ~256 MB memory, seconds vs 5-15 seconds startup.<br><br>
-                    <strong>3. Shared state:</strong> PyRFC runs in the same Python process as Django, sharing the same in-memory dictionary. JCo would require a separate JVM process with complex inter-process communication.<br><br>
-                    <strong>4. Trade-off accepted:</strong> JCo has better server mode documentation and supports more RFC types. For a test mock server, this trade-off is acceptable &mdash; we only need sRFC and tRFC, which PyRFC fully supports.
-                </div>
-            </div>
-        </div>
-
-        <!-- ═══════════════════════════════════════════════════════════════
-             TAB 12: IMPLEMENTATION PLAN
-             ═══════════════════════════════════════════════════════════════ -->
-        <div id="impl-plan" class="tab-content">
-            <div class="data-section">
-                <h2>SAP PyRFC Mock Server &mdash; Implementation Plan <span class="badge purple">Step-by-Step</span></h2>
-
-                <p>A phased plan to build the SAP PyRFC Smart Mock Server, following the exact same architecture as the Salesforce Django mock server. Each phase builds on the previous one.</p>
-
-                <div class="info-box" style="background:#f3e5f5; border-left-color:#7b1fa2;">
-                    <strong>Architecture goal:</strong> Single Python process with two threads &mdash; PyRFC server on port 3300 (handles SAP snap RFC calls) + Django HTTP admin on port 8080 (handles Robot Framework reset/status). Both share the same <code>sap_database = {}</code> dict in memory.
-                </div>
-            </div>
-
-            <!-- Phase 0 -->
-            <div class="data-section">
-                <h2>Phase 0: Prerequisites &amp; Research <span class="badge red">Do This First</span></h2>
-                <p>Before writing any code, validate that PyRFC server mode actually works. This is the biggest risk &mdash; if it fails, the plan changes.</p>
-
-                <div class="flow-step">
-                    <div class="flow-number orange">0.1</div>
-                    <div class="flow-content">
-                        <h4>Download SAP NW RFC SDK</h4>
-                        <p>Download the <strong>Linux x86_64</strong> version from SAP Software Download Center. Requires an SAP account. This is the C library that PyRFC wraps.</p>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number orange">0.2</div>
-                    <div class="flow-content">
-                        <h4>Verify PyRFC Server Mode Works</h4>
-                        <p>Install PyRFC locally. Write a minimal 10-line RFC server that listens on port 3300 and responds to <code>RFC_PING</code>. If this works, proceed. If not, fall back to Option 1 (Mock at SnapLogic Layer).</p>
-                        <div class="code-block">
-<span class="comment"># Minimal test — does PyRFC server mode actually work?</span>
-<span class="keyword">from</span> pyrfc <span class="keyword">import</span> Server
-
-<span class="keyword">def</span> <span class="function">handle_ping</span>(request_context):
-    <span class="keyword">return</span> {}  <span class="comment"># Just return empty — proves server mode works</span>
-
-server = Server(server_params={...})
-server.add_function(<span class="string">'RFC_PING'</span>, handle_ping)
-server.serve()  <span class="comment"># Does it listen? Does it respond?</span></div>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number orange">0.3</div>
-                    <div class="flow-content">
-                        <h4>Capture Real IDoc Response from Dev SAP</h4>
-                        <p>Run the SnapLogic SAP IDoc Read pipeline against a Dev SAP system. Save the <strong>actual IDoc response</strong> as JSON. This becomes the reference schema for the mock &mdash; we build the mock to return data in this exact format.</p>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number orange">0.4</div>
-                    <div class="flow-content">
-                        <h4>Identify Exact BAPIs/RFCs SnapLogic Calls</h4>
-                        <p>Enable RFC tracing or check SnapLogic execution logs to identify the exact function names and parameters the SAP snap sends. Key functions to discover:</p>
-                        <div class="code-block">
-<span class="label">Account Validation (what does SnapLogic call first?):</span>
-  <span class="variable">RFC_PING</span>                          <span class="comment">?  Simple connectivity check</span>
-  <span class="variable">RFC_SYSTEM_INFO</span>                   <span class="comment">?  System info request</span>
-  <span class="variable">RFC_METADATA_GET</span>                  <span class="comment">?  Function metadata discovery</span>
-
-<span class="label">IDoc Operations (the actual work):</span>
-  <span class="variable">Z_SNAP_IDOC_READ_COMPLETELY</span>       <span class="comment">✓  We know this one (IDoc Read)</span>
-  <span class="variable">IDOC_INBOUND_ASYNCHRONOUS</span>         <span class="comment">?  IDoc Write/Send</span>
-  <span class="variable">IDOC_STATUS_WRITE_TO_DATABASE</span>     <span class="comment">?  Status update</span></div>
-                    </div>
-                </div>
-
-                <div class="info-box red">
-                    <strong>Gate check:</strong> If Phase 0.2 fails (PyRFC server mode doesn't work reliably), <strong>STOP HERE</strong> and use Option 1 (Mock at SnapLogic Layer) instead. Don't invest in building something on a broken foundation.
-                </div>
-            </div>
-
-            <!-- Phase 1 -->
-            <div class="data-section">
-                <h2>Phase 1: Project Structure <span class="badge">Scaffolding</span></h2>
-                <p>Create the folder structure, mirroring the Salesforce mock server exactly:</p>
-
-                <div class="code-block">
-<span class="label">Salesforce Mock (reference):</span>                <span class="label">SAP PyRFC Mock (to create):</span>
-<span class="dim">docker/salesforce/django-server/</span>              <span class="match">docker/sap/pyrfc-server/</span>
-<span class="dim">├──</span> Dockerfile                                 <span class="dim">├──</span> Dockerfile
-<span class="dim">├──</span> entrypoint.sh                              <span class="dim">├──</span> entrypoint.sh
-<span class="dim">├──</span> run_server.py                              <span class="dim">├──</span> run_server.py
-<span class="dim">├──</span> requirements.txt                           <span class="dim">├──</span> requirements.txt
-<span class="dim">│</span>                                              <span class="dim">│</span>
-<span class="dim">├──</span> salesforce_mock/                            <span class="dim">├──</span> <span class="match">sap_mock/</span>
-<span class="dim">│</span>   <span class="dim">├──</span> state/                                <span class="dim">│</span>   <span class="dim">├──</span> <span class="match">state/</span>
-<span class="dim">│</span>   <span class="dim">│</span>   <span class="dim">├──</span> <span class="success">database.py</span>                    <span class="dim">│</span>   <span class="dim">│</span>   <span class="dim">├──</span> <span class="success">database.py</span>
-<span class="dim">│</span>   <span class="dim">│</span>   <span class="dim">├──</span> job_store.py                    <span class="dim">│</span>   <span class="dim">│</span>   <span class="dim">└──</span> counters.py
-<span class="dim">│</span>   <span class="dim">│</span>   <span class="dim">└──</span> event_bus.py                    <span class="dim">│</span>   <span class="dim">│</span>
-<span class="dim">│</span>   <span class="dim">├──</span> views/                                <span class="dim">│</span>   <span class="dim">├──</span> <span class="match">handlers/</span>
-<span class="dim">│</span>   <span class="dim">│</span>   <span class="dim">├──</span> rest_views.py                   <span class="dim">│</span>   <span class="dim">│</span>   <span class="dim">├──</span> <span class="success">system_handlers.py</span>
-<span class="dim">│</span>   <span class="dim">│</span>   <span class="dim">├──</span> bulk_v1_views.py                <span class="dim">│</span>   <span class="dim">│</span>   <span class="dim">├──</span> <span class="success">idoc_handlers.py</span>
-<span class="dim">│</span>   <span class="dim">│</span>   <span class="dim">├──</span> admin_views.py                  <span class="dim">│</span>   <span class="dim">│</span>   <span class="dim">├──</span> <span class="success">bapi_handlers.py</span>
-<span class="dim">│</span>   <span class="dim">│</span>   <span class="dim">└──</span> ...                              <span class="dim">│</span>   <span class="dim">│</span>   <span class="dim">└──</span> <span class="success">admin_handlers.py</span>
-<span class="dim">│</span>   <span class="dim">├──</span> parsers/                              <span class="dim">│</span>   <span class="dim">├──</span> <span class="match">metadata/</span>
-<span class="dim">│</span>   <span class="dim">│</span>   <span class="dim">├──</span> soql_parser.py                  <span class="dim">│</span>   <span class="dim">│</span>   <span class="dim">└──</span> <span class="success">function_definitions.py</span>
-<span class="dim">│</span>   <span class="dim">│</span>   <span class="dim">└──</span> sosl_parser.py                  <span class="dim">│</span>   <span class="dim">│</span>
-<span class="dim">│</span>   <span class="dim">└──</span> utils/                                <span class="dim">│</span>   <span class="dim">└──</span> <span class="match">utils/</span>
-<span class="dim">│</span>       <span class="dim">├──</span> id_generator.py                   <span class="dim">│</span>       <span class="dim">└──</span> doc_number_generator.py
-<span class="dim">│</span>       <span class="dim">├──</span> error_formatter.py                <span class="dim">│</span>
-<span class="dim">│</span>       <span class="dim">└──</span> validator.py                      <span class="dim">├──</span> <span class="match">schemas/</span>
-<span class="dim">│</span>                                              <span class="dim">│</span>   <span class="dim">├──</span> ORDERS05.json
-<span class="dim">├──</span> schemas/                                   <span class="dim">│</span>   <span class="dim">├──</span> MATMAS05.json
-<span class="dim">│</span>   <span class="dim">├──</span> Account.json                         <span class="dim">│</span>   <span class="dim">└──</span> DEBMAS07.json
-<span class="dim">│</span>   <span class="dim">├──</span> Contact.json                         <span class="dim">│</span>
-<span class="dim">│</span>   <span class="dim">└──</span> ...                                  <span class="dim">└──</span> docker-compose.sap-pyrfc.yml
-<span class="dim">│</span>
-<span class="dim">└──</span> docker-compose.salesforce-django.yml</div>
-            </div>
-
-            <!-- Phase 2 -->
-            <div class="data-section">
-                <h2>Phase 2: In-Memory Database <span class="badge">State Layer</span></h2>
-                <p>Build the state management layer &mdash; direct copy of the Salesforce pattern.</p>
-
-                <div class="flow-step">
-                    <div class="flow-number">2.1</div>
-                    <div class="flow-content">
-                        <h4>state/database.py &mdash; In-Memory SAP Database</h4>
-                        <p>Create <code>sap_database = {}</code> dict with sections for each SAP object type. Create <code>schemas = {}</code> for IDoc type definitions. Create <code>reset_all()</code> function.</p>
-                        <div class="code-block">
-<span class="comment"># Same pattern as salesforce_mock/state/database.py</span>
-sap_database = {
-    <span class="string">'IDOC'</span>: {},          <span class="comment"># DOCNUM → full IDoc record</span>
-    <span class="string">'CUSTOMER'</span>: {},      <span class="comment"># KUNNR → customer master</span>
-    <span class="string">'MATERIAL'</span>: {},      <span class="comment"># MATNR → material master</span>
-    <span class="string">'SALES_ORDER'</span>: {},   <span class="comment"># VBELN → sales order</span>
-}
-
-<span class="keyword">def</span> <span class="function">reset_all</span>():
-    <span class="string">"""Clear all records (called between tests for clean state)."""</span>
-    ...</div>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number">2.2</div>
-                    <div class="flow-content">
-                        <h4>state/counters.py &mdash; Document Number Generator</h4>
-                        <p>Create <code>generate_doc_number(doc_type)</code> that returns 10-digit zero-padded sequential numbers like <code>0000001001</code>. Same concept as Salesforce's <code>id_generator.py</code>.</p>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number">2.3</div>
-                    <div class="flow-content">
-                        <h4>schemas/ORDERS05.json &mdash; IDoc Type Definition</h4>
-                        <p>Define the IDoc structure from the real captured response (Phase 0.3). List segment names (<code>E1EDK01</code>, <code>E1EDP01</code>, etc.), field names, and types. This is the SAP equivalent of <code>schemas/Account.json</code>.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Phase 3 -->
-            <div class="data-section">
-                <h2>Phase 3: System Handlers &mdash; Account Validation <span class="badge red">Build This First</span></h2>
-                <p>This is the <strong>first thing SnapLogic calls</strong> when you click "Validate" on an SAP account. If this works, everything else is just adding more handlers.</p>
-
-                <div class="flow-step">
-                    <div class="flow-number">3.1</div>
-                    <div class="flow-content">
-                        <h4>handlers/system_handlers.py &mdash; RFC_PING</h4>
-                        <p>Simplest possible handler. Return empty success response. SnapLogic sends this to check connectivity.</p>
-                        <div class="code-block">
-<span class="keyword">def</span> <span class="function">handle_rfc_ping</span>(request_context):
-    <span class="string">"""RFC_PING — connectivity check. Just return success."""</span>
-    <span class="keyword">return</span> {}</div>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number">3.2</div>
-                    <div class="flow-content">
-                        <h4>handlers/system_handlers.py &mdash; RFC_SYSTEM_INFO</h4>
-                        <p>Return mock system information. SnapLogic may call this during account validation to discover the SAP system details.</p>
-                        <div class="code-block">
-<span class="keyword">def</span> <span class="function">handle_system_info</span>(request_context):
-    <span class="string">"""RFC_SYSTEM_INFO — return mock SAP system details."""</span>
-    <span class="keyword">return</span> {
-        <span class="string">'RFCSI_EXPORT'</span>: {
-            <span class="string">'RFCDEST'</span>: <span class="string">'MOCK_SAP_SERVER'</span>,
-            <span class="string">'RFCHOST'</span>: <span class="string">'sap-mock-server'</span>,
-            <span class="string">'RFCSYSID'</span>: <span class="string">'MCK'</span>,
-            <span class="string">'RFCDBHOST'</span>: <span class="string">'mock-db'</span>,
-            <span class="string">'RFCDBSYS'</span>: <span class="string">'MOCK'</span>,
-            <span class="string">'RFCCLIENT'</span>: <span class="string">'100'</span>,
-        }
-    }</div>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number">3.3</div>
-                    <div class="flow-content">
-                        <h4>Test: SnapLogic Account Validation</h4>
-                        <p>Point a SnapLogic SAP account at the mock server (<code>sap-mock-server:3300</code>). Click <strong>Validate</strong>. If it shows ✅ &mdash; account validation works! This is the first milestone.</p>
-                        <div class="code-block">
-<span class="label">SnapLogic SAP Account Settings:</span>
-  Application Server:  <span class="success">sap-mock-server</span>    <span class="comment">(Docker container name)</span>
-  System Number:       <span class="variable">00</span>
-  Client:              <span class="variable">100</span>
-  User:                <span class="variable">MOCK_USER</span>          <span class="comment">(mock accepts anything)</span>
-  Password:            <span class="variable">anything</span>           <span class="comment">(mock accepts anything)</span>
-
-  Click [Validate] → <span class="success">✅ Account validated!</span></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Phase 4 -->
-            <div class="data-section">
-                <h2>Phase 4: IDoc Handlers &mdash; Core CRUD <span class="badge blue">Main Work</span></h2>
-                <p>Build the IDoc Create/Read/Update/Delete handlers. Each one reads from or writes to <code>sap_database['IDOC']</code>.</p>
-
-                <div class="flow-step">
-                    <div class="flow-number blue">4.1</div>
-                    <div class="flow-content">
-                        <h4>handlers/idoc_handlers.py &mdash; READ (Z_SNAP_IDOC_READ_COMPLETELY)</h4>
-                        <p>Look up IDoc by <code>DOCUMENT_NUMBER</code> from <code>sap_database['IDOC']</code>. Return full IDoc structure (IDOC_CONTROL, INT_EDIDD, INT_EDIDS). Return error if not found.</p>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number blue">4.2</div>
-                    <div class="flow-content">
-                        <h4>handlers/idoc_handlers.py &mdash; CREATE (IDOC_INBOUND_ASYNCHRONOUS)</h4>
-                        <p>Generate document number via <code>generate_doc_number('IDOC')</code>. Store full IDoc in <code>sap_database['IDOC'][doc_num]</code>. Return DOCNUM and status.</p>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number blue">4.3</div>
-                    <div class="flow-content">
-                        <h4>handlers/idoc_handlers.py &mdash; UPDATE (IDOC_STATUS_WRITE_TO_DATABASE)</h4>
-                        <p>Find existing IDoc in <code>sap_database['IDOC']</code>. Modify status field. Append new entry to status records (INT_EDIDS). Return success.</p>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number blue">4.4</div>
-                    <div class="flow-content">
-                        <h4>handlers/idoc_handlers.py &mdash; DELETE (Z_MOCK_DELETE_IDOC)</h4>
-                        <p>Custom mock function for test cleanup. Remove IDoc from <code>sap_database['IDOC']</code>. Return success or error if not found.</p>
-                    </div>
-                </div>
-
-                <div class="code-block">
-<span class="label">CRUD Test Lifecycle (same as Salesforce mock):</span>
-<span class="dim">─────────────────────────────────────────────────────────────────</span>
-  Step 1: RFC <span class="variable">IDOC_INBOUND_ASYNCHRONOUS</span>     <span class="arrow">→</span> <span class="success">Creates in sap_database['IDOC']</span>
-          Returns: { DOCNUM: "0000001001" }
-
-  Step 2: RFC <span class="variable">Z_SNAP_IDOC_READ_COMPLETELY</span>   <span class="arrow">→</span> <span class="success">Finds THAT IDoc from dict</span>
-          Returns: { IDOC_CONTROL: {...}, INT_EDIDD: [...] }
-
-  Step 3: RFC <span class="variable">IDOC_STATUS_WRITE</span>             <span class="arrow">→</span> <span class="success">Updates status in-memory</span>
-          Returns: { SUCCESS: 'X' }
-
-  Step 4: RFC <span class="variable">Z_MOCK_DELETE_IDOC</span>             <span class="arrow">→</span> <span class="success">Removes from dict</span>
-  Step 5: RFC <span class="variable">Z_SNAP_IDOC_READ_COMPLETELY</span>   <span class="arrow">→</span> <span class="danger">ERROR: IDoc does not exist!</span></div>
-            </div>
-
-            <!-- Phase 5 -->
-            <div class="data-section">
-                <h2>Phase 5: RFC Function Metadata Definitions <span class="badge orange">Tedious but Required</span></h2>
-                <p>PyRFC server mode requires you to <strong>define the parameter metadata</strong> (names, types, direction) for each RFC function before registering it. This tells PyRFC what parameters to expect and return &mdash; like defining a REST API schema.</p>
-
-                <div class="flow-step">
-                    <div class="flow-number orange">5.1</div>
-                    <div class="flow-content">
-                        <h4>metadata/function_definitions.py &mdash; Z_SNAP_IDOC_READ_COMPLETELY</h4>
-                        <p>Define import params (<code>DOCUMENT_NUMBER</code>), export params (<code>IDOC_CONTROL</code>, <code>INT_EDIDD</code>, <code>INT_EDIDS</code>, record counts). Use the captured real response from Phase 0.3 as reference.</p>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number orange">5.2</div>
-                    <div class="flow-content">
-                        <h4>metadata/function_definitions.py &mdash; IDOC_INBOUND_ASYNCHRONOUS</h4>
-                        <p>Define import params (<code>IDOC_CONTROL</code>, <code>IDOC_DATA</code>). These are the table parameters PyRFC needs to accept the incoming IDoc data.</p>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number orange">5.3</div>
-                    <div class="flow-content">
-                        <h4>metadata/function_definitions.py &mdash; System Functions</h4>
-                        <p>Define <code>RFC_PING</code> (no params), <code>RFC_SYSTEM_INFO</code> (export: RFCSI_EXPORT structure). These are simple and well-documented.</p>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number orange">5.4</div>
-                    <div class="flow-content">
-                        <h4>metadata/function_definitions.py &mdash; Admin Functions</h4>
-                        <p>Define <code>Z_MOCK_RESET_DATABASE</code> (export: RECORDS_CLEARED), <code>Z_MOCK_GET_STATUS</code> (export: database counts). These are custom mock functions for test management.</p>
-                    </div>
-                </div>
-
-                <div class="info-box" style="background:#fff3e0; border-left-color:#e67e22;">
-                    <strong>Why this is tedious:</strong> PyRFC needs to know the exact structure of every parameter (name, type, length, direction) before it can accept or return data. In REST/Django, you just return a dict. In RFC, you must pre-declare the schema. Build from the real captured response &mdash; don't guess.
-                </div>
-            </div>
-
-            <!-- Phase 6 -->
-            <div class="data-section">
-                <h2>Phase 6: Server Startup (run_server.py) <span class="badge">Core Architecture</span></h2>
-                <p>The main server script &mdash; same dual-thread pattern as the Salesforce mock's <code>run_server.py</code>.</p>
-
-                <div class="flow-step">
-                    <div class="flow-number purple">6.1</div>
-                    <div class="flow-content">
-                        <h4>PyRFC Server Thread (port 3300)</h4>
-                        <p>Create PyRFC <code>Server</code> instance. Register all function handlers from Phase 3 &amp; 4 (system_handlers + idoc_handlers). Start listening on port 3300.</p>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number purple">6.2</div>
-                    <div class="flow-content">
-                        <h4>Django HTTP Admin Thread (port 8080)</h4>
-                        <p>Lightweight Django app with only admin endpoints: <code>/health</code>, <code>/__admin/reset</code>, <code>/__admin/status</code>. This lets Robot Framework call reset/inspect via HTTP (same as Salesforce mock). Shares the same <code>sap_database</code> dict.</p>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number purple">6.3</div>
-                    <div class="flow-content">
-                        <h4>Schema Loading at Startup</h4>
-                        <p>Read <code>schemas/*.json</code> files at startup. Populate <code>sap_database</code> structure. Same as Salesforce's <code>apps.py ready()</code> pattern.</p>
-                    </div>
-                </div>
-
-                <div class="code-block">
-<span class="label">Dual-Thread Architecture (mirrors Salesforce mock's run_server.py):</span>
-
-  <span class="dim">┌──────────────────────────────────────────────────────────┐</span>
-  <span class="dim">│</span>              <span class="match">Single Python Process</span>                       <span class="dim">│</span>
-  <span class="dim">│</span>                                                          <span class="dim">│</span>
-  <span class="dim">│</span>  <span class="dim">┌──────────────────────┐</span>  <span class="dim">┌──────────────────────────┐</span>  <span class="dim">│</span>
-  <span class="dim">│</span>  <span class="dim">│</span> <span class="success">Main Thread</span>          <span class="dim">│</span>  <span class="dim">│</span> <span class="success">Child Thread</span>             <span class="dim">│</span>  <span class="dim">│</span>
-  <span class="dim">│</span>  <span class="dim">│</span> PyRFC RFC Server     <span class="dim">│</span>  <span class="dim">│</span> Django HTTP Admin        <span class="dim">│</span>  <span class="dim">│</span>
-  <span class="dim">│</span>  <span class="dim">│</span> Port 3300            <span class="dim">│</span>  <span class="dim">│</span> Port 8080                <span class="dim">│</span>  <span class="dim">│</span>
-  <span class="dim">│</span>  <span class="dim">│</span>                      <span class="dim">│</span>  <span class="dim">│</span>                          <span class="dim">│</span>  <span class="dim">│</span>
-  <span class="dim">│</span>  <span class="dim">│</span> Handles:             <span class="dim">│</span>  <span class="dim">│</span> Handles:                 <span class="dim">│</span>  <span class="dim">│</span>
-  <span class="dim">│</span>  <span class="dim">│</span>  RFC_PING             <span class="dim">│</span>  <span class="dim">│</span>  GET  /health             <span class="dim">│</span>  <span class="dim">│</span>
-  <span class="dim">│</span>  <span class="dim">│</span>  RFC_SYSTEM_INFO      <span class="dim">│</span>  <span class="dim">│</span>  POST /__admin/reset      <span class="dim">│</span>  <span class="dim">│</span>
-  <span class="dim">│</span>  <span class="dim">│</span>  Z_SNAP_IDOC_READ..   <span class="dim">│</span>  <span class="dim">│</span>  GET  /__admin/status     <span class="dim">│</span>  <span class="dim">│</span>
-  <span class="dim">│</span>  <span class="dim">│</span>  IDOC_INBOUND_ASYNC   <span class="dim">│</span>  <span class="dim">│</span>  GET  /__admin/database   <span class="dim">│</span>  <span class="dim">│</span>
-  <span class="dim">│</span>  <span class="dim">│</span>  IDOC_STATUS_WRITE    <span class="dim">│</span>  <span class="dim">│</span>                          <span class="dim">│</span>  <span class="dim">│</span>
-  <span class="dim">│</span>  <span class="dim">└───────────┬──────────┘</span>  <span class="dim">└────────────┬─────────────┘</span>  <span class="dim">│</span>
-  <span class="dim">│</span>              <span class="dim">│</span>                          <span class="dim">│</span>                  <span class="dim">│</span>
-  <span class="dim">│</span>              <span class="dim">v</span>                          <span class="dim">v</span>                  <span class="dim">│</span>
-  <span class="dim">│</span>  <span class="match">┌───────────────────────────────────────────────────┐</span>  <span class="dim">│</span>
-  <span class="dim">│</span>  <span class="match">│            sap_database = {} (shared dict)         │</span>  <span class="dim">│</span>
-  <span class="dim">│</span>  <span class="match">│            Both threads read/write same dict        │</span>  <span class="dim">│</span>
-  <span class="dim">│</span>  <span class="match">└───────────────────────────────────────────────────┘</span>  <span class="dim">│</span>
-  <span class="dim">└──────────────────────────────────────────────────────────┘</span></div>
-            </div>
-
-            <!-- Phase 7 -->
-            <div class="data-section">
-                <h2>Phase 7: Docker Setup <span class="badge">Containerization</span></h2>
-
-                <div class="flow-step">
-                    <div class="flow-number">7.1</div>
-                    <div class="flow-content">
-                        <h4>Dockerfile</h4>
-                        <p>Base image: <code>python:3.11-slim</code>. Copy SAP NW RFC SDK <code>.so</code> files into the image. Set <code>LD_LIBRARY_PATH</code>. Install pyrfc + Django. Copy application code + schemas.</p>
-                        <div class="code-block">
-<span class="keyword">FROM</span> python:3.11-slim
-
-<span class="comment"># Install SAP NW RFC SDK (C library)</span>
-<span class="keyword">COPY</span> nwrfcsdk/ /usr/local/sap/nwrfcsdk/
-<span class="keyword">ENV</span> LD_LIBRARY_PATH=/usr/local/sap/nwrfcsdk/lib
-<span class="keyword">ENV</span> SAPNWRFC_HOME=/usr/local/sap/nwrfcsdk
-
-<span class="comment"># Install Python dependencies</span>
-<span class="keyword">COPY</span> requirements.txt ./
-<span class="keyword">RUN</span> pip install --no-cache-dir -r requirements.txt
-
-<span class="comment"># Copy application</span>
-<span class="keyword">COPY</span> sap_mock/ ./sap_mock/
-<span class="keyword">COPY</span> schemas/ ./schemas/
-<span class="keyword">COPY</span> run_server.py ./
-
-<span class="keyword">EXPOSE</span> 3300 8080
-<span class="keyword">CMD</span> [<span class="string">"python"</span>, <span class="string">"-u"</span>, <span class="string">"run_server.py"</span>]</div>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number">7.2</div>
-                    <div class="flow-content">
-                        <h4>entrypoint.sh</h4>
-                        <p>Set <code>LD_LIBRARY_PATH</code> for SAP NW RFC SDK native libraries. Verify SDK is present. Start <code>python run_server.py</code>.</p>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number">7.3</div>
-                    <div class="flow-content">
-                        <h4>requirements.txt</h4>
-                        <div class="code-block">
-pyrfc>=3.3
-Django>=4.2,<5.0</div>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number">7.4</div>
-                    <div class="flow-content">
-                        <h4>docker-compose.sap-pyrfc.yml</h4>
-                        <div class="code-block">
-<span class="keyword">services:</span>
-  <span class="match">sap-mock-server:</span>
-    build: ./docker/sap/pyrfc-server
-    container_name: sap-mock-server
-    ports:
-      - <span class="string">"3300:3300"</span>     <span class="comment"># RFC protocol (SAP Gateway)</span>
-      - <span class="string">"8180:8080"</span>     <span class="comment"># HTTP admin (reset, health, status)</span>
-    environment:
-      - SAP_SYSNR=00
-      - SAP_CLIENT=100
-      - SAP_PROGRAM_ID=MOCK_SAP_SERVER
-      - SCHEMA_DIR=/app/schemas
-    healthcheck:
-      test: [<span class="string">"CMD"</span>, <span class="string">"curl"</span>, <span class="string">"-f"</span>, <span class="string">"http://localhost:8080/health"</span>]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    networks:
-      - snaplogicnet</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Phase 8 -->
-            <div class="data-section">
-                <h2>Phase 8: Integration Test <span class="badge">Prove It Works</span></h2>
-                <p>End-to-end verification that the mock server works with SnapLogic.</p>
-
-                <div class="flow-step">
-                    <div class="flow-number">8.1</div>
-                    <div class="flow-content">
-                        <h4>Start Container</h4>
-                        <p><code>docker-compose up sap-mock-server</code> &mdash; verify PyRFC listens on 3300, admin HTTP on 8080.</p>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number blue">8.2</div>
-                    <div class="flow-content">
-                        <h4>Verify Admin HTTP</h4>
-                        <div class="code-block">
-<span class="comment"># Health check</span>
-curl http://localhost:8180/health
-<span class="arrow">→</span> <span class="success">{ "status": "healthy", "rfc_server": "running", "port": 3300 }</span>
-
-<span class="comment"># Reset database</span>
-curl -X POST http://localhost:8180/__admin/reset
-<span class="arrow">→</span> <span class="success">{ "status": "reset", "recordsCleared": 0 }</span>
-
-<span class="comment"># Check database status</span>
-curl http://localhost:8180/__admin/status
-<span class="arrow">→</span> <span class="success">{ "IDOC": 0, "CUSTOMER": 0, "MATERIAL": 0 }</span></div>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number purple">8.3</div>
-                    <div class="flow-content">
-                        <h4>SnapLogic Account Validation</h4>
-                        <p>Create SAP account pointing to <code>sap-mock-server:3300</code>. Click Validate. Should pass ✅.</p>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number">8.4</div>
-                    <div class="flow-content">
-                        <h4>IDoc Read Pipeline</h4>
-                        <p>Run SAP IDoc Read pipeline against mock. Should get mock IDoc response from in-memory database.</p>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number orange">8.5</div>
-                    <div class="flow-content">
-                        <h4>Full CRUD Cycle</h4>
-                        <p>Run IDoc Write pipeline (creates IDoc in mock) &rarr; Run IDoc Read pipeline (reads it back) &rarr; Verify data matches. This proves the smart mock pattern works end-to-end.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Phase 9 -->
-            <div class="data-section">
-                <h2>Phase 9: Robot Framework Integration <span class="badge blue">Test Automation</span></h2>
-
-                <div class="flow-step">
-                    <div class="flow-number blue">9.1</div>
-                    <div class="flow-content">
-                        <h4>Add to Main docker-compose.yml</h4>
-                        <p>Add <code>sap-mock-server</code> alongside <code>salesforce-api-mock</code> in the main docker-compose file.</p>
-                        <div class="code-block">
-<span class="keyword">services:</span>
-  <span class="success">salesforce-api-mock:</span>      <span class="comment"># ← Already exists</span>
-    build: ./docker/salesforce/django-server
-    ports: [<span class="string">"8080:8080"</span>, <span class="string">"8443:8443"</span>]
-
-  <span class="match">sap-mock-server:</span>           <span class="comment"># ← NEW</span>
-    build: ./docker/sap/pyrfc-server
-    ports: [<span class="string">"3300:3300"</span>, <span class="string">"8180:8080"</span>]</div>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number blue">9.2</div>
-                    <div class="flow-content">
-                        <h4>Create Robot Framework Keywords</h4>
-                        <p>Build reusable keywords for SAP mock management (same pattern as Salesforce mock keywords):</p>
-                        <div class="code-block">
-<span class="label">*** Keywords ***</span>
-<span class="function">Reset SAP Mock Database</span>
-    POST    http://sap-mock-server:8080/__admin/reset
-
-<span class="function">Get SAP Mock Status</span>
-    ${resp}=    GET    http://sap-mock-server:8080/__admin/status
-    RETURN    ${resp.json()}</div>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number blue">9.3</div>
-                    <div class="flow-content">
-                        <h4>Write First Robot Test</h4>
-                        <div class="code-block">
-<span class="label">*** Test Cases ***</span>
-<span class="function">SAP IDoc Create And Read Back</span>
-    [Setup]    Reset SAP Mock Database
-    <span class="comment"># Step 1: Pipeline writes IDoc via SAP snap → stored in mock</span>
-    Execute Pipeline    SAP_IDoc_Write_Pipeline
-    <span class="comment"># Step 2: Pipeline reads IDoc via SAP snap → returned from mock</span>
-    ${result}=    Execute Pipeline    SAP_IDoc_Read_Pipeline
-    <span class="comment"># Step 3: Verify</span>
-    Should Be Equal    ${result.IDOC_CONTROL.IDOCTP}    ORDERS05
-    [Teardown]    Reset SAP Mock Database</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Phase 10 -->
-            <div class="data-section">
-                <h2>Phase 10: Plugin Architecture <span class="badge gray-tab">Future</span></h2>
-                <p>Merge SAP mock into the unified SLIM Mock Service alongside Salesforce.</p>
-
-                <div class="flow-step">
-                    <div class="flow-number gray">10.1</div>
-                    <div class="flow-content">
-                        <h4>Move into plugins/ Folder</h4>
-                        <p>Restructure: <code>plugins/sap_rfc/</code> alongside <code>plugins/salesforce/</code> inside a unified SLIM Mock Service container.</p>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number gray">10.2</div>
-                    <div class="flow-content">
-                        <h4>Environment Variable Control</h4>
-                        <p>Support <code>MOCK_PLUGINS=salesforce,sap_rfc</code> to dynamically load plugins.</p>
-                    </div>
-                </div>
-                <div class="flow-step">
-                    <div class="flow-number gray">10.3</div>
-                    <div class="flow-content">
-                        <h4>Shared Database Across Plugins</h4>
-                        <p>Single <code>database = {}</code> dict shared by both Salesforce HTTP handlers and SAP RFC handlers in the same Python process. A record created via Salesforce REST can be referenced by SAP RFC, if needed for cross-system pipeline testing.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Risks -->
-            <div class="data-section">
-                <h2>Risks &amp; Decision Points <span class="badge red">Watch Out</span></h2>
-
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr><th>Risk</th><th>Impact</th><th>Mitigation</th></tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><strong>PyRFC server mode doesn't work properly</strong></td>
-                                <td style="color:#e74c3c; font-weight:bold;">High &mdash; blocks entire plan</td>
-                                <td>Phase 0.2 tests this FIRST before writing anything. Fallback: Option 1 (Mock at SnapLogic Layer)</td>
-                            </tr>
-                            <tr>
-                                <td><strong>SAP NW RFC SDK licensing blocks Docker usage</strong></td>
-                                <td style="color:#e67e22; font-weight:bold;">Medium</td>
-                                <td>Check with SAP licensing team. SDK is free to download; redistribution may have limits</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Don't know exact BAPIs SnapLogic calls</strong></td>
-                                <td style="color:#e67e22; font-weight:bold;">Medium</td>
-                                <td>Phase 0.4 captures this. Start with RFC_PING + Z_SNAP_IDOC_READ_COMPLETELY</td>
-                            </tr>
-                            <tr>
-                                <td><strong>RFC function metadata is complex</strong></td>
-                                <td style="color:#e67e22; font-weight:bold;">Medium</td>
-                                <td>Phase 0.3 captures a real response as reference. Build metadata from actual data, not guesswork</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Account validation needs more than RFC_PING</strong></td>
-                                <td style="color:#2980b9;">Low</td>
-                                <td>Phase 3.3 tests early. If validation fails, add whatever extra RFC calls SnapLogic makes</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="info-box red">
-                    <strong>Critical gate:</strong> Do NOT proceed past Phase 0 until PyRFC server mode is confirmed working. Everything depends on this. If it fails, use Option 1 (Mock at SnapLogic Layer) — which is already the recommended approach and works today with zero dependencies.
-                </div>
-            </div>
-
-            <!-- Summary -->
-            <div class="data-section">
-                <h2>Plan Summary <span class="badge">Overview</span></h2>
-
-                <div class="code-block">
-<span class="label">Phase 0:</span>  Prerequisites &amp; Research       <span class="comment">← Validate feasibility (DO THIS FIRST)</span>
-<span class="label">Phase 1:</span>  Project Structure                <span class="comment">← Scaffold folders (mirror Salesforce)</span>
-<span class="label">Phase 2:</span>  In-Memory Database               <span class="comment">← sap_database = {}, reset_all()</span>
-<span class="label">Phase 3:</span>  System Handlers                  <span class="comment">← RFC_PING, account validation ← <span class="success">FIRST MILESTONE</span></span>
-<span class="label">Phase 4:</span>  IDoc Handlers                    <span class="comment">← CRUD: Create, Read, Update, Delete</span>
-<span class="label">Phase 5:</span>  Function Metadata                <span class="comment">← Define RFC parameter types/structures</span>
-<span class="label">Phase 6:</span>  Server Startup                   <span class="comment">← Dual-thread: PyRFC (3300) + Django (8080)</span>
-<span class="label">Phase 7:</span>  Docker Setup                     <span class="comment">← Dockerfile + docker-compose</span>
-<span class="label">Phase 8:</span>  Integration Test                 <span class="comment">← End-to-end: SnapLogic → Mock → Verify</span>
-<span class="label">Phase 9:</span>  Robot Framework Integration      <span class="comment">← Test automation keywords + first test</span>
-<span class="label">Phase 10:</span> Plugin Architecture              <span class="comment">← Future: unified SLIM Mock Service</span></div>
-
-                <div class="info-box" style="background:#e8f5e9; border-left-color:#27ae60;">
-                    <strong>Key principle:</strong> Every phase mirrors something already proven in the Salesforce mock server. We're not inventing new patterns &mdash; we're applying the same architecture (in-memory dict, CRUD handlers, admin reset, Docker, Robot Framework) to a different protocol (RFC instead of HTTP).
                 </div>
             </div>
         </div>
