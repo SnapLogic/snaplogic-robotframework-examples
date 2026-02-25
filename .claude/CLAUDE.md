@@ -475,3 +475,60 @@ docker logs snaplogic-groundplex # View Groundplex logs
 4. **Use environment files** - Keep secrets out of code
 5. **Check status before running** - `make status` to verify services
 6. **Use meaningful variable names** - `${snowflake_account_ref}` not `${acc}`
+
+---
+
+## Workflow & Behavior Rules
+
+These rules govern how Claude operates on this project. Follow them for every interaction.
+
+### 1. Plan Before Building
+- Enter plan mode for ANY non-trivial task (3+ steps or architectural decisions)
+- If something goes sideways, **STOP and re-plan immediately** — don't keep pushing
+- Write a checklist of steps before starting implementation
+- Use plan mode for verification steps, not just building
+
+### 2. Use Subagents Strategically
+- Use subagents to keep the main context window clean
+- Offload research, exploration, and parallel analysis to subagents
+- One focused task per subagent
+- For complex problems, use multiple subagents in parallel
+
+### 3. Self-Improvement Loop
+- After ANY correction from the user, record the lesson learned
+- Write rules that prevent the same mistake from recurring
+- Review past lessons at session start for relevant patterns
+- Examples of lessons learned in this project:
+  - Docker service hostnames use container names (`sqlserver-db`), NOT `host.docker.internal` — the Groundplex is on the same `snaplogicnet` bridge network
+  - Never modify `env_files/` defaults without asking — use root `.env` for overrides
+  - SnapLogic expressions don't support `var`, semicolons, or multi-line functions — use single-line ternaries
+  - Always check `RELEASE_BUILD_VERSION` in `.env` when getting 404 errors on SnapLogic API calls
+  - Org name `ml-legacy-migration` uses hyphens, not underscores — `split('_')` will fail, use `indexOf` check first
+
+### 4. Verification Before Done
+- **Never mark a task complete without proving it works**
+- Run tests, check logs, demonstrate correctness
+- Diff behavior between before and after when relevant
+- Ask yourself: "Would a staff engineer approve this?"
+- For Robot Framework changes: verify with `make robot-run-tests TAGS="<tag>"`
+- For Docker changes: verify with `make <service>-status` and check logs
+
+### 5. Autonomous Problem Solving
+- When given a bug report or error log: **just fix it** — don't ask for hand-holding
+- Point at logs, errors, failing tests — then resolve them
+- Zero context switching required from the user
+- Fix failing CI tests without being told how
+- Use `/debug-logs` and `/troubleshoot` skills when needed
+
+### 6. Simplicity and Minimal Impact
+- Make every change as simple as possible — impact minimal code
+- Find root causes, not temporary fixes. Senior developer standards
+- Changes should only touch what's necessary — avoid introducing new bugs
+- Don't over-engineer: skip this for simple, obvious fixes
+- For non-trivial changes: pause and ask "Is there a more elegant way?"
+
+### 7. Network Architecture Awareness
+- All Docker services (Groundplex, databases, messaging, mocks) share the `snaplogicnet` bridge network
+- Services communicate via **container names** — never use `host.docker.internal` or `localhost` for Docker services
+- The `env_files/` directory contains correct container hostnames — do not modify them
+- Only override specific values (like database name) in root `.env`
