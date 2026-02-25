@@ -1,0 +1,23 @@
+
+/*
+	Purpose: This expression library is used exclusively for EBAS_TO_CBS pipeline.
+*/
+{	
+	    Accounts:
+			{
+				DEV:'../shared/DEV_SQL_All',
+				QA:'../shared/QA_SQL_All',
+				PREPROD:'../shared/PREPROD_SQL_All',
+				PROD:'../shared/PROD_SQL_All',
+				LEGACY:'../shared/sqlserver_acct'
+			},
+		Schema:
+            {
+			  Schema:'dbo'
+            }			
+		
+		// Environment functions  
+	, getOrgName : () => pipe.projectPath.split('/')[1].toUpperCase()
+	, getEnv : () => this.getOrgName().indexOf('_') >= 0 ? this.getOrgName().split('_')[1] : this.getOrgName().split('-')[1]
+	, getEnvValue : (key) => this.get(key).get(this.getEnv())
+}

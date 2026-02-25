@@ -1292,13 +1292,13 @@ Get Columns Query
         ${upper_schema}=    Convert To Upper Case    ${schema}
         RETURN    SELECT COLUMN_NAME FROM ALL_TAB_COLUMNS WHERE TABLE_NAME = '${upper_table}' AND OWNER = '${upper_schema}' ORDER BY COLUMN_ID
     ELSE IF    '${db_type}' == 'SQLSERVER'
-        RETURN    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '${table}' AND TABLE_SCHEMA = '${schema}' AND COLUMN_NAME != 'ID' ORDER BY ORDINAL_POSITION
+        RETURN    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '${table}' AND TABLE_SCHEMA = '${schema}' ORDER BY ORDINAL_POSITION
     ELSE IF    '${db_type}' == 'POSTGRESQL'
-        RETURN    SELECT column_name FROM information_schema.columns WHERE table_name = lower('${table}') AND table_schema = lower('${schema}') AND column_name != 'id' ORDER BY ordinal_position
+        RETURN    SELECT column_name FROM information_schema.columns WHERE table_name = lower('${table}') AND table_schema = lower('${schema}') ORDER BY ordinal_position
     ELSE IF    '${db_type}' == 'MYSQL'
         RETURN    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '${table}' AND TABLE_SCHEMA = DATABASE() ORDER BY ORDINAL_POSITION
     ELSE
-        RETURN    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE LOWER(TABLE_NAME) = LOWER('${table}') AND LOWER(TABLE_SCHEMA) = LOWER('${schema}') AND UPPER(COLUMN_NAME) != 'ID' ORDER BY ORDINAL_POSITION
+        RETURN    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE LOWER(TABLE_NAME) = LOWER('${table}') AND LOWER(TABLE_SCHEMA) = LOWER('${schema}') ORDER BY ORDINAL_POSITION
     END
 
 # ==================== INDEX OPERATIONS ====================
@@ -1918,6 +1918,81 @@ Verify Table Has Minimum Columns
 
     Log    Table has required columns plus ${actual_count - required_count} additional columns    console=yes
     RETURN    ${actual_columns}
+
+Verify Column Data Types
+    [Documentation]    Verifies that columns in a table have the expected SQL data types.
+    ...
+    ...    Uses ``Get Table Schema Info`` to retrieve column metadata from ``INFORMATION_SCHEMA``,
+    ...    then asserts each specified column's ``DATA_TYPE`` matches the expected value.
+    ...    Comparison is case-insensitive.
+    ...
+    ...    *Arguments:*
+    ...    - ``table_name``: Table name to verify (without schema prefix)
+    ...    - ``schema``: Schema name (default: ``dbo``)
+    ...    - ``&{expected_types}``: Dictionary of column_name=expected_data_type pairs
+    ...
+    ...    *Returns:*
+    ...    - None. Fails if any column is missing or has a mismatched data type.
+    ...
+    ...    *Example:*
+    ...    | Verify Column Data Types | tblRequest | schema=dbo |
+    ...    | ... | Id=int | Status=int | SubmittedOn=datetime | StatusMessage=nvarchar |
+    ...
+    ...    *See also:*
+    ...    ``Get Table Schema Info``, ``Verify Table Columns``
+    [Arguments]    ${table_name}    ${schema}=dbo    &{expected_types}
+
+    Log    ========== VERIFYING COLUMN DATA TYPES ==========    console=yes
+    Log    Table: ${schema}.${table_name}    console=yes
+    Log    Expected types: ${expected_types}    console=yes
+
+    ${schema_info}=    Get Table Schema Info    ${table_name}    schema=${schema}
+
+    @{mismatches}=    Create List
+    @{verified}=    Create List
+
+    FOR    ${col_name}    ${expected_type}    IN    &{expected_types}
+        ${found}=    Set Variable    ${FALSE}
+
+        FOR    ${row}    IN    @{schema_info}
+            ${actual_col}=    Convert To String    ${row}[0]
+            ${actual_type}=    Convert To String    ${row}[1]
+            ${col_match}=    Evaluate    '${actual_col}'.lower() == '${col_name}'.lower()
+
+            IF    ${col_match}
+                ${found}=    Set Variable    ${TRUE}
+                ${type_match}=    Evaluate    '${actual_type}'.lower() == '${expected_type}'.lower()
+
+                IF    ${type_match}
+                    Append To List    ${verified}    ${col_name}=${actual_type}
+                    Log    Column '${col_name}': type '${actual_type}' - PASS    console=yes
+                ELSE
+                    Append To List    ${mismatches}
+                    ...    Column '${col_name}': expected '${expected_type}' but found '${actual_type}'
+                    Log    Column '${col_name}': expected '${expected_type}' but found '${actual_type}' - FAIL    console=yes
+                END
+                BREAK
+            END
+        END
+
+        IF    not ${found}
+            Append To List    ${mismatches}    Column '${col_name}' not found in table '${schema}.${table_name}'
+            Log    Column '${col_name}' not found in table - FAIL    console=yes
+        END
+    END
+
+    ${mismatch_count}=    Get Length    ${mismatches}
+    ${verified_count}=    Get Length    ${verified}
+
+    Log    ========== DATA TYPE VERIFICATION SUMMARY ==========    console=yes
+    Log    Verified: ${verified_count}/${expected_types.__len__()} columns    console=yes
+
+    IF    ${mismatch_count} > 0
+        ${mismatch_msg}=    Evaluate    '\\n'.join($mismatches)
+        Fail    Data type mismatches found:\n${mismatch_msg}
+    END
+
+    Log    All column data types verified successfully!    console=yes
 
 # ==================== TRANSACTION MANAGEMENT ====================
 

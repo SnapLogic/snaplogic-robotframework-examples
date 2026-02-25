@@ -204,15 +204,22 @@ class FileComparisonLibrary:
         normalize_numerics: bool = False
     ) -> Dict[str, Any]:
         """
-        Compare two CSV files while excluding specified JSON keys from comparison.
+        Compare two CSV files while excluding specified keys from comparison.
 
-        Useful when CSV files contain JSON data with dynamic fields like timestamps
-        (e.g., SnowflakeConnectorPushTime, created_at, updated_at).
+        Supports two types of exclusion:
+        1. **CSV column exclusion**: If an exclude_key matches a CSV column header name,
+           that entire column is removed from both headers and data rows before comparison.
+           This is useful for plain tabular CSVs with dynamic columns (e.g., timestamps).
+        2. **JSON key exclusion**: If an exclude_key does not match any CSV column header,
+           it is used to remove keys from JSON objects inside CSV cells.
+           This is useful for CSV files containing JSON data with dynamic fields.
+
+        Both exclusion types can be used together in the same comparison.
 
         Args:
             file1_path: Path to the first CSV file (actual output)
             file2_path: Path to the second CSV file (expected output)
-            exclude_keys: List of JSON keys to exclude from comparison
+            exclude_keys: List of keys to exclude (column names and/or JSON keys)
             match_key: Optional JSON path to match rows (e.g., 'headers.profile_id')
             ignore_order: Whether to ignore row order (default: True)
             show_details: Whether to show detailed comparison results (default: True)
@@ -223,19 +230,61 @@ class FileComparisonLibrary:
             Dictionary with comparison results including status (IDENTICAL/DIFFERENT)
 
         Example:
+            | # JSON key exclusion (Snowflake JSON-in-CSV):
             | @{exclude}= | Create List | SnowflakeConnectorPushTime | timestamp |
+            | ${result}= | Compare CSV Files With Exclusions | ${actual} | ${expected} | ${exclude} |
+            | Should Be Equal | ${result}[status] | IDENTICAL |
+            |
+            | # CSV column exclusion (plain tabular CSV with dynamic timestamp columns):
+            | @{exclude}= | Create List | RequestedOn | SubmittedOn | ProcessedOn |
             | ${result}= | Compare CSV Files With Exclusions | ${actual} | ${expected} | ${exclude} |
             | Should Be Equal | ${result}[status] | IDENTICAL |
             |
             | # With numeric normalization:
             | ${result}= | Compare CSV Files With Exclusions | ${actual} | ${expected} | ${exclude} | normalize_numerics=${TRUE} |
         """
-        # Read and normalize CSV content
+        # Read CSV content
         csv1 = self._read_csv_file(file1_path)
         csv2 = self._read_csv_file(file2_path)
 
-        normalized_csv1 = self._normalize_csv_content(csv1, exclude_keys, normalize_numerics)
-        normalized_csv2 = self._normalize_csv_content(csv2, exclude_keys, normalize_numerics)
+        # Phase 1: CSV column-level exclusion
+        # Check if any exclude_keys match CSV column header names and remove those columns
+        remaining_exclude_keys = list(exclude_keys) if exclude_keys else []
+        excluded_columns = []
+
+        if csv1 and csv2 and exclude_keys:
+            headers1 = csv1[0]
+            headers2 = csv2[0]
+            exclude_keys_lower = {k.lower() for k in exclude_keys}
+
+            # Find column indices to exclude from each file (headers may differ)
+            exclude_indices_1 = set()
+            exclude_indices_2 = set()
+
+            for i, h in enumerate(headers1):
+                if h.lower() in exclude_keys_lower:
+                    exclude_indices_1.add(i)
+                    if h not in excluded_columns:
+                        excluded_columns.append(h)
+
+            for i, h in enumerate(headers2):
+                if h.lower() in exclude_keys_lower:
+                    exclude_indices_2.add(i)
+                    if h not in excluded_columns:
+                        excluded_columns.append(h)
+
+            # Remove excluded columns from all rows
+            if exclude_indices_1:
+                csv1 = [[val for i, val in enumerate(row) if i not in exclude_indices_1] for row in csv1]
+            if exclude_indices_2:
+                csv2 = [[val for i, val in enumerate(row) if i not in exclude_indices_2] for row in csv2]
+
+            if excluded_columns:
+                logger.console(f"Excluded {len(excluded_columns)} CSV column(s) by header name: {excluded_columns}")
+
+        # Phase 2: JSON key-level exclusion (normalize remaining JSON keys in cell values)
+        normalized_csv1 = self._normalize_csv_content(csv1, remaining_exclude_keys, normalize_numerics)
+        normalized_csv2 = self._normalize_csv_content(csv2, remaining_exclude_keys, normalize_numerics)
 
         result = {
             'status': 'UNKNOWN',

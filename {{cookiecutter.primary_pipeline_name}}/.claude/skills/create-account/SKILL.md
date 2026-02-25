@@ -164,13 +164,38 @@ You don't need special syntax. Just describe what you need after `/create-accoun
 
 ## Environment Variable Setup
 
+### Network Architecture
+
+**IMPORTANT:** The SnapLogic Groundplex runs as a Docker container on the shared `snaplogicnet` bridge network — the **same network** as all other Docker services (SQL Server, Oracle, PostgreSQL, Kafka, MinIO, etc.). This means:
+
+- Services reach each other via **Docker container names** (e.g., `sqlserver-db`, `oracle-db`, `postgres-db`)
+- Do **NOT** use `host.docker.internal` or `localhost` for Docker service hostnames — these won't work from the Groundplex container
+- The env files in `env_files/` already contain the correct Docker container hostnames
+
+```
+┌─────────────────────────── snaplogicnet (bridge network) ───────────────────────────┐
+│                                                                                      │
+│  ┌──────────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐ │
+│  │ snaplogic-       │  │ sqlserver-db │  │ oracle-db    │  │ postgres-db          │ │
+│  │ groundplex       │──│ :1433        │  │ :1521        │  │ :5432                │ │
+│  │ :8090, :8081     │  └──────────────┘  └──────────────┘  └──────────────────────┘ │
+│  └──────────────────┘  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐ │
+│                        │ mysql-db     │  │ kafka        │  │ minio-api            │ │
+│                        │ :3306        │  │ :9092        │  │ :9000                │ │
+│                        └──────────────┘  └──────────────┘  └──────────────────────┘ │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+```
+
 ### Case 1: Using Docker Services (Local Testing)
 
-If you're creating an account for an endpoint brought up using Docker services (Oracle, PostgreSQL, MySQL, Kafka, MinIO, etc.):
+If you're creating an account for an endpoint brought up using Docker services (Oracle, PostgreSQL, MySQL, SQL Server, Kafka, MinIO, etc.):
 
 - **Use the default credentials** from the respective file in `env_files/`
-- No changes needed - the values are pre-configured for Docker containers
+- No changes needed — the values are pre-configured with correct **Docker container hostnames**
+- Hostnames use container names (e.g., `sqlserver-db`, `oracle-db`, `postgres-db`) because the Groundplex is on the same Docker network
 - Just run the tests: `make robot-run-tests TAGS="oracle"`
+
+**NEVER change the default hostnames to `host.docker.internal` or `localhost`** — the Groundplex communicates with other services via the `snaplogicnet` bridge network using container names.
 
 ### Case 2: Using External/Your Own Instance
 
@@ -193,17 +218,24 @@ If you're using your own external instance (e.g., your company's Snowflake, prod
 
 3. **Update the values** with your actual credentials
 
-4. **Do NOT copy the payload file variable** - it remains constant:
+4. **Do NOT copy the payload file variable** — it remains constant:
    ```bash
    # DO NOT copy this to .env - leave it in env_files/
    SNOWFLAKE_ACCOUNT_PAYLOAD_FILE_NAME=acc_snowflake_s3_db.json
    ```
 
+5. **For database name overrides only** — if you need a different database than the Docker default (e.g., `SnapLogicTest` instead of `master`), add just the database variable to root `.env`:
+   ```bash
+   # Override only what differs from Docker defaults
+   SQLSERVER_DATABASE=SnapLogicTest
+   ```
+
 ### Why This Works
 
 - Root `.env` file is loaded **last** and overrides everything
-- `env_files/` contains default Docker values
-- Payload file names never change - they reference JSON templates
+- `env_files/` contains default Docker values with correct container hostnames
+- Payload file names never change — they reference JSON templates
+- The Groundplex and all services share the `snaplogicnet` Docker bridge network, so container names resolve automatically
 
 ---
 
@@ -823,17 +855,29 @@ Create S3 Account
 ## Usage Scenarios
 
 ### Scenario 1: Using Dockerized Services (Default)
-No changes needed - credentials in `env_files/` are pre-configured for local Docker containers.
+No changes needed — credentials in `env_files/` are pre-configured for local Docker containers. Hostnames use Docker container names (e.g., `sqlserver-db`, `oracle-db`) because the Groundplex runs on the same `snaplogicnet` bridge network.
 
 ```bash
 # Start Docker services
 make start-services
 
-# Run tests - uses default Docker credentials
+# Run tests - uses default Docker credentials and container hostnames
 make robot-run-all-tests TAGS="oracle"
 ```
 
-### Scenario 2: Using Your Own External Credentials
+**IMPORTANT:** Do NOT change hostnames to `host.docker.internal` or `localhost`. The Groundplex container communicates with service containers via Docker's internal DNS using container names.
+
+### Scenario 2: Overriding Database Name Only
+If you need a different database than the Docker default (e.g., `SnapLogicTest` instead of `master` for SQL Server), override only the database variable in root `.env`:
+
+```bash
+# In root .env - override only what's different from Docker defaults
+SQLSERVER_DATABASE=SnapLogicTest
+```
+
+The hostname (`sqlserver-db`) stays as the Docker container name — do NOT override it.
+
+### Scenario 3: Using Your Own External Credentials
 Copy variables to root `.env` file and update with your values:
 
 ```bash
@@ -847,7 +891,7 @@ SNOWFLAKE_KEYPAIR_PRIVATE_KEY=-----BEGIN ENCRYPTED PRIVATE KEY-----...
 SNOWFLAKE_KEYPAIR_PRIVATE_KEY_PASSPHRASE=your_passphrase
 ```
 
-**Note:** You don't need to copy the `*_PAYLOAD_FILE_NAME` variable - the payload template structure doesn't change.
+**Note:** You don't need to copy the `*_PAYLOAD_FILE_NAME` variable — the payload template structure doesn't change.
 
 ## Adding a New Account Type
 

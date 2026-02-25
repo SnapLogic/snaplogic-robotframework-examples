@@ -253,6 +253,9 @@ oracle-init/
 # SQL Server initialization directory
 sqlserver-init/
 
+# Backup directory
+backup/
+
 # Temporary files
 *.tmp
 *.temp

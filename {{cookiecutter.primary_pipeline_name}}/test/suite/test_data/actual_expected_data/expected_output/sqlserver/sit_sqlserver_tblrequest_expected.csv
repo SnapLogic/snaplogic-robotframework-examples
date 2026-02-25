@@ -1,0 +1,9 @@
+Id,RequestType,Status,StatusMessage,Requestor,RequestorDepartment,RequestedOn,SubmittedOn,ProcessedOn,CBS_DCNumber,CBS_FOCNumber,CBS_GPNumber,EBAS_GPId,Remarks
+1,1,1,Submitted in CBS,John Smith,Engineering,,,,DC-1001,FOC-2001,GP-3001,EBAS-4001,DC Outbound Request Type 1
+2,2,1,Submitted in CBS,Jane Doe,Logistics,,,,DC-1002,FOC-2002,GP-3002,EBAS-4002,DC Outbound Request Type 2
+3,3,1,Submitted in CBS,Bob Wilson,Warehouse,,,,DC-1003,FOC-2003,GP-3003,EBAS-4003,FOC Request Type 3
+4,4,1,Submitted in CBS,Alice Brown,Procurement,,,,DC-1004,FOC-2004,GP-3004,EBAS-4004,FOC Request Type 4
+5,5,1,Submitted in CBS,Charlie Davis,Engineering,,,,DC-1005,FOC-2005,GP-3005,EBAS-4005,GP Request Type 5
+6,6,1,Submitted in CBS,Diana Lee,Logistics,,,,DC-1006,FOC-2006,GP-3006,EBAS-4006,GP Request Type 6
+7,1,1,,Eve Martin,Engineering,,,,DC-1007,FOC-2007,GP-3007,EBAS-4007,Already submitted - should be excluded
+8,3,1,Submitted in CBS,Frank White,Warehouse,,,,DC-1008,FOC-2008,GP-3008,EBAS-4008,Another FOC Request Type 3
