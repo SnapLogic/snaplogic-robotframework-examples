@@ -133,17 +133,38 @@ All table setup and verification uses generic keywords from `sql_table_operation
 - **Prerequisite**: Test 10 (Execute Triggered Task) must have completed successfully
 
 ### Test 12: Verify SQL Server Snap Document Counts (NEW)
-- **Keywords**: `Validate Snap Document Count` (called 7 times)
-- **What it does**: Validates document counts (input/output/error) for each snap in the pipeline
+- **Keywords**: `Validate Snap Document Count` (called 17 times — covers all snaps in the pipeline)
+- **What it does**: Validates document counts (input/output/error) for every snap in the pipeline
 - **Prerequisite**: `${runtime_id}` must be set from Test 11
 - **Snap validations** (based on test seed data: 7 active requests, 7 headers, 13 items):
+
+  **Source Read Snaps:**
+  - `tlrequest source`: expected_output=7, expected_error=0
+  - `tblHeader_select`: expected_output=7, expected_error=0
+  - `Read - tblItems`: expected_output=13, expected_error=0
+  - `RUUID`: expected_input=0, expected_output=0, expected_error=0
+
+  **Routing:**
   - `tblRequest Router`: expected_input=7, expected_error=0
+  - `Copy Header`: expected_input=7, expected_output=14, expected_error=0
+
+  **Request34 Path (RequestType 3,4):**
+  - `Request Sort`: expected_input=3, expected_output=3, expected_error=0
+  - `Header Sort`: expected_input=7, expected_output=7, expected_error=0
+  - `Join Flow 1`: expected_input=10, expected_output=3, expected_error=0
+  - `Flow1 Map`: expected_input=3, expected_output=3, expected_error=0
+
+  **Request1256 Path (RequestType 1,2,5,6):**
   - `tblRequest Mapper`: expected_input=4, expected_output=4, expected_error=0
-  - `Join Flow 1`: expected_output=3, expected_error=0
-  - `Join Flow 2`: expected_output=8, expected_error=0
-  - `Flow1 Map`: expected_output=3, expected_error=0
-  - `Data Union`: expected_output=11, expected_error=0
+  - `Request Sort2`: expected_input=4, expected_output=4, expected_error=0
+  - `Header Sort2`: expected_input=7, expected_output=7, expected_error=0
+  - `Item Sort`: expected_input=13, expected_output=13, expected_error=0
+  - `Join Flow 2`: expected_input=24, expected_output=8, expected_error=0
+
+  **Merge and Update:**
+  - `Data Union`: expected_input=11, expected_output=11, expected_error=0
   - `tblRequest update`: expected_input=11, expected_error=0
+
 - **Note**: Snap labels must exactly match the snap names in the Designer. Run `Log Snap Statistics Summary` first to identify exact labels. Adjust expected counts if seed data changes.
 
 ### Test 13: Verify Both Router Paths Processed — TC_002/TC_006-TC_011 (NEW)

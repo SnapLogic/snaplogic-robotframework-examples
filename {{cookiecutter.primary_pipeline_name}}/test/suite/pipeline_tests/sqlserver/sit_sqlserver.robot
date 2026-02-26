@@ -178,18 +178,43 @@ Test 12: Verify SQL Server Snap Document Counts
     ...    PREREQUISITES:
     ...    - ${runtime_id} must be set from Test 11
     [Tags]    sqlserver    sit_sqlserver    verification
-    # Router: 7 active tblRequest rows routed by RequestType
+    # ==================== SOURCE READ SNAPS ====================
+    # tlrequest source: reads 7 active tblRequest rows (Status=0, RequestType 1-6)
+    Validate Snap Document Count    ${runtime_id}    tlrequest source    expected_output=7    expected_error=0
+    # tblHeader_select: reads all 7 tblHeader rows
+    Validate Snap Document Count    ${runtime_id}    tblHeader_select    expected_output=7    expected_error=0
+    # Read - tblItems: reads all 13 tblItems rows
+    Validate Snap Document Count    ${runtime_id}    Read - tblItems    expected_output=13    expected_error=0
+    # RUUID: utility snap (generates runtime UUID, no data throughput)
+    Validate Snap Document Count    ${runtime_id}    RUUID    expected_input=0    expected_output=0    expected_error=0
+    # ==================== ROUTING ====================
+    # tblRequest Router: routes 7 rows by RequestType (3→Request34, 4→Request1256)
     Validate Snap Document Count    ${runtime_id}    tblRequest Router    expected_input=7    expected_error=0
-    # Request1256 path: tblRequest Mapper receives 4 docs (types 1,2,5,6)
+    # Copy Header: duplicates 7 header rows to feed both paths (output=14)
+    Validate Snap Document Count    ${runtime_id}    Copy Header    expected_input=7    expected_output=14    expected_error=0
+    # ==================== REQUEST34 PATH (RequestType 3,4) ====================
+    # Request Sort: sorts 3 Request34 rows
+    Validate Snap Document Count    ${runtime_id}    Request Sort    expected_input=3    expected_output=3    expected_error=0
+    # Header Sort: sorts 7 header rows for Request34 join
+    Validate Snap Document Count    ${runtime_id}    Header Sort    expected_input=7    expected_output=7    expected_error=0
+    # Join Flow 1: inner join Request(3) + Header(7) = 3 matched output rows
+    Validate Snap Document Count    ${runtime_id}    Join Flow 1    expected_input=10    expected_output=3    expected_error=0
+    # Flow1 Map: maps 3 Request34 joined rows
+    Validate Snap Document Count    ${runtime_id}    Flow1 Map    expected_input=3    expected_output=3    expected_error=0
+    # ==================== REQUEST1256 PATH (RequestType 1,2,5,6) ====================
+    # tblRequest Mapper: maps 4 Request1256 rows
     Validate Snap Document Count    ${runtime_id}    tblRequest Mapper    expected_input=4    expected_output=4    expected_error=0
-    # Request34 path: Join Flow 1 inner join Request(3) + Header(3) = 3 output rows
-    Validate Snap Document Count    ${runtime_id}    Join Flow 1    expected_output=3    expected_error=0
-    # Join Flow 2: 3-way inner join Request(4) + Header(4) + Items(8) = 8 output rows
-    Validate Snap Document Count    ${runtime_id}    Join Flow 2    expected_output=8    expected_error=0
-    # Flow1 Map: maps 3 Request34 rows
-    Validate Snap Document Count    ${runtime_id}    Flow1 Map    expected_output=3    expected_error=0
-    # Data Union: merges Flow1 Map(3) + Flow 2(8) = 11 total docs
-    Validate Snap Document Count    ${runtime_id}    Data Union    expected_output=11    expected_error=0
+    # Request Sort2: sorts 4 Request1256 rows
+    Validate Snap Document Count    ${runtime_id}    Request Sort2    expected_input=4    expected_output=4    expected_error=0
+    # Header Sort2: sorts 7 header rows for Request1256 join
+    Validate Snap Document Count    ${runtime_id}    Header Sort2    expected_input=7    expected_output=7    expected_error=0
+    # Item Sort: sorts all 13 item rows for Request1256 join
+    Validate Snap Document Count    ${runtime_id}    Item Sort    expected_input=13    expected_output=13    expected_error=0
+    # Join Flow 2: 3-way inner join Request(4) + Header(7) + Items(13) = 8 output rows
+    Validate Snap Document Count    ${runtime_id}    Join Flow 2    expected_input=24    expected_output=8    expected_error=0
+    # ==================== MERGE AND UPDATE ====================
+    # Data Union: merges Flow1 Map(3) + Join Flow 2(8) = 11 total docs
+    Validate Snap Document Count    ${runtime_id}    Data Union    expected_input=11    expected_output=11    expected_error=0
     # tblRequest update: receives all 11 docs, updates 7 unique tblRequest rows
     Validate Snap Document Count    ${runtime_id}    tblRequest update    expected_input=11    expected_error=0
 
