@@ -145,7 +145,7 @@ All table setup and verification uses generic keywords from `sql_table_operation
   - `RUUID`: expected_input=0, expected_output=0, expected_error=0
 
   **Routing:**
-  - `tblRequest Router`: expected_input=7, expected_error=0
+  - `tblRequest Router`: expected_input=7, expected_output=7, expected_error=0
   - `Copy Header`: expected_input=7, expected_output=14, expected_error=0
 
   **Request34 Path (RequestType 3,4):**

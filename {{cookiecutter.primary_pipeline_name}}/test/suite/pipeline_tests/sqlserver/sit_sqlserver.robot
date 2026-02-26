@@ -189,7 +189,7 @@ Test 12: Verify SQL Server Snap Document Counts
     Validate Snap Document Count    ${runtime_id}    RUUID    expected_input=0    expected_output=0    expected_error=0
     # ==================== ROUTING ====================
     # tblRequest Router: routes 7 rows by RequestType (3→Request34, 4→Request1256)
-    Validate Snap Document Count    ${runtime_id}    tblRequest Router    expected_input=7    expected_error=0
+    Validate Snap Document Count    ${runtime_id}    tblRequest Router    expected_input=7    expected_output=7    expected_error=0
     # Copy Header: duplicates 7 header rows to feed both paths (output=14)
     Validate Snap Document Count    ${runtime_id}    Copy Header    expected_input=7    expected_output=14    expected_error=0
     # ==================== REQUEST34 PATH (RequestType 3,4) ====================
