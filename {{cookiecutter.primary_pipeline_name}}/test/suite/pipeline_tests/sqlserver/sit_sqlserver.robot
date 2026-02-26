@@ -4,7 +4,7 @@ Documentation       SIT Test Suite for SQL Server Pipeline (sit_sqlserver.slp)
 ...                 routes records by RequestType, performs joins/mappings/unions across two flows,
 ...                 and updates tblRequest with Status=1.
 ...
-...                 This suite covers all 12 LLD test cases (TC_001-TC_012) across 14 automated tests
+...                 This suite covers all 12 LLD test cases (TC_001-TC_012) across 15 automated tests
 ...                 following the Snowflake baseline pattern:
 ...                 Account Setup -> Expression Library Upload -> Source Data Verification ->
 ...                 Pipeline Import -> Task Creation -> Execution -> Post-Pipeline Validation -> CSV Comparison
@@ -154,7 +154,46 @@ Test 10: Execute Triggered Task
 
 ################## POST-PIPELINE VERIFICATION ##################
 
-Test 11: Verify Both Router Paths Processed
+Test 11: Verify SQL Server Pipeline Has No Errors
+    [Documentation]    Validates that the pipeline execution completed without errors.
+    ...    Retrieves the runtime ID from task history, logs snap statistics summary,
+    ...    and checks all snaps for error documents.
+    ...    Sets ${runtime_id} as a suite variable for downstream test cases.
+    ...
+    ...    PREREQUISITES:
+    ...    - Execute Triggered Task (Test 10) must have completed successfully
+    [Tags]    sqlserver    sit_sqlserver    verification
+    Validate Pipeline Has No Errors    ${pipeline_name}    ${task_name}    ${unique_id}
+
+Test 12: Verify SQL Server Snap Document Counts
+    [Documentation]    Validates document counts for each snap in the pipeline.
+    ...    Verifies that data flowed correctly through both router paths by checking
+    ...    that each snap processed the expected number of documents.
+    ...
+    ...    NOTE: Snap labels must exactly match the snap names in the Designer.
+    ...    Run 'Log Snap Statistics Summary' first to identify exact snap labels.
+    ...    Expected counts below are based on our test seed data (7 active requests,
+    ...    7 headers, 13 items). Adjust if seed data changes.
+    ...
+    ...    PREREQUISITES:
+    ...    - ${runtime_id} must be set from Test 11
+    [Tags]    sqlserver    sit_sqlserver    verification
+    # Router: 7 active tblRequest rows routed by RequestType
+    Validate Snap Document Count    ${runtime_id}    tblRequest Router    expected_input=7    expected_error=0
+    # Request1256 path: tblRequest Mapper receives 4 docs (types 1,2,5,6)
+    Validate Snap Document Count    ${runtime_id}    tblRequest Mapper    expected_input=4    expected_output=4    expected_error=0
+    # Request34 path: Join Flow 1 inner join Request(3) + Header(3) = 3 output rows
+    Validate Snap Document Count    ${runtime_id}    Join Flow 1    expected_output=3    expected_error=0
+    # Join Flow 2: 3-way inner join Request(4) + Header(4) + Items(8) = 8 output rows
+    Validate Snap Document Count    ${runtime_id}    Join Flow 2    expected_output=8    expected_error=0
+    # Flow1 Map: maps 3 Request34 rows
+    Validate Snap Document Count    ${runtime_id}    Flow1 Map    expected_output=3    expected_error=0
+    # Data Union: merges Flow1 Map(3) + Flow 2(8) = 11 total docs
+    Validate Snap Document Count    ${runtime_id}    Data Union    expected_output=11    expected_error=0
+    # tblRequest update: receives all 11 docs, updates 7 unique tblRequest rows
+    Validate Snap Document Count    ${runtime_id}    tblRequest update    expected_input=11    expected_error=0
+
+Test 13: Verify Both Router Paths Processed
     [Documentation]    TC_002/TC_006-TC_011: Verifies both router paths produced correct results.
     ...    Request34 path (RequestType 3,4): 3 rows updated to Status=1
     ...    Request1256 path (RequestType 1,2,5,6): 4 rows updated to Status=1
@@ -169,13 +208,13 @@ Test 11: Verify Both Router Paths Processed
     Row Count Should Be    dbo.tblRequest    ${EXPECTED_REQUEST1256_ROWS}
     ...    where_clause=RequestType IN ('1','2','5','6') AND Status=1 AND StatusMessage='Submitted in CBS'
 
-Test 12: Export tblRequest Post-Pipeline Data To CSV
+Test 14: Export tblRequest Post-Pipeline Data To CSV
     [Documentation]    TC_012_02: Exports the full tblRequest table to CSV for comparison.
     ...    Data is ordered by Id for deterministic comparison against expected output.
     [Tags]    sqlserver    sit_sqlserver    verification    tc_012_02
     Export DB Table Data To CSV    dbo.tblRequest    Id    ${actual_output_tblrequest_path}
 
-Test 13: Compare Actual vs Expected tblRequest CSV
+Test 15: Compare Actual vs Expected tblRequest CSV
     [Documentation]    TC_012_03: Compares actual post-pipeline tblRequest data against expected output.
     ...    Timestamp columns (RequestedOn, SubmittedOn, ProcessedOn) are excluded from comparison
     ...    because they contain dynamic values that change between test runs.

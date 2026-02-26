@@ -1,11 +1,11 @@
 # SIT SQL Server Test Plan — sit_sqlserver.robot
 
 ## Context
-The `sit_sqlserver.slp` pipeline reads from 3 SQL Server source tables (tblRequest, tblHeader, tblItems), routes records by RequestType, performs joins/mappings/unions across two flows, and updates tblRequest with Status=1. The LLD defines 12 test cases (TC_001–TC_012). This plan covers all 12 LLD test cases across **13 automated tests** following Account Setup → Expression Library Upload → Source Data Verification → Pipeline Import → Task Creation → Execution → Post-Pipeline Validation → CSV Comparison.
+The `sit_sqlserver.slp` pipeline reads from 3 SQL Server source tables (tblRequest, tblHeader, tblItems), routes records by RequestType, performs joins/mappings/unions across two flows, and updates tblRequest with Status=1. The LLD defines 12 test cases (TC_001–TC_012). This plan covers all 12 LLD test cases across **15 automated tests** following Account Setup → Expression Library Upload → Source Data Verification → Pipeline Import → Task Creation → Execution → Post-Pipeline Validation (snap statistics + DB assertions + CSV Comparison).
 
 ---
 
-## Test Execution Order (13 Tests)
+## Test Execution Order (15 Tests)
 
 | # | Test Case | LLD TC | Phase |
 |---|-----------|--------|-------|
@@ -20,9 +20,11 @@ The `sit_sqlserver.slp` pipeline reads from 3 SQL Server source tables (tblReque
 | 8 | Import Pipeline | -- | Pipeline Setup |
 | 9 | Create Triggered Task | -- | Task Setup |
 | 10 | Execute Triggered Task | TC_012_01 | Execution |
-| 11 | Verify Both Router Paths Processed (3 Request34 + 4 Request1256) | TC_002, TC_006-TC_011 | Post-Pipeline |
-| 12 | Export tblRequest Post-Pipeline Data To CSV | TC_012_02 | Post-Pipeline |
-| 13 | Compare Actual vs Expected tblRequest CSV | TC_012_03 | Post-Pipeline |
+| 11 | Verify SQL Server Pipeline Has No Errors | -- | Post-Pipeline |
+| 12 | Verify SQL Server Snap Document Counts | -- | Post-Pipeline |
+| 13 | Verify Both Router Paths Processed (3 Request34 + 4 Request1256) | TC_002, TC_006-TC_011 | Post-Pipeline |
+| 14 | Export tblRequest Post-Pipeline Data To CSV | TC_012_02 | Post-Pipeline |
+| 15 | Compare Actual vs Expected tblRequest CSV | TC_012_03 | Post-Pipeline |
 | **Suite Teardown** | Disconnect from Database | -- | Teardown |
 
 ---
@@ -32,23 +34,23 @@ The `sit_sqlserver.slp` pipeline reads from 3 SQL Server source tables (tblReque
 | LLD TC | Description | Verified By | Method |
 |--------|-------------|-------------|--------|
 | TC_001 | tblRequest extraction (Status=0, RequestType 1-6) | Test 3 | `Row Count Should Be` with where_clause |
-| TC_002 | RequestType routing (1,2,5,6 vs 3,4) | Test 11 | `Row Count Should Be` per route path |
-| TC_003 | Request mapping and sorting | Test 13 | Indirect: correct CSV output |
+| TC_002 | RequestType routing (1,2,5,6 vs 3,4) | Test 12, 13 | `Validate Snap Document Count` + `Row Count Should Be` per route path |
+| TC_003 | Request mapping and sorting | Test 15 | Indirect: correct CSV output |
 | TC_004_01 | Item data row count verification | Test 6 | `Row Count Should Be` |
 | TC_004_02 | Item null handling (VendorChallanNo, CBS_GPNumber) | Test 7 | `Execute Custom Query` |
 | TC_005_01 | Header data row count verification | Test 4 | `Row Count Should Be` |
 | TC_005_02 | Header DCProcess derivation | Test 5 | `Execute Custom Query` |
-| TC_006 | Flow 1 join (Request + Header) | Test 11 | Indirect: Request34 rows updated = join worked |
-| TC_007 | Flow 1 mapping (51 fields) | Test 13 | Indirect: correct final state |
-| TC_008 | Flow 2 join (Request + Header + Items) | Test 11 | Indirect: Request1256 rows updated = join worked |
-| TC_009 | Flow 2 mapping | Test 13 | Indirect: correct final state |
-| TC_010 | Union merge | Test 11 | Indirect: all 7 IDs updated = both paths merged |
-| TC_011 | tblRequest update (Status=1, SubmittedOn, StatusMessage) | Test 11 | Combined: 3+4=7 confirms all active rows processed |
-| TC_012_01 | Execute pipeline end-to-end | Test 10 | `Run Triggered Task With Parameters From Template` |
-| TC_012_02 | Export post-pipeline data to CSV | Test 12 | `Export DB Table Data To CSV` |
-| TC_012_03 | Compare actual vs expected output | Test 13 | `Compare CSV Files With Exclusions Template` |
+| TC_006 | Flow 1 join (Request + Header) | Test 12, 13 | `Validate Snap Document Count` (Join Flow 1 output=3) + DB row count |
+| TC_007 | Flow 1 mapping (51 fields) | Test 12, 15 | `Validate Snap Document Count` (Flow1 Map output=3) + CSV comparison |
+| TC_008 | Flow 2 join (Request + Header + Items) | Test 12, 13 | `Validate Snap Document Count` (Join Flow 2 output=8) + DB row count |
+| TC_009 | Flow 2 mapping | Test 12, 15 | `Validate Snap Document Count` + CSV comparison |
+| TC_010 | Union merge | Test 12, 13 | `Validate Snap Document Count` (Data Union output=11) + DB row count |
+| TC_011 | tblRequest update (Status=1, SubmittedOn, StatusMessage) | Test 13 | Combined: 3+4=7 confirms all active rows processed |
+| TC_012_01 | Execute pipeline end-to-end | Test 10, 11 | `Run Triggered Task` + `Validate Pipeline Has No Errors` |
+| TC_012_02 | Export post-pipeline data to CSV | Test 14 | `Export DB Table Data To CSV` |
+| TC_012_03 | Compare actual vs expected output | Test 15 | `Compare CSV Files With Exclusions Template` |
 
-> **Note**: TC_002/003/006-010 are validated indirectly because intermediate pipeline snap outputs cannot be observed from outside SnapLogic. Their correctness is proven by correct downstream results.
+> **Note**: TC_002/003/006-010 are now partially validated via snap document counts (Test 12) which verify correct data flow through each snap. Full intermediate data content verification requires the snap preview API (see SLIM-985). Their correctness is further proven by correct downstream results (Tests 13, 15).
 
 ---
 
@@ -69,6 +71,8 @@ All table setup and verification uses generic keywords from `sql_table_operation
 | `Import Pipelines From Template` | Import .slp pipeline | Template-based pipeline import |
 | `Create Triggered Task From Template` | Create triggered task | Template-based task creation |
 | `Run Triggered Task With Parameters From Template` | Execute triggered task | Template-based task execution |
+| `Validate Pipeline Has No Errors` | Check all snaps for error documents, set runtime_id | `Validate Pipeline Has No Errors  ${pipeline_name}  ${task_name}  ${unique_id}` |
+| `Validate Snap Document Count` | Validate input/output/error doc counts per snap | `Validate Snap Document Count  ${runtime_id}  Join Flow 2  expected_output=8` |
 
 ---
 
@@ -122,17 +126,37 @@ All table setup and verification uses generic keywords from `sql_table_operation
 - **Keywords**: `Run Triggered Task With Parameters From Template`
 - **Executes**: Pipeline end-to-end
 
-### Test 11: Verify Both Router Paths Processed — TC_002/TC_006-TC_011 (NEW)
+### Test 11: Verify SQL Server Pipeline Has No Errors (NEW)
+- **Keywords**: `Validate Pipeline Has No Errors`
+- **What it does**: Retrieves runtime ID from task history, logs snap statistics summary, checks all snaps for error documents
+- **Sets**: `${runtime_id}` as suite variable for downstream test cases (Test 12)
+- **Prerequisite**: Test 10 (Execute Triggered Task) must have completed successfully
+
+### Test 12: Verify SQL Server Snap Document Counts (NEW)
+- **Keywords**: `Validate Snap Document Count` (called 7 times)
+- **What it does**: Validates document counts (input/output/error) for each snap in the pipeline
+- **Prerequisite**: `${runtime_id}` must be set from Test 11
+- **Snap validations** (based on test seed data: 7 active requests, 7 headers, 13 items):
+  - `tblRequest Router`: expected_input=7, expected_error=0
+  - `tblRequest Mapper`: expected_input=4, expected_output=4, expected_error=0
+  - `Join Flow 1`: expected_output=3, expected_error=0
+  - `Join Flow 2`: expected_output=8, expected_error=0
+  - `Flow1 Map`: expected_output=3, expected_error=0
+  - `Data Union`: expected_output=11, expected_error=0
+  - `tblRequest update`: expected_input=11, expected_error=0
+- **Note**: Snap labels must exactly match the snap names in the Designer. Run `Log Snap Statistics Summary` first to identify exact labels. Adjust expected counts if seed data changes.
+
+### Test 13: Verify Both Router Paths Processed — TC_002/TC_006-TC_011 (NEW)
 - **Keywords**: `Row Count Should Be` (called twice)
 - **Validation 1**: `Row Count Should Be  dbo.tblRequest  3  where_clause=RequestType IN ('3','4') AND Status=1 AND StatusMessage='Submitted in CBS'`
 - **Validation 2**: `Row Count Should Be  dbo.tblRequest  4  where_clause=RequestType IN ('1','2','5','6') AND Status=1 AND StatusMessage='Submitted in CBS'`
 - **Proves**: Both router paths (Request34 and Request1256) produced output that was merged and processed. Combined 3+4=7 confirms all active rows were updated (TC_011)
 
-### Test 12: Export tblRequest Post-Pipeline Data To CSV — TC_012_02 (NEW)
+### Test 14: Export tblRequest Post-Pipeline Data To CSV — TC_012_02 (NEW)
 - **Keywords**: `Export DB Table Data To CSV`
 - **Exports**: `dbo.tblRequest` ordered by `Id` to `${actual_output_tblrequest_path}`
 
-### Test 13: Compare Actual vs Expected tblRequest CSV — TC_012_03 (NEW)
+### Test 15: Compare Actual vs Expected tblRequest CSV — TC_012_03 (NEW)
 - **Keywords**: `Compare CSV Files With Exclusions Template`
 - **Compares**: Actual CSV vs expected CSV, excluding timestamp columns (RequestedOn, SubmittedOn, ProcessedOn)
 
@@ -211,11 +235,11 @@ Not everything the customer does manually should be converted into automation. S
 
 | Manual Activity | Automate? | Reason | Alternative Approach |
 |---|---|---|---|
-| Snap preview screenshots | NO | No snap preview API exists; visual-only UI feature | Pipeline execution status (Completed/Failed) + target table data assertions |
+| Snap preview screenshots | PARTIAL | Snap output data content not available via API; doc counts are available | `Validate Pipeline Has No Errors` + `Validate Snap Document Count` (Tests 11, 12) |
 | Excel execution document | NO | Documentation artifact, not a test | RF report.html & log.html as evidence |
 | STM checks with screenshots | NO | Manual copy-paste into templates | Automated source-to-target DB comparisons |
-| SnapLogic Designer UI checks | NO | UI-dependent, no stable API | SnapLogic REST API for status checks |
-| Pipeline dashboard monitoring | NO | Visual monitoring, version-sensitive | API-based execution status verification |
+| SnapLogic Designer UI checks | PARTIAL | Green checkmarks covered via error doc check; visual layout not covered | `Validate Pipeline Has No Errors` (Test 11) |
+| Pipeline dashboard monitoring | YES | Covered via snap statistics API | `Validate Pipeline Has No Errors` + `Validate Snap Document Count` (Tests 11, 12) |
 | Defect logging & triage | NO | Requires human judgment | Clear failure messages in RF reports |
 
 ### Details
@@ -242,9 +266,9 @@ Not everything the customer does manually should be converted into automation. S
 
 ---
 
-## Gap Analysis — Scenarios Not Covered by Our 13 Tests
+## Gap Analysis — Scenarios Not Covered by Our 15 Tests
 
-A thorough review of the LLD document (`EBAS_to_CBS_LLD.docx`), the manual test execution workbook (`DC_EBAS_To_CBS_backup.xlsx` — 13 embedded screenshots across 3 sheets), and the TC Execution CSV (`TC_001–TC_012`) identified the following scenarios that are **not covered** by our 13 automated tests. Each gap is categorized as:
+A thorough review of the LLD document (`EBAS_to_CBS_LLD.docx`), the manual test execution workbook (`DC_EBAS_To_CBS_backup.xlsx` — 13 embedded screenshots across 3 sheets), and the TC Execution CSV (`TC_001–TC_012`) identified the following scenarios that are **not fully covered** by our 15 automated tests. Each gap is categorized as:
 
 - **Cannot Automate** — No API or programmatic access exists
 - **Out of Scope** — Belongs to a different system, team, or phase
@@ -272,7 +296,7 @@ A thorough review of the LLD document (`EBAS_to_CBS_LLD.docx`), the manual test 
 | **What's Missing** | The LLD defines a testing scenario where DataStage output is compared against SnapLogic output to prove migration equivalence. The `DC_EBAS_To_CBS_backup.xlsx` Sheet 3 screenshots show a **separate comparison pipeline** (`DC_of_EBAS_To_CBS`) that performs this comparison with snaps: Read DS Output File → CSV Parser → DS Output Format → Join with SL Output → Union Found and Error → Evaluate Result → Map Output Format → Output File Formatting → Create Comparison Result File. |
 | **Category** | **Out of Scope — but could be automated if DataStage output files are provided** |
 | **Reason** | This is a one-time migration validation activity comparing legacy DataStage output against SnapLogic output. Once migration is validated, this comparison is no longer needed. It also requires DataStage to still be running and producing output, which may not be available in our test environment. The comparison pipeline (`DC_of_EBAS_To_CBS`) is a separate pipeline not part of the core `sit_sqlserver.slp` being tested. |
-| **How to Add (if DS output is available)** | If the DataStage output CSV/file is provided, this can be automated using the existing Tests 12 + 13 pattern: (1) Use the DS output file as the expected CSV, (2) Export post-pipeline tblRequest data as the actual CSV (Test 12), (3) Compare actual vs expected using `Compare CSV Files With Exclusions Template` (Test 13). No new keywords or separate comparison pipeline needed — just replace the expected CSV file. |
+| **How to Add (if DS output is available)** | If the DataStage output CSV/file is provided, this can be automated using the existing Tests 14 + 15 pattern: (1) Use the DS output file as the expected CSV, (2) Export post-pipeline tblRequest data as the actual CSV (Test 14), (3) Compare actual vs expected using `Compare CSV Files With Exclusions Template` (Test 15). No new keywords or separate comparison pipeline needed — just replace the expected CSV file. |
 
 ---
 
@@ -292,9 +316,10 @@ A thorough review of the LLD document (`EBAS_to_CBS_LLD.docx`), the manual test 
 | Attribute | Detail |
 |-----------|--------|
 | **Source** | `DC_EBAS_To_CBS_backup.xlsx` — Sheet 2 (SL_EBAS_To_CBS), 3 screenshots showing snap statistics |
-| **What's Missing** | The manual team captures snap-by-snap statistics including: (a) Read tblHeader: 527 rows output, (b) Read tblItems: 801 rows output, (c) tblRequest Router: Request1256 output 0 docs / Request34 output 0 docs, (d) Join Flow 2 inputs: tblRequest Data 0, Item Data 801, Header Data 527, (e) Bytes processed, documents count, and processing rate per snap. Our tests validate final outcomes (row counts in target table, CSV comparison) but not intermediate snap-level statistics. |
-| **Category** | **Cannot Automate** |
-| **Reason** | SnapLogic does not expose a public API for querying individual snap output statistics from a pipeline run. Snap preview and snap statistics are only available through the SnapLogic Designer UI. The SnapLogic REST API returns pipeline-level execution status (Completed/Failed/Running) but not snap-level document counts or byte metrics. **Alternative**: Our post-pipeline validations (Tests 11, 13) prove that the correct number of rows were processed through each path, which indirectly validates that intermediate snap counts were correct. |
+| **What's Missing** | The manual team captures snap-by-snap statistics including: (a) Read tblHeader: 527 rows output, (b) Read tblItems: 801 rows output, (c) tblRequest Router: Request1256 output 0 docs / Request34 output 0 docs, (d) Join Flow 2 inputs: tblRequest Data 0, Item Data 801, Header Data 527, (e) Bytes processed, documents count, and processing rate per snap. |
+| **Category** | **Partially Covered (Tests 11 + 12)** |
+| **What's Now Covered** | Test 11 (`Validate Pipeline Has No Errors`) checks all snaps for error documents. Test 12 (`Validate Snap Document Count`) verifies input/output/error document counts for 7 key snaps (Router, Mapper, Join Flow 1, Join Flow 2, Flow1 Map, Data Union, tblRequest update). This covers document counts per snap. |
+| **What's Still Missing** | Bytes processed and processing rate per snap are not available via the current API. Actual snap output **data content** (field values, not just counts) requires the snap preview API requested in [SLIM-985](https://mysnaplogic.atlassian.net/browse/SLIM-985). |
 
 ---
 
@@ -304,8 +329,8 @@ A thorough review of the LLD document (`EBAS_to_CBS_LLD.docx`), the manual test 
 |-----------|--------|
 | **Source** | `DC_EBAS_To_CBS_backup.xlsx` — All 3 sheets show pipeline execution with green checkmarks on each snap |
 | **What's Missing** | The manual team verifies that each snap shows a green checkmark (success indicator) in the SnapLogic Designer UI after pipeline execution. |
-| **Category** | **Cannot Automate** |
-| **Reason** | Green checkmarks are a UI-only visual indicator. No API exists to query per-snap execution status. **Alternative**: The `Run Triggered Task With Parameters From Template` keyword returns pipeline-level status (Completed/Failed). A "Completed" status means all snaps executed successfully. If any snap fails, the pipeline status changes to "Failed" and Test 10 would fail. |
+| **Category** | **Covered (Test 11)** |
+| **What's Now Covered** | Test 11 (`Validate Pipeline Has No Errors`) checks all snaps for error documents after pipeline execution. If any snap has error documents, the test fails and lists the affected snaps. This is the programmatic equivalent of verifying green checkmarks — a snap with 0 errors is a "green checkmark". Additionally, Test 10 verifies the overall pipeline status is "Completed" (not "Failed"). |
 
 ---
 
@@ -362,7 +387,7 @@ A thorough review of the LLD document (`EBAS_to_CBS_LLD.docx`), the manual test 
 | **Source** | TC Execution CSV — TC_007: "Count target fields. 51 target fields populated and sent to Union snap." TC_009: "Verify 51 target fields mapping. Transformed data successfully sent to Union snap." |
 | **What's Missing** | The manual team counts that exactly 51 fields are populated in the mapper output before the Union snap. Our tests validate the final tblRequest update (which only updates 4 columns: Id, Status, SubmittedOn, StatusMessage) but do not count the intermediate 51-field mapper output. |
 | **Category** | **Cannot Automate** |
-| **Reason** | The 51-field output is an intermediate snap result inside the pipeline. There is no API to inspect the output schema or document count of a specific snap within a pipeline. The 51 fields are an internal transformation detail that gets reduced to 4 target columns in the final update. **Alternative**: Test 13 (CSV comparison) validates the final target table state, which is the downstream result of the 51-field mapping. If the mapping were wrong, the final data would not match expected values. |
+| **Reason** | The 51-field output is an intermediate snap result inside the pipeline. There is no API to inspect the output schema or document count of a specific snap within a pipeline. The 51 fields are an internal transformation detail that gets reduced to 4 target columns in the final update. **Alternative**: Test 12 (snap document counts) validates that Flow1 Map and Join Flow 2 produced the expected number of output documents. Test 15 (CSV comparison) validates the final target table state, which is the downstream result of the 51-field mapping. If the mapping were wrong, the final data would not match expected values. |
 
 ---
 
@@ -373,7 +398,7 @@ A thorough review of the LLD document (`EBAS_to_CBS_LLD.docx`), the manual test 
 | **Source** | TC Execution CSV — TC_003: "Validate Request data mapping snap. Validate Request Sort snap execution. Verify sorted request output. Request data mapped and sorted correctly based on defined keys." |
 | **What's Missing** | We do not directly verify that request data is sorted within the pipeline. The pipeline has a "Request Sort" snap that sorts data before further processing. |
 | **Category** | **Cannot Automate** |
-| **Reason** | Sort order is an intermediate pipeline operation that affects processing order, not final output. The tblRequest UPDATE statement uses the `Id` key for matching, so the sort order of input data does not affect the final result. There is no API to observe the output order of the Sort snap. **Alternative**: Test 13 (CSV comparison with ORDER BY Id) validates the final data is correct regardless of sort order. |
+| **Reason** | Sort order is an intermediate pipeline operation that affects processing order, not final output. The tblRequest UPDATE statement uses the `Id` key for matching, so the sort order of input data does not affect the final result. There is no API to observe the output order of the Sort snap. **Alternative**: Test 15 (CSV comparison with ORDER BY Id) validates the final data is correct regardless of sort order. |
 
 ---
 
@@ -440,7 +465,7 @@ Verify tblRequest Column Data Types
 | **What's Missing** | The LLD references an external STTM document that defines the exact field-by-field mapping for all 51 target fields. We do not have this document and cannot verify individual field mappings at the STTM level. |
 | **Category** | **Could Add (Future) — if STTM document is provided** |
 | **How to Add** | If the STTM document is obtained, it could define expected values for all 51 intermediate fields. However, since only 4 fields are updated in the target table (Id, Status, SubmittedOn, StatusMessage), the remaining 47 fields are intermediate and not observable via the target table. Full STTM validation would require the comparison pipeline (Gap 3) or direct snap output inspection. |
-| **Priority** | Low — Test 13 (CSV comparison) validates the 4 target update columns. The other 47 fields are pipeline-internal. |
+| **Priority** | Low — Test 15 (CSV comparison) validates the 4 target update columns. The other 47 fields are pipeline-internal. |
 
 ---
 
@@ -451,8 +476,8 @@ Verify tblRequest Column Data Types
 | 1 | No-Data Scenario (0 active rows) | Could Add (Future) | Medium |
 | 2 | DataStage vs SnapLogic Comparison (TS 1.0) | Out of Scope (automatable if DS output file provided) | Medium |
 | 3 | Comparison Pipeline (DC_of_EBAS_To_CBS) | Out of Scope | — |
-| 4 | Snap-Level Statistics / Row Counts Per Snap | Cannot Automate | — |
-| 5 | Snap Green Checkmarks / Visual Status | Cannot Automate | — |
+| 4 | Snap-Level Statistics / Row Counts Per Snap | **Partially Covered (Tests 11, 12)** — doc counts covered, data content pending SLIM-985 | — |
+| 5 | Snap Green Checkmarks / Visual Status | **Covered (Test 11)** — error doc check = programmatic green checkmark | — |
 | 6 | Error Notification via Tidal | Out of Scope | — |
 | 7 | Tidal Scheduling Integration | Out of Scope | — |
 | 8 | Expression Library Config Validation (no hardcoding) | Could Add (automatable if expected values known) | Low |
@@ -465,7 +490,9 @@ Verify tblRequest Column Data Types
 | 15 | STTM Detailed Field-Level Mapping | Could Add (Future) | Low |
 
 **Coverage Summary**:
-- **Covered by our 13 tests**: TC_001 through TC_012 (all 12 LLD test cases) — via direct SQL validation or indirect downstream result verification
-- **Cannot Automate (3 gaps)**: Snap-level statistics, visual checkmarks, intermediate field counts — no SnapLogic API exists
+- **Covered by our 15 tests**: TC_001 through TC_012 (all 12 LLD test cases) — via direct SQL validation, snap document count verification, or indirect downstream result verification
+- **Now Covered (2 gaps closed)**: Snap green checkmarks (Test 11 — error doc check), snap-level document counts (Test 12 — `Validate Snap Document Count`)
+- **Partially Remaining (1 gap)**: Snap-level output data content — doc counts now covered, but actual field-level data requires snap preview API ([SLIM-985](https://mysnaplogic.atlassian.net/browse/SLIM-985))
+- **Cannot Automate (2 gaps)**: Intermediate 51-field count, request data sort order — no API to inspect intermediate snap schemas
 - **Out of Scope (5 gaps)**: DataStage comparison, Tidal integration, legacy sub-pipelines, file archival — belong to different systems or migration-phase activities
 - **Could Add in Future (4 gaps)**: No-data scenario, expression library validation, SLDB file check, data type check — technically possible but lower priority
