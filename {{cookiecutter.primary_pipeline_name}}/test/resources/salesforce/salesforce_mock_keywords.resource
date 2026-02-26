@@ -22,7 +22,10 @@ Library             JSONLibrary
 # Django mock server URL (HTTP inside Docker network)
 # Container name: salesforce-api-mock, internal HTTP port: 8080
 ${SALESFORCE_MOCK_URL}              http://salesforce-api-mock:8080
-${SALESFORCE_MOCK_API_VERSION}      ${SALESFORCE_API_VERSION}
+# SALESFORCE_API_VERSION is loaded from env_files/mock_service_accounts/.env.salesforce
+# by __init__.robot's Load Environment Variables keyword during Suite Setup.
+# Value: "59.0" — we prepend "v" to match real Salesforce API URL format (e.g., v59.0).
+${SALESFORCE_MOCK_API_VERSION}      v${SALESFORCE_API_VERSION}
 
 
 *** Keywords ***
