@@ -10,13 +10,19 @@ user-invocable: true
 
 **IMPORTANT:** When user asks a simple question like "How do I create an Oracle account?", provide a **concise answer first** with just the template/command, then offer to explain more if needed. Do NOT dump all documentation.
 
-**MANDATORY:** When creating account test cases (for ANY account type — supported or new), you MUST call the **Write tool** to create ALL 4 files. Do NOT read files to check if they exist first. Do NOT say "file already exists" or "already complete". Always write them fresh:
-1. **Payload file** (`acc_[type].json`) in `test/suite/test_data/accounts_payload/` — WRITE this
-2. **Env file** (`.env.[type]`) in `env_files/[category]_accounts/` — WRITE this
-3. **Robot test file** (`.robot`) in `test/suite/pipeline_tests/[type]/` — WRITE this
-4. **ACCOUNT_SETUP_README.md** with file structure tree diagram in the same test directory — WRITE this
+**MANDATORY WORKFLOW:** When creating account test cases (for ANY account type — supported or new):
+1. **Enter plan mode first** — Do NOT start writing files immediately
+2. **Check which files already exist** — Read the payload file and env file to see if they already have correct content
+3. **Present a plan** showing: existing files (skip) vs. missing files (create)
+4. **After user approves**, only create the files that are missing
 
-This applies to ALL account types — both supported and new/unsupported types. No exceptions. You must call Write exactly 4 times. See the "IMPORTANT: Step-by-Step Workflow" section for details.
+The 4 required files are:
+1. **Payload file** (`acc_[type].json`) in `test/suite/test_data/accounts_payload/` — CREATE only if missing
+2. **Env file** (`.env.[type]`) in `env_files/[category]_accounts/` — CREATE only if missing
+3. **Robot test file** (`.robot`) in `test/suite/pipeline_tests/[type]/` — CREATE only if missing or empty
+4. **ACCOUNT_SETUP_README.md** with file structure tree diagram in the same test directory — CREATE only if missing
+
+Ensure all 4 files exist when done, but do NOT overwrite existing files that already have correct content. See the "IMPORTANT: Step-by-Step Workflow" section for details.
 
 **Response format for simple questions:**
 1. Give the direct template or test case first
@@ -365,25 +371,23 @@ Create PostgreSQL Account
 | 3 | **Robot test file** | `test/suite/pipeline_tests/[type]/[type]_account_setup.robot` | Robot Framework test case |
 | 4 | **ACCOUNT_SETUP_README.md** | `test/suite/pipeline_tests/[type]/ACCOUNT_SETUP_README.md` | File structure diagram and instructions |
 
-**ALWAYS create all 4 files using the Write tool.** There are NO exceptions — not for supported account types, not for new ones. Even if a file already exists, you MUST still use the Write tool to create/overwrite it. Do NOT skip any file. Do NOT say "file already exists" or "marking it complete" — actually write the file content.
+**Before writing any files, enter plan mode and check which files already exist.** Read each file to determine if it has correct content. Present a plan to the user showing which files exist (skip) and which are missing (create). Only create files that don't already exist or are empty. Ensure all 4 files exist when done.
 
-**CRITICAL: Do NOT read files to check if they exist first. Do NOT skip writing a file because it already exists. Always use the Write tool to create every file, every time.**
+**IMPORTANT: Do NOT overwrite existing files that already have correct content.** Only use the Write tool for files that are missing or empty.
 
 ### Step 1: Identify the Account Type
 Determine which account type you need based on your pipeline requirements.
 
-### Step 2: Create the Payload File (ALWAYS — use Write tool)
-**ALWAYS use the Write tool** to create `test/suite/test_data/accounts_payload/acc_[type].json`.
+### Step 2: Create the Payload File (if missing)
+**Check if** `test/suite/test_data/accounts_payload/acc_[type].json` **already exists with correct content.** If it does, skip this step. If missing, create it:
 - Use SnapLogic account JSON structure with Jinja variable placeholders (e.g., `{{VARIABLE_NAME}}`)
 - For supported types, use the known payload structure from the reference section below
 - For new types, create the JSON structure based on the account type's typical configuration
-- **Do NOT check if the file exists. Do NOT skip. Use Write tool to create the file.**
 
-### Step 3: Create the Environment File (ALWAYS — use Write tool)
-**ALWAYS use the Write tool** to create the corresponding `.env.[type]` file in `env_files/`.
+### Step 3: Create the Environment File (if missing)
+**Check if** the corresponding `.env.[type]` file in `env_files/` **already exists with correct content.** If it does, skip this step. If missing, create it:
 - Include all variables referenced in the payload file
 - Include payload file name, account name, connection details, and authentication variables
-- **Do NOT check if the file exists. Do NOT skip. Use Write tool to create the file.**
 
 | Account Type | Env File Location |
 |--------------|-------------------|
@@ -413,20 +417,20 @@ The env file tells you:
 **Option A:** Edit the env file directly (for Docker/non-sensitive values)
 **Option B:** Copy variables to root `.env` file (for production/sensitive credentials - root `.env` overrides everything)
 
-### Step 6: Create the Robot Test Case (ALWAYS — use Write tool)
-**ALWAYS use the Write tool** to create the `.robot` test file in `test/suite/pipeline_tests/[type]/`. Do NOT skip this step. Do NOT check if it exists first.
+### Step 6: Create the Robot Test Case (if missing or empty)
+**Check if** the `.robot` test file in `test/suite/pipeline_tests/[type]/` **already exists with correct content.** If it does, skip this step. If missing or empty, create it.
 
-### Step 7: Create ACCOUNT_SETUP_README.md with File Structure (ALWAYS — use Write tool)
-**ALWAYS use the Write tool** to create an ACCOUNT_SETUP_README.md in the test directory with a file structure tree diagram. See the "MANDATORY: README with File Structure" section for the template. Do NOT skip this step.
+### Step 7: Create ACCOUNT_SETUP_README.md with File Structure (if missing)
+**Check if** ACCOUNT_SETUP_README.md already exists in the test directory. If it does, skip this step. If missing, create it with a file structure tree diagram. See the "MANDATORY: README with File Structure" section for the template.
 
-### Summary: You MUST use the Write tool to create these 4 files every time
+### Summary: Ensure all 4 files exist — only create what's missing
 ```
-1. test/suite/test_data/accounts_payload/acc_[type].json       ← WRITE this file
-2. env_files/[category]_accounts/.env.[type]                   ← WRITE this file
-3. test/suite/pipeline_tests/[type]/[type]_account_setup.robot ← WRITE this file
-4. test/suite/pipeline_tests/[type]/ACCOUNT_SETUP_README.md     ← WRITE this file
+1. test/suite/test_data/accounts_payload/acc_[type].json       ← CHECK if exists, CREATE if missing
+2. env_files/[category]_accounts/.env.[type]                   ← CHECK if exists, CREATE if missing
+3. test/suite/pipeline_tests/[type]/[type]_account_setup.robot ← CHECK if exists, CREATE if missing/empty
+4. test/suite/pipeline_tests/[type]/ACCOUNT_SETUP_README.md     ← CHECK if exists, CREATE if missing
 ```
-If you did not call the Write tool exactly 4 times (once per file), you have NOT completed the task. Never say "file already exists" — always write it.
+All 4 files must exist when you are done. Only use the Write tool for files that are missing or empty — do NOT overwrite existing files with correct content.
 
 ---
 
