@@ -1,0 +1,2357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT &amp; OAuth2 Authentication Setup — SnapLogic Robot Framework</title>
+    <style>
+        /* ═══════════════════════════════════════════════════════════════
+           RESET & BASE
+           ═══════════════════════════════════════════════════════════════ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           HEADER
+           ═══════════════════════════════════════════════════════════════ */
+        .header {
+            background: white;
+            border-radius: 10px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 22px;
+        }
+
+        .header-subtitle {
+            color: #666;
+            font-size: 15px;
+        }
+
+        .header-right {
+            text-align: right;
+        }
+
+        .header-right .date {
+            color: #888;
+            font-size: 12px;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           TAB NAVIGATION
+           ═══════════════════════════════════════════════════════════════ */
+        .nav-section {
+            background: white;
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .nav-section h3 {
+            color: #333;
+            font-size: 15px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tab-nav {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 10px 18px;
+            border: 2px solid #0f3460;
+            background: white;
+            color: #0f3460;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .tab-btn:hover, .tab-btn.active {
+            background: #0f3460;
+            color: white;
+        }
+
+        .tab-btn.green-tab { border-color: #27ae60; color: #27ae60; }
+        .tab-btn.green-tab:hover, .tab-btn.green-tab.active { background: #27ae60; color: white; }
+
+        .tab-btn.blue-tab { border-color: #2980b9; color: #2980b9; }
+        .tab-btn.blue-tab:hover, .tab-btn.blue-tab.active { background: #2980b9; color: white; }
+
+        .tab-btn.purple-tab { border-color: #8e44ad; color: #8e44ad; }
+        .tab-btn.purple-tab:hover, .tab-btn.purple-tab.active { background: #8e44ad; color: white; }
+
+        .tab-btn.orange-tab { border-color: #e67e22; color: #e67e22; }
+        .tab-btn.orange-tab:hover, .tab-btn.orange-tab.active { background: #e67e22; color: white; }
+
+        .tab-btn.red-tab { border-color: #e74c3c; color: #e74c3c; }
+        .tab-btn.red-tab:hover, .tab-btn.red-tab.active { background: #e74c3c; color: white; }
+
+        .tab-btn.teal-tab { border-color: #00897b; color: #00897b; }
+        .tab-btn.teal-tab:hover, .tab-btn.teal-tab.active { background: #00897b; color: white; }
+
+        .tab-btn.gray-tab { border-color: #7f8c8d; color: #7f8c8d; }
+        .tab-btn.gray-tab:hover, .tab-btn.gray-tab.active { background: #7f8c8d; color: white; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           DATA SECTIONS / CARDS
+           ═══════════════════════════════════════════════════════════════ */
+        .data-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .data-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 20px;
+        }
+
+        .data-section h2 .badge {
+            background: #0f3460;
+            color: white;
+            font-size: 13px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: normal;
+        }
+        .data-section h2 .badge.green { background: #27ae60; }
+        .data-section h2 .badge.blue { background: #2980b9; }
+        .data-section h2 .badge.purple { background: #8e44ad; }
+        .data-section h2 .badge.orange { background: #e67e22; }
+        .data-section h2 .badge.red { background: #e74c3c; }
+        .data-section h2 .badge.teal { background: #00897b; }
+
+        .data-section h3 {
+            color: #444;
+            margin: 20px 0 10px 0;
+            font-size: 17px;
+        }
+
+        .data-section p {
+            color: #555;
+            font-size: 16px;
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+
+        .data-section ul, .data-section ol {
+            margin: 10px 0 15px 20px;
+            font-size: 15px;
+            color: #555;
+            line-height: 1.8;
+        }
+
+        .data-section li { margin-bottom: 6px; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           INFO BOXES
+           ═══════════════════════════════════════════════════════════════ */
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #0f3460;
+            padding: 14px 18px;
+            margin-bottom: 15px;
+            border-radius: 0 5px 5px 0;
+            font-size: 15px;
+            color: #1a237e;
+            line-height: 1.7;
+        }
+        .info-box code {
+            background: #bbdefb;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .info-box.green { background: #e8f5e9; border-left-color: #27ae60; color: #1b5e20; }
+        .info-box.green code { background: #c8e6c9; }
+
+        .info-box.blue { background: #e8f0fe; border-left-color: #2980b9; color: #1a3a5c; }
+        .info-box.blue code { background: #d0e3f7; }
+
+        .info-box.purple { background: #f3e8fa; border-left-color: #8e44ad; color: #4a1a6b; }
+        .info-box.purple code { background: #e8d5f5; }
+
+        .info-box.orange { background: #fef3e2; border-left-color: #e67e22; color: #6b3a0a; }
+        .info-box.orange code { background: #fde6c8; }
+
+        .info-box.red { background: #fde8e8; border-left-color: #e74c3c; color: #6b1a1a; }
+        .info-box.red code { background: #f9d0d0; }
+
+        .info-box.teal { background: #e0f2f1; border-left-color: #00897b; color: #004d40; }
+        .info-box.teal code { background: #b2dfdb; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           TABLES
+           ═══════════════════════════════════════════════════════════════ */
+        .table-container { overflow-x: auto; }
+
+        table { width: 100%; border-collapse: collapse; }
+
+        th {
+            background: #f7f7f7;
+            padding: 14px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+            font-size: 15px;
+        }
+
+        td {
+            padding: 14px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 15px;
+            vertical-align: top;
+        }
+
+        tr:hover { background: #f9f9f9; }
+
+        td code, th code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #333;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           CODE BLOCKS
+           ═══════════════════════════════════════════════════════════════ */
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 18px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 600px;
+            overflow-y: auto;
+            white-space: pre;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .code-block .comment { color: #6a9955; }
+        .code-block .keyword { color: #569cd6; }
+        .code-block .string { color: #ce9178; }
+        .code-block .function { color: #dcdcaa; }
+        .code-block .variable { color: #9cdcfe; }
+        .code-block .highlight { background: #264f2a; display: inline; }
+        .code-block .highlight-blue { background: #1e3a5f; display: inline; }
+        .code-block .highlight-red { background: #5f1e1e; display: inline; }
+        .code-block .dim { color: #666; }
+        .code-block .arrow { color: #27ae60; font-weight: bold; }
+        .code-block .match { color: #27ae60; font-weight: bold; }
+        .code-block .nomatch { color: #e74c3c; }
+        .code-block .success { color: #27ae60; font-weight: bold; }
+        .code-block .warn { color: #e67e22; font-weight: bold; }
+        .code-block .danger { color: #e74c3c; font-weight: bold; }
+
+        .code-label {
+            background: #0f3460;
+            color: white;
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 5px 5px 0 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .code-label.green { background: #27ae60; }
+        .code-label.blue { background: #2980b9; }
+        .code-label.purple { background: #8e44ad; }
+        .code-label.orange { background: #e67e22; }
+        .code-label.red { background: #e74c3c; }
+        .code-label.teal { background: #00897b; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           STATS CARDS
+           ═══════════════════════════════════════════════════════════════ */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .stat-card .label-text {
+            font-size: 15px;
+            font-weight: bold;
+            color: #0f3460;
+        }
+
+        .stat-card .big-number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .stat-card.green .label-text, .stat-card.green .big-number { color: #27ae60; }
+        .stat-card.blue .label-text, .stat-card.blue .big-number { color: #2980b9; }
+        .stat-card.purple .label-text, .stat-card.purple .big-number { color: #8e44ad; }
+        .stat-card.orange .label-text, .stat-card.orange .big-number { color: #e67e22; }
+        .stat-card.red .label-text, .stat-card.red .big-number { color: #e74c3c; }
+        .stat-card.teal .label-text, .stat-card.teal .big-number { color: #00897b; }
+        .stat-card.gray .label-text, .stat-card.gray .big-number { color: #7f8c8d; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           COMPARISON COLUMNS
+           ═══════════════════════════════════════════════════════════════ */
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 15px 0;
+        }
+
+        .comparison-col {
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .comparison-col h4 {
+            margin-bottom: 10px;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .comparison-col.pros { border-color: #27ae60; background: #e8f5e9; }
+        .comparison-col.pros h4 { color: #27ae60; }
+
+        .comparison-col.cons { border-color: #e74c3c; background: #fde8e8; }
+        .comparison-col.cons h4 { color: #e74c3c; }
+
+        .comparison-col.manual { border-color: #e67e22; background: #fef3e2; }
+        .comparison-col.manual h4 { color: #e67e22; }
+
+        .comparison-col.automated { border-color: #2980b9; background: #e8f0fe; }
+        .comparison-col.automated h4 { color: #2980b9; }
+
+        .comparison-col.delta { border-color: #e74c3c; background: #fde8e8; }
+        .comparison-col.delta h4 { color: #e74c3c; }
+
+        .comparison-col.covered { border-color: #27ae60; background: #e8f5e9; }
+        .comparison-col.covered h4 { color: #27ae60; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           STATUS BADGES
+           ═══════════════════════════════════════════════════════════════ */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 700;
+            color: white;
+        }
+        .status-badge.covered { background: #27ae60; }
+        .status-badge.partial { background: #e67e22; }
+        .status-badge.gap { background: #e74c3c; }
+        .status-badge.high { background: #e74c3c; }
+        .status-badge.medium { background: #e67e22; }
+        .status-badge.low { background: #2980b9; }
+        .status-badge.info { background: #7f8c8d; }
+        .status-badge.free { background: #27ae60; }
+        .status-badge.paid { background: #e67e22; }
+        .status-badge.trial { background: #2980b9; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           HTTP METHOD BADGES
+           ═══════════════════════════════════════════════════════════════ */
+        .method {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            color: white;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 0.5px;
+        }
+        .method.get { background: #27ae60; }
+        .method.post { background: #2980b9; }
+        .method.patch { background: #e67e22; }
+        .method.delete { background: #e74c3c; }
+        .method.put { background: #8e44ad; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           PRIORITY BADGES
+           ═══════════════════════════════════════════════════════════════ */
+        .priority {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 700;
+            color: white;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 0.5px;
+        }
+        .priority.high { background: #e74c3c; }
+        .priority.medium { background: #e67e22; }
+        .priority.low { background: #2980b9; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           FLOW STEPS
+           ═══════════════════════════════════════════════════════════════ */
+        .flow-step {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .flow-number {
+            background: #0f3460;
+            color: white;
+            min-width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        .flow-number.green { background: #27ae60; }
+        .flow-number.blue { background: #2980b9; }
+        .flow-number.purple { background: #8e44ad; }
+        .flow-number.orange { background: #e67e22; }
+        .flow-number.red { background: #e74c3c; }
+        .flow-number.teal { background: #00897b; }
+
+        .flow-content { flex: 1; }
+        .flow-content h4 { color: #333; margin-bottom: 5px; font-size: 16px; }
+        .flow-content p { color: #666; font-size: 15px; line-height: 1.6; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           PIPELINE FLOW DIAGRAM
+           ═══════════════════════════════════════════════════════════════ */
+        .pipeline-flow {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+
+        .pipeline-node {
+            background: #e3f2fd;
+            border: 2px solid #2980b9;
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1565c0;
+            white-space: nowrap;
+        }
+        .pipeline-node.source { border-color: #27ae60; background: #e8f5e9; color: #2e7d32; }
+        .pipeline-node.transform { border-color: #e67e22; background: #fff3e0; color: #e65100; }
+        .pipeline-node.target { border-color: #8e44ad; background: #f3e5f5; color: #6a1b9a; }
+        .pipeline-node.router { border-color: #e74c3c; background: #ffebee; color: #c62828; }
+
+        .pipeline-arrow {
+            font-size: 20px;
+            color: #999;
+            margin: 0 6px;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           STAR RATINGS
+           ═══════════════════════════════════════════════════════════════ */
+        .stars { color: #f39c12; letter-spacing: 2px; }
+        .stars-dim { color: #ddd; letter-spacing: 2px; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           RESPONSIVE
+           ═══════════════════════════════════════════════════════════════ */
+        @media (max-width: 768px) {
+            .comparison { grid-template-columns: 1fr; }
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .header { flex-direction: column; gap: 10px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- HEADER -->
+        <div class="header">
+            <div>
+                <h1>&#128272; JWT &amp; OAuth2 Authentication Setup</h1>
+                <div class="header-subtitle">Complete end-to-end setup guide for JWT and OAuth2 authentication in SnapLogic Robot Framework</div>
+            </div>
+            <div class="header-right">
+                <div class="date">Generated: March 2026</div>
+                <div style="color:#0f3460; font-weight:600; font-size:13px;">SnapLogic QA Automation</div>
+            </div>
+        </div>
+
+        <!-- STATS SUMMARY -->
+        <div class="stats">
+            <div class="stat-card blue">
+                <h3>Auth Methods</h3>
+                <div class="big-number">4</div>
+                <div class="label-text">basic, jwt, oauth2, sltoken</div>
+            </div>
+            <div class="stat-card green">
+                <h3>Setup Steps</h3>
+                <div class="big-number">6</div>
+                <div class="label-text">End-to-end configuration</div>
+            </div>
+            <div class="stat-card purple">
+                <h3>IdP Providers</h3>
+                <div class="big-number">4+</div>
+                <div class="label-text">Okta, Entra ID, Ping, Auth0</div>
+            </div>
+            <div class="stat-card orange">
+                <h3>Estimated Time</h3>
+                <div class="label-text">~45 min setup</div>
+            </div>
+        </div>
+
+        <!-- TAB NAVIGATION -->
+        <div class="nav-section">
+            <h3>Sections</h3>
+            <div class="tab-nav">
+                <button class="tab-btn active" onclick="showTab('overview', this)">Overview</button>
+                <button class="tab-btn green-tab" onclick="showTab('idp', this)">IdP Setup</button>
+                <button class="tab-btn blue-tab" onclick="showTab('snaplogic', this)">SnapLogic Config</button>
+                <button class="tab-btn purple-tab" onclick="showTab('env', this)">Framework .env</button>
+                <button class="tab-btn teal-tab" onclick="showTab('verify', this)">Run &amp; Verify</button>
+                <button class="tab-btn orange-tab" onclick="showTab('troubleshoot', this)">Troubleshooting</button>
+                <button class="tab-btn red-tab" onclick="showTab('security', this)">Security &amp; FAQ</button>
+                <button class="tab-btn gray-tab" onclick="showTab('jwtVsOauth2', this)">JWT vs OAuth2</button>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════════
+             TAB 1: OVERVIEW (Sections 1, 2, 3)
+             ════════════════════════════════════════════════════════════════ -->
+        <div id="tab-overview" class="tab-content active">
+
+            <!-- Prerequisites -->
+            <div class="data-section">
+                <h2>Prerequisites <span class="badge blue">Before You Start</span></h2>
+                <p>Before starting, ensure you have:</p>
+
+                <div class="flow-step">
+                    <div class="flow-number green">1</div>
+                    <div class="flow-content">
+                        <h4>SnapLogic Org Admin Access</h4>
+                        <p>You need admin rights to configure the JWT tab in Admin Manager</p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number green">2</div>
+                    <div class="flow-content">
+                        <h4>Identity Provider (IdP) Admin Access</h4>
+                        <p>You need to create an application registration in Okta, Entra ID, or your chosen IdP</p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number green">3</div>
+                    <div class="flow-content">
+                        <h4>Robot Framework Project Set Up</h4>
+                        <p>The <code>snaplogic-common-robot</code> package (version with multi-auth support) must be installed</p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number green">4</div>
+                    <div class="flow-content">
+                        <h4>Working Basic Auth Tests</h4>
+                        <p>Verify your tests pass with basic auth first before switching</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Architecture -->
+            <div class="data-section">
+                <h2>Understanding the Architecture <span class="badge purple">How It Works</span></h2>
+                <h3>How JWT/OAuth2 Authentication Works with SnapLogic</h3>
+
+                <span class="code-label purple">Architecture Overview</span>
+<div class="code-block">┌──────────────────┐         ┌──────────────────┐         ┌──────────────────┐
+│                  │         │                  │         │                  │
+│  Identity        │  Trust  │  SnapLogic       │  API    │  Robot           │
+│  Provider        │◄───────►│  Platform        │◄───────►│  Framework       │
+│  (Okta/Entra ID) │         │                  │         │                  │
+│                  │         │                  │         │                  │
+└──────────────────┘         └──────────────────┘         └──────────────────┘
+        │                            │                            │
+        │  1. Register App           │  2. Configure JWT tab      │  3. Configure .env
+        │     Get Client ID/Secret   │     Add Issuer + JWKS URL  │     Set AUTH_METHOD
+        │     Get Issuer URL         │                            │     Add token/credentials
+        │     Get JWKS URL           │                            │
+        └────────────────────────────┘────────────────────────────┘</div>
+
+                <h3>The Complete Setup Flow — What Goes Where</h3>
+                <p>Setting up JWT or OAuth2 authentication involves <strong>three places</strong> and <strong>five key pieces of information</strong>. Here's the big picture before you dive into the details:</p>
+
+                <h3>Step 1: Create an App Registration in Your Identity Provider</h3>
+                <p>Register an application in your IdP (Okta, Entra ID, etc.) and collect these <strong>5 items</strong>:</p>
+
+                <span class="code-label green">Identity Provider &amp; Configuration Flow</span>
+<div class="code-block">┌──────────────────────────────────────────────────────────────┐
+│                  IDENTITY PROVIDER (IdP)                     │
+│               Okta / Entra ID / Ping / Auth0                 │
+│                                                              │
+│   Create an App Registration and collect:                    │
+│                                                              │
+│   ① Client ID ............. e.g. 0oa1b2c3d4e5f6g7h8i9       │
+│   ② Client Secret ......... e.g. AbCdEf123456789             │
+│   ③ Token URL ............. e.g. https://your-org.okta.com/  │
+│                                  oauth2/default/v1/token     │
+│   ④ Issuer ID ............. e.g. https://your-org.okta.com/  │
+│                                  oauth2/default              │
+│   ⑤ JWKS Endpoint URL ..... e.g. https://your-org.okta.com/  │
+│                                  oauth2/default/v1/keys      │
+│                                                              │
+└────────────────┬─────────────────────────┬───────────────────┘
+                 │                         │
+                 │                         │
+        Items ④ and ⑤              Items ①, ②, and ③
+        go to SnapLogic            go to your .env file
+                 │                         │
+                 ▼                         ▼
+┌────────────────────────────┐  ┌──────────────────────────────┐
+│  SNAPLOGIC ADMIN MANAGER   │  │  YOUR .env FILE              │
+│  JWT Tab                   │  │                              │
+│                            │  │  # For JWT:                  │
+│  Issuer ID ←──── ④         │  │  AUTH_METHOD=jwt             │
+│  JWKS URL ←───── ⑤         │  │  BEARER_TOKEN=&lt;from curl&gt; ← │
+│                            │  │   (use ①②③ to get token)    │
+│  This tells SnapLogic HOW  │  │                              │
+│  to VALIDATE tokens from   │  │  # For OAuth2:               │
+│  your IdP                  │  │  AUTH_METHOD=oauth2           │
+│                            │  │  OAUTH2_TOKEN_URL ←──── ③    │
+│                            │  │  OAUTH2_CLIENT_ID ←──── ①    │
+│                            │  │  OAUTH2_CLIENT_SECRET ←─ ②   │
+│                            │  │  OAUTH2_SCOPE=optional       │
+└────────────────────────────┘  └──────────────────────────────┘</div>
+
+                <h3>Step 2: Configure SnapLogic JWT Tab (Items ④ and ⑤)</h3>
+                <p>Take the <strong>Issuer ID</strong> and <strong>JWKS Endpoint URL</strong> from your IdP and enter them in the SnapLogic Admin Manager JWT tab. This establishes trust — it tells SnapLogic: <em>"Tokens from this issuer are legitimate. Here's where to find the public keys to verify their signatures."</em></p>
+
+                <span class="code-label blue">SnapLogic Admin Manager JWT Tab</span>
+<div class="code-block">SnapLogic Admin Manager → Security → Authentication → JWT tab
+
+┌─────────────────────────────────────────────────────────────┐
+│  JWT Configuration                                          │
+│                                                             │
+│  Issuer ID:          [④ https://your-org.okta.com/          │
+│                          oauth2/default                  ]  │
+│                                                             │
+│  JWKS Endpoint URL:  [⑤ https://your-org.okta.com/          │
+│                          oauth2/default/v1/keys          ]  │
+│                                                             │
+│                                            [ Save ]         │
+└─────────────────────────────────────────────────────────────┘</div>
+
+                <div class="info-box blue">
+                    <strong>Why is this needed?</strong> When the Robot Framework sends a JWT token to SnapLogic, SnapLogic needs to verify the token is authentic. It does this by: (1) Checking the token's <code>iss</code> (issuer) claim matches the Issuer ID you configured, and (2) Fetching the public keys from the JWKS URL to verify the token's digital signature.
+                </div>
+
+                <h3>Step 3: Configure Your .env File (Items ①, ②, and ③)</h3>
+                <p>What you put in <code>.env</code> depends on whether you choose <strong>JWT</strong> or <strong>OAuth2</strong>:</p>
+
+                <p><strong>For JWT</strong> — You use items ①②③ to manually generate a token via curl, then paste the token:</p>
+                <span class="code-label">JWT .env Configuration</span>
+<div class="code-block"><span class="comment"># First, generate a token using curl:</span>
+curl -X POST ③TOKEN_URL \
+  -d "client_id=①CLIENT_ID" \
+  -d "client_secret=②CLIENT_SECRET" \
+  -d "grant_type=client_credentials"
+
+<span class="comment"># Then paste the access_token into .env:</span>
+<span class="variable">AUTH_METHOD</span>=<span class="string">jwt</span>
+<span class="variable">BEARER_TOKEN</span>=<span class="string">eyJhbGciOiJSUzI1NiIs...</span>  ← the token output</div>
+
+                <p><strong>For OAuth2</strong> — You put items ①②③ directly in <code>.env</code> and the framework generates tokens automatically:</p>
+                <span class="code-label green">OAuth2 .env Configuration</span>
+<div class="code-block"><span class="variable">AUTH_METHOD</span>=<span class="string">oauth2</span>
+<span class="variable">OAUTH2_TOKEN_URL</span>=<span class="string">③ https://your-org.okta.com/.../v1/token</span>
+<span class="variable">OAUTH2_CLIENT_ID</span>=<span class="string">① 0oa1b2c3d4e5f6g7h8i9</span>
+<span class="variable">OAUTH2_CLIENT_SECRET</span>=<span class="string">② AbCdEf123456789</span>
+<span class="variable">OAUTH2_SCOPE</span>=<span class="string">optional_scope</span>
+
+→ Framework automatically calls ③ with ①+② to get tokens
+→ Auto-refreshes before expiry — fully hands-off!</div>
+
+                <h3>Summary: What Goes Where</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>From IdP</th>
+                                <th>Goes To</th>
+                                <th>Used By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>① Client ID</strong></td>
+                                <td>App Registration → General</td>
+                                <td><code>.env</code> (<code>OAUTH2_CLIENT_ID</code>) or curl command</td>
+                                <td>OAuth2 auto-fetch / JWT manual token generation</td>
+                            </tr>
+                            <tr>
+                                <td><strong>② Client Secret</strong></td>
+                                <td>App Registration → Credentials</td>
+                                <td><code>.env</code> (<code>OAUTH2_CLIENT_SECRET</code>) or curl command</td>
+                                <td>OAuth2 auto-fetch / JWT manual token generation</td>
+                            </tr>
+                            <tr>
+                                <td><strong>③ Token URL</strong></td>
+                                <td>Authorization Server → Token endpoint</td>
+                                <td><code>.env</code> (<code>OAUTH2_TOKEN_URL</code>) or curl command</td>
+                                <td>OAuth2 auto-fetch / JWT manual token generation</td>
+                            </tr>
+                            <tr>
+                                <td><strong>④ Issuer ID</strong></td>
+                                <td>Authorization Server → Issuer URI</td>
+                                <td>SnapLogic JWT tab → Issuer ID</td>
+                                <td>SnapLogic validates token's <code>iss</code> claim</td>
+                            </tr>
+                            <tr>
+                                <td><strong>⑤ JWKS URL</strong></td>
+                                <td>Authorization Server → Keys endpoint</td>
+                                <td>SnapLogic JWT tab → JWKS Endpoint URL</td>
+                                <td>SnapLogic fetches public keys to verify token signature</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="info-box green">
+                    <strong>Key Takeaway:</strong> Items ④ and ⑤ always go to SnapLogic (they're about <em>validating</em> tokens). Items ①, ②, and ③ always go to <code>.env</code> or curl (they're about <em>getting</em> tokens). The split is logical: SnapLogic needs to know <em>who to trust</em>, while the framework needs to know <em>how to authenticate</em>.
+                </div>
+            </div>
+
+            <!-- JWT vs OAuth2 Comparison -->
+            <div class="data-section">
+                <h2>JWT vs OAuth2 — Which to Choose? <span class="badge orange">Comparison</span></h2>
+
+                <div class="comparison">
+                    <div class="comparison-col manual">
+                        <h4>JWT (Manual Token)</h4>
+                        <ul>
+                            <li><strong>Token generation:</strong> Manual (you generate it before running tests)</li>
+                            <li><strong>Token refresh:</strong> Manual (generate a new token if expired)</li>
+                            <li><strong>CI/CD friendly:</strong> Requires token generation step in pipeline</li>
+                            <li><strong>Setup complexity:</strong> Simpler (fewer env vars)</li>
+                            <li><strong>Best for:</strong> Quick manual testing, short test runs</li>
+                        </ul>
+                    </div>
+                    <div class="comparison-col automated">
+                        <h4>OAuth2 (Automatic Token)</h4>
+                        <ul>
+                            <li><strong>Token generation:</strong> Automatic (framework fetches it at runtime)</li>
+                            <li><strong>Token refresh:</strong> Automatic (framework refreshes when expired)</li>
+                            <li><strong>CI/CD friendly:</strong> Fully automated — just set credentials</li>
+                            <li><strong>Setup complexity:</strong> Slightly more (need token URL + credentials)</li>
+                            <li><strong>Best for:</strong> CI/CD pipelines, long-running test suites</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-box green">
+                    <strong>Recommendation:</strong> Use <strong>OAuth2</strong> for CI/CD and automated workflows. Use <strong>JWT</strong> for quick manual testing.
+                </div>
+            </div>
+
+            <!-- Action Plan -->
+            <div class="data-section">
+                <h2>Action Plan — Who Does What <span class="badge">Section 3</span></h2>
+                <p>Before diving into the detailed steps, here's a practical overview of what needs to happen, who needs to do it, and in what order.</p>
+
+                <h3>People Involved</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Person/Team</th>
+                                <th>What They Do</th>
+                                <th>Why</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>IdP Admin</strong> (Okta/Entra ID admin)</td>
+                                <td>Creates the app registration, provides ①②③④⑤</td>
+                                <td>Only IdP admins can create applications</td>
+                            </tr>
+                            <tr>
+                                <td><strong>SnapLogic Org Admin</strong></td>
+                                <td>Configures the JWT tab (④⑤), ensures user mapping works</td>
+                                <td>Only org admins can access Admin Manager → JWT tab</td>
+                            </tr>
+                            <tr>
+                                <td><strong>You</strong> (Test Engineer)</td>
+                                <td>Configures <code>.env</code> (①②③), verifies with curl, runs tests</td>
+                                <td>You own the Robot Framework setup</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="info-box blue">
+                    <strong>Note:</strong> If you have all three roles (IdP admin + SnapLogic admin + test engineer), you can do everything yourself. Otherwise, coordinate with the relevant teams.
+                </div>
+
+                <h3>Step-by-Step Action Plan</h3>
+
+                <span class="code-label">Complete 6-Step Action Plan</span>
+<div class="code-block">┌─────────────────────────────────────────────────────────────────┐
+│  STEP 1: Get App Registration from IdP                         │
+│  WHO: IdP Admin (or you if you have Okta/Entra admin access)   │
+│                                                                 │
+│  Action: Create an "API Services" app in your IdP               │
+│  Collect these 5 items:                                         │
+│    ① Client ID                                                  │
+│    ② Client Secret                                              │
+│    ③ Token URL                                                  │
+│    ④ Issuer ID                                                  │
+│    ⑤ JWKS Endpoint URL                                          │
+│                                                                 │
+│  If someone else does this, send them this message:             │
+│  "I need an app registration in Okta/Entra ID for              │
+│   machine-to-machine API access (OAuth2 Client Credentials).    │
+│   Please provide: Client ID, Client Secret, Token URL,          │
+│   Issuer ID, and JWKS Endpoint URL."                            │
+│                                                                 │
+│  See: Part A (Section 4) for detailed IdP-specific steps        │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  STEP 2: Configure SnapLogic JWT Tab                           │
+│  WHO: SnapLogic Org Admin (or you if you have admin access)    │
+│                                                                 │
+│  Action: Go to Admin Manager → Security → Authentication → JWT  │
+│  Enter:                                                         │
+│    ④ Issuer ID         → "Issuer ID" field                      │
+│    ⑤ JWKS Endpoint URL → "JWKS Endpoint URL" field              │
+│  Click Save.                                                    │
+│                                                                 │
+│  IMPORTANT: Do NOT disable basic auth. Keep both enabled.       │
+│                                                                 │
+│  If someone else does this, send them this message:             │
+│  "Please add a JWT configuration in SnapLogic Admin Manager:    │
+│   Issuer ID: [④ value]                                          │
+│   JWKS Endpoint URL: [⑤ value]"                                 │
+│                                                                 │
+│  See: Part B (Section 5) for detailed steps                     │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  STEP 3: Ensure SnapLogic User Exists                          │
+│  WHO: SnapLogic Org Admin                                       │
+│                                                                 │
+│  The token from your IdP carries an identity (email/username).  │
+│  That same identity must exist as a SnapLogic user with admin   │
+│  permissions.                                                   │
+│                                                                 │
+│  Example:                                                       │
+│    Your IdP email: user1@company.com                            │
+│    SnapLogic must have: user1@company.com as a user             │
+│    with org admin or project admin role                         │
+│                                                                 │
+│  If you already use SnapLogic with the same email → already     │
+│  done, nothing to do.                                           │
+│                                                                 │
+│  See: Part B Step 5 (Section 5) for claim mapping details       │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  STEP 4: Verify with curl (Before Touching Robot Framework)    │
+│  WHO: You                                                       │
+│                                                                 │
+│  4a. Get a token from your IdP:                                 │
+│    curl -X POST ③TOKEN_URL \                                    │
+│      -H "Content-Type: application/x-www-form-urlencoded" \     │
+│      -d "grant_type=client_credentials" \                       │
+│      -d "client_id=①CLIENT_ID" \                                │
+│      -d "client_secret=②CLIENT_SECRET"                          │
+│                                                                 │
+│    Should return: {"access_token": "eyJhbG...", ...}            │
+│    If error → Step 1 is wrong (check credentials)               │
+│                                                                 │
+│  4b. Test that token against SnapLogic:                         │
+│    curl -H "Authorization: Bearer eyJhbG..." \                  │
+│      "https://your-instance.snaplogic.com/api/1/rest/asset/     │
+│       session?caller=test"                                      │
+│                                                                 │
+│    200 response → Steps 1-3 are correct, proceed!               │
+│    401 response → Step 2 or 3 is wrong (JWT tab or user         │
+│       mapping)                                                  │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  STEP 5: Configure .env                                        │
+│  WHO: You                                                       │
+│                                                                 │
+│  For OAuth2 (recommended):                                      │
+│    AUTH_METHOD=oauth2                                            │
+│    OAUTH2_TOKEN_URL=③                                           │
+│    OAUTH2_CLIENT_ID=①                                           │
+│    OAUTH2_CLIENT_SECRET=②                                       │
+│    OAUTH2_SCOPE=your_scope (or leave empty)                     │
+│                                                                 │
+│  For JWT:                                                       │
+│    AUTH_METHOD=jwt                                               │
+│    BEARER_TOKEN=&lt;token from Step 4a&gt;                            │
+│                                                                 │
+│  See: Part C (Section 6) for details                            │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  STEP 6: Run Tests                                             │
+│  WHO: You                                                       │
+│                                                                 │
+│  make robot-run-tests TAGS="oracle"                              │
+│                                                                 │
+│  Look for in console output:                                    │
+│    "Authentication method: oauth2" (or jwt)                     │
+│                                                                 │
+│  All tests should pass exactly as they did with basic auth.     │
+│  The framework handles token fetching/refreshing automatically. │
+└─────────────────────────────────────────────────────────────────┘</div>
+
+                <h3>Quick Summary</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Step</th>
+                                <th>Who</th>
+                                <th>Action</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>1</strong></td>
+                                <td>IdP Admin</td>
+                                <td>Create app, provide ①②③④⑤</td>
+                                <td>15-30 min</td>
+                            </tr>
+                            <tr>
+                                <td><strong>2</strong></td>
+                                <td>SnapLogic Admin</td>
+                                <td>Enter ④⑤ in JWT tab</td>
+                                <td>5 min</td>
+                            </tr>
+                            <tr>
+                                <td><strong>3</strong></td>
+                                <td>SnapLogic Admin</td>
+                                <td>Verify user exists with matching email</td>
+                                <td>5 min</td>
+                            </tr>
+                            <tr>
+                                <td><strong>4</strong></td>
+                                <td>You</td>
+                                <td>Test with curl to verify Steps 1-3</td>
+                                <td>10 min</td>
+                            </tr>
+                            <tr>
+                                <td><strong>5</strong></td>
+                                <td>You</td>
+                                <td>Add ①②③ to <code>.env</code></td>
+                                <td>5 min</td>
+                            </tr>
+                            <tr>
+                                <td><strong>6</strong></td>
+                                <td>You</td>
+                                <td>Run <code>make robot-run-tests</code></td>
+                                <td>5 min</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="info-box teal">
+                    <strong>Total estimated time:</strong> ~45 minutes if you have all the access, or ~1-2 days if you need to coordinate with other teams.
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════════
+             TAB 2: IdP SETUP (Section 4)
+             ════════════════════════════════════════════════════════════════ -->
+        <div id="tab-idp" class="tab-content">
+
+            <!-- Okta Setup -->
+            <div class="data-section">
+                <h2>Okta Setup <span class="badge green">Section 4.1</span></h2>
+
+                <h3>Step 1: Create an Application in Okta</h3>
+                <div class="flow-step">
+                    <div class="flow-number green">1</div>
+                    <div class="flow-content">
+                        <h4>Log in to your Okta Admin Console</h4>
+                        <p>Go to <code>https://your-org-admin.okta.com</code></p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number green">2</div>
+                    <div class="flow-content">
+                        <h4>Navigate to Applications</h4>
+                        <p>Go to <strong>Applications</strong> → <strong>Applications</strong>, then click <strong>Create App Integration</strong></p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number green">3</div>
+                    <div class="flow-content">
+                        <h4>Select Sign-in Method</h4>
+                        <p><strong>Sign-in method:</strong> OIDC - OpenID Connect<br><strong>Application type:</strong> API Services (for machine-to-machine / client credentials)</p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number green">4</div>
+                    <div class="flow-content">
+                        <h4>Click Next and Name Your App</h4>
+                        <p>Enter a name (e.g., <code>SnapLogic Robot Framework</code>)</p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number green">5</div>
+                    <div class="flow-content">
+                        <h4>Click Save</h4>
+                        <p>Your application is now created. Proceed to collect the required information.</p>
+                    </div>
+                </div>
+
+                <h3>Step 2: Collect Required Information</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Value</th>
+                                <th>Where to Find</th>
+                                <th>Example</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Client ID</strong></td>
+                                <td>Application → General tab → Client Credentials</td>
+                                <td><code>0oa1b2c3d4e5f6g7h8i9</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Client Secret</strong></td>
+                                <td>Application → General tab → Client Credentials</td>
+                                <td><code>AbCdEf123456789...</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Issuer URL</strong></td>
+                                <td>Security → API → Authorization Servers → default → Issuer URI</td>
+                                <td><code>https://your-org.okta.com/oauth2/default</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Token URL</strong></td>
+                                <td>Issuer URL + <code>/v1/token</code></td>
+                                <td><code>https://your-org.okta.com/oauth2/default/v1/token</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>JWKS URL</strong></td>
+                                <td>Issuer URL + <code>/v1/keys</code></td>
+                                <td><code>https://your-org.okta.com/oauth2/default/v1/keys</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Step 3: Configure Scopes (Optional)</h3>
+                <ol>
+                    <li>Go to <strong>Security</strong> → <strong>API</strong> → <strong>Authorization Servers</strong> → <strong>default</strong></li>
+                    <li>Click <strong>Scopes</strong> tab → <strong>Add Scope</strong></li>
+                    <li>Add a scope name (e.g., <code>snaplogic.api</code>) — this is optional but can be used for access control</li>
+                    <li>If you skip this, leave <code>OAUTH2_SCOPE</code> empty in your <code>.env</code></li>
+                </ol>
+
+                <h3>Step 4: Assign the Application</h3>
+                <p>When you create an app in Okta, it doesn't automatically allow anyone to use it. You need to <strong>assign</strong> which users or groups can authenticate through the application.</p>
+                <ul>
+                    <li><strong>Users</strong> = Individual people with Okta accounts (e.g., <code>user1@company.com</code>, <code>user2@company.com</code>)</li>
+                    <li><strong>Groups</strong> = Collections of users managed by your Okta admin (e.g., "QA Engineers", "DevOps Team")</li>
+                </ul>
+
+                <span class="code-label green">App Assignment Diagram</span>
+<div class="code-block">┌─────────────────────────────────────────────────────────┐
+│  App: "SnapLogic Robot Framework"                       │
+│  ┌───────────────────────────────────────────────┐      │
+│  │  Who can use this app?                        │      │
+│  │                                               │      │
+│  │  User: user1@company.com      ← Assigned      │      │
+│  │  User: user2@company.com      ← Assigned      │      │
+│  │  Group: "QA Engineers"        ← All members    │      │
+│  │  User: other@company.com     ← NOT assigned    │      │
+│  └───────────────────────────────────────────────┘      │
+└─────────────────────────────────────────────────────────┘</div>
+
+                <p><strong>For Robot Framework / CI/CD, you have two approaches:</strong></p>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Approach</th>
+                                <th>How</th>
+                                <th>Best For</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Service Account</strong></td>
+                                <td>Create a dedicated user (e.g., <code>snaplogic-automation@company.com</code>), assign it to the app. This user must also exist in SnapLogic.</td>
+                                <td>CI/CD pipelines, shared automation</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Group Assignment</strong></td>
+                                <td>Assign an existing group (e.g., "QA Engineers") to the app. All group members can authenticate.</td>
+                                <td>Multiple team members running tests</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p><strong>Steps:</strong></p>
+                <ol>
+                    <li>Go to your application → <strong>Assignments</strong> tab</li>
+                    <li>Click <strong>Assign</strong> → <strong>Assign to People</strong> or <strong>Assign to Groups</strong></li>
+                    <li>Select the user(s) or group(s) who need API access</li>
+                    <li>Click <strong>Done</strong></li>
+                </ol>
+
+                <div class="info-box orange">
+                    <strong>Note for API Services apps:</strong> If you created the app as "API Services" type (machine-to-machine), Okta may handle this differently — the app authenticates as itself rather than on behalf of a specific user. In this case, assignment may not be required. If your tests fail with a user-mapping error after completing all other steps, come back to this step and assign the appropriate service account.
+                </div>
+
+                <h3>Step 5: Verify Okta Setup</h3>
+                <p>Test that your Okta app can issue tokens:</p>
+                <span class="code-label blue">Verify Token Generation</span>
+<div class="code-block">curl -X POST https://your-org.okta.com/oauth2/default/v1/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=client_credentials" \
+  -d "client_id=YOUR_CLIENT_ID" \
+  -d "client_secret=YOUR_CLIENT_SECRET" \
+  -d "scope=YOUR_SCOPE"</div>
+
+                <p>Expected response:</p>
+<div class="code-block">{
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6..."
+}</div>
+
+                <div class="info-box green">
+                    <strong>Tip:</strong> If you get this response, your Okta setup is correct. Save the <code>access_token</code> — you can use it to test JWT auth.
+                </div>
+            </div>
+
+            <!-- Entra ID Setup -->
+            <div class="data-section">
+                <h2>Microsoft Entra ID (Azure AD) Setup <span class="badge blue">Section 4.2</span></h2>
+
+                <h3>Step 1: Register an Application</h3>
+                <div class="flow-step">
+                    <div class="flow-number blue">1</div>
+                    <div class="flow-content">
+                        <h4>Go to Azure Portal</h4>
+                        <p>Navigate to <strong>Azure Portal</strong> → <strong>Microsoft Entra ID</strong> → <strong>App registrations</strong></p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number blue">2</div>
+                    <div class="flow-content">
+                        <h4>Click New Registration</h4>
+                        <p><strong>Name:</strong> <code>SnapLogic Robot Framework</code><br><strong>Supported account types:</strong> Accounts in this organizational directory only</p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number blue">3</div>
+                    <div class="flow-content">
+                        <h4>Click Register</h4>
+                        <p>Your application is now registered.</p>
+                    </div>
+                </div>
+
+                <h3>Step 2: Create a Client Secret</h3>
+                <div class="flow-step">
+                    <div class="flow-number blue">1</div>
+                    <div class="flow-content">
+                        <h4>Navigate to Certificates &amp; Secrets</h4>
+                        <p>Go to the app → <strong>Certificates &amp; secrets</strong> → <strong>Client secrets</strong></p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number blue">2</div>
+                    <div class="flow-content">
+                        <h4>Create New Client Secret</h4>
+                        <p>Enter a description (e.g., <code>Robot Framework Auth</code>), select expiry (recommended: 12 months for CI/CD), and click <strong>Add</strong></p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number blue">3</div>
+                    <div class="flow-content">
+                        <h4>Copy the Secret Value Immediately</h4>
+                        <p><strong>Immediately copy the secret Value</strong> — it will not be shown again</p>
+                    </div>
+                </div>
+
+                <h3>Step 3: Collect Required Information</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Value</th>
+                                <th>Where to Find</th>
+                                <th>Example</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Client ID</strong></td>
+                                <td>App → Overview → Application (client) ID</td>
+                                <td><code>12345678-abcd-efgh-ijkl-123456789012</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Client Secret</strong></td>
+                                <td>App → Certificates &amp; secrets (copied in Step 2)</td>
+                                <td><code>AbCdEfGh~123456789...</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Tenant ID</strong></td>
+                                <td>App → Overview → Directory (tenant) ID</td>
+                                <td><code>abcdefgh-1234-5678-9012-abcdefghijkl</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Issuer URL</strong></td>
+                                <td><code>https://login.microsoftonline.com/{TENANT_ID}/v2.0</code></td>
+                                <td><code>https://login.microsoftonline.com/abcdefgh-.../v2.0</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Token URL</strong></td>
+                                <td><code>https://login.microsoftonline.com/{TENANT_ID}/oauth2/v2.0/token</code></td>
+                                <td><code>https://login.microsoftonline.com/abcdefgh-.../oauth2/v2.0/token</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>JWKS URL</strong></td>
+                                <td><code>https://login.microsoftonline.com/{TENANT_ID}/discovery/v2.0/keys</code></td>
+                                <td><code>https://login.microsoftonline.com/abcdefgh-.../discovery/v2.0/keys</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Step 4: Configure API Permissions (Optional)</h3>
+                <ol>
+                    <li>Go to App → <strong>API permissions</strong> → <strong>Add a permission</strong></li>
+                    <li>Add any required permissions for your scenario</li>
+                    <li>Click <strong>Grant admin consent</strong> if required</li>
+                </ol>
+
+                <h3>Step 5: Verify Entra ID Setup</h3>
+                <span class="code-label blue">Verify Token Generation</span>
+<div class="code-block">curl -X POST https://login.microsoftonline.com/YOUR_TENANT_ID/oauth2/v2.0/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=client_credentials" \
+  -d "client_id=YOUR_CLIENT_ID" \
+  -d "client_secret=YOUR_CLIENT_SECRET" \
+  -d "scope=https://graph.microsoft.com/.default"</div>
+
+                <p>Expected response:</p>
+<div class="code-block">{
+  "token_type": "Bearer",
+  "expires_in": 3599,
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOi..."
+}</div>
+            </div>
+
+            <!-- Other IdPs -->
+            <div class="data-section">
+                <h2>Other Identity Providers <span class="badge purple">Section 4.3</span></h2>
+                <p>The framework works with any Identity Provider that supports <strong>OAuth2 Client Credentials</strong> flow and issues <strong>JWT tokens</strong>. Common providers include:</p>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Provider</th>
+                                <th>Token URL Format</th>
+                                <th>JWKS URL Format</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Ping Identity</strong></td>
+                                <td><code>https://auth.pingone.com/{env_id}/as/token</code></td>
+                                <td><code>https://auth.pingone.com/{env_id}/as/jwks</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Auth0</strong></td>
+                                <td><code>https://YOUR_DOMAIN/oauth/token</code></td>
+                                <td><code>https://YOUR_DOMAIN/.well-known/jwks.json</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Google Workspace</strong></td>
+                                <td><code>https://oauth2.googleapis.com/token</code></td>
+                                <td><code>https://www.googleapis.com/oauth2/v3/certs</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Keycloak</strong></td>
+                                <td><code>https://host/realms/{realm}/protocol/openid-connect/token</code></td>
+                                <td><code>https://host/realms/{realm}/protocol/openid-connect/certs</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>For any provider, you need:</p>
+                <ol>
+                    <li><strong>Client ID</strong> and <strong>Client Secret</strong> from an app registration</li>
+                    <li><strong>Token URL</strong> for getting access tokens</li>
+                    <li><strong>Issuer URL</strong> and <strong>JWKS URL</strong> for SnapLogic to validate tokens</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════════
+             TAB 3: SNAPLOGIC CONFIG (Section 5)
+             ════════════════════════════════════════════════════════════════ -->
+        <div id="tab-snaplogic" class="tab-content">
+
+            <div class="data-section">
+                <h2>SnapLogic Admin Manager Configuration <span class="badge blue">Part B</span></h2>
+                <p>This step tells SnapLogic to trust tokens issued by your Identity Provider.</p>
+
+                <h3>Navigate to JWT Tab</h3>
+                <div class="flow-step">
+                    <div class="flow-number blue">1</div>
+                    <div class="flow-content">
+                        <h4>Log in to your SnapLogic instance</h4>
+                        <p>Open your SnapLogic platform URL</p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number blue">2</div>
+                    <div class="flow-content">
+                        <h4>Go to Admin Manager</h4>
+                        <p>Click the gear icon in top-right</p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number blue">3</div>
+                    <div class="flow-content">
+                        <h4>Navigate to Security → Authentication</h4>
+                        <p>Click <strong>Security</strong> → <strong>Authentication</strong></p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number blue">4</div>
+                    <div class="flow-content">
+                        <h4>Click the JWT Tab</h4>
+                        <p>This is where you configure JWT trust settings</p>
+                    </div>
+                </div>
+
+                <h3>JWT Configuration</h3>
+                <p>Enter the following values from your Identity Provider:</p>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Field</th>
+                                <th>Description</th>
+                                <th>Example (Okta)</th>
+                                <th>Example (Entra ID)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Issuer ID</strong></td>
+                                <td>The <code>iss</code> claim in the JWT token</td>
+                                <td><code>https://your-org.okta.com/oauth2/default</code></td>
+                                <td><code>https://login.microsoftonline.com/{tenant_id}/v2.0</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>JWKS Endpoint URL</strong></td>
+                                <td>URL where SnapLogic fetches public keys to verify token signatures</td>
+                                <td><code>https://your-org.okta.com/oauth2/default/v1/keys</code></td>
+                                <td><code>https://login.microsoftonline.com/{tenant_id}/discovery/v2.0/keys</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <span class="code-label blue">JWT Tab Mockup</span>
+<div class="code-block">SnapLogic Admin Manager → Security → Authentication → JWT tab
+
+┌─────────────────────────────────────────────────────────────┐
+│  JWT Configuration                                          │
+│                                                             │
+│  Issuer ID:          [④ https://your-org.okta.com/          │
+│                          oauth2/default                  ]  │
+│                                                             │
+│  JWKS Endpoint URL:  [⑤ https://your-org.okta.com/          │
+│                          oauth2/default/v1/keys          ]  │
+│                                                             │
+│                                            [ Save ]         │
+└─────────────────────────────────────────────────────────────┘</div>
+
+                <h3>Save Configuration</h3>
+                <ol>
+                    <li>Click <strong>Save</strong></li>
+                    <li>You should see a success message</li>
+                </ol>
+
+                <div class="info-box red">
+                    <strong>Important: Do NOT Disable Basic Auth Yet!</strong> Leave <strong>"Disable basic authentication"</strong> unchecked. This allows both basic auth and JWT auth to work simultaneously. Only disable basic auth after you've verified JWT/OAuth2 works.
+                </div>
+            </div>
+
+            <!-- Map JWT Claims -->
+            <div class="data-section">
+                <h2>Map JWT Claims to SnapLogic User <span class="badge purple">Claim Mapping</span></h2>
+                <p>After SnapLogic verifies a token is <em>authentic</em> (using Issuer ID + JWKS URL), it needs to answer a second question: <strong>"Which SnapLogic user is making this API call?"</strong></p>
+
+                <h3>What Are JWT Claims?</h3>
+                <p>A JWT token is a JSON payload containing <strong>claims</strong> — key-value pairs that carry identity information. Here's what a decoded token looks like:</p>
+
+                <span class="code-label purple">Decoded JWT Token</span>
+<div class="code-block">┌──────────────────────────────────────────────────────────────┐
+│  JWT TOKEN (decoded payload)                                 │
+│                                                              │
+│  {                                                           │
+│    "iss": "https://your-org.okta.com/oauth2/default",  ← Issuer
+│    "sub": "user1@company.com",                         ← Subject claim
+│    "email": "user1@company.com",                       ← Email claim
+│    "name": "User One",                                 ← Name claim
+│    "groups": ["QA Engineers"],                         ← Groups claim
+│    "exp": 1709123456,                                  ← Expiry time
+│    "iat": 1709119856,                                  ← Issued at
+│    "aud": "0oa1b2c3d4e5f6g7h8i9"                      ← Audience
+│  }                                                           │
+└──────────────────────────────────────────────────────────────┘</div>
+
+                <h3>How Claim Mapping Works</h3>
+                <p>SnapLogic takes ONE claim from the token and matches it to a user in the SnapLogic org:</p>
+
+                <span class="code-label blue">Claim Matching Diagram</span>
+<div class="code-block">┌───────────────────────┐            ┌──────────────────────────┐
+│  JWT TOKEN             │            │  SNAPLOGIC ORG USERS     │
+│                        │            │                          │
+│  "sub": "user1@..."    │──match────►│  user1@company.com       │
+│         OR             │            │  user2@company.com       │
+│  "email": "user1@..."  │──match────►│  admin@company.com       │
+│                        │            │                          │
+│  If NO user matches    │─────X─────►│  401 Unauthorized        │
+│  the claim value       │            │                          │
+└───────────────────────┘            └──────────────────────────┘</div>
+
+                <h3>The Three Common Mapping Approaches</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Mapping</th>
+                                <th>How It Works</th>
+                                <th>When It's Used</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Email claim</strong></td>
+                                <td>Token's <code>email</code> field matches a SnapLogic user's email address</td>
+                                <td>Most common with Okta. Users have the same email in both Okta and SnapLogic.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Subject claim</strong></td>
+                                <td>Token's <code>sub</code> field matches a SnapLogic username</td>
+                                <td>Common with Entra ID. The <code>sub</code> is often a unique identifier or username.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Custom claim</strong></td>
+                                <td>A custom field you define in your IdP (e.g., <code>snaplogic_user</code>) matches a SnapLogic username</td>
+                                <td>Used when email/sub don't match SnapLogic usernames. You create a custom claim in your IdP.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Example: How Users Must Match</h3>
+                <span class="code-label orange">User Matching Example</span>
+<div class="code-block">┌──────────────────────────────────────────────────────────────┐
+│                                                              │
+│  In Your IdP (Okta):              In SnapLogic:              │
+│  ───────────────────              ─────────────              │
+│  user1@company.com         →      user1@company.com          │
+│  user2@company.com         →      user2@company.com          │
+│  contractor@external.com   →      ???                        │
+│                                   (no matching user)         │
+│                                                              │
+│  The contractor's token will be REJECTED because there's     │
+│  no SnapLogic user with that email/username.                 │
+│                                                              │
+│  Fix: Create a SnapLogic user with matching email,           │
+│       OR use a service account for automation.               │
+└──────────────────────────────────────────────────────────────┘</div>
+
+                <h3>For Robot Framework / CI/CD</h3>
+                <p>The identity in the token must map to a real SnapLogic user who has the right permissions (typically org admin or project admin):</p>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Approach</th>
+                                <th>How It Works</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Personal user mapping</strong></td>
+                                <td>IdP user <code>user1@company.com</code> → token carries <code>email: user1@company.com</code> → SnapLogic user <code>user1@company.com</code> (must be org admin)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Service account (recommended for CI/CD)</strong></td>
+                                <td>IdP app authenticates as itself → token carries <code>sub: &lt;client_id&gt;</code> or mapped claim → SnapLogic user created for this purpose (e.g., <code>automation-svc@company.com</code>)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>What Do You Need To Do?</h3>
+                <p>In most cases, <strong>nothing</strong> — if your IdP users already have matching email addresses in SnapLogic, it works automatically. You only need to take action if:</p>
+                <ol>
+                    <li><strong>Token gets 401 after JWT tab is configured</strong> → The claim-to-user mapping isn't working</li>
+                    <li><strong>Using a service account for CI/CD</strong> → Create a SnapLogic user that matches the service account's identity</li>
+                    <li><strong>Email addresses don't match between IdP and SnapLogic</strong> → Create matching users or set up a custom claim in your IdP</li>
+                </ol>
+
+                <div class="info-box green">
+                    <strong>Tip:</strong> Ask your SnapLogic admin: <em>"How are JWT users mapped in our org — by email or by subject?"</em> If you use the same email in both your IdP and SnapLogic, it likely works automatically with no extra configuration.
+                </div>
+
+                <h3>Verification</h3>
+                <p>After configuring the JWT tab, verify it works by making a direct API call:</p>
+                <span class="code-label blue">Verify JWT Configuration</span>
+<div class="code-block"><span class="comment"># First get a token from your IdP (using the curl command from Part A)</span>
+TOKEN="eyJhbGciOi..."
+
+<span class="comment"># Test against SnapLogic API</span>
+curl -H "Authorization: Bearer ${TOKEN}" \
+  "https://elastic.snaplogic.com/api/1/rest/asset/session?caller=test"</div>
+
+                <div class="info-box green">
+                    <strong>Success:</strong> If you get a 200 response, the JWT tab is configured correctly.
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════════
+             TAB 4: FRAMEWORK .env (Section 6)
+             ════════════════════════════════════════════════════════════════ -->
+        <div id="tab-env" class="tab-content">
+
+            <!-- JWT Configuration -->
+            <div class="data-section">
+                <h2>JWT Configuration <span class="badge purple">Section 6.1</span></h2>
+                <p>For JWT, you provide a pre-generated token in the <code>.env</code> file.</p>
+
+                <h3>Step 1: Generate a Token</h3>
+                <p>Use the curl command from Part A to get a token from your IdP:</p>
+                <span class="code-label blue">Generate Token from IdP</span>
+<div class="code-block"><span class="comment"># Okta example</span>
+curl -s -X POST https://your-org.okta.com/oauth2/default/v1/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=client_credentials" \
+  -d "client_id=YOUR_CLIENT_ID" \
+  -d "client_secret=YOUR_CLIENT_SECRET" | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])"</div>
+                <p>This prints just the token string.</p>
+
+                <h3>Step 2: Configure .env</h3>
+                <span class="code-label purple">JWT .env Configuration</span>
+<div class="code-block"><span class="comment"># Authentication</span>
+<span class="variable">AUTH_METHOD</span>=<span class="string">jwt</span>
+<span class="variable">BEARER_TOKEN</span>=<span class="string">eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL3lvdXItb3JnLm9rdGEuY29tL29hdXRoMi9kZWZhdWx0IiwiZXhwIjoxNzA5MTIzNDU2fQ.signature_here</span>
+
+<span class="comment"># SnapLogic Connection (still required)</span>
+<span class="variable">URL</span>=<span class="string">https://elastic.snaplogic.com</span>
+<span class="variable">ORG_NAME</span>=<span class="string">your_org_name</span>
+<span class="variable">PROJECT_SPACE</span>=<span class="string">your_project_space</span>
+<span class="variable">PROJECT_NAME</span>=<span class="string">your_project_name</span>
+<span class="variable">GROUNDPLEX_NAME</span>=<span class="string">your_groundplex_name</span>
+
+<span class="comment"># NOTE: ORG_ADMIN_USER and ORG_ADMIN_PASSWORD are NOT needed for JWT</span></div>
+
+                <h3>Important Notes for JWT</h3>
+                <div class="info-box orange">
+                    <strong>Token Expiry:</strong> Tokens typically expire in <strong>1 hour</strong> (3600 seconds). You must generate a <strong>new token before each test run</strong> if the previous one expired. The token is a long string starting with <code>eyJ...</code>. Do not include quotes around the token value in <code>.env</code>.
+                </div>
+            </div>
+
+            <!-- OAuth2 Configuration -->
+            <div class="data-section">
+                <h2>OAuth2 Configuration <span class="badge green">Section 6.2 — Recommended</span></h2>
+                <p>For OAuth2, the framework automatically fetches and refreshes tokens — no manual token generation needed.</p>
+
+                <h3>Configure .env</h3>
+                <span class="code-label green">OAuth2 .env Configuration</span>
+<div class="code-block"><span class="comment"># Authentication</span>
+<span class="variable">AUTH_METHOD</span>=<span class="string">oauth2</span>
+<span class="variable">OAUTH2_TOKEN_URL</span>=<span class="string">https://your-org.okta.com/oauth2/default/v1/token</span>
+<span class="variable">OAUTH2_CLIENT_ID</span>=<span class="string">0oa1b2c3d4e5f6g7h8i9</span>
+<span class="variable">OAUTH2_CLIENT_SECRET</span>=<span class="string">AbCdEf123456789</span>
+<span class="variable">OAUTH2_SCOPE</span>=<span class="string">snaplogic.api</span>
+
+<span class="comment"># SnapLogic Connection (still required)</span>
+<span class="variable">URL</span>=<span class="string">https://elastic.snaplogic.com</span>
+<span class="variable">ORG_NAME</span>=<span class="string">your_org_name</span>
+<span class="variable">PROJECT_SPACE</span>=<span class="string">your_project_space</span>
+<span class="variable">PROJECT_NAME</span>=<span class="string">your_project_name</span>
+<span class="variable">GROUNDPLEX_NAME</span>=<span class="string">your_groundplex_name</span>
+
+<span class="comment"># NOTE: ORG_ADMIN_USER and ORG_ADMIN_PASSWORD are NOT needed for OAuth2</span></div>
+
+                <h3>OAuth2 Environment Variables Reference</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Variable</th>
+                                <th>Required</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>AUTH_METHOD</code></td>
+                                <td><span class="status-badge covered">Yes</span></td>
+                                <td>Must be <code>oauth2</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>OAUTH2_TOKEN_URL</code></td>
+                                <td><span class="status-badge covered">Yes</span></td>
+                                <td>Your IdP's token endpoint URL</td>
+                            </tr>
+                            <tr>
+                                <td><code>OAUTH2_CLIENT_ID</code></td>
+                                <td><span class="status-badge covered">Yes</span></td>
+                                <td>Application/Client ID from your IdP app registration</td>
+                            </tr>
+                            <tr>
+                                <td><code>OAUTH2_CLIENT_SECRET</code></td>
+                                <td><span class="status-badge covered">Yes</span></td>
+                                <td>Client secret from your IdP app registration</td>
+                            </tr>
+                            <tr>
+                                <td><code>OAUTH2_SCOPE</code></td>
+                                <td><span class="status-badge info">No</span></td>
+                                <td>Optional scope(s) for the token request. Leave empty if not needed</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════════
+             TAB 5: RUN & VERIFY (Sections 7, 8, 9)
+             ════════════════════════════════════════════════════════════════ -->
+        <div id="tab-verify" class="tab-content">
+
+            <!-- Running Tests -->
+            <div class="data-section">
+                <h2>Running Tests <span class="badge teal">Section 7</span></h2>
+                <p>Once configured, run tests exactly the same way — the authentication method is transparent:</p>
+
+                <span class="code-label teal">Test Commands</span>
+<div class="code-block"><span class="comment"># Run oracle tests</span>
+make robot-run-tests TAGS="oracle"
+
+<span class="comment"># Run all tests with Groundplex management</span>
+make robot-run-all-tests TAGS="oracle"
+
+<span class="comment"># Run multiple test tags</span>
+make robot-run-tests TAGS="oracle,postgres"</div>
+
+                <div class="info-box green">
+                    <strong>No changes needed:</strong> No changes to test files, make commands, or test scripts are needed. The auth method only affects how the API session is created.
+                </div>
+            </div>
+
+            <!-- Verifying Authentication -->
+            <div class="data-section">
+                <h2>Verifying Authentication <span class="badge blue">Section 8</span></h2>
+
+                <h3>Check the Console Output</h3>
+                <p>When tests start, look for these log messages:</p>
+
+                <span class="code-label">JWT Console Output</span>
+<div class="code-block"><span class="success">AUTH_METHOD explicitly set to: jwt</span>
+<span class="success">Authentication method: jwt</span></div>
+
+                <span class="code-label green">OAuth2 Console Output</span>
+<div class="code-block"><span class="success">AUTH_METHOD explicitly set to: oauth2</span>
+<span class="success">Authentication method: oauth2</span></div>
+
+                <h3>If Auto-Detection is Used</h3>
+                <p>If you don't set <code>AUTH_METHOD</code> explicitly:</p>
+<div class="code-block"><span class="warn">Auto-detected AUTH_METHOD=jwt (BEARER_TOKEN is set)</span></div>
+                <p>or</p>
+<div class="code-block"><span class="warn">Auto-detected AUTH_METHOD=oauth2 (OAUTH2_TOKEN_URL is set)</span></div>
+
+                <h3>All Tests Should Pass</h3>
+                <p>If authentication is working, all your existing tests should pass without any changes. The auth method only affects how the API session is created — all 30+ API keywords work the same regardless of auth method.</p>
+            </div>
+
+            <!-- Token Lifecycle -->
+            <div class="data-section">
+                <h2>Token Lifecycle and Refresh <span class="badge purple">Section 9</span></h2>
+
+                <h3>JWT Token Lifecycle</h3>
+                <span class="code-label orange">JWT — Manual Token Lifecycle</span>
+<div class="code-block">┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│ You generate │     │ Token used  │     │ Token       │
+│ token from   │────►│ for all API │────►│ expires     │
+│ IdP (manual) │     │ calls       │     │ (tests fail)│
+└─────────────┘     └─────────────┘     └─────────────┘
+                                               │
+                                               ▼
+                                        Generate new
+                                        token manually</div>
+
+                <ul>
+                    <li><strong>Token lifetime:</strong> Typically 1 hour (3600 seconds), set by your IdP</li>
+                    <li><strong>No auto-refresh:</strong> If the token expires mid-test, subsequent API calls will fail with 401</li>
+                    <li><strong>Workaround:</strong> For long test runs, increase the token lifetime in your IdP settings</li>
+                </ul>
+
+                <h3>OAuth2 Token Lifecycle</h3>
+                <span class="code-label green">OAuth2 — Automatic Token Lifecycle</span>
+<div class="code-block">┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│ Framework    │     │ Token used  │     │ Token near  │     │ Framework   │
+│ fetches      │────►│ for all API │────►│ expiry      │────►│ auto-fetches│
+│ token (auto) │     │ calls       │     │ (60s buffer)│     │ new token   │
+└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+                                                                    │
+                                                                    ▼
+                                                              Continue tests
+                                                              seamlessly</div>
+
+                <ul>
+                    <li><strong>Token lifetime:</strong> Set by your IdP (typically 3600 seconds)</li>
+                    <li><strong>Auto-refresh:</strong> The framework checks token expiry before each session refresh</li>
+                    <li><strong>Refresh buffer:</strong> Token is refreshed 60 seconds before actual expiry to prevent edge-case failures</li>
+                    <li><strong>Token caching:</strong> Token is cached in memory — only one HTTP call to your IdP per token lifetime</li>
+                </ul>
+
+                <h3>Using <code>Refresh Session If Needed</code></h3>
+                <p>For long-running test suites with OAuth2, the framework includes a <code>Refresh Session If Needed</code> keyword. This is a no-op for basic, jwt, and sltoken — it only refreshes the session for OAuth2 when the token is about to expire.</p>
+                <p>You can call this in your test setup if you have very long test suites:</p>
+
+                <span class="code-label teal">Robot Framework Example</span>
+<div class="code-block"><span class="keyword">*** Test Cases ***</span>
+Long Running Test
+    Refresh Session If Needed    <span class="comment"># Auto-refreshes OAuth2 token if expired</span>
+    <span class="comment"># ... your test steps ...</span></div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════════
+             TAB 6: TROUBLESHOOTING (Section 10)
+             ════════════════════════════════════════════════════════════════ -->
+        <div id="tab-troubleshoot" class="tab-content">
+
+            <div class="data-section">
+                <h2>Common Errors and Solutions <span class="badge orange">Troubleshooting</span></h2>
+
+                <h3>Error: <code>401 Unauthorized</code> on first API call</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Cause</th>
+                                <th>How to Check</th>
+                                <th>Fix</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>JWT tab not configured</td>
+                                <td>Check Admin Manager → JWT tab</td>
+                                <td>Add Issuer ID + JWKS URL</td>
+                            </tr>
+                            <tr>
+                                <td>Wrong Issuer ID</td>
+                                <td>Compare IdP issuer with JWT tab value</td>
+                                <td>Must match exactly</td>
+                            </tr>
+                            <tr>
+                                <td>Wrong JWKS URL</td>
+                                <td>Try opening the JWKS URL in a browser</td>
+                                <td>Should return a JSON with <code>keys</code> array</td>
+                            </tr>
+                            <tr>
+                                <td>Token expired</td>
+                                <td>Decode token at jwt.io — check <code>exp</code> claim</td>
+                                <td>Generate a new token</td>
+                            </tr>
+                            <tr>
+                                <td>User not mapped</td>
+                                <td>Token's email/sub doesn't match a SnapLogic user</td>
+                                <td>Create user or fix claim mapping</td>
+                            </tr>
+                            <tr>
+                                <td>Wrong token URL (OAuth2)</td>
+                                <td>Check if token URL returns tokens</td>
+                                <td>Test with curl first</td>
+                            </tr>
+                            <tr>
+                                <td>Invalid client credentials</td>
+                                <td>IdP returns 401 on token request</td>
+                                <td>Verify client_id and client_secret</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Error: <code>Missing required environment variables: BEARER_TOKEN</code></h3>
+<div class="code-block"><span class="danger">Cause:</span> AUTH_METHOD=jwt but BEARER_TOKEN is not set in .env
+<span class="success">Fix:</span>   Add BEARER_TOKEN=your_token to .env</div>
+
+                <h3>Error: <code>Missing required environment variables: OAUTH2_TOKEN_URL, OAUTH2_CLIENT_ID</code></h3>
+<div class="code-block"><span class="danger">Cause:</span> AUTH_METHOD=oauth2 but OAuth2 credentials are missing from .env
+<span class="success">Fix:</span>   Add OAUTH2_TOKEN_URL, OAUTH2_CLIENT_ID, OAUTH2_CLIENT_SECRET to .env</div>
+
+                <h3>Error: <code>OAuth2 token request failed: HTTP 401</code></h3>
+<div class="code-block"><span class="danger">Cause:</span> Invalid client credentials
+<span class="success">Fix:</span>   1. Verify OAUTH2_CLIENT_ID and OAUTH2_CLIENT_SECRET are correct
+       2. Check if the client secret has expired in your IdP
+       3. Test with curl:
+          curl -X POST YOUR_TOKEN_URL \
+            -d "grant_type=client_credentials" \
+            -d "client_id=YOUR_ID" \
+            -d "client_secret=YOUR_SECRET"</div>
+
+                <h3>Error: <code>OAuth2 token request failed: HTTP 400</code></h3>
+<div class="code-block"><span class="danger">Cause:</span> Invalid scope or grant type not enabled
+<span class="success">Fix:</span>   1. Check if the scope exists in your IdP
+       2. Verify "client_credentials" grant type is enabled for your app
+       3. Try removing OAUTH2_SCOPE from .env (leave it empty)</div>
+
+                <h3>Error: Tests pass initially but fail midway</h3>
+<div class="code-block"><span class="danger">Cause:</span> JWT token expired during test run
+<span class="success">Fix:</span>   Option A: Switch to OAuth2 (auto-refreshes tokens)
+       Option B: Increase token lifetime in your IdP settings
+       Option C: Generate a fresh token right before running tests</div>
+            </div>
+
+            <!-- Debugging Steps -->
+            <div class="data-section">
+                <h2>Debugging Steps <span class="badge orange">4-Step Guide</span></h2>
+
+                <div class="flow-step">
+                    <div class="flow-number orange">1</div>
+                    <div class="flow-content">
+                        <h4>Verify IdP is Working</h4>
+                        <p>Test token generation from your IdP</p>
+                    </div>
+                </div>
+                <span class="code-label orange">Step 1: Test IdP Token Generation</span>
+<div class="code-block"><span class="comment"># Test token generation from IdP</span>
+curl -v -X POST YOUR_TOKEN_URL \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=client_credentials" \
+  -d "client_id=YOUR_CLIENT_ID" \
+  -d "client_secret=YOUR_CLIENT_SECRET"</div>
+                <p>Look for: HTTP 200 response, <code>access_token</code> in the response body, <code>expires_in</code> value (should be &gt; 0)</p>
+
+                <div class="flow-step">
+                    <div class="flow-number orange">2</div>
+                    <div class="flow-content">
+                        <h4>Verify Token Works with SnapLogic</h4>
+                        <p>Test the token against SnapLogic API</p>
+                    </div>
+                </div>
+                <span class="code-label orange">Step 2: Test Token Against SnapLogic</span>
+<div class="code-block">TOKEN="the_access_token_from_step_1"
+
+curl -v -H "Authorization: Bearer ${TOKEN}" \
+  "https://elastic.snaplogic.com/api/1/rest/asset/session?caller=test"</div>
+                <p>Look for: HTTP 200 response (token is accepted). If HTTP 401: JWT tab configuration is wrong or user mapping is missing.</p>
+
+                <div class="flow-step">
+                    <div class="flow-number orange">3</div>
+                    <div class="flow-content">
+                        <h4>Verify JWKS URL</h4>
+                        <p>Check that the JWKS URL returns valid public keys</p>
+                    </div>
+                </div>
+                <span class="code-label orange">Step 3: Test JWKS URL</span>
+<div class="code-block">curl YOUR_JWKS_URL</div>
+                <p>Should return:</p>
+<div class="code-block">{
+  "keys": [
+    {
+      "kty": "RSA",
+      "kid": "...",
+      "n": "...",
+      "e": "AQAB"
+    }
+  ]
+}</div>
+
+                <div class="flow-step">
+                    <div class="flow-number orange">4</div>
+                    <div class="flow-content">
+                        <h4>Decode the Token</h4>
+                        <p>Go to jwt.io and paste your token to inspect its claims</p>
+                    </div>
+                </div>
+                <p>Inspect the following claims:</p>
+                <ul>
+                    <li><strong><code>iss</code></strong> — Must match the Issuer ID in SnapLogic JWT tab</li>
+                    <li><strong><code>exp</code></strong> — Expiration time (Unix timestamp). Must be in the future</li>
+                    <li><strong><code>sub</code></strong> or <strong><code>email</code></strong> — Must map to a valid SnapLogic user</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════════
+             TAB 7: SECURITY & FAQ (Sections 11, 12, Quick Reference)
+             ════════════════════════════════════════════════════════════════ -->
+        <div id="tab-security" class="tab-content">
+
+            <!-- Security Best Practices -->
+            <div class="data-section">
+                <h2>Security Best Practices <span class="badge red">Section 11</span></h2>
+
+                <h3>Protecting Credentials</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Practice</th>
+                                <th>Why</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Never commit <code>.env</code> to version control</td>
+                                <td>Contains secrets (client_secret, tokens)</td>
+                            </tr>
+                            <tr>
+                                <td>Add <code>.env</code> to <code>.gitignore</code></td>
+                                <td>Prevents accidental commits</td>
+                            </tr>
+                            <tr>
+                                <td>Use CI/CD environment variables</td>
+                                <td>Inject secrets at runtime, not in files</td>
+                            </tr>
+                            <tr>
+                                <td>Rotate client secrets periodically</td>
+                                <td>Limits exposure if compromised</td>
+                            </tr>
+                            <tr>
+                                <td>Use short token lifetimes</td>
+                                <td>Reduces window of attack if token is intercepted</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>CI/CD Configuration</h3>
+                <p>For CI/CD pipelines (Travis CI, GitHub Actions, Jenkins), set credentials as environment variables:</p>
+
+                <span class="code-label red">Travis CI (.travis.yml)</span>
+<div class="code-block"><span class="keyword">env</span>:
+  <span class="keyword">global</span>:
+    - <span class="variable">AUTH_METHOD</span>=<span class="string">oauth2</span>
+    <span class="comment"># Set these as encrypted variables in Travis CI settings:</span>
+    <span class="comment"># OAUTH2_TOKEN_URL, OAUTH2_CLIENT_ID, OAUTH2_CLIENT_SECRET</span></div>
+
+                <span class="code-label red">GitHub Actions</span>
+<div class="code-block"><span class="keyword">env</span>:
+  <span class="variable">AUTH_METHOD</span>: <span class="string">oauth2</span>
+  <span class="variable">OAUTH2_TOKEN_URL</span>: <span class="string">${{ secrets.OAUTH2_TOKEN_URL }}</span>
+  <span class="variable">OAUTH2_CLIENT_ID</span>: <span class="string">${{ secrets.OAUTH2_CLIENT_ID }}</span>
+  <span class="variable">OAUTH2_CLIENT_SECRET</span>: <span class="string">${{ secrets.OAUTH2_CLIENT_SECRET }}</span></div>
+
+                <h3>Principle of Least Privilege</h3>
+                <ul>
+                    <li>Create a <strong>dedicated IdP application</strong> for the Robot Framework (don't reuse a personal account's app)</li>
+                    <li>Grant only the <strong>minimum permissions</strong> needed for test execution</li>
+                    <li>Use a <strong>dedicated SnapLogic user</strong> for API automation (not a personal admin account)</li>
+                    <li>Consider separate apps for different environments (dev, staging, production)</li>
+                </ul>
+            </div>
+
+            <!-- FAQ -->
+            <div class="data-section">
+                <h2>Frequently Asked Questions <span class="badge red">Section 12</span></h2>
+
+                <h3>Q: Can I use JWT and OAuth2 at the same time?</h3>
+                <p><strong>No.</strong> You can only use one auth method per test run. Set <code>AUTH_METHOD</code> to either <code>jwt</code> or <code>oauth2</code>.</p>
+
+                <h3>Q: Do I need to change my test files?</h3>
+                <p><strong>No.</strong> The auth method only affects how the API session is created. All existing test files work without any changes.</p>
+
+                <h3>Q: What if my IdP is not Okta or Entra ID?</h3>
+                <p>Any IdP that supports OAuth2 Client Credentials flow and issues JWT tokens will work. You just need the token URL, JWKS URL, and client credentials.</p>
+
+                <h3>Q: Can I switch between auth methods easily?</h3>
+                <p><strong>Yes.</strong> Just change <code>AUTH_METHOD</code> in your <code>.env</code> file. No code changes needed.</p>
+
+                <h3>Q: What happens if I don't set AUTH_METHOD?</h3>
+                <p>The framework auto-detects:</p>
+                <ul>
+                    <li>If <code>OAUTH2_TOKEN_URL</code> is set → uses <code>oauth2</code></li>
+                    <li>If <code>BEARER_TOKEN</code> is set → uses <code>jwt</code></li>
+                    <li>Otherwise → uses <code>basic</code></li>
+                </ul>
+
+                <h3>Q: How long do tokens last?</h3>
+                <p>This depends on your IdP configuration. Typical defaults:</p>
+                <ul>
+                    <li><strong>Okta:</strong> 3600 seconds (1 hour)</li>
+                    <li><strong>Entra ID:</strong> 3599 seconds (~1 hour)</li>
+                    <li>You can change this in your IdP's authorization server settings.</li>
+                </ul>
+
+                <h3>Q: What if my tests take longer than the token lifetime?</h3>
+                <ul>
+                    <li><strong>JWT:</strong> Tests will fail when the token expires. Generate a token with a longer lifetime, or switch to OAuth2.</li>
+                    <li><strong>OAuth2:</strong> The framework auto-refreshes the token 60 seconds before expiry. No action needed.</li>
+                </ul>
+
+                <h3>Q: Do I need to disable basic auth in SnapLogic?</h3>
+                <p><strong>No, and we recommend keeping it enabled</strong> during the transition period. This allows you to fall back to basic auth if JWT/OAuth2 has issues. Only disable basic auth after you've fully validated the new auth method.</p>
+
+                <h3>Q: Can multiple teams use different auth methods?</h3>
+                <p><strong>Yes.</strong> Each team can have their own <code>.env</code> file with a different <code>AUTH_METHOD</code>. The framework handles everything based on the <code>.env</code> configuration.</p>
+
+                <h3>Q: Where do I get help if something doesn't work?</h3>
+                <ol>
+                    <li>Check the Troubleshooting tab above</li>
+                    <li>Decode your JWT token at jwt.io to inspect claims</li>
+                    <li>Test with curl to isolate whether the issue is IdP, SnapLogic, or framework</li>
+                    <li>Check SnapLogic Admin Manager → JWT tab configuration</li>
+                    <li>Contact your IdP admin if token generation fails</li>
+                </ol>
+            </div>
+
+            <!-- Quick Reference Card -->
+            <div class="data-section">
+                <h2>Quick Reference Card <span class="badge">Checklists</span></h2>
+
+                <h3>JWT Setup Checklist</h3>
+                <span class="code-label">JWT Checklist</span>
+<div class="code-block">[ ] 1. IdP: Create application, get Client ID + Secret
+[ ] 2. IdP: Note Issuer URL and JWKS URL
+[ ] 3. SnapLogic: Admin Manager → JWT tab → Add Issuer ID + JWKS URL → Save
+[ ] 4. Test: curl to get token from IdP
+[ ] 5. Test: curl to verify token works with SnapLogic API
+[ ] 6. .env: Set AUTH_METHOD=jwt and BEARER_TOKEN=&lt;token&gt;
+[ ] 7. Run: make robot-run-tests TAGS="oracle"
+[ ] 8. Verify: Console shows "Authentication method: jwt"</div>
+
+                <h3>OAuth2 Setup Checklist</h3>
+                <span class="code-label green">OAuth2 Checklist</span>
+<div class="code-block">[ ] 1. IdP: Create application, get Client ID + Secret + Token URL
+[ ] 2. IdP: Note Issuer URL and JWKS URL
+[ ] 3. SnapLogic: Admin Manager → JWT tab → Add Issuer ID + JWKS URL → Save
+[ ] 4. Test: curl to get token from IdP (verifies credentials)
+[ ] 5. Test: curl to verify token works with SnapLogic API
+[ ] 6. .env: Set AUTH_METHOD=oauth2, OAUTH2_TOKEN_URL, OAUTH2_CLIENT_ID, OAUTH2_CLIENT_SECRET
+[ ] 7. Run: make robot-run-tests TAGS="oracle"
+[ ] 8. Verify: Console shows "Authentication method: oauth2"</div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════════
+             TAB 8: JWT vs OAuth2 — Which to Choose?
+             ════════════════════════════════════════════════════════════════ -->
+        <div id="tab-jwtVsOauth2" class="tab-content">
+
+            <!-- Same Setup Explanation -->
+            <div class="data-section">
+                <h2>🔄 JWT vs OAuth2 — Which to Choose? <span class="badge">Key Decision</span></h2>
+
+                <h3>But Wait — Don't Both Need the Same Setup?</h3>
+
+                <div class="info-box green">
+                    <strong>Yes!</strong> The IdP setup and SnapLogic JWT tab configuration are <strong>identical for both methods</strong>.
+                    Both JWT and OAuth2 require the same application in Okta/Entra and the same SnapLogic JWT tab configuration.
+                    The <strong>only difference</strong> is who fetches the token and when.
+                </div>
+
+                <span class="code-label green">What's the Same vs Different</span>
+<div class="code-block">WHAT'S THE SAME FOR BOTH:
+══════════════════════════════════════════════════
+✅ Create app in IdP (Okta/Entra)         — SAME
+✅ Get Client ID, Secret, Token URL       — SAME
+✅ Configure SnapLogic JWT tab (④⑤)       — SAME
+✅ SnapLogic validates token the same way  — SAME
+
+WHAT'S DIFFERENT — Only ONE thing:
+══════════════════════════════════════════════════
+WHO fetches the token from the IdP?</div>
+            </div>
+
+            <!-- Sequence Diagrams -->
+            <div class="data-section">
+                <h2>📊 How Each Method Works <span class="badge blue">Visual Comparison</span></h2>
+
+                <h3>JWT Method — YOU Fetch the Token Manually</h3>
+                <span class="code-label orange">JWT Sequence Diagram</span>
+<div class="code-block">  YOU (manually)          Robot Framework         SnapLogic
+      │                        │                      │
+      │  1. Run curl           │                      │
+      │  2. Copy token         │                      │
+      │  3. Paste in .env      │                      │
+      │                        │                      │
+      │       BEARER_TOKEN=eyJ...                     │
+      │ ─────────────────────► │                      │
+      │                        │  Uses that token     │
+      │                        │ ──────────────────►  │
+      │                        │                      │
+      │    ⏰ 1 hour later...  │                      │
+      │    Token EXPIRES!      │                      │
+      │                        │  401 Unauthorized ❌ │
+      │                        │ ◄──────────────────  │
+      │                        │                      │
+      │  YOU must run curl     │                      │
+      │  again, paste new      │                      │
+      │  token, restart tests  │                      │</div>
+
+                <h3>OAuth2 Method — FRAMEWORK Fetches the Token Automatically</h3>
+                <span class="code-label green">OAuth2 Sequence Diagram</span>
+<div class="code-block">  YOU (one-time setup)    Robot Framework         SnapLogic
+      │                        │                      │
+      │  Put credentials       │                      │
+      │  in .env (once):       │                      │
+      │  OAUTH2_TOKEN_URL=③    │                      │
+      │  OAUTH2_CLIENT_ID=①    │                      │
+      │  OAUTH2_CLIENT_SECRET=②│                      │
+      │ ─────────────────────► │                      │
+      │                        │                      │
+      │  Done! Go have coffee  │                      │
+      │                        │  1. Auto-calls IdP   │
+      │                        │     with ①②③         │
+      │                        │  2. Gets token       │
+      │                        │  3. Uses token       │
+      │                        │ ──────────────────►  │
+      │                        │                      │
+      │                        │  ⏰ 59 min later...  │
+      │                        │  Auto-fetches NEW    │
+      │                        │  token (you do       │
+      │                        │  NOTHING)            │
+      │                        │ ──────────────────►  │
+      │                        │                      │
+      │                        │  Tests keep running  │
+      │                        │  forever ✅          │</div>
+            </div>
+
+            <!-- Quick Comparison Table -->
+            <div class="data-section">
+                <h2>⚖️ Quick Comparison <span class="badge purple">Side by Side</span></h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Consideration</th>
+                                <th>JWT</th>
+                                <th>OAuth2</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Token generation</strong></td>
+                                <td>Manual — you generate it before running tests</td>
+                                <td>Automatic — framework fetches it at runtime</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Token refresh</strong></td>
+                                <td>Manual — generate a new token if expired</td>
+                                <td>Automatic — framework refreshes when expired</td>
+                            </tr>
+                            <tr>
+                                <td><strong>CI/CD friendly</strong></td>
+                                <td>Requires token generation step in pipeline</td>
+                                <td>Fully automated — just set credentials</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Setup complexity</strong></td>
+                                <td>Simpler — 1 env var: <code>BEARER_TOKEN</code></td>
+                                <td>Slightly more — 3 env vars: <code>TOKEN_URL</code>, <code>CLIENT_ID</code>, <code>CLIENT_SECRET</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Best for</strong></td>
+                                <td>Quick manual testing, short test runs</td>
+                                <td>CI/CD pipelines, long-running test suites</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Real-World Impact Table -->
+            <div class="data-section">
+                <h2>🌍 Real-World Impact <span class="badge orange">Scenarios</span></h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Scenario</th>
+                                <th>JWT</th>
+                                <th>OAuth2</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Quick manual test</strong> (10 min)</td>
+                                <td>✅ Fine — token won't expire</td>
+                                <td>✅ Also fine, but more env vars to set</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Long test suite</strong> (2+ hours)</td>
+                                <td>❌ Tests FAIL after 1 hour when token expires</td>
+                                <td>✅ Tests keep running — auto-refreshes</td>
+                            </tr>
+                            <tr>
+                                <td><strong>CI/CD pipeline</strong></td>
+                                <td>⚠️ Need a "generate token" step. If pipeline takes &gt;1hr, it breaks</td>
+                                <td>✅ Just set env vars. Fully automated, never breaks</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Multiple runs per day</strong></td>
+                                <td>⚠️ Generate new token EVERY time</td>
+                                <td>✅ Set once, never touch again</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Weekend/overnight runs</strong></td>
+                                <td>❌ Impossible without manual intervention</td>
+                                <td>✅ Works unattended</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Why JWT Exists -->
+            <div class="data-section">
+                <h2>🤔 Why Does JWT Method Even Exist? <span class="badge teal">Context</span></h2>
+
+                <p>It's simpler for <strong>quick one-off testing</strong>:</p>
+
+                <span class="code-label">Env Var Comparison</span>
+<div class="code-block">JWT:    1 env var   → BEARER_TOKEN=eyJ...       (fast to set up, manual refresh)
+OAuth2: 3 env vars  → TOKEN_URL, CLIENT_ID,     (slightly more setup, fully automatic)
+                      CLIENT_SECRET</div>
+
+                <p>If you're just verifying that the JWT tab is configured correctly or doing a quick 10-minute test,
+                JWT is faster — run curl, paste token, run test, done.</p>
+
+                <div class="info-box green">
+                    <strong>💡 Recommendation:</strong> Use <strong>OAuth2</strong> for CI/CD and automated workflows.
+                    Use <strong>JWT</strong> for quick manual testing or initial verification.
+                    Both require the same IdP and SnapLogic setup — the only difference is who fetches the token.
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- JAVASCRIPT — Tab switching logic -->
+    <script>
+        function showTab(tabId, btn) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            // Deactivate all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            // Show selected tab
+            document.getElementById('tab-' + tabId).classList.add('active');
+            // Activate the clicked button
+            btn.classList.add('active');
+            // Persist active tab in URL hash so it survives page re-renders
+            window.location.hash = tabId;
+        }
+
+        // On page load, restore the active tab from URL hash (if any)
+        window.addEventListener('DOMContentLoaded', function() {
+            var hash = window.location.hash.replace('#', '');
+            if (hash && document.getElementById('tab-' + hash)) {
+                showTab(hash, document.querySelector('.tab-btn[onclick*="' + hash + '"]'));
+            }
+        });
+    </script>
+</body>
+</html>

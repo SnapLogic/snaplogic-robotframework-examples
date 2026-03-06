@@ -25,19 +25,64 @@ Before Suite
     # Generate Cookiecutter Context From Tags
     Log To Console    env_file_path is:${env_file_path}
     Load Environment Variables
+    Detect Auth Method
     Validate Environment Variables
     Set Up Global Variables
     Project Set Up-Delete Project Space-Create New Project space-Create Accounts
 
 Project Set Up-Delete Project Space-Create New Project space-Create Accounts
-    Set Up Data
-    ...    ${URL}
-    ...    ${ORG_ADMIN_USER}
-    ...    ${ORG_ADMIN_PASSWORD}
-    ...    ${ORG_NAME}
-    ...    ${PROJECT_SPACE}
-    ...    ${PROJECT_NAME}
-    ...    ${env_file_path}
+    ${auth_method}=    Get Environment Variable    AUTH_METHOD    basic
+    Log To Console    \nAuthentication method: ${auth_method}
+
+    IF    '${auth_method}' == 'basic'
+        Set Up Data
+        ...    ${URL}
+        ...    ${ORG_ADMIN_USER}
+        ...    ${ORG_ADMIN_PASSWORD}
+        ...    ${ORG_NAME}
+        ...    ${PROJECT_SPACE}
+        ...    ${PROJECT_NAME}
+        ...    ${env_file_path}
+        ...    auth_method=basic
+    ELSE IF    '${auth_method}' == 'jwt'
+        ${bearer_token}=    Get Environment Variable    BEARER_TOKEN
+        Set Up Data
+        ...    ${URL}
+        ...    org_name=${ORG_NAME}
+        ...    project_space=${PROJECT_SPACE}
+        ...    project_name=${PROJECT_NAME}
+        ...    env_file_path=${env_file_path}
+        ...    auth_method=jwt
+        ...    bearer_token=${bearer_token}
+    ELSE IF    '${auth_method}' == 'oauth2'
+        ${oauth2_token_url}=    Get Environment Variable    OAUTH2_TOKEN_URL
+        ${oauth2_client_id}=    Get Environment Variable    OAUTH2_CLIENT_ID
+        ${oauth2_client_secret}=    Get Environment Variable    OAUTH2_CLIENT_SECRET
+        ${oauth2_scope}=    Get Environment Variable    OAUTH2_SCOPE    ${EMPTY}
+        Set Up Data
+        ...    ${URL}
+        ...    org_name=${ORG_NAME}
+        ...    project_space=${PROJECT_SPACE}
+        ...    project_name=${PROJECT_NAME}
+        ...    env_file_path=${env_file_path}
+        ...    auth_method=oauth2
+        ...    oauth2_token_url=${oauth2_token_url}
+        ...    oauth2_client_id=${oauth2_client_id}
+        ...    oauth2_client_secret=${oauth2_client_secret}
+        ...    oauth2_scope=${oauth2_scope}
+    ELSE IF    '${auth_method}' == 'sltoken'
+        Set Up Data
+        ...    ${URL}
+        ...    ${ORG_ADMIN_USER}
+        ...    ${ORG_ADMIN_PASSWORD}
+        ...    ${ORG_NAME}
+        ...    ${PROJECT_SPACE}
+        ...    ${PROJECT_NAME}
+        ...    ${env_file_path}
+        ...    auth_method=sltoken
+    ELSE
+        Fail    Invalid AUTH_METHOD: ${auth_method}. Supported values: basic, jwt, oauth2, sltoken
+    END
 
 Set Up Global Variables
     # Set up the path variables as global
@@ -50,14 +95,32 @@ Set Up Global Variables
     Log To Console    env file path(from init_file):${env_file_path}
 
 Validate Environment Variables
+    # Common variables required regardless of auth method
     @{required_env_vars}=    Create List
     ...    URL
-    ...    ORG_ADMIN_USER
-    ...    ORG_ADMIN_PASSWORD
     ...    ORG_NAME
     ...    PROJECT_SPACE
     ...    PROJECT_NAME
     ...    GROUNDPLEX_NAME
+
+    # Add auth-method-specific required variables
+    ${auth_method}=    Get Environment Variable    AUTH_METHOD    basic
+
+    IF    '${auth_method}' == 'basic'
+        Append To List    ${required_env_vars}    ORG_ADMIN_USER
+        Append To List    ${required_env_vars}    ORG_ADMIN_PASSWORD
+    ELSE IF    '${auth_method}' == 'jwt'
+        Append To List    ${required_env_vars}    BEARER_TOKEN
+    ELSE IF    '${auth_method}' == 'oauth2'
+        Append To List    ${required_env_vars}    OAUTH2_TOKEN_URL
+        Append To List    ${required_env_vars}    OAUTH2_CLIENT_ID
+        Append To List    ${required_env_vars}    OAUTH2_CLIENT_SECRET
+    ELSE IF    '${auth_method}' == 'sltoken'
+        Append To List    ${required_env_vars}    ORG_ADMIN_USER
+        Append To List    ${required_env_vars}    ORG_ADMIN_PASSWORD
+    ELSE
+        Fail    Invalid AUTH_METHOD: ${auth_method}. Supported values: basic, jwt, oauth2, sltoken
+    END
 
     @{missing_vars}=    Create List
 
@@ -72,7 +135,33 @@ Validate Environment Variables
     IF    ${missing_count} > 0
         ${missing_vars_str}=    Evaluate    ", ".join($missing_vars)
         Fail
-        ...    Missing required environment variables: ${missing_vars_str}. Please check your .env file and ensure all required variables are defined.
+        ...    Missing required environment variables for AUTH_METHOD=${auth_method}: ${missing_vars_str}. Please check your .env file and ensure all required variables are defined.
+    END
+
+Detect Auth Method
+    [Documentation]    Auto-detects authentication method from environment variables.
+    ...    If AUTH_METHOD is explicitly set in .env, uses that value.
+    ...    Otherwise, infers the method from which auth-related env vars are present:
+    ...    - OAUTH2_TOKEN_URL present → oauth2
+    ...    - BEARER_TOKEN present → jwt
+    ...    - Otherwise → basic (default)
+    ${explicit_method}=    Get Environment Variable    AUTH_METHOD    ${EMPTY}
+    IF    '${explicit_method}' != '${EMPTY}'
+        Log To Console    \nAUTH_METHOD explicitly set to: ${explicit_method}
+        RETURN
+    END
+    # Auto-detect based on available env vars
+    ${oauth2_url}=    Get Environment Variable    OAUTH2_TOKEN_URL    ${EMPTY}
+    ${bearer}=    Get Environment Variable    BEARER_TOKEN    ${EMPTY}
+    IF    '${oauth2_url}' != '${EMPTY}'
+        Set Environment Variable    AUTH_METHOD    oauth2
+        Log To Console    \nAuto-detected AUTH_METHOD=oauth2 (OAUTH2_TOKEN_URL is set)
+    ELSE IF    '${bearer}' != '${EMPTY}'
+        Set Environment Variable    AUTH_METHOD    jwt
+        Log To Console    \nAuto-detected AUTH_METHOD=jwt (BEARER_TOKEN is set)
+    ELSE
+        Set Environment Variable    AUTH_METHOD    basic
+        Log To Console    \nAuto-detected AUTH_METHOD=basic (default)
     END
 
 Load Environment Variables

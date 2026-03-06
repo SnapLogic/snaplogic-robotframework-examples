@@ -62,6 +62,12 @@ Guides for setting up various infrastructure components.
 | ------------------------------ | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Stateless vs Stateful Workflow | Understanding workflow patterns for Salesforce testing | `README/How To Guides/infra_setup_guides/salesforce/README/stateless vs stateful workflow.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/infra_setup_guides/salesforce/README/stateless%20vs%20stateful%20workflow.html) |
 
+### Authentication
+
+| Document Name | Description | Relative Path | GitHub Link |
+| --- | --- | --- | --- |
+| JWT & OAuth2 Authentication Setup | Setting up JWT and OAuth2 authentication for SnapLogic pipelines | `README/How To Guides/infra_setup_guides/setup_jwt_oauth2_authentication.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/infra_setup_guides/setup_jwt_oauth2_authentication.html) |
+
 ### VS Code
 
 | Document Name       | Description                            | Relative Path                                           | GitHub Link                                                                                                                                                             |
