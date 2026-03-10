@@ -1,0 +1,173 @@
+# SnapLogic Robot Framework Examples
+
+An automated end-to-end testing framework for SnapLogic pipelines using [Robot Framework](https://robotframework.org/) and Docker. This project enables teams to validate data integration pipelines by automating the full lifecycle — creating accounts, importing pipelines, executing triggered tasks, and verifying output data against expected results.
+
+### Key Features
+- **End-to-end pipeline testing** — Automates account setup, pipeline import, task execution, and result verification
+- **Multi-system support** — Oracle, PostgreSQL, MySQL, SQL Server, Snowflake, DB2, Teradata, Kafka, ActiveMQ, S3/MinIO, Salesforce, and Email
+- **Dockerized infrastructure** — All databases, messaging services, and mock services run as containers with a single `make start-services` command
+- **Framework-managed Groundplex** — Optionally creates and manages a local SnapLogic Groundplex for pipeline execution
+- **CI/CD ready** — Integrated with Travis CI, Slack notifications, and test result uploads
+- **Cookiecutter template** — Generate new test projects with a consistent structure and best practices
+
+---
+
+# 🚀 Pipeline Execution: 5-Step Quick Start
+
+[**🚀 Reference link for Robot Framework complete documentation in HTML Format**](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/robot_framework_guides/html_docs/tabs/quickstart.html)
+
+## ⚡ Step 1: Install Docker Desktop
+Download and install Docker Desktop for your OS, start it, and verify installation with `docker --version`
+
+**For Windows users:** Follow these additional instructions for running Docker commands:
+- **[Windows WSL VS Code Setup Guide](README/How%20To%20Guides/infra_setup_guides/windows_wsl_vscode_setup.md)** - Essential setup for WSL, Ubuntu, make commands, and VS Code integration on Windows
+
+## 📥 Step 2: Clone the Repository
+Create a working directory and clone the GitHub repository:
+```bash
+git clone https://github.com/SnapLogic/snaplogic-robotframework-examples
+```
+## 💻 Step 3: Open Project (Either in IDE or Terminal)`
+
+Download VS Code (or any preferred IDE) and open the project folder, or work directly from terminal
+
+```bash
+#Change the directory to {{cookiecutter.project_name}}
+eval $(make change-dir)
+# directory is changed to {{cookiecutter.project_name}}
+```
+
+**OR**
+
+```bash
+cd {{cookiecutter.primary_pipeline_name}}
+```
+
+## ⚙️ Step 4: Configure Environment
+Note: Before automating tests, you must have a working SnapLogic pipeline(.slp file)
+
+Create New file `.env` at project root level
+Copy the contents of `.env.example` to  newly created file `.env` and update env values as per project requirements:
+make sure to delete all inline commenst in .env file during copying of .env.example
+```bash
+cp .env.example .env
+```
+Then edit the `.env` file with your actual SnapLogic credentials, organization details, and project settings
+
+## 🏗️ Step 5: Build and Execute
+Build your test environment using make commands:
+
+### Case 1: Using Framework-Managed Groundplex (Local)
+This option creates and manages a Groundplex for you automatically
+
+
+
+```bash
+# Directory is changed to {{cookiecutter.project_name}}
+
+../snaplogic-robotframework-examples/{{cookiecutter.project_name}}
+```
+
+```bash
+# Build the Docker containers for all services that will run your tests
+make start-services
+# Run the below command if you want to run only tools service and use external accounts for execution
+make start-tools-service-only
+
+# oracle tests
+make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True # Create projectspace,launch ground plex and Runs Robot tests with the "oracle" tag
+
+# - For Later executions If you already have project space set up ready ignore the argument PROJECT_SPACE_SETUP=True
+make robot-run-all-tests TAGS="oracle" # run postgres to s3 tests (No need to have project_space_setup=false)
+```
+
+### Case 2: Using Existing Groundplex (No Groundplex Creation)
+If you want to use a different/existing Groundplex and skip the Groundplex creation:
+
+```bash
+# Build the Docker containers that will run your tests
+make start-services
+# Run the below command if you want to run only tools service and use external accounts for execution
+make start-tools-service-only
+
+
+# oracle tests using existing Groundplex
+make robot-run-tests-no-gp TAGS="snowflake_demo" PROJECT_SPACE_SETUP=True
+
+# For later executions with existing project space
+make robot-run-tests-no-gp TAGS="snowflake_demo"
+```
+
+```bash
+# when user gets the latest code there might be changes to requirement files or compose files. Run the below command
+make clean-start
+# or
+make clean-start-tools
+
+```
+
+**Note:** When using `robot-run-tests-no-gp`, ensure your `.env` file has the correct `GROUNDPLEX_NAME` pointing to your existing Groundplex.
+
+> **⏱️ Note:** This creates a containerized environment with Robot Framework and all testing dependencies. The build process takes about 2-3 minutes.
+
+### 📖 Understanding Robot Framework Commands
+
+For a deeper understanding of the Robot Framework testing process and available commands:
+
+- **📋 [Robot Framework Test Execution Flow](README/How%20To%20Guides/robot_framework_guides/robot_framework_test_execution_flow.md)** - Learn how Robot Framework tests are structured and executed in our testing pipeline
+- **⚙️ [Robot Framework Make Commands Guide](README/How%20To%20Guides/robot_framework_guides/robot_tests_make_commands.md)** - Comprehensive reference for all available make commands, parameters, and usage examples
+- **📚 [SnapLogic Common Robot Library Guide](README/How%20To%20Guides/robot_framework_guides/snaplogic_common_robot_library_guide.md)** - Explore the SnapLogic-specific Robot Framework library with reusable keywords and comprehensive documentation
+
+These guides will help you understand what happens behind the scenes when you run the commands above and how to customize your test execution for different scenarios.
+
+---
+
+✅ **You're all set!** Your SnapLogic Robot Framework testing environment is ready to go.
+
+## What Happens After Execution
+
+After executing the above commands, the following services will be launched automatically:
+
+### 🚀 Services Started
+
+- **Groundplex** is launched for SnapLogic pipeline execution.
+- **Oracle Database** is started.
+- **PostgreSQL Database** is started.
+- **MinIO** (S3-compatible object store) is started and pre-configured.
+
+### 🚀 Tests Are Executed
+- **RobotFrameWork Tests** You'll see Robot Framework output showing each step. Look for green "PASS" messages.
+
+  **In SnapLogic Org:** (Based on the values given in .env file)
+   - Accounts are created
+   - ProjectSpace is Created (If there is existing project space with the same name it will be deleted)
+   - Project is Created
+   - Pipeline is imported
+   - Triggered task is created and Executed
+
+### 📊 Test Reports Generated
+- **Reports Location:** After test execution completes, detailed test reports will be automatically generated under:
+  ```
+  test/robot_output
+  ```
+- **Report Files Include:**
+  - `report.html` - Comprehensive test execution report with pass/fail status
+  - `log.html` - Detailed execution logs with step-by-step information
+  - `output.xml` - XML output for integration with CI/CD tools
+- **Viewing Reports:** Open the HTML files in any web browser to view detailed test results, execution times, and failure analysis
+
+---
+
+## 📚 Additional Documentation
+
+All infrastructure setup guides, tutorials, and detailed documentation are available under the [`README/`](README/) directory:
+
+- **[Tutorials](README/Tutorials/)** — Step-by-step walkthroughs including this quick start guide
+- **[How To Guides](README/How%20To%20Guides/)** — In-depth guides organized by topic:
+  - **[Infrastructure Setup](README/How%20To%20Guides/infra_setup_guides/)** — Docker, Cookiecutter, Groundplex, Kafka, MinIO, Salesforce mock, environment files, VS Code, and Windows setup
+  - **[Robot Framework Guides](README/How%20To%20Guides/robot_framework_guides/)** — Test execution flow, make commands reference, and the SnapLogic Common Robot library
+  - **[Testing Strategy](README/How%20To%20Guides/testing_strategy_guides/)** — Testing approaches and best practices
+  - **[Test Documentation](README/How%20To%20Guides/test_documentation_guides/)** — How to document test cases and results
+  - **[Mock Services Decisions](README/How%20To%20Guides/mockservices_decisions/)** — Design decisions for mock service implementations
+  - **[Remote Instance Testing](README/How%20To%20Guides/testing_flow_remote_instances/)** — Testing against remote/external environments
+- **[📖 HTML Documentation Index](README/html_documentation_index.md)** — Complete index of all HTML documentation with browser-viewable links
