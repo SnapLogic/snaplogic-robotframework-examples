@@ -171,3 +171,13 @@ All infrastructure setup guides, tutorials, and detailed documentation are avail
   - **[Mock Services Decisions](README/How%20To%20Guides/mockservices_decisions/)** — Design decisions for mock service implementations
   - **[Remote Instance Testing](README/How%20To%20Guides/testing_flow_remote_instances/)** — Testing against remote/external environments
 - **[📖 HTML Documentation Index](README/html_documentation_index.md)** — Complete index of all HTML documentation with browser-viewable links
+
+---
+
+## 🎥 Video Tutorials
+
+Watch the full video tutorial playlist for step-by-step walkthroughs:
+
+[![YouTube Playlist](https://img.shields.io/badge/YouTube-Playlist-red?logo=youtube)](https://www.youtube.com/playlist?list=PLqn-mQdiOadLtUl_XiIbtZ_kqifyA26Ig)
+
+**[▶️ SnapLogic Robot Framework Video Tutorials](https://www.youtube.com/playlist?list=PLqn-mQdiOadLtUl_XiIbtZ_kqifyA26Ig)**
