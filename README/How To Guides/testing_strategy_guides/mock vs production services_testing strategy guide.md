@@ -954,10 +954,8 @@ COMPOSE_PROFILES=oracle-dev,postgres-dev,minio docker compose up -d
 
 ## 📚 Related Documentation
 
-- **[MinIO Setup and Configuration Guide](../infra_setup_guides/minio_setup_guide.md)** - S3-compatible storage implementation
-- **[Oracle Database Setup Guide](../infra_setup_guides/oracle_setup_guide.md)** - Oracle database configuration
-- **[PostgreSQL Setup Guide](../infra_setup_guides/postgresql_setup_guide.md)** - PostgreSQL database setup
-- **[Docker Compose Guide](../infra_setup_guides/docker_compose_guide.md)** - Container orchestration for all services
+- **[MinIO Setup and Configuration Guide](../infra_setup_guides/minio/minio_setup_guide.md)** - S3-compatible storage implementation
+- **[Docker Compose Guide](../infra_setup_guides/docker/docker_compose_guide.md)** - Container orchestration for all services
 - **[Robot Framework Test Execution Flow](../robot_framework_guides/robot_framework_test_execution_flow.md)** - Multi-service testing pipeline
 
 ---

@@ -631,15 +631,10 @@ Total: 8/8 test phases completed successfully
 
 - **[Robot Framework Test Execution Flow](robot_framework_test_execution_flow.md)** - Understanding the overall test execution process
 - **[SnapLogic Common Robot Library Guide](snaplogic_common_robot_library_guide.md)** - Available keywords and functions
-- **[Docker Compose Guide](../infra_setup_guides/docker_compose_guide.md)** - Service orchestration and management
-- **[PostgreSQL Setup Guide](../infra_setup_guides/postgresql_setup_guide.md)** - PostgreSQL service configuration
-- **[MinIO Setup Guide](../infra_setup_guides/minio_setup_guide.md)** - S3-compatible storage setup
+- **[Docker Compose Guide](../infra_setup_guides/docker/docker_compose_guide.md)** - Service orchestration and management
+- **[MinIO Setup Guide](../infra_setup_guides/minio/minio_setup_guide.md)** - S3-compatible storage setup
 
 ---
-
-## 📚 Explore More Documentation
-
-💡 **Need help finding other guides?** Check out our **[📖 Complete Documentation Reference](../../reference.md)** for a comprehensive overview of all available tutorials, how-to guides, and quick start paths. It's your one-stop navigation hub for the entire SnapLogic Test Framework documentation!
 
 ---
 

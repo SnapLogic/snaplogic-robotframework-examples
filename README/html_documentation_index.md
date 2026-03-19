@@ -76,9 +76,10 @@ Guides for setting up various infrastructure components.
 
 ### Windows
 
-| Document Name           | Description                                          | Relative Path                                                                   | GitHub Link                                                                                                                                                                                       |
-| ----------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Windows WSL Setup Guide | WSL installation and VS Code integration for Windows | `README/How To Guides/infra_setup_guides/windows/windows_wsl_vscode_setup.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/infra_setup_guides/windows/windows_wsl_vscode_setup.html) |
+| Document Name              | Description                                          | Relative Path                                                                              | GitHub Link                                                                                                                                                                                                          |
+| -------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Windows WSL Setup Guide    | WSL installation and VS Code integration for Windows | `README/How To Guides/infra_setup_guides/windows/windows_wsl_vscode_setup.html`            | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/infra_setup_guides/windows/windows_wsl_vscode_setup.html)                    |
+| Windows Linux WSL Fundamentals | Core WSL concepts and Linux fundamentals for Windows users | `README/How To Guides/infra_setup_guides/windows/windows_linux_wsl_fundamentals.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/infra_setup_guides/windows/windows_linux_wsl_fundamentals.html) |
 
 
 

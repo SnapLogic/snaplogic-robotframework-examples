@@ -6,42 +6,15 @@ This directory contains comprehensive guides and templates for documenting Robot
 
 ## 📚 Available Resources
 
-### 1. **Generic Test Case Documentation Template** 
-**File**: [generic_test_case_documentation_template.md](./generic_test_case_documentation_template.md)
+### 1. **Generic Test Case Documentation Template** *(Coming Soon)*
 
 **Purpose**: Comprehensive guide explaining the standardized format for documenting test cases.
 
-**Contents**:
-- Complete documentation structure overview
-- Detailed explanation of each section
-- Best practices and guidelines
-- Multiple examples and patterns
-- Common pitfalls to avoid
-
-**Use When**: 
-- Creating documentation for new test cases
-- Reviewing existing documentation
-- Understanding documentation standards
-- Training new team members
-
 ---
 
-### 2. **Quick Reference Cheat Sheet**
-**File**: [quick_reference_cheat_sheet.md](./quick_reference_cheat_sheet.md)
+### 2. **Quick Reference Cheat Sheet** *(Coming Soon)*
 
 **Purpose**: Quick access reference for common documentation patterns and templates.
-
-**Contents**:
-- Ready-to-use documentation template
-- Required vs optional sections table
-- Quick checklist
-- Common patterns and formats
-- Pro tips
-
-**Use When**:
-- Need quick reference while writing documentation
-- Want to verify documentation completeness
-- Need a quick template to copy
 
 ---
 
@@ -49,19 +22,17 @@ This directory contains comprehensive guides and templates for documenting Robot
 
 ### For New Test Cases
 
-1. Open [generic_test_case_documentation_template.md](./generic_test_case_documentation_template.md)
-2. Read through the structure overview
-3. Copy the appropriate template (template-based or non-template)
-4. Fill in each section according to your test case
-5. Use the checklist to verify completeness
+1. Read through the structure overview (template coming soon)
+2. Copy the appropriate template (template-based or non-template)
+3. Fill in each section according to your test case
+4. Use the checklist to verify completeness
 
 ### For Existing Test Cases
 
-1. Open [quick_reference_cheat_sheet.md](./quick_reference_cheat_sheet.md)
-2. Check the required sections checklist
-3. Compare against your existing documentation
-4. Add missing sections following the format examples
-5. Update examples to be more practical if needed
+1. Check the required sections checklist (cheat sheet coming soon)
+2. Compare against your existing documentation
+3. Add missing sections following the format examples
+4. Update examples to be more practical if needed
 
 ### For Code Reviews
 
@@ -188,8 +159,8 @@ When adding new test cases:
 
 For questions or clarifications about test documentation:
 
-1. Review the [Generic Template Guide](./generic_test_case_documentation_template.md)
-2. Check the [Quick Reference](./quick_reference_cheat_sheet.md)
+1. Review the Generic Template Guide (coming soon)
+2. Check the Quick Reference cheat sheet (coming soon)
 3. Look at example test cases in the codebase
 4. Reach out to the test automation team
 

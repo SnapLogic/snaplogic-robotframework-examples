@@ -642,10 +642,4 @@ make start-s3-emulator
 
 ---
 
-## 📚 Explore More Documentation
-
-💡 **Need help finding other guides?** Check out our **[📖 Complete Documentation Reference](../../reference.md)** for a comprehensive overview of all available tutorials, how-to guides, and quick start paths. It's your one-stop navigation hub for the entire SnapLogic Test Framework documentation!
-
----
-
 MinIO provides a robust, S3-compatible storage solution for SnapLogic testing, offering complete automation, pre-configured test data, and seamless integration with the testing framework. The profile-based deployment ensures flexibility while the automated setup guarantees consistent, ready-to-use storage for all test scenarios.

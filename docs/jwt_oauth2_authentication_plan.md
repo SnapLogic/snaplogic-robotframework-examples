@@ -331,10 +331,16 @@ Add new section documenting all auth options:
 #
 # --- Option 3: OAuth2 Client Credentials ---
 # AUTH_METHOD=oauth2
-# OAUTH2_TOKEN_URL=https://your-idp.com/oauth2/default/v1/token
 # OAUTH2_CLIENT_ID=your_client_id
 # OAUTH2_CLIENT_SECRET=your_client_secret
 # OAUTH2_SCOPE=optional_scope
+#
+# For Okta:
+# OAUTH2_TOKEN_URL=https://your-org.okta.com/oauth2/default/v1/token
+#
+# For Microsoft Entra ID (Azure AD):
+# OAUTH2_TOKEN_URL=https://login.microsoftonline.com/YOUR_TENANT_ID/oauth2/v2.0/token
+# OAUTH2_SCOPE=https://graph.microsoft.com/.default
 #
 # --- Option 4: SnapLogic Session Token (SLToken) ---
 # AUTH_METHOD=sltoken
@@ -386,7 +392,7 @@ BEARER_TOKEN=eyJhbGciOiJSUzI1NiIs...
 ORG_NAME=org-name
 ```
 
-### OAuth2 Client Credentials
+### OAuth2 Client Credentials (Okta)
 ```bash
 AUTH_METHOD=oauth2         # Optional (auto-detected if OAUTH2_TOKEN_URL exists)
 URL=https://elastic.snaplogic.com
@@ -394,6 +400,17 @@ OAUTH2_TOKEN_URL=https://company.okta.com/oauth2/default/v1/token
 OAUTH2_CLIENT_ID=0oa1b2c3d4e5f6g7h8
 OAUTH2_CLIENT_SECRET=abcdef123456
 OAUTH2_SCOPE=snaplogic.api   # Optional
+ORG_NAME=org-name
+```
+
+### OAuth2 Client Credentials (Microsoft Entra ID)
+```bash
+AUTH_METHOD=oauth2         # Optional (auto-detected if OAUTH2_TOKEN_URL exists)
+URL=https://elastic.snaplogic.com
+OAUTH2_TOKEN_URL=https://login.microsoftonline.com/YOUR_TENANT_ID/oauth2/v2.0/token
+OAUTH2_CLIENT_ID=12345678-abcd-efgh-ijkl-123456789012
+OAUTH2_CLIENT_SECRET=AbCdEfGh~123456789
+OAUTH2_SCOPE=https://graph.microsoft.com/.default   # Optional
 ORG_NAME=org-name
 ```
 
@@ -453,11 +470,148 @@ ORG_NAME=org-name
 For JWT and OAuth2 to work, the SnapLogic org must have JWT configured:
 
 1. **Admin Manager > Security > Authentication > JWT tab**
-2. Enter **Issuer ID** (from IdP, e.g., `https://company.okta.com/oauth2/default`)
-3. Enter **JWKS Endpoint URL** (from IdP, e.g., `https://company.okta.com/oauth2/default/v1/keys`)
+2. Enter **Issuer ID** (from IdP — see provider-specific values below)
+3. Enter **JWKS Endpoint URL** (from IdP — see provider-specific values below)
 4. Click **Save**
 5. Leave "Disable basic authentication" unchecked during transition
+
+#### SnapLogic JWT Tab Values by Identity Provider
+
+| Field | Okta | Microsoft Entra ID |
+|-------|------|-------------------|
+| **Issuer ID** | `https://company.okta.com/oauth2/default` | `https://login.microsoftonline.com/{tenant-id}/v2.0` |
+| **JWKS Endpoint URL** | `https://company.okta.com/oauth2/default/v1/keys` | `https://login.microsoftonline.com/{tenant-id}/discovery/v2.0/keys` |
 
 ### SLToken — No Additional Configuration Required
 
 SLToken authentication uses the SnapLogic Session API (`/api/1/rest/asset/session`) which is available by default on all SnapLogic instances. No admin configuration or Identity Provider setup is needed — just set `AUTH_METHOD=sltoken` in your `.env` file.
+
+## 13. Identity Provider Setup Guides
+
+### 13.1 Okta Setup
+
+1. **Create an Application:** Okta Admin Console → Applications → Create App Integration → Select **API Services** (Client Credentials)
+2. **Collect Required Information:**
+
+| Value | Where to Find |
+|-------|--------------|
+| **Client ID** | General tab → Client ID |
+| **Client Secret** | General tab → Client Secret |
+| **Token URL** | `https://your-org.okta.com/oauth2/default/v1/token` |
+| **Issuer URL** | `https://your-org.okta.com/oauth2/default` |
+| **JWKS URL** | `https://your-org.okta.com/oauth2/default/v1/keys` |
+
+3. **Verify Setup:**
+```bash
+curl -X POST https://your-org.okta.com/oauth2/default/v1/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=client_credentials" \
+  -d "client_id=YOUR_CLIENT_ID" \
+  -d "client_secret=YOUR_CLIENT_SECRET" \
+  -d "scope=snaplogic.api"
+```
+
+### 13.2 Microsoft Entra ID (Azure AD) Setup
+
+#### Step 1: Register an Application
+
+1. Go to **Azure Portal** → **Microsoft Entra ID** → **App registrations**
+2. Click **New registration**
+   - **Name:** `SnapLogic Robot Framework`
+   - **Supported account types:** Accounts in this organizational directory only
+3. Click **Register**
+
+#### Step 2: Create a Client Secret
+
+1. Go to the app → **Certificates & secrets** → **Client secrets**
+2. Click **New client secret**
+   - Enter a description (e.g., `Robot Framework Auth`)
+   - Select expiry (recommended: 12 months for CI/CD)
+   - Click **Add**
+3. **Immediately copy the secret Value** — it will not be shown again
+
+#### Step 3: Collect Required Information
+
+| Value | Where to Find | Example |
+|-------|--------------|---------|
+| **Client ID** | App → Overview → Application (client) ID | `12345678-abcd-efgh-ijkl-123456789012` |
+| **Client Secret** | App → Certificates & secrets (copied in Step 2) | `AbCdEfGh~123456789...` |
+| **Tenant ID** | App → Overview → Directory (tenant) ID | `abcdefgh-1234-5678-9012-abcdefghijkl` |
+| **Token URL** | `https://login.microsoftonline.com/{TENANT_ID}/oauth2/v2.0/token` | |
+| **Issuer URL** | `https://login.microsoftonline.com/{TENANT_ID}/v2.0` | |
+| **JWKS URL** | `https://login.microsoftonline.com/{TENANT_ID}/discovery/v2.0/keys` | |
+
+#### Step 4: Configure API Permissions (Optional)
+
+1. Go to App → **API permissions** → **Add a permission**
+2. Add any required permissions for your scenario
+3. Click **Grant admin consent** if required
+
+#### Step 5: Verify Entra ID Setup
+
+```bash
+curl -X POST https://login.microsoftonline.com/YOUR_TENANT_ID/oauth2/v2.0/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=client_credentials" \
+  -d "client_id=YOUR_CLIENT_ID" \
+  -d "client_secret=YOUR_CLIENT_SECRET" \
+  -d "scope=https://graph.microsoft.com/.default"
+```
+
+Expected response:
+```json
+{
+  "token_type": "Bearer",
+  "expires_in": 3599,
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOi..."
+}
+```
+
+#### Step 6: Configure Framework `.env` for Entra ID
+
+```bash
+AUTH_METHOD=oauth2
+URL=https://elastic.snaplogic.com
+OAUTH2_TOKEN_URL=https://login.microsoftonline.com/YOUR_TENANT_ID/oauth2/v2.0/token
+OAUTH2_CLIENT_ID=your_entra_client_id
+OAUTH2_CLIENT_SECRET=your_entra_client_secret
+OAUTH2_SCOPE=https://graph.microsoft.com/.default
+ORG_NAME=your-org-name
+```
+
+### 13.3 Other Identity Providers
+
+The framework works with any Identity Provider that supports **OAuth2 Client Credentials** flow and issues **JWT tokens**. Common providers:
+
+| Provider | Token URL Format | JWKS URL Format |
+|----------|-----------------|-----------------|
+| **Ping Identity** | `https://auth.pingone.com/{env_id}/as/token` | `https://auth.pingone.com/{env_id}/as/jwks` |
+| **Auth0** | `https://YOUR_DOMAIN/oauth/token` | `https://YOUR_DOMAIN/.well-known/jwks.json` |
+| **Google Workspace** | `https://oauth2.googleapis.com/token` | `https://www.googleapis.com/oauth2/v3/certs` |
+| **Keycloak** | `https://host/realms/{realm}/protocol/openid-connect/token` | `https://host/realms/{realm}/protocol/openid-connect/certs` |
+
+For any provider, you need:
+1. **Client ID** and **Client Secret** from an app registration
+2. **Token URL** for getting access tokens
+3. **Issuer URL** and **JWKS URL** for SnapLogic to validate tokens
+
+## 14. JWT Claim Mapping
+
+After SnapLogic verifies a token is authentic (using Issuer ID + JWKS URL), it needs to determine **which SnapLogic user** is making the API call. It does this by matching a claim in the JWT token to a user in the SnapLogic org.
+
+### Common Mapping Approaches
+
+| Mapping | How It Works | When It's Used |
+|---------|-------------|----------------|
+| **Email claim** | Token's `email` field matches a SnapLogic user's email | Most common with Okta |
+| **Subject claim** | Token's `sub` field matches a SnapLogic username | Common with Entra ID |
+| **Custom claim** | A custom field you define in your IdP matches a SnapLogic username | When email/sub don't match |
+
+### For Robot Framework / CI/CD
+
+The identity in the token must map to a real SnapLogic user with the right permissions (typically org admin or project admin):
+
+| Approach | How It Works |
+|----------|-------------|
+| **Personal user mapping** | IdP user `user1@company.com` → token carries `email: user1@company.com` → SnapLogic user `user1@company.com` (must be org admin) |
+| **Service account (recommended for CI/CD)** | IdP app authenticates as itself → token carries `sub: <client_id>` or mapped claim → SnapLogic user created for this purpose (e.g., `automation-svc@company.com`) |

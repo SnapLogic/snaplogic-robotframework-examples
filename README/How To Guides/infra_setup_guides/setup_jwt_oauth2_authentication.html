@@ -1450,7 +1450,7 @@ curl -X POST ③TOKEN_URL \
                     </table>
                 </div>
 
-                <span class="code-label blue">JWT Tab Mockup</span>
+                <span class="code-label blue">JWT Tab Mockup — Okta</span>
 <div class="code-block">SnapLogic Admin Manager → Security → Authentication → JWT tab
 
 ┌─────────────────────────────────────────────────────────────┐
@@ -1464,6 +1464,21 @@ curl -X POST ③TOKEN_URL \
 │                                                             │
 │                                            [ Save ]         │
 └─────────────────────────────────────────────────────────────┘</div>
+
+                <span class="code-label blue">JWT Tab Mockup — Microsoft Entra ID</span>
+<div class="code-block">SnapLogic Admin Manager → Security → Authentication → JWT tab
+
+┌──────────────────────────────────────────────────────────────────────┐
+│  JWT Configuration                                                    │
+│                                                                       │
+│  Issuer ID:          [④ https://login.microsoftonline.com/            │
+│                          {tenant-id}/v2.0                          ]  │
+│                                                                       │
+│  JWKS Endpoint URL:  [⑤ https://login.microsoftonline.com/            │
+│                          {tenant-id}/discovery/v2.0/keys           ]  │
+│                                                                       │
+│                                                       [ Save ]        │
+└──────────────────────────────────────────────────────────────────────┘</div>
 
                 <h3>Save Configuration</h3>
                 <ol>
@@ -1626,13 +1641,21 @@ curl -H "Authorization: Bearer ${TOKEN}" \
 
                 <h3>Step 1: Generate a Token</h3>
                 <p>Use the curl command from Part A to get a token from your IdP:</p>
-                <span class="code-label blue">Generate Token from IdP</span>
+                <span class="code-label blue">Generate Token from IdP — Okta</span>
 <div class="code-block"><span class="comment"># Okta example</span>
 curl -s -X POST https://your-org.okta.com/oauth2/default/v1/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=client_credentials" \
   -d "client_id=YOUR_CLIENT_ID" \
   -d "client_secret=YOUR_CLIENT_SECRET" | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])"</div>
+                <span class="code-label blue">Generate Token from IdP — Microsoft Entra ID</span>
+<div class="code-block"><span class="comment"># Microsoft Entra ID (Azure AD) example</span>
+curl -s -X POST https://login.microsoftonline.com/YOUR_TENANT_ID/oauth2/v2.0/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=client_credentials" \
+  -d "client_id=YOUR_CLIENT_ID" \
+  -d "client_secret=YOUR_CLIENT_SECRET" \
+  -d "scope=https://graph.microsoft.com/.default" | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])"</div>
                 <p>This prints just the token string.</p>
 
                 <h3>Step 2: Configure .env</h3>
@@ -1662,7 +1685,9 @@ curl -s -X POST https://your-org.okta.com/oauth2/default/v1/token \
                 <p>For OAuth2, the framework automatically fetches and refreshes tokens — no manual token generation needed.</p>
 
                 <h3>Configure .env</h3>
-                <span class="code-label green">OAuth2 .env Configuration</span>
+
+                <h4>Option A: Okta</h4>
+                <span class="code-label green">OAuth2 .env Configuration — Okta</span>
 <div class="code-block"><span class="comment"># Authentication</span>
 <span class="variable">AUTH_METHOD</span>=<span class="string">oauth2</span>
 <span class="variable">OAUTH2_TOKEN_URL</span>=<span class="string">https://your-org.okta.com/oauth2/default/v1/token</span>
@@ -1678,6 +1703,25 @@ curl -s -X POST https://your-org.okta.com/oauth2/default/v1/token \
 <span class="variable">GROUNDPLEX_NAME</span>=<span class="string">your_groundplex_name</span>
 
 <span class="comment"># NOTE: ORG_ADMIN_USER and ORG_ADMIN_PASSWORD are NOT needed for OAuth2</span></div>
+
+                <h4>Option B: Microsoft Entra ID (Azure AD)</h4>
+                <span class="code-label blue">OAuth2 .env Configuration — Microsoft Entra ID</span>
+<div class="code-block"><span class="comment"># Authentication</span>
+<span class="variable">AUTH_METHOD</span>=<span class="string">oauth2</span>
+<span class="variable">OAUTH2_TOKEN_URL</span>=<span class="string">https://login.microsoftonline.com/YOUR_TENANT_ID/oauth2/v2.0/token</span>
+<span class="variable">OAUTH2_CLIENT_ID</span>=<span class="string">12345678-abcd-efgh-ijkl-123456789012</span>
+<span class="variable">OAUTH2_CLIENT_SECRET</span>=<span class="string">AbCdEfGh~123456789</span>
+<span class="variable">OAUTH2_SCOPE</span>=<span class="string">https://graph.microsoft.com/.default</span>
+
+<span class="comment"># SnapLogic Connection (still required)</span>
+<span class="variable">URL</span>=<span class="string">https://elastic.snaplogic.com</span>
+<span class="variable">ORG_NAME</span>=<span class="string">your_org_name</span>
+<span class="variable">PROJECT_SPACE</span>=<span class="string">your_project_space</span>
+<span class="variable">PROJECT_NAME</span>=<span class="string">your_project_name</span>
+<span class="variable">GROUNDPLEX_NAME</span>=<span class="string">your_groundplex_name</span>
+
+<span class="comment"># NOTE: ORG_ADMIN_USER and ORG_ADMIN_PASSWORD are NOT needed for OAuth2</span>
+<span class="comment"># NOTE: Replace YOUR_TENANT_ID with your Azure AD Directory (tenant) ID</span></div>
 
                 <h3>OAuth2 Environment Variables Reference</h3>
                 <div class="table-container">
