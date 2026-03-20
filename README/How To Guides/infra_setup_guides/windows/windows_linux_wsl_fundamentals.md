@@ -243,7 +243,34 @@ WSL can have **multiple Linux distros installed at the same time**. One of them 
 
 ### The Problem: Docker Desktop Hijacks the Default
 
-When you install Docker Desktop on Windows, it installs its own tiny WSL distro called `docker-desktop`. This distro is **not** a full Linux — it has no `apt`, no `make`, no development tools. It exists only for Docker's internal use.
+When Docker Desktop is installed on Windows, it quietly installs **two hidden WSL distros** behind the scenes without telling you:
+
+- `docker-desktop` — Docker's backend engine
+- `docker-desktop-data` — Docker's image and volume storage
+
+These are **not** real Linux distributions like Ubuntu or Fedora. They are stripped-down micro operating systems built only to run Docker's internal engine.
+
+### What Docker's Distro Has vs What a Real Distro Has
+
+| Feature | Ubuntu (Real Distro) | docker-desktop (Docker's Distro) |
+|---------|---------------------|----------------------------------|
+| **Package manager** | ✅ `apt` — install anything | ❌ None — cannot install anything |
+| **Dev tools (make, gcc, git)** | ✅ Installable | ❌ Not available |
+| **Python, Node.js** | ✅ Installable | ❌ Not available |
+| **Text editors (vim, nano)** | ✅ Installable | ❌ Not available |
+| **Network tools (curl, wget, ssh)** | ✅ Available | ❌ Not available |
+| **User accounts** | ✅ Full user management | ❌ Root only |
+| **Size** | ~400 MB – 1 GB | ~50–80 MB |
+| **Purpose** | General-purpose computing | Only to run Docker's internal engine |
+
+Think of it this way:
+
+> **Ubuntu** = A fully furnished apartment (kitchen, bedroom, bathroom, living room)
+> **docker-desktop** = A generator room in the basement (only has an engine, nothing else)
+
+You **can't live** in the generator room. It exists only to power the building. But when `docker-desktop` is set as the default WSL distro and you type `wsl`, Windows drops you into the generator room instead of the apartment.
+
+### What Happens When You Land in docker-desktop
 
 **What a broken setup looks like:**
 
@@ -255,12 +282,47 @@ wsl --list --verbose
   docker-desktop-data     Running     2
 ```
 
-When you type `wsl` in this state, you land inside Docker's stripped-down distro, where:
+When you type `wsl` in this state, you land inside Docker's stripped-down distro. Here's the sequence of what happens:
 
-- `apt` does not exist
-- `dnf` does not exist
-- `make` does not exist
-- Almost nothing useful is installed
+```
+Step 1:  You type "wsl" in PowerShell
+            ↓
+Step 2:  Windows checks: "What's the default WSL distro?"
+            ↓
+Step 3:  Default is: docker-desktop (because Ubuntu isn't installed)
+            ↓
+Step 4:  Windows opens a shell inside docker-desktop
+            ↓
+Step 5:  You type "dnf install make"
+            ↓
+Step 6:  docker-desktop has no dnf → "command not found"
+            ↓
+Step 7:  You type "apt install make"
+            ↓
+Step 8:  docker-desktop has no apt → "command not found"
+            ↓
+Step 9:  Nothing works because there is no package manager at all
+```
+
+### How to Tell You're in docker-desktop (Not Ubuntu)
+
+| You See This Prompt | You're In | Can You Work Here? |
+|---|---|---|
+| `/ #` (no username, just `#`) | docker-desktop | **No** — exit immediately |
+| `root@DESKTOP:/#` (starts at `/` root) | docker-desktop | **No** — exit immediately |
+| `yourname@DESKTOP:~$` (starts at `~` home) | Ubuntu | **Yes** — this is where you work |
+
+The key giveaways for docker-desktop:
+- **No username** before `@`, or the prompt just shows `#`
+- You land at `/` (root directory) instead of `~` (home directory)
+- Typing `apt` or `dnf` or `make` all give "command not found"
+
+If you realize you are in docker-desktop, type `exit` immediately, then enter Ubuntu explicitly:
+
+```bash
+exit
+wsl -d Ubuntu
+```
 
 **What a correct setup looks like:**
 
@@ -273,13 +335,27 @@ wsl --list --verbose
   docker-desktop-data     Running     2
 ```
 
-Now when you type `wsl`, you land in Ubuntu with all your tools available.
+Now when you type `wsl`, you land in Ubuntu with all your tools available. Docker's distros still run in the background doing their job — you never need to enter them directly.
 
 ### How to Fix the Default
 
 ```powershell
-# In PowerShell
+# In PowerShell — install Ubuntu if it's not listed
+wsl --install
+
+# After restart, set Ubuntu as default
 wsl --set-default Ubuntu
+```
+
+### Why Does Docker Desktop Do This?
+
+Docker Desktop needs a Linux kernel to run containers on Windows. Instead of requiring you to install Ubuntu first, Docker ships its own tiny Linux — just enough to run the Docker engine. It's a convenience feature that creates confusion when it becomes the default WSL distro.
+
+After installing Ubuntu and setting it as default, everything works correctly:
+
+```
+BEFORE:  wsl → drops into docker-desktop (useless generator room)
+AFTER:   wsl → drops into Ubuntu (fully furnished apartment)
 ```
 
 ---
@@ -450,7 +526,27 @@ docker-compose --version
 
 All three commands should return version info without errors.
 
-### Step 8: Set Up VS Code
+### Step 8: Fix Docker Credentials for WSL (First-Time Only)
+
+On a fresh Windows setup, Docker Desktop uses a credential helper that is often not accessible from inside WSL. This causes an `error getting credentials` when pulling Docker images. Fix it before running `make start-services`:
+
+```bash
+# Inside WSL/Ubuntu — create the Docker config directory and fix the credential helper
+mkdir -p ~/.docker
+echo '{"credsStore":"desktop.exe"}' > ~/.docker/config.json
+```
+
+**Why this happens:** Docker Desktop on Windows stores credentials using a Windows-native helper (`wincred` or `desktop`). When you run `docker` commands from inside WSL/Ubuntu, Docker looks for the credential helper inside Linux where it doesn't exist. Changing the config to `desktop.exe` tells Docker to use the Windows executable from WSL, which works because WSL can run `.exe` files from the Windows side.
+
+**If you still get the error after this fix:**
+```bash
+# Clear the credential store entirely
+echo '{}' > ~/.docker/config.json
+```
+
+This is a one-time fix — once the config is correct, it persists across sessions.
+
+### Step 9: Set Up VS Code
 
 1. Install the **WSL extension** in VS Code (`Ctrl+Shift+X` → search "WSL")
 2. Set Ubuntu as the default terminal:
@@ -470,7 +566,7 @@ All three commands should return version info without errors.
 }
 ```
 
-### Step 9: Run the Project
+### Step 10: Run the Project
 
 ```bash
 # In VS Code terminal (should now be Ubuntu/WSL)
@@ -590,6 +686,83 @@ cd "{{cookiecutter.primary_pipeline_name}}"
 **Why:** The Groundplex and database containers are on the same Docker network (`snaplogicnet`). They communicate via container names, not through the host.
 
 **Fix:** Use container names as hostnames (e.g., `oracle-db`, `postgres-db`, `sqlserver-db`). The `env_files/` directory already has the correct values — do not change them.
+
+### Mistake 7: Docker Desktop Shows "Docker Engine stopped"
+
+**Symptom:** Docker Desktop opens but shows "Docker Engine stopped" with a grey icon. No containers can run.
+
+**Why:** WSL got into a bad state, usually after a forced quit or system crash. Docker's engine depends on WSL and can't start if WSL is corrupted.
+
+**Fix:**
+1. Close Docker Desktop (click X)
+2. Open **PowerShell as Administrator** and run:
+```powershell
+wsl --shutdown
+```
+3. Wait 5 seconds, then reopen Docker Desktop
+4. If still stopped, restart the Docker service:
+```powershell
+net stop com.docker.service
+net start com.docker.service
+```
+
+### Mistake 8: Docker Desktop Crash — `com.docker.build: exit status 1`
+
+**Symptom:** Error dialog: "An unexpected error occurred — com.docker.build: exit status 1"
+
+**Why:** Docker's internal build component crashed after a forced quit or WSL corruption.
+
+> **Important:** Do NOT click **"Reset to factory defaults"** on the error dialog — that wipes all Docker images, containers, and settings.
+
+**Fix — try each step in order, stop when it works:**
+
+**Step 1: Quit and clean restart**
+```powershell
+# Click "Quit" on the error dialog, then in PowerShell as Administrator:
+taskkill /f /im "Docker Desktop.exe" 2>$null
+taskkill /f /im "com.docker.backend.exe" 2>$null
+wsl --shutdown
+net stop com.docker.service 2>$null
+net start com.docker.service
+# Wait 10 seconds, reopen Docker Desktop
+```
+
+**Step 2: If Step 1 doesn't work — re-register Docker's WSL distro**
+```powershell
+wsl --shutdown
+wsl --unregister docker-desktop
+# Reopen Docker Desktop — it recreates the distro automatically
+# This does NOT affect Ubuntu or your project files
+```
+
+**Step 3: If Step 2 doesn't work — restart the computer**
+```
+Start menu → Power → Restart
+```
+
+### Mistake 9: `docker: command not found` After Docker Desktop Restart
+
+**Symptom:** Docker Desktop is running (whale icon is steady in system tray), but `docker` commands inside WSL return "command not found".
+
+**Why:** Docker Desktop's WSL integration got disconnected during the crash/restart.
+
+**Fix:**
+1. Open **Docker Desktop**
+2. Click **gear icon** → **Settings**
+3. Go to **Resources** → **WSL Integration**
+4. Make sure **"Enable integration with my default WSL distro"** is checked
+5. Make sure the toggle next to **Ubuntu** is **ON**
+6. Click **"Apply & Restart"**
+7. Wait 30 seconds, then test inside WSL: `docker --version`
+
+### Prevention Tips
+
+To avoid Docker Desktop crashes:
+
+- **Don't force-quit Docker Desktop** — always use the system tray icon → "Quit Docker Desktop" to shut down gracefully
+- **Don't shut down your computer** while Docker containers are running — stop services first with `make stop-services` or quit Docker Desktop cleanly
+- **If WSL becomes unresponsive**, run `wsl --shutdown` from PowerShell before restarting Docker Desktop
+- **Keep Docker Desktop updated** — older versions have more WSL integration bugs
 
 ---
 

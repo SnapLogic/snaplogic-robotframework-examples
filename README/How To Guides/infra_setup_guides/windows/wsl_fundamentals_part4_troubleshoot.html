@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Part 4: File Paths, Common Mistakes &amp; Reference — WSL Fundamentals</title>
+    <style>
+        /* ═══════════════════════════════════════════════════════════════
+           RESET & BASE
+           ═══════════════════════════════════════════════════════════════ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           HEADER
+           ═══════════════════════════════════════════════════════════════ */
+        .header {
+            background: white;
+            border-radius: 10px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 22px;
+        }
+
+        .header-subtitle {
+            color: #666;
+            font-size: 15px;
+        }
+
+        .header-right {
+            text-align: right;
+        }
+
+        .header-right .date {
+            color: #888;
+            font-size: 12px;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           TAB NAVIGATION
+           ═══════════════════════════════════════════════════════════════ */
+        .nav-section {
+            background: white;
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .nav-section h3 {
+            color: #333;
+            font-size: 15px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tab-nav {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 10px 18px;
+            border: 2px solid #0f3460;
+            background: white;
+            color: #0f3460;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .tab-btn:hover, .tab-btn.active {
+            background: #0f3460;
+            color: white;
+        }
+
+        .tab-btn.green-tab { border-color: #27ae60; color: #27ae60; }
+        .tab-btn.green-tab:hover, .tab-btn.green-tab.active { background: #27ae60; color: white; }
+
+        .tab-btn.blue-tab { border-color: #2980b9; color: #2980b9; }
+        .tab-btn.blue-tab:hover, .tab-btn.blue-tab.active { background: #2980b9; color: white; }
+
+        .tab-btn.purple-tab { border-color: #8e44ad; color: #8e44ad; }
+        .tab-btn.purple-tab:hover, .tab-btn.purple-tab.active { background: #8e44ad; color: white; }
+
+        .tab-btn.orange-tab { border-color: #e67e22; color: #e67e22; }
+        .tab-btn.orange-tab:hover, .tab-btn.orange-tab.active { background: #e67e22; color: white; }
+
+        .tab-btn.red-tab { border-color: #e74c3c; color: #e74c3c; }
+        .tab-btn.red-tab:hover, .tab-btn.red-tab.active { background: #e74c3c; color: white; }
+
+        .tab-btn.teal-tab { border-color: #00897b; color: #00897b; }
+        .tab-btn.teal-tab:hover, .tab-btn.teal-tab.active { background: #00897b; color: white; }
+
+        .tab-btn.gray-tab { border-color: #7f8c8d; color: #7f8c8d; }
+        .tab-btn.gray-tab:hover, .tab-btn.gray-tab.active { background: #7f8c8d; color: white; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           DATA SECTIONS / CARDS
+           ═══════════════════════════════════════════════════════════════ */
+        .data-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .data-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 20px;
+        }
+
+        .data-section h2 .badge {
+            background: #0f3460;
+            color: white;
+            font-size: 13px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: normal;
+        }
+        .data-section h2 .badge.green { background: #27ae60; }
+        .data-section h2 .badge.blue { background: #2980b9; }
+        .data-section h2 .badge.purple { background: #8e44ad; }
+        .data-section h2 .badge.orange { background: #e67e22; }
+        .data-section h2 .badge.red { background: #e74c3c; }
+        .data-section h2 .badge.teal { background: #00897b; }
+
+        .data-section h3 {
+            color: #444;
+            margin: 20px 0 10px 0;
+            font-size: 17px;
+        }
+
+        .data-section p {
+            color: #555;
+            font-size: 16px;
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+
+        .data-section ul, .data-section ol {
+            margin: 10px 0 15px 20px;
+            font-size: 15px;
+            color: #555;
+            line-height: 1.8;
+        }
+
+        .data-section li { margin-bottom: 6px; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           INFO BOXES
+           ═══════════════════════════════════════════════════════════════ */
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #0f3460;
+            padding: 14px 18px;
+            margin-bottom: 15px;
+            border-radius: 0 5px 5px 0;
+            font-size: 15px;
+            color: #1a237e;
+            line-height: 1.7;
+        }
+        .info-box code {
+            background: #bbdefb;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .info-box.green { background: #e8f5e9; border-left-color: #27ae60; color: #1b5e20; }
+        .info-box.green code { background: #c8e6c9; }
+
+        .info-box.blue { background: #e8f0fe; border-left-color: #2980b9; color: #1a3a5c; }
+        .info-box.blue code { background: #d0e3f7; }
+
+        .info-box.purple { background: #f3e8fa; border-left-color: #8e44ad; color: #4a1a6b; }
+        .info-box.purple code { background: #e8d5f5; }
+
+        .info-box.orange { background: #fef3e2; border-left-color: #e67e22; color: #6b3a0a; }
+        .info-box.orange code { background: #fde6c8; }
+
+        .info-box.red { background: #fde8e8; border-left-color: #e74c3c; color: #6b1a1a; }
+        .info-box.red code { background: #f9d0d0; }
+
+        .info-box.teal { background: #e0f2f1; border-left-color: #00897b; color: #004d40; }
+        .info-box.teal code { background: #b2dfdb; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           TABLES
+           ═══════════════════════════════════════════════════════════════ */
+        .table-container { overflow-x: auto; }
+
+        table { width: 100%; border-collapse: collapse; }
+
+        th {
+            background: #f7f7f7;
+            padding: 14px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+            font-size: 15px;
+        }
+
+        td {
+            padding: 14px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 15px;
+            vertical-align: top;
+        }
+
+        tr:hover { background: #f9f9f9; }
+
+        td code, th code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #333;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           CODE BLOCKS
+           ═══════════════════════════════════════════════════════════════ */
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 18px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 600px;
+            overflow-y: auto;
+            white-space: pre;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .code-block .comment { color: #6a9955; }
+        .code-block .keyword { color: #569cd6; }
+        .code-block .string { color: #ce9178; }
+        .code-block .function { color: #dcdcaa; }
+        .code-block .variable { color: #9cdcfe; }
+        .code-block .highlight { background: #264f2a; display: inline; }
+        .code-block .highlight-blue { background: #1e3a5f; display: inline; }
+        .code-block .highlight-red { background: #5f1e1e; display: inline; }
+        .code-block .dim { color: #666; }
+        .code-block .arrow { color: #27ae60; font-weight: bold; }
+        .code-block .match { color: #27ae60; font-weight: bold; }
+        .code-block .nomatch { color: #e74c3c; }
+        .code-block .success { color: #27ae60; font-weight: bold; }
+        .code-block .warn { color: #e67e22; font-weight: bold; }
+        .code-block .danger { color: #e74c3c; font-weight: bold; }
+
+        .code-label {
+            background: #0f3460;
+            color: white;
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 5px 5px 0 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .code-label.green { background: #27ae60; }
+        .code-label.blue { background: #2980b9; }
+        .code-label.purple { background: #8e44ad; }
+        .code-label.orange { background: #e67e22; }
+        .code-label.red { background: #e74c3c; }
+        .code-label.teal { background: #00897b; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           STATS CARDS
+           ═══════════════════════════════════════════════════════════════ */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .stat-card .label-text {
+            font-size: 15px;
+            font-weight: bold;
+            color: #0f3460;
+        }
+
+        .stat-card .big-number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .stat-card.green .label-text, .stat-card.green .big-number { color: #27ae60; }
+        .stat-card.blue .label-text, .stat-card.blue .big-number { color: #2980b9; }
+        .stat-card.purple .label-text, .stat-card.purple .big-number { color: #8e44ad; }
+        .stat-card.orange .label-text, .stat-card.orange .big-number { color: #e67e22; }
+        .stat-card.red .label-text, .stat-card.red .big-number { color: #e74c3c; }
+        .stat-card.teal .label-text, .stat-card.teal .big-number { color: #00897b; }
+        .stat-card.gray .label-text, .stat-card.gray .big-number { color: #7f8c8d; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           COMPARISON COLUMNS
+           ═══════════════════════════════════════════════════════════════ */
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 15px 0;
+        }
+
+        .comparison-col {
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .comparison-col h4 {
+            margin-bottom: 10px;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .comparison-col.pros { border-color: #27ae60; background: #e8f5e9; }
+        .comparison-col.pros h4 { color: #27ae60; }
+
+        .comparison-col.cons { border-color: #e74c3c; background: #fde8e8; }
+        .comparison-col.cons h4 { color: #e74c3c; }
+
+        .comparison-col.manual { border-color: #e67e22; background: #fef3e2; }
+        .comparison-col.manual h4 { color: #e67e22; }
+
+        .comparison-col.automated { border-color: #2980b9; background: #e8f0fe; }
+        .comparison-col.automated h4 { color: #2980b9; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           STATUS BADGES
+           ═══════════════════════════════════════════════════════════════ */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 700;
+            color: white;
+        }
+        .status-badge.covered { background: #27ae60; }
+        .status-badge.partial { background: #e67e22; }
+        .status-badge.gap { background: #e74c3c; }
+        .status-badge.high { background: #e74c3c; }
+        .status-badge.medium { background: #e67e22; }
+        .status-badge.low { background: #2980b9; }
+        .status-badge.info { background: #7f8c8d; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           FLOW STEPS
+           ═══════════════════════════════════════════════════════════════ */
+        .flow-step {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .flow-number {
+            background: #0f3460;
+            color: white;
+            min-width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        .flow-number.green { background: #27ae60; }
+        .flow-number.blue { background: #2980b9; }
+        .flow-number.purple { background: #8e44ad; }
+        .flow-number.orange { background: #e67e22; }
+        .flow-number.red { background: #e74c3c; }
+        .flow-number.teal { background: #00897b; }
+
+        .flow-content { flex: 1; }
+        .flow-content h4 { color: #333; margin-bottom: 5px; font-size: 16px; }
+        .flow-content p { color: #666; font-size: 15px; line-height: 1.6; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           ARCHITECTURE DIAGRAM
+           ═══════════════════════════════════════════════════════════════ */
+        .arch-diagram {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+
+        .arch-node {
+            background: #e3f2fd;
+            border: 2px solid #2980b9;
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1565c0;
+            white-space: nowrap;
+        }
+        .arch-node.green { border-color: #27ae60; background: #e8f5e9; color: #2e7d32; }
+        .arch-node.orange { border-color: #e67e22; background: #fff3e0; color: #e65100; }
+        .arch-node.purple { border-color: #8e44ad; background: #f3e5f5; color: #6a1b9a; }
+        .arch-node.red { border-color: #e74c3c; background: #ffebee; color: #c62828; }
+
+        .arch-arrow {
+            font-size: 20px;
+            color: #999;
+            margin: 0 6px;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           PAGE NAVIGATION (Bottom)
+           ═══════════════════════════════════════════════════════════════ */
+        .page-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+        .page-nav a {
+            background: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            color: #0f3460;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+        .page-nav a:hover {
+            background: #0f3460;
+            color: white;
+        }
+        .page-nav .spacer { flex: 1; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           RESPONSIVE
+           ═══════════════════════════════════════════════════════════════ */
+        @media (max-width: 768px) {
+            .comparison { grid-template-columns: 1fr; }
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .header { flex-direction: column; gap: 10px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- HEADER -->
+        <div class="header">
+            <div>
+                <h1>&#128187; Part 4: File Paths, Common Mistakes &amp; Reference</h1>
+                <div class="header-subtitle">WSL Fundamentals &mdash; File path mapping, 9 common mistakes and their fixes, quick reference commands</div>
+            </div>
+            <div class="header-right">
+                <div class="date">Generated: March 2026</div>
+                <div style="color:#0f3460; font-weight:600; font-size:13px;">SnapLogic QA Automation</div>
+            </div>
+        </div>
+
+        <!-- NAVIGATION -->
+        <div class="nav-section">
+            <h3>Navigation</h3>
+            <div class="tab-nav">
+                <a href="windows_linux_wsl_fundamentals.html" class="tab-btn">Home</a>
+                <a href="wsl_fundamentals_part1_basics.html" class="tab-btn">Part 1: Basics</a>
+                <a href="wsl_fundamentals_part2_wsl.html" class="tab-btn blue-tab">Part 2: WSL</a>
+                <a href="wsl_fundamentals_part3_setup.html" class="tab-btn purple-tab">Part 3: Setup</a>
+                <a href="wsl_fundamentals_part4_troubleshoot.html" class="tab-btn red-tab active">Part 4: Troubleshoot</a>
+            </div>
+        </div>
+
+        <!-- Section 10: File Path Mapping -->
+        <div class="data-section">
+            <h2>10. File Path Mapping Between Windows and WSL <span class="badge orange">Reference</span></h2>
+            <p>When using WSL, Windows drives are mounted under <code>/mnt/</code>:</p>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr><th>Windows Path</th><th>WSL Path</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>C:\Users\Name\project</code></td><td><code>/mnt/c/Users/Name/project</code></td></tr>
+                        <tr><td><code>D:\data</code></td><td><code>/mnt/d/data</code></td></tr>
+                        <tr><td><code>\\wsl$\Ubuntu\home</code></td><td><code>/home</code> or <code>~</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Accessing Files Both Ways</h3>
+            <span class="code-label blue">From WSL &rarr; Access Windows Files</span>
+            <div class="code-block"><span class="keyword">ls</span> /mnt/c/Users/
+<span class="keyword">cd</span> /mnt/c/Users/YourName/Documents</div>
+
+            <span class="code-label purple">From Windows &rarr; Access WSL Files</span>
+            <div class="code-block"><span class="comment"># In Windows Explorer address bar:</span>
+\\wsl$\Ubuntu\home\username\</div>
+
+            <h3>Performance Tip</h3>
+            <div class="info-box green">
+                <strong>Performance:</strong> Files stored on the <strong>WSL filesystem</strong> (<code>~/projects/</code>) are significantly faster than files on the <strong>Windows filesystem</strong> (<code>/mnt/c/...</code>). For best performance, clone repos inside WSL.
+            </div>
+
+            <div class="comparison">
+                <div class="comparison-col pros">
+                    <h4>&#9989; Faster &mdash; WSL Filesystem</h4>
+                    <span class="code-label green">Recommended</span>
+                    <div class="code-block" style="font-size:13px;"><span class="keyword">cd</span> ~
+<span class="keyword">mkdir</span> projects
+<span class="keyword">cd</span> projects
+git clone https://github.com/SnapLogic/snaplogic-robotframework-examples</div>
+                </div>
+                <div class="comparison-col cons">
+                    <h4>&#10060; Slower &mdash; Windows Mount</h4>
+                    <span class="code-label red">Avoid if possible</span>
+                    <div class="code-block" style="font-size:13px;"><span class="keyword">cd</span> /mnt/c/Users/YourName/repos/snaplogic-robotframework-examples</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 11: Common Mistakes -->
+        <div class="data-section">
+            <h2>11. Common Mistakes and How to Avoid Them <span class="badge red">Troubleshooting</span></h2>
+
+            <!-- Mistake 1 -->
+            <h3>Mistake 1: Running <code>make</code> in PowerShell</h3>
+            <div class="info-box red">
+                <strong>Symptom:</strong> <code>make : The term 'make' is not recognized...</code>
+            </div>
+            <p><strong>Why:</strong> PowerShell is Windows. <code>make</code> is a Linux tool.</p>
+            <p><strong>Fix:</strong> Switch to WSL first by typing <code>wsl</code> or selecting Ubuntu from VS Code terminal dropdown.</p>
+
+            <!-- Mistake 2 -->
+            <h3>Mistake 2: Using the Wrong Package Manager</h3>
+            <div class="info-box red">
+                <strong>Symptom:</strong> <code>dnf: command not found</code> or <code>yum: command not found</code>
+            </div>
+            <p><strong>Why:</strong> Ubuntu uses <code>apt</code>, not <code>dnf</code> (Fedora) or <code>yum</code> (CentOS).</p>
+            <p><strong>Fix:</strong> Use <code>sudo apt install &lt;package&gt;</code> on Ubuntu.</p>
+
+            <!-- Mistake 3 -->
+            <h3>Mistake 3: Landing in docker-desktop Distro</h3>
+            <div class="info-box red">
+                <strong>Symptom:</strong> Typing <code>wsl</code> drops into a shell with almost no tools available.
+            </div>
+            <p><strong>Why:</strong> Docker Desktop's WSL distro is set as default instead of Ubuntu.</p>
+            <span class="code-label green">Fix</span>
+            <div class="code-block"><span class="variable">wsl</span> --set-default Ubuntu</div>
+
+            <!-- Mistake 4 -->
+            <h3>Mistake 4: Docker Not Available in WSL</h3>
+            <div class="info-box red">
+                <strong>Symptom:</strong> <code>docker: command not found</code> inside WSL.
+            </div>
+            <p><strong>Why:</strong> Docker Desktop WSL integration is not enabled for Ubuntu.</p>
+            <p><strong>Fix:</strong> Docker Desktop &rarr; Settings &rarr; Resources &rarr; WSL Integration &rarr; Toggle Ubuntu ON &rarr; Apply &amp; Restart.</p>
+
+            <!-- Mistake 5 -->
+            <h3>Mistake 5: Curly Braces in Folder Names</h3>
+            <div class="info-box red">
+                <strong>Symptom:</strong> Cannot <code>cd</code> into <code>{{cookiecutter.primary_pipeline_name}}</code>
+            </div>
+            <p><strong>Why:</strong> Curly braces are special characters in most shells.</p>
+            <span class="code-label green">Fix</span>
+            <div class="code-block"><span class="keyword">cd</span> <span class="string">"{{cookiecutter.primary_pipeline_name}}"</span></div>
+
+            <!-- Mistake 6 -->
+            <h3>Mistake 6: Using <code>host.docker.internal</code> for Docker Services</h3>
+            <div class="info-box red">
+                <strong>Symptom:</strong> Connection refused when pipelines try to connect to databases.
+            </div>
+            <p><strong>Why:</strong> The Groundplex and database containers are on the same Docker network (<code>snaplogicnet</code>). They communicate via container names, not through the host.</p>
+            <div class="info-box green">
+                <strong>Fix:</strong> Use container names as hostnames (e.g., <code>oracle-db</code>, <code>postgres-db</code>, <code>sqlserver-db</code>). The <code>env_files/</code> directory already has the correct values &mdash; do not change them.
+            </div>
+
+            <!-- Mistake 7 -->
+            <h3>Mistake 7: Docker Desktop Shows "Docker Engine stopped"</h3>
+            <div class="info-box red">
+                <strong>Symptom:</strong> Docker Desktop opens but shows "Docker Engine stopped" with a grey icon. No containers can run.
+            </div>
+            <p><strong>Why:</strong> WSL got into a bad state, usually after a forced quit or system crash. Docker's engine depends on WSL and can't start if WSL is corrupted.</p>
+            <span class="code-label green">Fix</span>
+            <div class="code-block"><span class="comment"># Step 1: Close Docker Desktop (click X)</span>
+<span class="comment"># Step 2: Open PowerShell as Administrator and run:</span>
+<span class="variable">wsl</span> --shutdown
+
+<span class="comment"># Step 3: Wait 5 seconds, then reopen Docker Desktop</span>
+<span class="comment"># Step 4: If still stopped, restart the Docker service:</span>
+net stop com.docker.service
+net start com.docker.service</div>
+
+            <!-- Mistake 8 -->
+            <h3>Mistake 8: Docker Desktop Crash &mdash; <code>com.docker.build: exit status 1</code></h3>
+            <div class="info-box red">
+                <strong>Symptom:</strong> Error dialog: "An unexpected error occurred &mdash; com.docker.build: exit status 1"
+            </div>
+            <p><strong>Why:</strong> Docker's internal build component crashed after a forced quit or WSL corruption.</p>
+            <div class="info-box orange">
+                <strong>Important:</strong> Do NOT click <strong>"Reset to factory defaults"</strong> on the error dialog &mdash; that wipes all Docker images, containers, and settings.
+            </div>
+            <span class="code-label green">Fix &mdash; Try in order</span>
+            <div class="code-block"><span class="comment"># Step 1: Click "Quit" on the error dialog</span>
+<span class="comment"># Step 2: Open PowerShell as Administrator:</span>
+taskkill /f /im <span class="string">"Docker Desktop.exe"</span> 2&gt;$null
+taskkill /f /im <span class="string">"com.docker.backend.exe"</span> 2&gt;$null
+<span class="variable">wsl</span> --shutdown
+net stop com.docker.service 2&gt;$null
+net start com.docker.service
+
+<span class="comment"># Step 3: Wait 10 seconds, reopen Docker Desktop</span>
+
+<span class="comment"># If still crashing — re-register Docker's WSL distro:</span>
+<span class="variable">wsl</span> --shutdown
+<span class="variable">wsl</span> --unregister docker-desktop
+<span class="comment"># Then reopen Docker Desktop (it recreates the distro automatically)</span>
+
+<span class="comment"># If STILL crashing — restart the computer:</span>
+<span class="comment"># Start menu → Power → Restart</span></div>
+
+            <!-- Mistake 9 -->
+            <h3>Mistake 9: <code>docker: command not found</code> After Docker Desktop Restart</h3>
+            <div class="info-box red">
+                <strong>Symptom:</strong> Docker Desktop is running (whale icon is steady in system tray), but <code>docker</code> commands inside WSL return "command not found".
+            </div>
+            <p><strong>Why:</strong> Docker Desktop's WSL integration got disconnected during the crash/restart.</p>
+            <p><strong>Fix:</strong></p>
+            <ol>
+                <li>Open <strong>Docker Desktop</strong></li>
+                <li>Click <strong>gear icon</strong> &rarr; <strong>Settings</strong></li>
+                <li>Go to <strong>Resources</strong> &rarr; <strong>WSL Integration</strong></li>
+                <li>Make sure <strong>"Enable integration with my default WSL distro"</strong> is checked</li>
+                <li>Make sure the toggle next to <strong>Ubuntu</strong> is <strong>ON</strong></li>
+                <li>Click <strong>"Apply &amp; Restart"</strong></li>
+                <li>Wait 30 seconds, then test inside WSL: <code>docker --version</code></li>
+            </ol>
+
+            <h3>Prevention Tips</h3>
+            <div class="info-box teal">
+                <strong>To avoid Docker Desktop crashes:</strong><br>
+                &bull; Don't force-quit Docker Desktop &mdash; use system tray icon &rarr; "Quit Docker Desktop"<br>
+                &bull; Don't shut down your computer while containers are running &mdash; stop services first<br>
+                &bull; If WSL becomes unresponsive, run <code>wsl --shutdown</code> from PowerShell before restarting Docker<br>
+                &bull; Keep Docker Desktop updated &mdash; older versions have more WSL integration bugs
+            </div>
+        </div>
+
+        <!-- Section 12: Quick Reference Commands -->
+        <div class="data-section">
+            <h2>12. Quick Reference Commands <span class="badge teal">Cheat Sheet</span></h2>
+
+            <h3>PowerShell Commands (Run From Windows)</h3>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Action</th><th>Command</th></tr></thead>
+                    <tbody>
+                        <tr><td>Check if WSL installed</td><td><code>wsl --status</code></td></tr>
+                        <tr><td>Install WSL + Ubuntu</td><td><code>wsl --install</code></td></tr>
+                        <tr><td>List WSL distros</td><td><code>wsl --list --verbose</code></td></tr>
+                        <tr><td>Set default distro</td><td><code>wsl --set-default Ubuntu</code></td></tr>
+                        <tr><td>Enter Ubuntu</td><td><code>wsl</code></td></tr>
+                        <tr><td>Shut down all WSL</td><td><code>wsl --shutdown</code></td></tr>
+                        <tr><td>Check WSL version</td><td><code>wsl --version</code></td></tr>
+                        <tr><td>Update WSL</td><td><code>wsl --update</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Ubuntu/WSL Commands (Run From Inside WSL)</h3>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Action</th><th>Command</th></tr></thead>
+                    <tbody>
+                        <tr><td>Update package lists</td><td><code>sudo apt update</code></td></tr>
+                        <tr><td>Install dev tools</td><td><code>sudo apt install -y build-essential git python3-pip</code></td></tr>
+                        <tr><td>Check make version</td><td><code>make --version</code></td></tr>
+                        <tr><td>Check Docker</td><td><code>docker --version</code></td></tr>
+                        <tr><td>Check Docker Compose</td><td><code>docker-compose --version</code></td></tr>
+                        <tr><td>Navigate to C: drive</td><td><code>cd /mnt/c/</code></td></tr>
+                        <tr><td>See current directory</td><td><code>pwd</code></td></tr>
+                        <tr><td>List files</td><td><code>ls -la</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Project Commands (Run From Inside WSL, in Project Directory)</h3>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Action</th><th>Command</th></tr></thead>
+                    <tbody>
+                        <tr><td>Start all services</td><td><code>make start-services</code></td></tr>
+                        <tr><td>Check service status</td><td><code>make status</code></td></tr>
+                        <tr><td>Run Oracle tests</td><td><code>make robot-run-all-tests TAGS="oracle"</code></td></tr>
+                        <tr><td>Run tests (no Groundplex)</td><td><code>make robot-run-tests-no-gp TAGS="oracle"</code></td></tr>
+                        <tr><td>View test results</td><td>Open <code>test/robot_output/report-*.html</code></td></tr>
+                        <tr><td>Check environment</td><td><code>make check-env</code></td></tr>
+                        <tr><td>View Oracle logs</td><td><code>make oracle-logs</code></td></tr>
+                        <tr><td>Stop all services</td><td><code>make stop-services</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 13: Next Steps -->
+        <div class="data-section">
+            <h2>13. Next Steps <span class="badge green">What's Next</span></h2>
+            <p>Once your environment is working:</p>
+            <ol>
+                <li><strong>Read the main project README</strong> &mdash; Understand the full test execution flow</li>
+                <li><strong>Configure your <code>.env</code> file</strong> &mdash; Add your SnapLogic credentials</li>
+                <li><strong>Start with a simple test</strong> &mdash; Run <code>make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True</code></li>
+                <li><strong>Check the test results</strong> &mdash; Open <code>test/robot_output/report-*.html</code> in your browser</li>
+                <li><strong>Explore slash commands</strong> &mdash; Use <code>/run-tests</code>, <code>/add-test</code>, <code>/troubleshoot</code> in Claude Code for guided help</li>
+            </ol>
+
+            <h3>Related Documentation</h3>
+            <div class="info-box teal">
+                <strong>Windows WSL &amp; VS Code Setup Guide:</strong> <code>windows_wsl_vscode_setup.md</code> &mdash; Detailed installation steps<br>
+                <strong>Project CLAUDE.md:</strong> Full project documentation and Makefile reference
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="page-nav">
+            <a href="wsl_fundamentals_part3_setup.html">&larr; Part 3: Setup</a>
+            <div class="spacer"></div>
+            <a href="windows_linux_wsl_fundamentals.html">Home &rarr;</a>
+        </div>
+
+    </div>
+</body>
+</html>
