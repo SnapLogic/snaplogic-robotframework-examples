@@ -114,6 +114,51 @@ Execute Triggered Task With Parameters
     [Template]    Run Triggered Task With Parameters From Template
     ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task1}
 
+Execute Triggered Task Via Custom URL
+    [Documentation]    Executes a triggered task directly using a custom URL with Bearer token.
+    ...    This is a standalone test — no prior task creation needed.
+    ...    Just provide the URL and Bearer token in .env and run.
+    ...
+    ...    Use this when:
+    ...    - Testing a pre-existing triggered task endpoint
+    ...    - Customer provides an APIM/Load Balancer URL
+    ...    - Running against a task that was already created (manually or by a previous test run)
+    ...
+    ...    Set the following in your .env file:
+    ...    TRIGGERED_TASK_URL=https://elastic.snaplogic.com/api/1/rest/slsched/feed/org/space/project/task_name
+    ...    TRIGGERED_TASK_BEARER_TOKEN=JNqovrcPPz6Jkzy3HnkBVJrq4qgs63Yg
+    [Tags]    oracle    custom_url
+    [Template]    Run Triggered Task Via Url
+    ${TRIGGERED_TASK_URL}    ${TRIGGERED_TASK_BEARER_TOKEN}
+
+Execute Triggered Task Via Captured Cloud URL
+    [Documentation]    Gets task details from SnapLogic API, auto-captures the Cloud URL,
+    ...    and executes the triggered task using the captured URL.
+    ...
+    ...    This test demonstrates programmatic URL discovery instead of hardcoding
+    ...    the triggered task URL in .env files. The keyword calls:
+    ...    GET /api/1/rest/slsched/task/{org}/{path}/{task_name}
+    ...    to retrieve all task URLs (Cloud, LB, Secured, Unsecured, Intranet),
+    ...    then executes via the specified url_type (default: cloud_url).
+    ...
+    ...    Prerequisites:
+    ...    - Create Triggered_task test case must have passed
+    ...
+    ...    Valid url_type values:
+    ...    cloud_url    - Cloud URL via SnapLogic control plane (default)
+    ...    snaplex_url    - Secured Snaplex URL, HTTPS to Groundplex (port 8081)
+    ...    local_url    - Unsecured local URL, HTTP to Groundplex (port 8090)
+    ...    override_url    - Override URL, HTTP direct to Groundplex node
+    ...    override_secure_url - Secured override URL, HTTPS direct to Groundplex node
+    ...    codegen_url    - Pre-authenticated URL, no credentials needed (has embedded auth key)
+    ...    feed_uri    - Relative feed path only (no host)
+    [Tags]    oracle    cloud_url
+    [Template]    Execute Triggered Task Via Captured Url From Template
+    # Default (cloud_url)
+    # ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task1}
+    # Explicit snaplex_url
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task1}    url_type=snaplex_url
+
 Verify Data In Oracle Table
     [Documentation]    Verifies data integrity in Oracle table by querying and validating record counts.
     ...    This test case ensures that the pipeline successfully inserted the expected number
