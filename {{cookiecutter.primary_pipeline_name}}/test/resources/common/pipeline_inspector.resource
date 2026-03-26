@@ -105,25 +105,27 @@ Verify Pipeline Naming And Return Result
     RETURN    ${result}
 
 Verify Child Pipeline Naming And Return Result
-    [Documentation]    Validate that a child pipeline name starts with z_ prefix.
+    [Documentation]    Validate that a child pipeline name starts with the required prefix.
     ...    Returns the result dict. Does NOT assert pass/fail.
     ...
     ...    *Arguments:*
     ...    - ``pipeline`` - Parsed pipeline dictionary.
+    ...    - ``prefix`` - Required prefix for child pipeline names (default: z_).
     ...
     ...    *Returns:*
-    ...    - Dict with 'status' and 'pipeline_name'.
+    ...    - Dict with 'status', 'pipeline_name', and 'prefix'.
     ...
     ...    *Example:*
     ...    | ${result}= | Verify Child Pipeline Naming And Return Result | ${pipeline} |
-    [Arguments]    ${pipeline}
+    ...    | ${result}= | Verify Child Pipeline Naming And Return Result | ${pipeline} | prefix=child_ |
+    [Arguments]    ${pipeline}    ${prefix}=z_
     ${name}=    Get Pipeline Name    ${pipeline}
-    ${starts_with_z}=    Evaluate    '${name}'.lower().startswith('z_')
-    ${status}=    Set Variable If    ${starts_with_z}    PASS    FAIL
+    ${has_prefix}=    Evaluate    '${name}'.lower().startswith('${prefix}'.lower())
+    ${status}=    Set Variable If    ${has_prefix}    PASS    FAIL
     IF    '${status}' == 'FAIL'
-        Log    Child pipeline '${name}' does not start with z_ prefix.    WARN
+        Log    Child pipeline '${name}' does not start with '${prefix}' prefix.    WARN
     END
-    ${result}=    Create Dictionary    status=${status}    pipeline_name=${name}
+    ${result}=    Create Dictionary    status=${status}    pipeline_name=${name}    prefix=${prefix}
     RETURN    ${result}
 
 Verify Pipeline Naming With Auto Detection And Return Result
@@ -247,24 +249,27 @@ Run Batch Peer Review
     ...    Returns list of reports. Does NOT assert pass/fail.
     ...
     ...    Parent/child detection is automatic based on the pipeline name inside each .slp file:
-    ...    - Name starts with z_ → child → enforce z_ prefix + xx parameter prefix
-    ...    - Name does NOT start with z_ → parent → skip z_ check + skip xx prefix
+    ...    - Name starts with child_pipeline_prefix → child → enforce prefix + xx parameter prefix
+    ...    - Name does NOT start with child_pipeline_prefix → parent → skip checks
     ...
     ...    *Arguments:*
     ...    - ``pipeline_dir`` - Path to directory containing .slp files.
     ...    - ``project_name`` - Required project name that must appear in pipeline name (optional).
     ...    - ``param_prefix`` - Required parameter prefix (default: xx).
+    ...    - ``child_pipeline_prefix`` - Required prefix for child pipelines (default: z_).
     ...
     ...    *Returns:*
     ...    - List of inspection report dictionaries, one per pipeline file.
     ...
     ...    *Example:*
     ...    | ${reports}= | Run Batch Peer Review | ${CURDIR}/src/pipelines |
-    [Arguments]    ${pipeline_dir}    ${project_name}=    ${param_prefix}=xx
+    ...    | ${reports}= | Run Batch Peer Review | ${CURDIR}/src/pipelines | child_pipeline_prefix=child_ |
+    [Arguments]    ${pipeline_dir}    ${project_name}=    ${param_prefix}=xx    ${child_pipeline_prefix}=z_
     ${reports}=    Run Peer Review On All Pipeline Files
     ...    ${pipeline_dir}
     ...    project_name=${project_name}
     ...    param_prefix=${param_prefix}
+    ...    child_pipeline_prefix=${child_pipeline_prefix}
     ${total}=    Get Length    ${reports}
     ${failed_count}=    Set Variable    ${0}
     FOR    ${report}    IN    @{reports}
@@ -442,20 +447,22 @@ Run Peer Review On All Pipeline Files
     [Documentation]    Run peer review on all .slp files in a directory. Collects results for each file.
     ...
     ...    Parent/child detection is automatic based on the pipeline name inside each .slp file:
-    ...    - Name starts with z_ → child → enforce z_ prefix + xx parameter prefix
-    ...    - Name does NOT start with z_ → parent → skip z_ check + skip xx prefix
+    ...    - Name starts with child_pipeline_prefix → child → enforce prefix + xx parameter prefix
+    ...    - Name does NOT start with child_pipeline_prefix → parent → skip checks
     ...
     ...    *Arguments:*
     ...    - ``directory`` - Path to directory containing .slp files.
     ...    - ``project_name`` - Required project name that must appear in pipeline name (optional).
     ...    - ``param_prefix`` - Required parameter prefix (default: xx).
+    ...    - ``child_pipeline_prefix`` - Required prefix for child pipelines (default: z_).
     ...
     ...    *Returns:*
     ...    - List of inspection reports, one per pipeline file.
     ...
     ...    *Example:*
     ...    | ${reports}= | Run Peer Review On All Pipeline Files | ${CURDIR}/src/pipelines |
-    [Arguments]    ${directory}    ${project_name}=    ${param_prefix}=xx
+    ...    | ${reports}= | Run Peer Review On All Pipeline Files | ${CURDIR}/src/pipelines | child_pipeline_prefix=child_ |
+    [Arguments]    ${directory}    ${project_name}=    ${param_prefix}=xx    ${child_pipeline_prefix}=z_
     ${pipeline_files}=    Load All Pipeline Files From Directory    ${directory}
     ${reports}=    Create List
     FOR    ${entry}    IN    @{pipeline_files}
@@ -466,6 +473,7 @@ Run Peer Review On All Pipeline Files
             ...    file_name=${entry}[file_name]
             ...    project_name=${project_name}
             ...    param_prefix=${param_prefix}
+            ...    child_pipeline_prefix=${child_pipeline_prefix}
             Append To List    ${reports}    ${report}
         ELSE
             Log    SKIP: Could not load ${entry}[file_name] - ${entry}[error]    WARN

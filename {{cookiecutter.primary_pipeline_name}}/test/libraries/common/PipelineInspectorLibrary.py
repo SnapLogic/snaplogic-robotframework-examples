@@ -920,36 +920,40 @@ class PipelineInspectorLibrary:
         pipeline: Dict[str, Any],
         file_name: str = '',
         project_name: str = '',
-        param_prefix: str = 'xx'
+        param_prefix: str = 'xx',
+        child_pipeline_prefix: str = 'z_'
     ) -> Dict[str, Any]:
         """Run ALL peer review checks and return a comprehensive report.
 
         Parent/child detection is automatic based on the pipeline name:
-        - Pipeline name starts with 'z_' → child pipeline → enforce z_ prefix + xx parameter prefix
-        - Pipeline name does NOT start with 'z_' → parent pipeline → skip z_ check + skip xx prefix
+        - Pipeline name starts with child_pipeline_prefix → child → enforce prefix + xx parameter prefix
+        - Pipeline name does NOT start with child_pipeline_prefix → parent → skip checks
 
         *Arguments:*
         - ``pipeline``: Parsed pipeline dictionary.
         - ``file_name``: Name of the .slp file (for reporting).
         - ``project_name``: Required project name that must appear in the pipeline name.
         - ``param_prefix``: Required parameter prefix (default: 'xx').
+        - ``child_pipeline_prefix``: Required prefix for child pipelines (default: 'z_').
 
         *Returns:*
         - Dict with overall 'status', individual check results, and summary.
 
         *Example:*
         | ${report}= | Get Pipeline Inspection Report | ${pipeline} | file_name=oracle2.slp |
+        | ${report}= | Get Pipeline Inspection Report | ${pipeline} | child_pipeline_prefix=child_ |
         """
         pipeline_name = self.get_pipeline_name(pipeline)
 
         # Determine parent/child from pipeline name
-        is_child_pipeline = pipeline_name.lower().startswith('z_')
+        is_child_pipeline = pipeline_name.lower().startswith(child_pipeline_prefix.lower())
         is_parent_pipeline = not is_child_pipeline
 
         logger.info(
             f"Pipeline '{pipeline_name}' detected as "
             f"{'child' if is_child_pipeline else 'parent/standalone'} "
-            f"(name {'starts' if is_child_pipeline else 'does not start'} with 'z_')"
+            f"(name {'starts' if is_child_pipeline else 'does not start'} "
+            f"with '{child_pipeline_prefix}')"
         )
 
         # Run all checks
@@ -969,11 +973,12 @@ class PipelineInspectorLibrary:
 
         # Child pipeline naming check — determined by pipeline name
         if is_child_pipeline:
+            has_prefix = pipeline_name.lower().startswith(child_pipeline_prefix.lower())
             child_naming_check = {
-                'status': 'PASS' if pipeline_name.startswith('z_') else 'FAIL',
+                'status': 'PASS' if has_prefix else 'FAIL',
                 'pipeline_name': pipeline_name,
-                'message': f"Child pipeline '{pipeline_name}' must start with 'z_'"
-                           if not pipeline_name.startswith('z_') else 'OK'
+                'message': f"Child pipeline '{pipeline_name}' must start with '{child_pipeline_prefix}'"
+                           if not has_prefix else 'OK'
             }
         else:
             child_naming_check = {
@@ -1234,3 +1239,125 @@ class PipelineInspectorLibrary:
 
         logger.console("=" * 70)
         logger.console("")
+
+    @keyword("Generate Batch Review Markdown Report")
+    def generate_batch_review_markdown_report(
+        self,
+        reports: List[Dict[str, Any]],
+        output_path: str
+    ) -> str:
+        """Generate a markdown (.md) report from batch peer review results.
+
+        *Arguments:*
+        - ``reports``: List of inspection report dictionaries from batch review.
+        - ``output_path``: File path where the .md report will be saved.
+
+        *Returns:*
+        - The absolute path to the generated report file.
+
+        *Example:*
+        | ${path}= | Generate Batch Review Markdown Report | ${reports} | /path/to/report.md |
+        """
+        from datetime import datetime
+
+        total = len(reports)
+        passed = sum(1 for r in reports if r.get('status') == 'PASS')
+        failed = total - passed
+
+        lines = []
+        lines.append("# Pipeline Validation — Batch Review Report")
+        lines.append("")
+        lines.append(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        lines.append(f"**Pipelines Reviewed:** {total}")
+        lines.append(f"**Passed:** {passed}")
+        lines.append(f"**Failed:** {failed}")
+        lines.append("")
+        lines.append("---")
+        lines.append("")
+
+        # Summary table
+        lines.append("## Summary")
+        lines.append("")
+        lines.append("| # | Pipeline | File | Status | Failed Checks |")
+        lines.append("|---|---|---|:---:|---|")
+
+        for i, report in enumerate(reports, 1):
+            pipeline_name = report.get('pipeline_name', 'Unknown')
+            file_name = report.get('file_name', 'Unknown')
+            status = report.get('status', 'UNKNOWN')
+            status_icon = "PASS" if status == 'PASS' else "FAIL"
+            failed_checks = report.get('summary', {}).get('failed_checks', [])
+            failed_str = ', '.join(failed_checks) if failed_checks else '—'
+            lines.append(f"| {i} | {pipeline_name} | {file_name} | {status_icon} | {failed_str} |")
+
+        lines.append("")
+        lines.append("---")
+        lines.append("")
+
+        # Detailed results per pipeline
+        lines.append("## Detailed Results")
+        lines.append("")
+
+        for report in reports:
+            pipeline_name = report.get('pipeline_name', 'Unknown')
+            file_name = report.get('file_name', 'Unknown')
+            status = report.get('status', 'UNKNOWN')
+
+            lines.append(f"### {pipeline_name} (`{file_name}`)")
+            lines.append("")
+            lines.append(f"**Overall Status:** {status}")
+            lines.append("")
+
+            summary = report.get('summary', {})
+            lines.append("| Passed | Failed | Skipped |")
+            lines.append("|:---:|:---:|:---:|")
+            lines.append(
+                f"| {summary.get('passed', 0)} | {summary.get('failed', 0)} | {summary.get('skipped', 0)} |"
+            )
+            lines.append("")
+
+            # Check results table
+            lines.append("| Check | Status | Details |")
+            lines.append("|---|:---:|---|")
+
+            for check_name, check_result in report.get('checks', {}).items():
+                check_status = check_result.get('status', 'UNKNOWN')
+                display_name = check_name.replace('_', ' ').title()
+
+                if check_status == 'PASS':
+                    lines.append(f"| {display_name} | PASS | — |")
+                elif check_status == 'SKIP':
+                    msg = check_result.get('message', '')
+                    lines.append(f"| {display_name} | SKIP | {msg} |")
+                else:
+                    violations = check_result.get('violations', [])
+                    msg = check_result.get('message', '')
+                    if violations:
+                        count = len(violations)
+                        details_parts = []
+                        for v in violations[:5]:
+                            reason = v.get('reason', str(v)) if isinstance(v, dict) else str(v)
+                            details_parts.append(reason)
+                        details = '; '.join(details_parts)
+                        if count > 5:
+                            details += f'; ... and {count - 5} more'
+                        lines.append(f"| {display_name} | FAIL | {details} |")
+                    elif msg:
+                        lines.append(f"| {display_name} | FAIL | {msg} |")
+                    else:
+                        lines.append(f"| {display_name} | FAIL | — |")
+
+            lines.append("")
+            lines.append("---")
+            lines.append("")
+
+        # Write file
+        content = '\n'.join(lines)
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        with open(output_path, 'w') as f:
+            f.write(content)
+
+        logger.info(f"Batch review report generated: {output_path}")
+        logger.console(f"\nBatch review report saved to: {output_path}")
+
+        return os.path.abspath(output_path)

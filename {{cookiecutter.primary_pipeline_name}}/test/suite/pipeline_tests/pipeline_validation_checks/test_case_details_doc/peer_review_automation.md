@@ -23,7 +23,7 @@ Asserts PASS/FAIL                    Logs violations as warnings           Retur
 
 | File | Path | Purpose |
 |------|------|---------|
-| Test Cases | `test/suite/pipeline_tests/peer_review/peer_review_tests.robot` | Test declarations + assertions |
+| Test Cases | `test/suite/pipeline_tests/pipeline_validation_checks/pipeline_validation_tests.robot` | Test declarations + assertions |
 | Resource Keywords | `test/resources/common/pipeline_inspector.resource` | Reusable keywords with logging |
 | Python Library | `test/libraries/common/PipelineInspectorLibrary.py` | Core engine — JSON parsing + validation logic |
 
