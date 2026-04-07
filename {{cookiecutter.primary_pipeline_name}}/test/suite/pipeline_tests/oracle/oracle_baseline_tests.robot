@@ -115,21 +115,51 @@ Execute Triggered Task With Parameters
     ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task1}
 
 Execute Triggered Task Via Custom URL
-    [Documentation]    Executes a triggered task directly using a custom URL with Bearer token.
+    [Documentation]    Executes a triggered task directly using a custom URL with token-based auth.
     ...    This is a standalone test — no prior task creation needed.
-    ...    Just provide the URL and Bearer token in .env and run.
+    ...    Just provide the URL and token in .env and run.
     ...
     ...    Use this when:
     ...    - Testing a pre-existing triggered task endpoint
     ...    - Customer provides an APIM/Load Balancer URL
     ...    - Running against a task that was already created (manually or by a previous test run)
     ...
-    ...    Set the following in your .env file:
+    ...    📋 Required .env configuration:
     ...    TRIGGERED_TASK_URL=https://elastic.snaplogic.com/api/1/rest/slsched/feed/org/space/project/task_name
-    ...    TRIGGERED_TASK_BEARER_TOKEN=JNqovrcPPz6Jkzy3HnkBVJrq4qgs63Yg
+    ...    TRIGGERED_TASK_BEARER_TOKEN=<your_token_value>
+    ...
+    ...    🔑 Authorization header behavior:
+    ...    The TRIGGERED_TASK_BEARER_TOKEN value is sent verbatim as the ``Authorization`` header.
+    ...    The framework does NOT add or remove any prefix — you control the exact value.
+    ...
+    ...    Examples of valid TRIGGERED_TASK_BEARER_TOKEN values:
+    ...    - Raw token (no prefix):    TRIGGERED_TASK_BEARER_TOKEN=eyJhbGc...
+    ...      → sends:  Authorization: eyJhbGc...
+    ...    - Bearer prefix:            TRIGGERED_TASK_BEARER_TOKEN=Bearer eyJhbGc...
+    ...      → sends:  Authorization: Bearer eyJhbGc...
+    ...    - Token scheme:             TRIGGERED_TASK_BEARER_TOKEN=Token eyJhbGc...
+    ...      → sends:  Authorization: Token eyJhbGc...
+    ...    - SnapLogic llfeed_token:   TRIGGERED_TASK_BEARER_TOKEN=Bearer JNqovrcPPz6Jkzy3HnkBVJrq4qgs63Yg
+    ...      → sends:  Authorization: Bearer JNqovrcPPz6Jkzy3HnkBVJrq4qgs63Yg
+    ...
+    ...    Choose the format your gateway/IdP expects. If unsure, test with curl/Postman first
+    ...    to confirm what value works in the Authorization header, then put that exact value
+    ...    in TRIGGERED_TASK_BEARER_TOKEN.
     [Tags]    oracle    custom_url
     [Template]    Run Triggered Task Via Url
+
+    # Argument order: ${url}    ${token}    ${params}=${EMPTY}
+
+    # Example 1: Default — token sent verbatim as Authorization header
     ${TRIGGERED_TASK_URL}    ${TRIGGERED_TASK_BEARER_TOKEN}
+
+    # Example 2: With runtime query parameters (e.g., pipeline parameters)
+    # ${TRIGGERED_TASK_URL}    ${TRIGGERED_TASK_BEARER_TOKEN}    schema_name=DEMO&table_name=DEMO.TEST_TABLE1
+
+    # Example 3: Multiple URLs in one test (data-driven across environments)
+    # ${DEV_TRIGGERED_TASK_URL}     ${DEV_TOKEN}
+    # ${UAT_TRIGGERED_TASK_URL}     ${UAT_TOKEN}
+    # ${PROD_TRIGGERED_TASK_URL}    ${PROD_TOKEN}
 
 Execute Triggered Task Via Captured Cloud URL
     [Documentation]    Gets task details from SnapLogic API, auto-captures the Cloud URL,

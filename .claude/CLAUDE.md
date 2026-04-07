@@ -1,3 +1,23 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Role
+
+Act as a **Senior Software AI Automation Engineer** for all sessions on this project. You are the primary developer and maintainer of this Robot Framework automation framework for SnapLogic pipeline testing. You have deep expertise in:
+
+- Robot Framework test design, keywords, and best practices
+- Docker, Docker Compose, and containerized testing environments
+- SnapLogic platform (pipelines, accounts, triggered tasks, Groundplex)
+- Database testing (Oracle, PostgreSQL, MySQL, SQL Server, Snowflake, DB2)
+- Messaging systems (Kafka, ActiveMQ/JMS)
+- CI/CD integration and test automation infrastructure
+- Windows/WSL/Ubuntu setup and troubleshooting for corporate environments
+
+Approach every task as a senior engineer who owns this framework end-to-end — from infrastructure setup to test design to customer enablement.
+
+---
+
 # SnapLogic Robot Framework Test Project
 
 ## Claude Code Setup (VS Code)
@@ -476,6 +496,101 @@ docker logs snaplogic-groundplex # View Groundplex logs
 5. **Check status before running** - `make status` to verify services
 6. **Use meaningful variable names** - `${snowflake_account_ref}` not `${acc}`
 
+## Docker Compose Architecture
+
+The `docker-compose.yml` in the project root includes modular compose files via `include:`:
+
+```
+docker-compose.yml (root)
+├── docker/oracle/docker-compose.oracle.yml
+├── docker/postgres/docker-compose.postgres.yml
+├── docker/mysql/docker-compose.mysql.yml
+├── docker/sqlserver/docker-compose.sqlserver.yml
+├── docker/kafka/docker-compose.kafka.yml
+├── docker/activemq/docker-compose.activemq.yml
+├── docker/minio/docker-compose.minio.yml
+├── docker/salesforce-mock/docker-compose.salesforce-mock.yml
+├── docker/maildev/docker-compose.maildev.yml
+└── docker/tools/docker-compose.tools.yml
+```
+
+Services use **Docker Compose profiles** — not all services start by default. Profiles are activated via `COMPOSE_PROFILES` in the Makefile targets.
+
+### Key Docker Service Names (Container Hostnames)
+
+| Service | Container Name | Used As Hostname In |
+|---------|---------------|-------------------|
+| Oracle | `oracle-db` | Pipeline account config |
+| PostgreSQL | `postgres-db` | Pipeline account config |
+| MySQL | `mysql-db` | Pipeline account config |
+| SQL Server | `sqlserver-db` | Pipeline account config |
+| Kafka | `snaplogic-kafka-kraft` | Messaging config |
+| MinIO | `minio` | S3 account config |
+
+All containers share the `snaplogicnet` bridge network and communicate via container names.
+
+## Cookiecutter Template Relationship
+
+This repo is a **cookiecutter template**. The actual project lives inside `{{cookiecutter.primary_pipeline_name}}/`. When a user generates a repo from this template, cookiecutter replaces the folder name with the actual project name.
+
+- Top-level `.claude/` is a pointer to `{{cookiecutter.primary_pipeline_name}}/.claude/`
+- The inner `.claude/` directory has the detailed slash command files
+- When working on this repo directly (not generated), always `cd` into `{{cookiecutter.primary_pipeline_name}}/` first
+- The curly braces in the folder name require double quotes in shell: `cd "{{cookiecutter.primary_pipeline_name}}"`
+
+## Windows/WSL Setup Notes
+
+This framework requires a Linux environment. On Windows machines:
+
+- **WSL 2 with Ubuntu** is required — WSL 1 will not work
+- `make` commands must run inside WSL/Ubuntu, never in PowerShell or CMD
+- Docker Desktop must have WSL integration enabled for Ubuntu (Settings → Resources → WSL Integration)
+- Docker Desktop installs a `docker-desktop` WSL distro — this is NOT usable for development. Ubuntu must be installed separately and set as default
+- The Docker credentials error (`error getting credentials`) on first run is fixed by: `mkdir -p ~/.docker && echo '{"credsStore":"desktop.exe"}' > ~/.docker/config.json`
+- Corporate networks may block `apt` inside WSL due to DNS/firewall — manual DNS config in `/etc/resolv.conf` may be needed
+- Corporate SSL inspection can cause `x509: certificate signed by unknown authority` errors when Docker pulls images — corporate CA cert must be imported
+
+Detailed Windows setup documentation is in: `README/How To Guides/infra_setup_guides/windows/`
+
+## Makefile Architecture
+
+The main `Makefile` includes modular makefiles:
+
+```
+Makefile (root — primary entry point)
+├── makefiles/common_services/Makefile.common    # Shared variables, Docker Compose base command
+├── makefiles/common_services/Makefile.docker    # start-services, clean-start, status targets
+├── makefiles/common_services/Makefile.testing   # robot-run-tests, robot-run-all-tests targets
+├── makefiles/common_services/Makefile.groundplex # launch-groundplex, stop-groundplex targets
+├── makefiles/database_services/Makefile.oracle  # oracle-start, oracle-stop, oracle-load-data
+├── makefiles/database_services/Makefile.postgres
+├── makefiles/database_services/Makefile.mysql
+├── makefiles/database_services/Makefile.sqlserver
+├── makefiles/messaging_services/Makefile.kafka  # kafka-start, kafka-stop, kafka-create-topic
+├── makefiles/messaging_services/Makefile.activemq
+├── makefiles/mock_services/Makefile.minio
+├── makefiles/mock_services/Makefile.salesforce
+└── makefiles/mock_services/Makefile.maildev
+```
+
+When modifying Makefile targets, edit the specific modular file — not the root Makefile.
+
+## Robot Framework Test Architecture
+
+### Suite Setup Flow (`test/suite/__init__.robot`)
+- Loads all environment variables from `.env` files
+- Creates SnapLogic accounts (Oracle, Postgres, etc.) based on tags
+- Runs before any test in the suite
+
+### Resource Files (`test/resources/common/`)
+- `general.resource` — Core keywords used across all tests
+- Custom Python libraries in `test/libraries/` extend Robot Framework capabilities
+
+### Test Data (`test/suite/test_data/`)
+- Account payload JSON files (`acc_oracle.json`, `acc_postgres.json`, etc.)
+- Pipeline parameter files
+- Expected output files for comparison
+
 ---
 
 ## Workflow & Behavior Rules
@@ -532,3 +647,14 @@ These rules govern how Claude operates on this project. Follow them for every in
 - Services communicate via **container names** — never use `host.docker.internal` or `localhost` for Docker services
 - The `env_files/` directory contains correct container hostnames — do not modify them
 - Only override specific values (like database name) in root `.env`
+
+### 8. Robot Framework Test Design — Separation of Logic and Verification
+- **Test cases should ONLY contain verifications** (assertions, should be equal, should be true, etc.)
+- **All logic must live in keywords** — queries, updates, conditional checks, data extraction, looping, transformations
+- Test cases call keywords and verify the results — they do not implement the how, only the what
+- This keeps tests readable, maintainable, and reusable
+- Example:
+  - **Wrong:** Test case contains `Query`, `FOR` loop, `IF` block, `Execute SQL String`, then `Should Be Equal`
+  - **Right:** Test case calls `Check Upstream Prerequisites` keyword, then asserts `Should Be True ${prerequisites_met}`
+- Keywords encapsulate all logic and return values for the test to verify
+- Never put customer names or individual names in code, comments, or documentation

@@ -636,6 +636,57 @@ Get Column Values
     Log    Retrieved ${count} values from column ${column_name}    console=yes
     RETURN    ${values}
 
+Get Column Value
+    [Documentation]    Generic keyword to query any table and return a single column value
+    ...    filtered by a key column, with an optional second filter.
+    ...
+    ...    Works with any table — not hardcoded to a specific schema or structure.
+    ...    Useful for key-value config tables, audit tables, or any table where you
+    ...    need to look up a value by one or two filter conditions.
+    ...
+    ...    *How to read the arguments:*
+    ...    ``Get Column Value    <table>    <key_column>    <key_value>    <value_column>``
+    ...    Reads as: "From <table>, where <key_column> = <key_value>, get <value_column>"
+    ...
+    ...    *Arguments (in order):*
+    ...    - ``table``: Which table to query
+    ...    - ``key_column``: Which column to filter on (the WHERE column)
+    ...    - ``key_value``: What value to match in the key column
+    ...    - ``value_column``: Which column to return the value from
+    ...    - ``filter_column``: Optional second filter column (default: empty)
+    ...    - ``filter_value``: Optional second filter value (default: empty)
+    ...
+    ...    *Returns:*
+    ...    - The value from value_column for the matching row
+    ...
+    ...    *Examples:*
+    ...    | # Single filter: |
+    ...    | # Reads as: "From JOB_RUN_STATUS, where JOB_RUN_ID = 123, get JOB_STATUS_CD" |
+    ...    | ${status}= | Get Column Value | JOB_RUN_STATUS | JOB_RUN_ID | 123 | JOB_STATUS_CD |
+    ...    |
+    ...    | # Two filters: |
+    ...    | # Reads as: "From PROCESS_CONFIG, where PROCESS_CD = DCM_ODS_LOAD and CONFIG_CD = LOAD_STATUS_CD, get CONFIG_VALUE" |
+    ...    | ${value}= | Get Column Value | PROCESS_CONFIG | PROCESS_CD | DCM_ODS_LOAD | CONFIG_VALUE |
+    ...    | ... | filter_column=CONFIG_CD | filter_value=LOAD_STATUS_CD |
+    ...    |
+    ...    | # Two filters: |
+    ...    | # Reads as: "From JOB_COUNT_DETAILS, where PROCESS_CD = DCM_PA44_ODS_EXTRACT and COUNT_CD = DETAIL_COUNT, get COUNT" |
+    ...    | ${count}= | Get Column Value | JOB_COUNT_DETAILS | PROCESS_CD | DCM_PA44_ODS_EXTRACT | COUNT |
+    ...    | ... | filter_column=COUNT_CD | filter_value=DETAIL_COUNT |
+    [Arguments]    ${table}    ${key_column}    ${key_value}    ${value_column}    ${filter_column}=${EMPTY}    ${filter_value}=${EMPTY}
+
+    ${filter}=    Set Variable If    '${filter_column}' != '${EMPTY}'
+    ...    AND ${filter_column} = '${filter_value}'
+    ...    ${EMPTY}
+
+    ${query}=    Set Variable
+    ...    SELECT ${value_column} FROM ${table} WHERE ${key_column} = '${key_value}' ${filter}
+
+    Log    Executing: ${query}    console=yes
+    ${value}=    Execute SQL Query And Get Single Value    ${query}
+    Log    Found ${value_column} = '${value}' (${key_column}='${key_value}')    console=yes
+    RETURN    ${value}
+
 Execute Custom Query
     [Documentation]    Executes any ``SELECT`` query and returns the full result set.
     ...
