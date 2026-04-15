@@ -248,6 +248,101 @@ Validate Content Contains All Fields
     END
     Log    All ${total} required fields found in content    console=yes
 
+################## TEXT CONTENT ANALYSIS ##################
+
+Get First Line
+    [Documentation]    Returns the first non-empty line from text content.
+    ...    Skips blank lines at the start of the content.
+    ...
+    ...    *Arguments:*
+    ...    - ``content``: Text content (multi-line string)
+    ...
+    ...    *Returns:*
+    ...    - First non-empty line (trimmed), or empty string if no lines
+    ...
+    ...    *Example:*
+    ...    | ${first}= | Get First Line | ${file_content} |
+    [Arguments]    ${content}
+
+    @{lines}=    Split To Lines    ${content}
+    FOR    ${line}    IN    @{lines}
+        ${trimmed}=    Strip String    ${line}
+        IF    '${trimmed}' != ''
+            RETURN    ${trimmed}
+        END
+    END
+    RETURN    ${EMPTY}
+
+Get Last Line
+    [Documentation]    Returns the last non-empty line from text content.
+    ...    Skips trailing blank lines.
+    ...
+    ...    *Arguments:*
+    ...    - ``content``: Text content (multi-line string)
+    ...
+    ...    *Returns:*
+    ...    - Last non-empty line (trimmed), or empty string if no lines
+    ...
+    ...    *Example:*
+    ...    | ${last}= | Get Last Line | ${file_content} |
+    [Arguments]    ${content}
+
+    @{lines}=    Split To Lines    ${content}
+    Reverse List    ${lines}
+    FOR    ${line}    IN    @{lines}
+        ${trimmed}=    Strip String    ${line}
+        IF    '${trimmed}' != ''
+            RETURN    ${trimmed}
+        END
+    END
+    RETURN    ${EMPTY}
+
+Count Lines Starting With
+    [Documentation]    Counts lines in text content that start with a specific prefix.
+    ...    Useful for counting record types in fixed-width formats (e.g., PA44 header/detail/trailer).
+    ...
+    ...    *Arguments:*
+    ...    - ``content``: Text content to search
+    ...    - ``prefix``: Prefix to match (e.g., 'CD', 'PA', 'PT', 'HDR')
+    ...
+    ...    *Returns:*
+    ...    - Number of lines matching the prefix
+    ...
+    ...    *Example:*
+    ...    | ${detail_count}= | Count Lines Starting With | ${txt_content} | CD |
+    ...    | ${header_count}= | Count Lines Starting With | ${txt_content} | PA |
+    [Arguments]    ${content}    ${prefix}
+
+    @{lines}=    Split To Lines    ${content}
+    ${count}=    Set Variable    ${0}
+    FOR    ${line}    IN    @{lines}
+        ${trimmed}=    Strip String    ${line}
+        ${matches}=    Evaluate    '${trimmed}'.startswith('${prefix}')
+        IF    ${matches}
+            ${count}=    Evaluate    ${count} + 1
+        END
+    END
+    RETURN    ${count}
+
+Count Occurrences In Content
+    [Documentation]    Counts occurrences of a substring in text content.
+    ...    Case-sensitive match. Works on any text content.
+    ...
+    ...    *Arguments:*
+    ...    - ``content``: Text to search
+    ...    - ``substring``: Pattern to count
+    ...
+    ...    *Returns:*
+    ...    - Number of occurrences
+    ...
+    ...    *Example:*
+    ...    | ${count}= | Count Occurrences In Content | ${csv_content} | ,P, |
+    ...    | ${count}= | Count Occurrences In Content | ${log_content} | ERROR |
+    [Arguments]    ${content}    ${substring}
+
+    ${count}=    Get Count    ${content}    ${substring}
+    RETURN    ${count}
+
 ##################################################################################
 #    UNUSED KEYWORDS    #
 # The following keywords are not currently used in any test cases or resources.    #

@@ -1,2 +1,9 @@
 backup/
 .claude/settings.local.json
+# Backup files
+*.bak
+*.backup
+
+
+# Claude Code auto-generated worktrees (not for commit)
+.claude/worktrees/

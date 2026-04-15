@@ -22,6 +22,19 @@ Check if Project Space Exists
     [Template]    Check Project Space Setup Requirement
     ${ORG_NAME}    ${PROJECT_SPACE}
 
+Cleanup Stale Timestamped Projects
+    [Documentation]    Deletes timestamped test projects older than RETENTION_DAYS (default 7).
+    ...    Only projects matching `${PROJECT_NAME}_YYYYMMDD_HHMMSS` are considered.
+    [Tags]    cleanup_stale_projects
+    ${retention}    Get Variable Value    ${RETENTION_DAYS}    7
+    ${dry}    Get Variable Value    ${DRY_RUN}    False
+    ${dry_bool}    Evaluate    '${dry}'.lower() == 'true'
+    @{deleted}    Cleanup Old Timestamped Projects
+    ...    ${ORG_NAME}    ${PROJECT_SPACE}    ${PROJECT_NAME}
+    ...    retention_days=${retention}    dry_run=${dry_bool}
+    ${count}    Get Length    ${deleted}
+    Log    Removed ${count} stale project(s).    console=yes
+
 
 *** Keywords ***
 Validate Project Space Exists
@@ -44,10 +57,28 @@ Validate Project Space Exists
         ${project_count}    Get Length    ${projects}
         Log    Project space '${expected_project_space}' Exists with ${project_count} projects    level=CONSOLE
     EXCEPT    AS    ${error}
-        # Project space doesn't exist or API call failed
         Log    Error accessing project space '${expected_project_space}': ${error}    level=ERROR
-        Fail
-        ...    Project space '${expected_project_space}' is not created. Run 'make robot-run-all-tests TAGS="tags" PROJECT_SPACE_SETUP=True' to create the required project space first.
+        ${guidance}=    Catenate    SEPARATOR=\n
+        ...    ${\n}============================================================
+        ...    ❌ Project space '${expected_project_space}' is not created in org '${org_name}'.
+        ...    ============================================================
+        ...    ${EMPTY}
+        ...    💡 To create the project space and project, run ONE of these:
+        ...    ${EMPTY}
+        ...    \ \ 1) Full setup (creates project space + project + Snaplex, launches Groundplex):
+        ...    \ \ \ \ \ \ make robot-run-all-tests TAGS="<your-tags>"
+        ...    \ \ \ \ \ \ Example: make robot-run-all-tests TAGS="oracle"
+        ...    ${EMPTY}
+        ...    \ \ 2) Without Groundplex (use when a Groundplex is already running externally):
+        ...    \ \ \ \ \ \ make robot-run-tests-no-gp TAGS="<your-tags>"
+        ...    \ \ \ \ \ \ Example: make robot-run-tests-no-gp TAGS="oracle"
+        ...    ${EMPTY}
+        ...    ℹ️ PROJECT_SPACE_SETUP defaults to True (safe, idempotent — creates only what's missing).
+        ...    \ \ \ You explicitly passed PROJECT_SPACE_SETUP=False, which only VERIFIES the space exists.
+        ...    \ \ \ Drop the flag (or omit it) to let the framework create the project space for you.
+        ...    ============================================================${\n}
+        Log To Console    ${guidance}
+        Fail    Project space '${expected_project_space}' is not created in org '${org_name}'. See console output above for the make command to create it.
     END
 
 Check Project Space Setup Requirement

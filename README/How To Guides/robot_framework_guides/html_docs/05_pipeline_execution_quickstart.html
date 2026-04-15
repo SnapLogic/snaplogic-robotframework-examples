@@ -133,11 +133,12 @@ vi .env</pre>
 <pre><span class="comment"># Start Docker services</span>
 make start-services
 
-<span class="comment"># Run tests (first time - creates project space + Groundplex)</span>
-make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True
+<span class="comment"># Run tests — idempotent project-space setup happens automatically</span>
+<span class="comment"># (creates project space/project if missing, reuses if already there)</span>
+make robot-run-all-tests TAGS="oracle"
 
-<span class="comment"># Subsequent runs (project space already exists)</span>
-make robot-run-all-tests TAGS="oracle"</pre>
+<span class="comment"># Verify-only / fast-fail mode (skips Snaplex re-registration):</span>
+make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=False</pre>
                 </div>
             </div>
 
@@ -155,20 +156,21 @@ make robot-run-all-tests TAGS="oracle"</pre>
                     <h4 style="color: #27ae60;">Path A: Framework-Managed Groundplex (Recommended)</h4>
                     <p>The framework creates and manages the Groundplex for you.</p>
                     <div class="code-box">
-<pre><span class="comment"># First time (full setup)</span>
+<pre><span class="comment"># Idempotent setup runs by default — creates project space/project</span>
+<span class="comment"># if missing, reuses if already there. Never deletes existing assets.</span>
 make start-services
+make robot-run-all-tests TAGS="oracle"
+
+<span class="comment"># Verify-only mode (skip Snaplex re-registration on quick re-runs):</span>
 make robot-run-all-tests \
   TAGS="oracle" \
-  PROJECT_SPACE_SETUP=True
-
-<span class="comment"># Subsequent runs</span>
-make robot-run-all-tests TAGS="oracle"</pre>
+  PROJECT_SPACE_SETUP=False</pre>
                     </div>
                     <ul>
-                        <li>Creates project space and Snaplex</li>
+                        <li>Idempotently ensures project space and Snaplex exist</li>
                         <li>Launches Groundplex container</li>
                         <li>Runs tests</li>
-                        <li>Best for: CI/CD, first-time setup</li>
+                        <li>Best for: CI/CD, first-time setup, repeat runs</li>
                     </ul>
                 </div>
 
@@ -176,21 +178,100 @@ make robot-run-all-tests TAGS="oracle"</pre>
                     <h4 style="color: #3498db;">Path B: Existing Groundplex</h4>
                     <p>Use when you already have a running Groundplex.</p>
                     <div class="code-box">
-<pre><span class="comment"># First time (setup project only)</span>
+<pre><span class="comment"># Idempotent project-space setup happens automatically.</span>
+<span class="comment"># This target NEVER creates, starts, or stops a Groundplex —</span>
+<span class="comment"># make sure yours is already running.</span>
 make start-services
+make robot-run-tests-no-gp TAGS="oracle"
+
+<span class="comment"># Verify-only mode:</span>
 make robot-run-tests-no-gp \
   TAGS="oracle" \
-  PROJECT_SPACE_SETUP=True
-
-<span class="comment"># Subsequent runs</span>
-make robot-run-tests-no-gp TAGS="oracle"</pre>
+  PROJECT_SPACE_SETUP=False</pre>
                     </div>
                     <ul>
-                        <li>Skips Groundplex creation/launch</li>
-                        <li>Faster execution</li>
-                        <li>Assumes GP is already running</li>
-                        <li>Best for: development, quick iteration</li>
+                        <li>Idempotently ensures project space and project exist</li>
+                        <li>Skips Snaplex registration and Groundplex creation/launch</li>
+                        <li>Faster execution (no ~60s Groundplex startup)</li>
+                        <li>Assumes a Groundplex is already running and attached to the project space</li>
+                        <li>Best for: development, quick iteration, customer/CI environments with pre-provisioned Groundplex</li>
                     </ul>
+                </div>
+            </div>
+
+            <h3>What is "Verify-only mode"?</h3>
+            <p>
+                When you pass <code>PROJECT_SPACE_SETUP=False</code>, the framework
+                switches from "create-if-missing" to "verify-it-exists." It does
+                <em>not</em> attempt any creation — it just checks the project space
+                is there and either passes or fails fast with an actionable error.
+            </p>
+
+            <table>
+                <thead>
+                    <tr><th>Aspect</th><th>Default mode (<code>=True</code>)</th><th>Verify-only mode (<code>=False</code>)</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Create project space if missing</td>
+                        <td>✅ Yes</td>
+                        <td>❌ No — fails fast with the make commands you can run to create it</td>
+                    </tr>
+                    <tr>
+                        <td>Create project if missing</td>
+                        <td>✅ Yes</td>
+                        <td>❌ No</td>
+                    </tr>
+                    <tr>
+                        <td>Register Snaplex definition (REST call)</td>
+                        <td>✅ Every run (idempotent)</td>
+                        <td>❌ Skipped</td>
+                    </tr>
+                    <tr>
+                        <td>Download <code>.slpropz</code> Groundplex config</td>
+                        <td>✅ Every run (overwrites local)</td>
+                        <td>❌ Skipped (assumes existing local copy)</td>
+                    </tr>
+                    <tr>
+                        <td>Run your test tags</td>
+                        <td>✅ Yes</td>
+                        <td>✅ Yes (after the verify check passes)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="info">
+                <strong>When verify-only mode is the right choice:</strong>
+                <ul>
+                    <li><strong>Shared SnapLogic org without create permissions</strong> — your service account can't create project spaces; an admin set it up for you. Use verify-only so the framework doesn't try (and fail with a 403).</li>
+                    <li><strong>CI smoke checks</strong> — a separate setup job runs nightly; the test job just wants to confirm the environment is still in place before running.</li>
+                    <li><strong>Local quick iterations</strong> — you've already done the setup once, the Snaplex is registered, the <code>.slpropz</code> is on disk, and you want to skip the API round-trips for a faster inner loop.</li>
+                    <li><strong>You manually edited the local <code>.slpropz</code></strong> for debugging (e.g., tweaking log levels) and don't want default mode to overwrite it.</li>
+                </ul>
+            </div>
+
+            <div class="warning">
+                <strong>What happens if the project space is missing in verify-only mode?</strong>
+                The test fails with a multi-line console message that prints the exact
+                make commands you can copy-paste to create it. Example:
+                <div class="code-box" style="margin-top: 10px;">
+<pre>❌ Project space 'demo3_project_space' is not created in org 'ml-legacy-migration'.
+============================================================
+
+💡 To create the project space and project, run ONE of these:
+
+  1) Full setup (creates project space + project + Snaplex, launches Groundplex):
+      make robot-run-all-tests TAGS="&lt;your-tags&gt;"
+      Example: make robot-run-all-tests TAGS="oracle"
+
+  2) Without Groundplex (use when a Groundplex is already running externally):
+      make robot-run-tests-no-gp TAGS="&lt;your-tags&gt;"
+      Example: make robot-run-tests-no-gp TAGS="oracle"
+
+ℹ️ PROJECT_SPACE_SETUP defaults to True (safe, idempotent — creates only what's missing).
+   You explicitly passed PROJECT_SPACE_SETUP=False, which only VERIFIES the space exists.
+   Drop the flag (or omit it) to let the framework create the project space for you.
+============================================================</pre>
                 </div>
             </div>
 
@@ -201,14 +282,34 @@ make robot-run-tests-no-gp TAGS="oracle"</pre>
                 </thead>
                 <tbody>
                     <tr>
-                        <td><code>True</code></td>
-                        <td>Deletes existing project space, creates new one, sets up Snaplex</td>
-                        <td>First-time setup, clean environment, CI/CD pipelines</td>
+                        <td><code>True</code> <strong>(default)</strong></td>
+                        <td>Idempotent, non-destructive. Creates project space + project if missing, reuses if already there. Registers Snaplex (idempotent) and downloads <code>.slpropz</code>. Never deletes anything.</td>
+                        <td>Most cases — first-time setup, repeat runs, CI/CD. You don't need to pass it; it's the default.</td>
                     </tr>
                     <tr>
-                        <td><code>False</code> (default)</td>
-                        <td>Verifies project exists, fails if missing</td>
-                        <td>Subsequent runs, development, stable environments</td>
+                        <td><code>False</code></td>
+                        <td>Verify-only. Asserts project space exists; fails fast with actionable guidance if not. Skips Snaplex re-registration and <code>.slpropz</code> re-download.</td>
+                        <td>Shared orgs without create permissions; CI smoke tests; quick iterations.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>FORCE_RECREATE_PROJECT_SPACE Parameter (DESTRUCTIVE — opt-in)</h3>
+            <div class="warning">
+                <strong>⚠️ DANGER:</strong> Deletes the ENTIRE project space and every project, pipeline, account, and task inside it. Only use on a dedicated CI/regression project space you own exclusively.
+            </div>
+            <table>
+                <thead>
+                    <tr><th>Value</th><th>Behavior</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>True</code></td>
+                        <td>Deletes the whole project space and recreates it from scratch. Requires interactive confirmation (type the project space name) unless <code>FORCE_CONFIRM=yes</code> is also set.</td>
+                    </tr>
+                    <tr>
+                        <td><code>False</code> <strong>(default)</strong></td>
+                        <td>No-op — respects the safe <code>PROJECT_SPACE_SETUP</code> behavior above.</td>
                     </tr>
                 </tbody>
             </table>
@@ -231,10 +332,11 @@ make robot-run-tests-no-gp TAGS="oracle"</pre>
                     <tr><td><code>make check-env</code></td><td>Verify .env file exists and is configured</td></tr>
                     <tr><td><code>make robot-run-all-tests TAGS="..."</code></td><td>Full test workflow with Groundplex management</td></tr>
                     <tr><td><code>make robot-run-tests-no-gp TAGS="..."</code></td><td>Run tests without launching Groundplex</td></tr>
-                    <tr><td><code>make robot-run-tests TAGS="..."</code></td><td>Direct Robot Framework execution (advanced)</td></tr>
+                    <tr><td><code>make robot-run-tests TAGS="..."</code></td><td>Direct Robot Framework execution (advanced — also runs idempotent project-space setup by default)</td></tr>
+                    <tr><td><code>make cleanup-stale-projects</code></td><td>Delete legacy timestamped projects older than 7 days (optional housekeeping)</td></tr>
                     <tr><td><code>make oracle-start</code></td><td>Start Oracle database only</td></tr>
                     <tr><td><code>make postgres-start</code></td><td>Start PostgreSQL only</td></tr>
-                    <tr><td><code>make postgres-load-data</code></td><td>Load test data into PostgreSQL</td></tr>
+                    <tr><td><code>make oracle-load-data</code></td><td>Load test data into Oracle (similar targets exist for other DBs)</td></tr>
                     <tr><td><code>make kafka-start</code></td><td>Start Kafka cluster</td></tr>
                     <tr><td><code>make minio-start</code></td><td>Start MinIO (S3 emulation)</td></tr>
                     <tr><td><code>make launch-groundplex</code></td><td>Start the Groundplex container</td></tr>
@@ -252,23 +354,25 @@ make robot-run-tests-no-gp TAGS="oracle"</pre>
 <pre><span class="comment"># Run Oracle tests only</span>
 make robot-run-all-tests TAGS="oracle"
 
-<span class="comment"># Run PostgreSQL demo tests</span>
-make robot-run-all-tests TAGS="postgres_demo"
-
-<span class="comment"># Run Snowflake tests</span>
+<span class="comment"># Run Snowflake demo tests</span>
 make robot-run-all-tests TAGS="snowflake_demo"
 
 <span class="comment"># Run smoke tests (quick validation)</span>
 make robot-run-all-tests TAGS="smoke"
 
-<span class="comment"># Combine tags with OR logic (any tag matches)</span>
-make robot-run-all-tests TAGS="oracle OR postgres"
+<span class="comment"># Match multiple tags with OR (comma-separated, no spaces) —</span>
+<span class="comment"># runs every test tagged with ANY of these:</span>
+make robot-run-all-tests TAGS="oracle,snowflake_demo,minio"</pre>
+            </div>
 
-<span class="comment"># Combine tags with AND logic (all tags must match)</span>
-make robot-run-all-tests TAGS="snowflake_demo AND task_creation"
-
-<span class="comment"># Exclude specific tests</span>
-make robot-run-all-tests TAGS="oracle AND NOT cleanup"</pre>
+            <div class="info">
+                <strong>Note on tag syntax:</strong> The Makefile's <code>TAGS</code>
+                variable is split on whitespace by Make's <code>foreach</code>, so the
+                Robot Framework <code>AND</code>/<code>OR</code>/<code>NOT</code>
+                keyword expressions (which require spaces) do not work here. Use
+                comma-separated values for OR semantics. For more advanced filtering
+                (AND/NOT/glob patterns), call <code>robot</code> directly inside the
+                tools container with a single <code>--include</code> flag.
             </div>
 
             <h3>Available System Tags</h3>
@@ -277,14 +381,21 @@ make robot-run-all-tests TAGS="oracle AND NOT cleanup"</pre>
                     <tr><th>Category</th><th>Tags</th></tr>
                 </thead>
                 <tbody>
-                    <tr><td><strong>Databases</strong></td><td><code>oracle</code>, <code>postgres</code>, <code>postgres_demo</code>, <code>mysql</code>, <code>sqlserver</code>, <code>snowflake_demo</code>, <code>db2</code>, <code>teradata</code></td></tr>
+                    <tr><td><strong>Databases</strong></td><td><code>oracle</code>, <code>postgres</code>, <code>mysql</code>, <code>sqlserver</code>, <code>snowflake_demo</code>, <code>snowflake_demo2</code>, <code>db2</code>, <code>teradata</code></td></tr>
                     <tr><td><strong>Messaging</strong></td><td><code>kafka</code>, <code>jms</code></td></tr>
                     <tr><td><strong>Mock Services</strong></td><td><code>minio</code>, <code>s3</code>, <code>salesforce</code>, <code>email</code></td></tr>
                     <tr><td><strong>Actions</strong></td><td><code>task_creation</code>, <code>task_execution</code>, <code>account</code>, <code>pipeline</code></td></tr>
                     <tr><td><strong>Priority</strong></td><td><code>smoke</code>, <code>regression</code>, <code>critical</code></td></tr>
-                    <tr><td><strong>Setup</strong></td><td><code>setup</code>, <code>cleanup</code>, <code>createplex</code>, <code>verify_project_space_exists</code></td></tr>
+                    <tr><td><strong>Setup / Housekeeping</strong></td><td><code>setup</code>, <code>cleanup</code>, <code>createplex</code>, <code>verify_project_space_exists</code>, <code>cleanup_stale_projects</code></td></tr>
                 </tbody>
             </table>
+            <div class="warning">
+                <strong>Tag verification:</strong> Tags listed above reflect the
+                framework's standard categories. Project-specific tags (e.g.,
+                custom test categories) may exist in your test files. Run
+                <code>grep -rn "\[Tags\]" test/suite/</code> to list every tag
+                actually defined in your suite.
+            </div>
         </div>
 
         <!-- Section 5: Viewing Results -->
@@ -339,10 +450,10 @@ ls -la test/robot_output/</pre>
                     <tr><td>MySQL</td><td>3306</td><td><code>localhost:3306</code></td></tr>
                     <tr><td>SQL Server</td><td>1433</td><td><code>localhost:1433</code></td></tr>
                     <tr><td>Kafka Broker</td><td>9092</td><td><code>localhost:9092</code></td></tr>
-                    <tr><td>Kafka UI</td><td>8080</td><td><a href="http://localhost:8080" target="_blank">http://localhost:8080</a></td></tr>
+                    <tr><td>Kafka UI</td><td>8082</td><td><a href="http://localhost:8082" target="_blank">http://localhost:8082</a></td></tr>
                     <tr><td>ActiveMQ Console</td><td>8161</td><td><a href="http://localhost:8161" target="_blank">http://localhost:8161</a></td></tr>
-                    <tr><td>MinIO API</td><td>9000</td><td><code>localhost:9000</code></td></tr>
-                    <tr><td>MinIO Console</td><td>9001</td><td><a href="http://localhost:9001" target="_blank">http://localhost:9001</a></td></tr>
+                    <tr><td>MinIO API</td><td>9010</td><td><code>localhost:9010</code></td></tr>
+                    <tr><td>MinIO Console</td><td>9011</td><td><a href="http://localhost:9011" target="_blank">http://localhost:9011</a></td></tr>
                     <tr><td>Salesforce Mock</td><td>8089</td><td><a href="http://localhost:8089" target="_blank">http://localhost:8089</a></td></tr>
                     <tr><td>MailDev UI</td><td>1080</td><td><a href="http://localhost:1080" target="_blank">http://localhost:1080</a></td></tr>
                     <tr><td>MailDev SMTP</td><td>1025</td><td><code>localhost:1025</code></td></tr>
@@ -358,7 +469,7 @@ ls -la test/robot_output/</pre>
 
         <footer style="text-align: center; margin-top: 40px; padding: 20px; color: #666; border-top: 1px solid #ddd;">
             <p>Generated for SnapLogic Robot Framework Examples Project</p>
-            <p style="font-size: 0.9em;">Last Updated: February 2026</p>
+            <p style="font-size: 0.9em;">Last Updated: April 2026</p>
         </footer>
     </div>
 </body>

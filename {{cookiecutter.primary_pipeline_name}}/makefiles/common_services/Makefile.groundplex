@@ -26,8 +26,28 @@ createplex-launch-groundplex:
 # =============================================================================
 # 🚀 Launch SnapLogic Groundplex container and validate status
 # =============================================================================
+# Guards against a Docker bind-mount pitfall: docker-compose.groundplex.yml
+# mounts ./test/.config/${GROUNDPLEX_NAME}.slpropz into the container. If that
+# path does NOT exist (or is an empty directory left behind from a prior failed
+# run), Docker silently creates it as a directory, which later makes the
+# "Download And Save slpropz File" test fail with IsADirectoryError.
+# We verify the slpropz path is a regular file before starting the container.
+# =============================================================================
 launch-groundplex:
 	@echo "Launching Groundplex..."
+	@GROUNDPLEX_NAME_VAL=$$(grep -E '^GROUNDPLEX_NAME=' .env | cut -d '=' -f 2); \
+	SLPROPZ_PATH="test/.config/$$GROUNDPLEX_NAME_VAL.slpropz"; \
+	if [ -d "$$SLPROPZ_PATH" ]; then \
+		echo "⚠️  Stale directory detected at $$SLPROPZ_PATH — removing (likely from a prior failed run)..."; \
+		rm -rf "$$SLPROPZ_PATH"; \
+	fi; \
+	if [ ! -f "$$SLPROPZ_PATH" ]; then \
+		echo "❌ Groundplex config file not found: $$SLPROPZ_PATH"; \
+		echo "ℹ️  The createplex phase must run successfully first (it downloads this file)."; \
+		echo "ℹ️  Run: make robot-run-all-tests TAGS=... PROJECT_SPACE_SETUP=True"; \
+		exit 1; \
+	fi; \
+	echo "✅ Groundplex config file present: $$SLPROPZ_PATH"
 	$(DOCKER_COMPOSE) --profile gp up -d snaplogic-groundplex
 	make groundplex-status
 

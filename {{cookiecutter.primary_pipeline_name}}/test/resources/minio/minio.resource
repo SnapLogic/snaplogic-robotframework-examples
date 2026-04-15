@@ -16,19 +16,61 @@ Library             Collections
 *** Keywords ***
 ################## MINIO S3 CLIENT OPERATIONS ##################
 
+Get S3 Client
+    [Documentation]    Creates a boto3 S3 client that works with BOTH MinIO and AWS S3.
+    ...
+    ...    Reads connection details from environment variables:
+    ...    - S3_ENDPOINT: Optional endpoint URL. If set → connects to MinIO/custom S3.
+    ...      If empty or not set → connects to real AWS S3.
+    ...    - S3_ACCESS_KEY: AWS access key ID (or MinIO access key)
+    ...    - S3_SECRET_KEY: AWS secret access key (or MinIO secret key)
+    ...    - S3_REGION: AWS region (default: us-east-1)
+    ...
+    ...    *Examples:*
+    ...    | # MinIO (Docker testing) — S3_ENDPOINT=http://minio:9000 |
+    ...    | ${client}= | Get S3 Client |
+    ...    |
+    ...    | # AWS S3 (production) — S3_ENDPOINT is empty |
+    ...    | ${client}= | Get S3 Client |
+    ...
+    ...    *Environment file examples:*
+    ...    | # For MinIO (env_files/mock_service_accounts/.env.s3): |
+    ...    | S3_ENDPOINT=http://minio:9000 |
+    ...    | S3_ACCESS_KEY=minioadmin |
+    ...    | S3_SECRET_KEY=minioadmin |
+    ...    |
+    ...    | # For AWS S3 (env_files/mock_service_accounts/.env.s3): |
+    ...    | S3_ENDPOINT= |
+    ...    | S3_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE |
+    ...    | S3_SECRET_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY |
+    ...    | S3_REGION=us-east-1 |
+
+    ${endpoint}=    Get Environment Variable    S3_ENDPOINT    ${EMPTY}
+    ${access_key}=    Get Environment Variable    S3_ACCESS_KEY    ${EMPTY}
+    ${secret_key}=    Get Environment Variable    S3_SECRET_KEY    ${EMPTY}
+    ${region}=    Get Environment Variable    S3_REGION    us-east-1
+
+    IF    '${endpoint}' != '${EMPTY}'
+        Log    Connecting to S3-compatible endpoint: ${endpoint}    console=yes
+        ${s3_client}=    Evaluate
+        ...    __import__('boto3').client('s3', endpoint_url='${endpoint}', aws_access_key_id='${access_key}', aws_secret_access_key='${secret_key}', region_name='${region}')
+    ELSE
+        Log    Connecting to AWS S3 (region: ${region})    console=yes
+        ${s3_client}=    Evaluate
+        ...    __import__('boto3').client('s3', aws_access_key_id='${access_key}', aws_secret_access_key='${secret_key}', region_name='${region}')
+    END
+
+    RETURN    ${s3_client}
+
 Get MinIO S3 Client
-    [Documentation]    Creates and returns a configured boto3 S3 client for MinIO
-    ...    📋 ASSERTIONS:
-    ...    • boto3 library is available and can be imported
-    ...    • S3 client connects to MinIO endpoint (http://minio:9000)
-    ...    • MinIO credentials (minioadmin/minioadmin) are valid
-    ...    • Client is configured for us-east-1 region
-    ...    • Connection is established successfully
+    [Documentation]    Creates and returns a configured boto3 S3 client.
+    ...    Wrapper for backward compatibility — calls Get S3 Client internally.
+    ...    Works with both MinIO and AWS S3 based on S3_ENDPOINT environment variable.
+    ...
+    ...    📋 NOTE: New code should use Get S3 Client directly.
+    ...    This keyword is kept for backward compatibility with existing tests.
 
-    # Import boto3 and create client in one step to avoid argument limit issues
-    ${s3_client}=    Evaluate
-    ...    __import__('boto3').client('s3', endpoint_url='http://minio:9000', aws_access_key_id='minioadmin', aws_secret_access_key='minioadmin', region_name='us-east-1')
-
+    ${s3_client}=    Get S3 Client
     RETURN    ${s3_client}
 
 ################## FILE DOWNLOAD OPERATIONS ##################
@@ -263,6 +305,44 @@ Check Object Exists
         RETURN    ${FALSE}
     END
 
+Upload File To MinIO
+    [Documentation]    Uploads a local file to a MinIO (S3 mock) bucket at the specified path.
+    ...
+    ...    *How to read:*
+    ...    ``Upload File To MinIO    <local_file>    <bucket>    <object_key>``
+    ...    Reads as: "Upload <local_file> to s3://<bucket>/<object_key>"
+    ...
+    ...    *Arguments:*
+    ...    - ``local_file_path``: Absolute path to the local file to upload
+    ...    - ``bucket_name``: Target S3/MinIO bucket name
+    ...    - ``object_key``: Destination path/key within the bucket (can include folders)
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success
+    ...
+    ...    *Examples:*
+    ...    | # Upload a config file |
+    ...    | Upload File To MinIO | /path/to/config.json | test-bucket | config/baseline/config.json |
+    ...    |
+    ...    | # Upload a CSV file |
+    ...    | Upload File To MinIO | /path/to/data.csv | demo-bucket | data/input/employees.csv |
+    [Arguments]    ${local_file_path}    ${bucket_name}    ${object_key}
+
+    Log    Uploading file to MinIO...    console=yes
+    Log    Source: ${local_file_path}    console=yes
+    Log    Destination: s3://${bucket_name}/${object_key}    console=yes
+
+    ${s3_client}=    Get MinIO S3 Client
+
+    TRY
+        Evaluate    $s3_client.upload_file('${local_file_path}', '${bucket_name}', '${object_key}')
+        Log    ✅ File uploaded successfully to s3://${bucket_name}/${object_key}    console=yes
+        RETURN    ${TRUE}
+    EXCEPT    AS    ${error}
+        Log    ❌ Failed to upload file: ${error}    console=yes
+        Fail    Failed to upload '${local_file_path}' to s3://${bucket_name}/${object_key}: ${error}
+    END
+
 Get Object Metadata
     [Documentation]    Gets metadata for a specific object in MinIO bucket
     ...    📋 ASSERTIONS:
@@ -348,6 +428,64 @@ Download Files By Pattern
     Log    📋 Downloaded files: ${downloaded_files}
 
     RETURN    ${downloaded_files}
+
+################## BUCKET CLEANUP OPERATIONS ##################
+
+Clean Bucket
+    [Documentation]    Deletes all objects in a MinIO/S3 bucket.
+    ...    Use this to reset the bucket to a clean state before a test run.
+    ...
+    ...    *Arguments:*
+    ...    - ``bucket_name``: Name of the bucket to clean
+    ...
+    ...    *Example:*
+    ...    | Clean Bucket | test-bucket |
+    [Arguments]    ${bucket_name}
+
+    Log    Cleaning all objects from bucket '${bucket_name}'...    console=yes
+    ${s3_client}=    Get S3 Client
+    ${all_objects}=    List Objects In Bucket    ${bucket_name}
+    ${count}=    Get Length    ${all_objects}
+
+    IF    ${count} == 0
+        Log    Bucket '${bucket_name}' is already empty.    console=yes
+        RETURN
+    END
+
+    FOR    ${key}    IN    @{all_objects}
+        Evaluate    $s3_client.delete_object(Bucket='${bucket_name}', Key=$key)
+        Log    Deleted: ${key}    console=yes
+    END
+
+    Log    Deleted ${count} objects from bucket '${bucket_name}'.    console=yes
+
+Clean Bucket By Prefix
+    [Documentation]    Deletes all objects in a bucket that match a path prefix.
+    ...    Use this to clean a specific folder without affecting other files.
+    ...
+    ...    *Arguments:*
+    ...    - ``bucket_name``: Name of the bucket
+    ...    - ``prefix``: Path prefix to match (e.g., 'extract/', 'output/baseline/')
+    ...
+    ...    *Example:*
+    ...    | Clean Bucket By Prefix | test-bucket | extract/ |
+    [Arguments]    ${bucket_name}    ${prefix}
+
+    Log    Cleaning objects with prefix '${prefix}' from bucket '${bucket_name}'...    console=yes
+    ${s3_client}=    Get S3 Client
+    ${all_objects}=    List Objects In Bucket    ${bucket_name}
+    ${deleted}=    Set Variable    ${0}
+
+    FOR    ${key}    IN    @{all_objects}
+        ${matches}=    Evaluate    $key.startswith($prefix)
+        IF    ${matches}
+            Evaluate    $s3_client.delete_object(Bucket='${bucket_name}', Key=$key)
+            Log    Deleted: ${key}    console=yes
+            ${deleted}=    Evaluate    ${deleted} + 1
+        END
+    END
+
+    Log    Deleted ${deleted} objects with prefix '${prefix}' from bucket '${bucket_name}'.    console=yes
 
 ################## FILE VALIDATION TEMPLATES ##################
 

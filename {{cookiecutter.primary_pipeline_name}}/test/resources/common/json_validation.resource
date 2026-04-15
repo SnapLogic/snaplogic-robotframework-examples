@@ -437,6 +437,45 @@ Validate JSON Array Schema
 
     Log    JSON array schema validation passed
 
+Validate JSON Dictionary Keys
+    [Documentation]    Validates that a JSON dictionary contains all expected keys.
+    ...
+    ...    Works with any JSON dictionary — not tied to any specific file or schema.
+    ...    Accepts a raw JSON string, parses it, and checks each expected key.
+    ...
+    ...    *Arguments:*
+    ...    - ``json_string``: Raw JSON string content
+    ...    - ``expected_keys``: List of key names to check for
+    ...
+    ...    *Returns:*
+    ...    - ``key_count``: Total number of keys in the JSON
+    ...    - ``missing_keys``: List of keys that are missing (empty list if all present)
+    ...
+    ...    *Examples:*
+    ...    | @{keys}= | Create List | name | age | email |
+    ...    | ${count} | ${missing}= | Validate JSON Dictionary Keys | ${json_string} | @{keys} |
+    ...    | Should Be Empty | ${missing} |
+    ...    |
+    ...    | # With config JSON from S3 |
+    ...    | ${count} | ${missing}= | Validate JSON Dictionary Keys | ${file_content} | @{EXPECTED_CONFIG_KEYS} |
+    [Arguments]    ${json_string}    @{expected_keys}
+
+    ${json}=    Convert String To Json    ${json_string}
+    ${key_count}=    Get Length    ${json}
+
+    @{missing_keys}=    Create List
+    FOR    ${key}    IN    @{expected_keys}
+        ${exists}=    Run Keyword And Return Status    Dictionary Should Contain Key    ${json}    ${key}
+        IF    not ${exists}
+            Append To List    ${missing_keys}    ${key}
+            Log    Missing key: ${key}    console=yes
+        ELSE
+            Log    Key present: ${key}    console=yes
+        END
+    END
+
+    RETURN    ${key_count}    ${missing_keys}
+
 Validate JSON File Exists And Not Empty
     [Documentation]    Validates that a JSON file exists and has content (size > 0 bytes).
     ...

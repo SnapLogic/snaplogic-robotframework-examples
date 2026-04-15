@@ -5,7 +5,7 @@
 # including single tests, parallel execution, and test reporting
 # =============================================================================
 
-.PHONY: robot-run-tests robot-run-all-tests robot-run-tests-no-gp slack-notify upload-test-results upload-test-results-cli sl-export-assets sl-import-assets sl-export-assets-full sl-import-assets-full
+.PHONY: robot-run-tests robot-run-all-tests robot-run-tests-no-gp cleanup-stale-projects slack-notify upload-test-results upload-test-results-cli sl-export-assets sl-import-assets sl-export-assets-full sl-import-assets-full
 
 # Include common configuration
 include makefiles/common_services/Makefile.common
@@ -19,41 +19,87 @@ robot-run-tests: check-env
 	@echo "🧪 Starting Robot Framework tests..."
 	@echo "ℹ️ Tags: $(TAGS)"
 	$(eval INCLUDES=$(foreach arg,$(TAGS),--include $(arg)))
-	$(eval PROJECT_SPACE_SETUP_VAL=$(if $(PROJECT_SPACE_SETUP),$(PROJECT_SPACE_SETUP),False))
+	$(eval PROJECT_SPACE_SETUP_VAL=$(if $(PROJECT_SPACE_SETUP),$(PROJECT_SPACE_SETUP),True))
+	$(eval FORCE_RECREATE_VAL=$(if $(FORCE_RECREATE_PROJECT_SPACE),$(FORCE_RECREATE_PROJECT_SPACE),False))
 	$(eval ENV_OVERRIDE_VAR=$(if $(ENV),--variable ENV_OVERRIDE_FILE:/app/$(notdir $(ENV)),))
 	@if [ -n "$(ENV)" ]; then \
 		echo "ℹ️ ENV override: $(ENV) -> copying to container..."; \
 		docker cp "$(ENV)" snaplogic-test-example-tools-container:/app/$(notdir $(ENV)); \
 	fi
-	@$(DOCKER_COMPOSE) exec -w /app/test tools robot \
+	@if [ "$(FORCE_RECREATE_VAL)" = "True" ] && [ "$(FORCE_CONFIRM)" != "yes" ]; then \
+		PROJECT_SPACE_VAL=$$(grep -E '^PROJECT_SPACE=' .env | cut -d '=' -f 2); \
+		echo ""; \
+		echo "⚠️  ============================================================"; \
+		echo "⚠️  DESTRUCTIVE: FORCE_RECREATE_PROJECT_SPACE=True"; \
+		echo "⚠️  This will DELETE project space '$$PROJECT_SPACE_VAL' and"; \
+		echo "⚠️  ALL projects/pipelines/accounts/tasks inside it."; \
+		echo "⚠️  ============================================================"; \
+		printf "Type the project space name to confirm (or Ctrl+C to abort): "; \
+		read confirm; \
+		if [ "$$confirm" != "$$PROJECT_SPACE_VAL" ]; then \
+			echo "❌ Confirmation failed. Aborting."; \
+			exit 1; \
+		fi; \
+		echo "✅ Confirmed. Proceeding with destructive recreate..."; \
+	fi
+	@set -e; \
+	if $(DOCKER_COMPOSE) exec -w /app/test tools robot \
 		-G $(DATE) \
 		--timestampoutputs \
 		--variable PROJECT_SPACE_SETUP:$(PROJECT_SPACE_SETUP_VAL) \
+		--variable FORCE_RECREATE_PROJECT_SPACE:$(FORCE_RECREATE_VAL) \
 		--variable TAGS:"$(TAGS)" \
 		$(ENV_OVERRIDE_VAR) \
 		$(INCLUDES) \
-		--outputdir robot_output suite/ && \
-	echo "✅ Tests completed successfully!" || \
-	echo "⚠️ Some tests failed. Check the logs for details. (Build will continue)"
+		--outputdir robot_output suite/; then \
+		echo "✅ Tests completed successfully!"; \
+	else \
+		rc=$$?; \
+		echo "❌ Robot exited with code $$rc. See test/robot_output/log-*.html for details."; \
+		exit $$rc; \
+	fi
 
 # =============================================================================
 # 🧪 End-to-End Robot Test Workflow (including environment setup)
-#  → usage if user want to delete the projectspace(if exists) and create a clean project space add the flag PROJECT_SPACE_SETUP=True
-#.   make robot-run-all-tests TAGS="oracle,minio" PROJECT_SPACE_SETUP=True
+#
+#  PROJECT_SPACE_SETUP=True is now the DEFAULT (idempotent, non-destructive):
+#    - Project space missing → created with ${PROJECT_NAME}.
+#    - Project space exists but ${PROJECT_NAME} missing → only project created.
+#    - Both already exist → no-op; the run reuses the existing project.
+#    - Other projects in the same space are NEVER touched.
+#    - Snaplex definition is registered (idempotent) and .slpropz downloaded.
+#    Example: make robot-run-all-tests TAGS="oracle,minio"
+#
+#  PROJECT_SPACE_SETUP=False (verify-only / fast-fail):
+#    - Skips Snaplex registration + .slpropz download.
+#    - Runs ONLY the verify_project_space_exists test — fails fast if the
+#      project space is missing.
+#    - Useful for shared orgs where you don't have create permissions, or
+#      for CI sanity checks that just want to confirm setup is already in place.
+#    Example: make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=False
+#
+#  FORCE_RECREATE_PROJECT_SPACE=True (DESTRUCTIVE — opt-in):
+#    - Deletes the ENTIRE project space and every project/pipeline/account inside.
+#    - Requires interactive confirmation (type the project space name).
+#    - For CI, bypass the prompt with FORCE_CONFIRM=yes.
+#    - Use ONLY on dedicated CI/regression project spaces.
+#    Example: make robot-run-all-tests TAGS="oracle" FORCE_RECREATE_PROJECT_SPACE=True
 # =============================================================================
 robot-run-all-tests: check-env
-	@PROJECT_SPACE_SETUP_ACTUAL=$${PROJECT_SPACE_SETUP:-False}; \
+	@PROJECT_SPACE_SETUP_ACTUAL=$${PROJECT_SPACE_SETUP:-True}; \
+	FORCE_RECREATE_ACTUAL=$${FORCE_RECREATE_PROJECT_SPACE:-False}; \
 	echo ":========== [Phase 1] Create project space and create plex inside project space =========="; \
 	if [ "$$PROJECT_SPACE_SETUP_ACTUAL" = "True" ]; then \
 		echo ":========= [Phase 1] Running createplex tests ========================================="; \
-		$(MAKE) robot-run-tests TAGS="createplex" PROJECT_SPACE_SETUP=True || { \
+		echo "ℹ️  FORCE_RECREATE_PROJECT_SPACE=$$FORCE_RECREATE_ACTUAL (safe default=False)"; \
+		$(MAKE) robot-run-tests TAGS="createplex" PROJECT_SPACE_SETUP=True FORCE_RECREATE_PROJECT_SPACE=$$FORCE_RECREATE_ACTUAL FORCE_CONFIRM=$${FORCE_CONFIRM:-} || { \
 			echo "❌ createplex test failed, checking if error is due to active Snaplex nodes..."; \
 			if grep -rq "cannot be deleted while it contains active nodes" test/robot_output/log-*.html 2>/dev/null; then \
 				echo "🛑 Active Groundplex nodes detected — killing Groundplex and retrying to create project space and plex..."; \
 				$(MAKE) stop-groundplex; \
 				echo "⏳ Waiting 60 seconds for nodes to deregister from SnapLogic Cloud..."; \
 				sleep 60; \
-				$(MAKE) robot-run-tests TAGS="createplex" PROJECT_SPACE_SETUP=True || exit 1; \
+				$(MAKE) robot-run-tests TAGS="createplex" PROJECT_SPACE_SETUP=True FORCE_RECREATE_PROJECT_SPACE=$$FORCE_RECREATE_ACTUAL FORCE_CONFIRM=$${FORCE_CONFIRM:-} || exit 1; \
 			else \
 				echo "❌ createplex test failed for a different reason."; \
 				exit 1; \
@@ -118,32 +164,45 @@ stop-groundplex:
 
 # =============================================================================
 # 🧪 Robot Test Workflow WITHOUT Groundplex Launch
-#  → Use this when Groundplex is already running or not needed for your tests
-#  → usage: make robot-run-tests-no-gp TAGS="oracle,minio" PROJECT_SPACE_SETUP=True
-# =============================================================================
-# =============================================================================
-# 🧪 Robot Test Workflow WITHOUT Groundplex Launch
-#  → Use this when Groundplex is already running or not needed for your tests
-#  → When PROJECT_SPACE_SETUP=True: Creates only project space (no plex)
-#  → usage: make robot-run-tests-no-gp TAGS="oracle,minio" PROJECT_SPACE_SETUP=True
+#  → Use this when Groundplex is already running or not needed for your tests.
+#  → This target NEVER creates, starts, or stops a Groundplex.
+#
+#  PROJECT_SPACE_SETUP=True is now the DEFAULT (idempotent, non-destructive):
+#    - Project space missing → created with ${PROJECT_NAME}.
+#    - Project space exists but ${PROJECT_NAME} missing → only project created.
+#    - Both already exist → no-op; the run reuses the existing project.
+#    Example: make robot-run-tests-no-gp TAGS="oracle,minio"
+#
+#  PROJECT_SPACE_SETUP=False — verify-only / fast-fail (no project creation).
+#    Example: make robot-run-tests-no-gp TAGS="oracle" PROJECT_SPACE_SETUP=False
+#
+#  FORCE_RECREATE_PROJECT_SPACE=True (DESTRUCTIVE — opt-in):
+#    - Deletes the ENTIRE project space and every project/pipeline/account inside.
+#    - Will FAIL if a Groundplex is attached to the space. Stop/detach it first.
+#    - Requires confirmation; bypass with FORCE_CONFIRM=yes for CI.
+#    Example: make robot-run-tests-no-gp TAGS="oracle" FORCE_RECREATE_PROJECT_SPACE=True
 # =============================================================================
 
 robot-run-tests-no-gp: check-env
-	@PROJECT_SPACE_SETUP_ACTUAL=$${PROJECT_SPACE_SETUP:-False}; \
+	@PROJECT_SPACE_SETUP_ACTUAL=$${PROJECT_SPACE_SETUP:-True}; \
+	FORCE_RECREATE_ACTUAL=$${FORCE_RECREATE_PROJECT_SPACE:-False}; \
 	echo ":========== [Phase 1] Create project space (No Plex created) =========="; \
 	if [ "$$PROJECT_SPACE_SETUP_ACTUAL" = "True" ]; then \
 		echo ":========= [Phase 1] Creating Project Space ========================================="; \
-		$(MAKE) robot-run-tests TAGS="verify_project_space_exists" PROJECT_SPACE_SETUP=True || { \
-			echo "❌ Project space creation failed, checking if error is due to active Snaplex nodes..."; \
+		echo "ℹ️  FORCE_RECREATE_PROJECT_SPACE=$$FORCE_RECREATE_ACTUAL (safe default=False)"; \
+		$(MAKE) robot-run-tests TAGS="verify_project_space_exists" PROJECT_SPACE_SETUP=True FORCE_RECREATE_PROJECT_SPACE=$$FORCE_RECREATE_ACTUAL FORCE_CONFIRM=$${FORCE_CONFIRM:-} || { \
+			echo "❌ Project space setup failed, checking if error is due to active Snaplex nodes..."; \
 			if grep -rq "cannot be deleted while it contains active nodes" test/robot_output/log-*.html 2>/dev/null; then \
-				echo "🛑 Active Groundplex nodes detected — cannot delete and create new project space..."; \
+				echo "🛑 Active Groundplex nodes detected — destructive recreate cannot proceed while a Groundplex is attached."; \
+				echo "ℹ️  Stop the Groundplex externally (this target does not manage it), then re-run."; \
+				exit 1; \
 			else \
-				echo "❌ project space creation failed for a different reason."; \
+				echo "❌ Project space setup failed for a different reason."; \
 				exit 1; \
 			fi; \
 		}; \
 	else \
-		echo "⏩ Skippin project space creation(PROJECT_SPACE_SETUP is not True)"; \
+		echo "⏩ Skipping project space creation (PROJECT_SPACE_SETUP is not True)"; \
 		echo ":========== [Phase 1.1] Verifying if project space exists =========="; \
 		$(MAKE) robot-run-tests TAGS="verify_project_space_exists" PROJECT_SPACE_SETUP=False || exit 1; \
 	fi; \
@@ -162,6 +221,33 @@ robot-run-tests-no-gp: check-env
 	\
 	echo ":========== [Phase 3] Running user-defined robot tests... =========="; \
 	$(MAKE) robot-run-tests TAGS="$(TAGS)" PROJECT_SPACE_SETUP=False
+# =============================================================================
+# 🧹 Cleanup stale timestamped projects (safe mode housekeeping)
+#   → Deletes ${PROJECT_NAME}_YYYYMMDD_HHMMSS projects older than RETENTION_DAYS.
+#   → The un-suffixed ${PROJECT_NAME} is NEVER deleted.
+#   → Optional args:
+#       RETENTION_DAYS  (default: 7)
+#       DRY_RUN         (default: False — set True to preview deletions only)
+#   → Examples:
+#       make cleanup-stale-projects
+#       make cleanup-stale-projects RETENTION_DAYS=14
+#       make cleanup-stale-projects RETENTION_DAYS=7 DRY_RUN=True
+# =============================================================================
+cleanup-stale-projects: check-env
+	@echo "🧹 Running stale timestamped project cleanup..."
+	$(eval RETENTION_VAL=$(if $(RETENTION_DAYS),$(RETENTION_DAYS),7))
+	$(eval DRY_RUN_VAL=$(if $(DRY_RUN),$(DRY_RUN),False))
+	@echo "ℹ️  Retention days: $(RETENTION_VAL)"
+	@echo "ℹ️  Dry run: $(DRY_RUN_VAL)"
+	@$(DOCKER_COMPOSE) exec -w /app/test tools robot \
+		--include cleanup_stale_projects \
+		--variable PROJECT_SPACE_SETUP:False \
+		--variable RETENTION_DAYS:$(RETENTION_VAL) \
+		--variable DRY_RUN:$(DRY_RUN_VAL) \
+		--outputdir robot_output suite/ && \
+	echo "✅ Cleanup completed." || \
+	echo "⚠️  Cleanup failed — check logs."
+
 # =============================================================================
 # 📢 Send slack notifications for test results
 # =============================================================================
@@ -249,14 +335,14 @@ sl-export-assets: check-env
 #     IMPORT_PATH          - Target path in SnapLogic where assets will be imported
 #     ZIP_FILE_PATH        - Local path to the backup ZIP file to import
 #     DUPLICATE_CHECK      - Whether to check for duplicate assets: true or false (default: false)
-#     PROJECT_SPACE_SETUP  - Whether to delete/recreate project space: True or False (default: False)
+#     PROJECT_SPACE_SETUP  - Idempotent project space/project ensure: True or False (default: True)
 #   → Usage Examples:
 #     make sl-import-assets IMPORT_PATH="swapna-automation-latest/test2" ZIP_FILE_PATH="src/exported_assets/prod_backup.zip"
 # =============================================================================
 sl-import-assets: check-env
 	@echo "📥 Importing assets to SnapLogic project (with full suite initialization)..."
 	$(eval ORG_NAME_VALUE := $(shell grep -E '^ORG_NAME=' .env | cut -d '=' -f 2))
-	$(eval PROJECT_SPACE_SETUP_VAL := $(if $(PROJECT_SPACE_SETUP),$(PROJECT_SPACE_SETUP),False))
+	$(eval PROJECT_SPACE_SETUP_VAL := $(if $(PROJECT_SPACE_SETUP),$(PROJECT_SPACE_SETUP),True))
 	$(eval ROBOT_VARS := --variable PROJECT_SPACE_SETUP:$(PROJECT_SPACE_SETUP_VAL))
 	$(if $(IMPORT_PATH),$(eval ROBOT_VARS += --variable IMPORT_PATH:$(IMPORT_PATH)))
 	$(if $(ZIP_FILE_PATH),$(eval ROBOT_VARS += --variable ZIP_FILE_PATH:$(ZIP_FILE_PATH)))
@@ -287,7 +373,7 @@ sl-import-assets: check-env
 #     PIPELINE_FILE_NAME                       - Specific pipeline filename (if omitted, uploads ALL .slp files)
 #     PROJECT_PATH                             - Target SnapLogic project path
 #     GENERATIVE_SLP_PIPELINES_PATH - Source directory (default: src/generative_pipelines)
-#     PROJECT_SPACE_SETUP                      - Delete/recreate project space: True/False (default: False)
+#     PROJECT_SPACE_SETUP                      - Idempotent project space/project ensure: True/False (default: True)
 #   
 #   → Usage Examples:
 #     
@@ -304,7 +390,7 @@ import-slim-generated-pipelines: check-env
 	@echo "Importing SLIM-generated pipeline(s) into SnapLogic project..."
 	@echo "================================================================="
 
-	$(eval PROJECT_SPACE_SETUP_VAL := $(if $(PROJECT_SPACE_SETUP),$(PROJECT_SPACE_SETUP),False))
+	$(eval PROJECT_SPACE_SETUP_VAL := $(if $(PROJECT_SPACE_SETUP),$(PROJECT_SPACE_SETUP),True))
 
 	$(eval PROJECT_PATH_VAL := \
 		$(if $(PROJECT_PATH),$(PROJECT_PATH),\

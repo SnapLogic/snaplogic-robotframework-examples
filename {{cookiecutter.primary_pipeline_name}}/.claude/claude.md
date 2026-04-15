@@ -72,11 +72,12 @@ cp .env.example .env
 # Build Docker containers
 make start-services
 
-# Run tests with full setup (creates project space, launches Groundplex)
-make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True
-
-# Subsequent runs (project space already exists)
+# Run tests (idempotent setup happens automatically — project space/project
+# created if missing, reused if already there; Groundplex launched)
 make robot-run-all-tests TAGS="oracle"
+
+# Verify-only / fast-fail mode (skip Snaplex registration & .slpropz refresh):
+make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=False
 ```
 
 **Case 2: Using Existing Groundplex**
@@ -84,10 +85,7 @@ make robot-run-all-tests TAGS="oracle"
 # Build Docker containers
 make start-services
 
-# Run tests without Groundplex management
-make robot-run-tests-no-gp TAGS="oracle" PROJECT_SPACE_SETUP=True
-
-# Subsequent runs
+# Run tests without Groundplex management (idempotent setup is automatic)
 make robot-run-tests-no-gp TAGS="oracle"
 ```
 
@@ -174,24 +172,56 @@ make robot-run-tests-no-gp TAGS="oracle"
 make robot-run-tests TAGS="oracle"
 ```
 
-### PROJECT_SPACE_SETUP Parameter
+### PROJECT_SPACE_SETUP Parameter (default: `True` — safe & idempotent)
 
 | Value | Behavior |
 |-------|----------|
-| `True` | Deletes existing project space, creates new one, sets up Snaplex |
-| `False` (default) | Verifies project space exists, fails if missing |
+| `True` (DEFAULT) | **SAFE & idempotent.** Neither exists → both are created. Only the project space exists → the project is created inside it. Both already exist → nothing is changed; the run reuses the existing project. Snaplex registration + `.slpropz` download also run. |
+| `False` | Verify-only / fast-fail mode. Skips Snaplex registration + `.slpropz` download. Runs only the `verify_project_space_exists` check; fails fast if missing. |
 
-**When to use `PROJECT_SPACE_SETUP=True`:**
-- First-time setup
-- Clean environment needed
-- Project space corrupted
-- Snaplex configuration changed
-- CI/CD pipelines
+**Most users never need to pass this flag** — the safe default does what you want. Pass `PROJECT_SPACE_SETUP=False` only when:
+- You're on a shared org without create permissions
+- You want a fast sanity check that everything is already in place (CI smoke test)
+- You're iterating quickly and want to skip Snaplex re-registration / `.slpropz` re-download
 
-**When to use `PROJECT_SPACE_SETUP=False`:**
-- Subsequent test runs
-- Quick test iterations
-- Stable environment already configured
+### FORCE_RECREATE_PROJECT_SPACE Parameter (DESTRUCTIVE — opt-in)
+
+> ⚠️ **DANGER:** This flag deletes the ENTIRE project space, including **all projects, pipelines, accounts, tasks, and every other user's work** inside it. Only use on a dedicated CI/regression project space that you own exclusively.
+
+| Value | Behavior |
+|-------|----------|
+| `True` | Deletes the whole project space and recreates it from scratch. Requires interactive confirmation (type the project space name) unless `FORCE_CONFIRM=yes` is also set. |
+| `False` (default) | No-op — respects the safe `PROJECT_SPACE_SETUP` behavior above. |
+
+**Examples:**
+```bash
+# Interactive (prompts for confirmation):
+make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True FORCE_RECREATE_PROJECT_SPACE=True
+
+# CI-friendly (bypass prompt):
+make robot-run-all-tests TAGS="oracle" PROJECT_SPACE_SETUP=True FORCE_RECREATE_PROJECT_SPACE=True FORCE_CONFIRM=yes
+```
+
+### Housekeeping — cleanup legacy timestamped projects (optional)
+
+> Legacy note: an earlier iteration of the safe-mode logic created
+> `${PROJECT_NAME}_<timestamp>` projects whenever the base name already existed.
+> The current logic no longer does this; it simply reuses the existing project.
+> This target remains for cleaning up those legacy timestamped projects if any
+> are still lying around in your project space.
+
+```bash
+# Delete timestamped projects older than 7 days (default)
+make cleanup-stale-projects
+
+# Custom retention window
+make cleanup-stale-projects RETENTION_DAYS=14
+
+# Preview only (no deletions)
+make cleanup-stale-projects DRY_RUN=True
+```
+
+Only projects matching `${PROJECT_NAME}_YYYYMMDD_HHMMSS` are considered. The un-suffixed base project is never deleted.
 
 ### Database Services
 ```bash
@@ -388,7 +418,7 @@ SNOWFLAKE_DATABASE=DEV_DB
 ### In SnapLogic Org
 Based on `.env` configuration:
 - Accounts are created
-- Project Space is created (deleted if exists when `PROJECT_SPACE_SETUP=True`)
+- Project Space: reused if exists (safe default); only the target project inside is recreated. Full project space is only deleted when `FORCE_RECREATE_PROJECT_SPACE=True` is explicitly passed.
 - Project is created
 - Pipeline is imported
 - Triggered task is created and executed
@@ -424,7 +454,8 @@ Location: `test/robot_output/`
 - Automatic recovery in `robot-run-all-tests`: stops Groundplex, waits 60s, retries
 
 **"Project space 'X' is not created"**
-- Run with `PROJECT_SPACE_SETUP=True` to create environment
+- Only happens if you explicitly passed `PROJECT_SPACE_SETUP=False`.
+- Drop the flag (or pass `=True`) so the framework creates it for you.
 
 **Environment variables not loading**
 - Check `.env` file format (no spaces around `=`)
