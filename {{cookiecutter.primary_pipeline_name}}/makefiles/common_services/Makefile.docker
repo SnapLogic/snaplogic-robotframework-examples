@@ -5,13 +5,22 @@
 # development environment setup including environment validation
 # =============================================================================
 
-.PHONY: check-env start-tools-service-only stop-tools-service-only start-services stop-services \
+.PHONY: check-env check-network sync-env start-tools-service-only stop-tools-service-only start-services stop-services \
         clean-start clean-start-tools reload-env-files \
         reinstall-requirements reinstall-snaplogic-common-robot upgrade-snaplogic-common-robot show-snaplogic-common-robot-version \
         show-libdocs
 
 # Include common configuration
 include makefiles/common_services/Makefile.common
+
+# Minimum required snaplogic-common-robot version. sync-env enforces this
+# floor on every run — if the installed version is older (or missing), it is
+# auto-upgraded to latest on PyPI. CalVer (YYYY.M.D.N) compared via `sort -V`.
+#
+# SINGLE SOURCE OF TRUTH: src/tools/requirements.txt
+# To bump the floor, edit the '>=' line in requirements.txt — this variable
+# reads it automatically. No second file to keep in sync.
+SNAPLOGIC_COMMON_ROBOT_MIN_VERSION ?= $(shell grep -E '^snaplogic-common-robot>=' src/tools/requirements.txt 2>/dev/null | sed 's/snaplogic-common-robot>=//')
 
 
 # =============================================================================
@@ -53,6 +62,211 @@ check-env:
 	fi
 	@echo "✅ Environment check passed!"
 
+
+# =============================================================================
+# 🔄 Keep .env in sync inside the running tools container
+# -----------------------------------------------------------------------------
+# docker-compose.yml bind-mounts .env as a SINGLE FILE:
+#   - ./.env:/app/.env
+#
+# When your editor saves .env via atomic replace (VS Code, vim, Sublime, etc.),
+# the file's inode changes. Docker's single-file bind mount is still pointing
+# at the OLD inode (now unlinked), so inside the container /app/.env becomes
+# a stale / missing reference, causing:
+#   FileNotFoundError: [Errno 2] No such file or directory: '/app/.env'
+#
+# sync-env detects this by comparing the host .env size to what the container
+# sees. If they differ, it restarts the tools container — which re-binds the
+# mount to the new inode. Fast (~2-3 s) and transparent.
+#
+# GUARD RAIL — version floor enforcement on EVERY run:
+#   Some repo-side changes (Makefile + test/*) depend on keywords/variables
+#   that only exist in snaplogic-common-robot >= SNAPLOGIC_COMMON_ROBOT_MIN_VERSION.
+#   If a customer pulls the latest repo but their container still has an old
+#   baked-in library (e.g., stale image, skipped upgrade, or a container
+#   recreate that reverted a prior in-place upgrade), they'd silently hit
+#   pre-safe-mode destructive behavior.
+#
+#   So: on EVERY sync-env call (not just when the container is recreated),
+#   compare the installed version against the SNAPLOGIC_COMMON_ROBOT_MIN_VERSION
+#   floor. If below — or not installed at all — auto-upgrade via
+#   `pip install --upgrade --no-deps`. ~3-5 s when already up-to-date,
+#   ~10-15 s when an actual upgrade runs. --no-deps keeps the existing
+#   crypto/OpenSSL stack untouched (FIPS-safe).
+#
+#   Bump SNAPLOGIC_COMMON_ROBOT_MIN_VERSION at the top of this file whenever
+#   a repo change requires a newer library version.
+#
+# Called automatically by launch-groundplex and robot-run-tests before every
+# run, so you never have to think about it.
+#
+# Usage (rarely needed manually):
+#   make sync-env
+# =============================================================================
+sync-env:
+	@if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^snaplogic-test-example-tools-container$$'; then \
+		echo "ℹ️  Tools container is not running; skipping sync-env."; \
+		echo "   (No problem — the bind mount will be set fresh next time the container starts.)"; \
+		exit 0; \
+	fi; \
+	if [ ! -f .env ]; then \
+		echo "❌ .env not found on host. Cannot sync."; \
+		exit 1; \
+	fi; \
+	HOST_SIZE=$$(wc -c < .env | tr -d ' '); \
+	CONTAINER_SIZE=$$(docker exec snaplogic-test-example-tools-container sh -c 'wc -c < /app/.env 2>/dev/null' 2>/dev/null | tr -d ' \n' || echo "missing"); \
+	CONTAINER_SIZE=$${CONTAINER_SIZE:-missing}; \
+	if [ "$$HOST_SIZE" = "$$CONTAINER_SIZE" ]; then \
+		echo "✅ .env is in sync with tools container ($${HOST_SIZE} bytes)."; \
+	else \
+		echo "⚠️  .env out of sync with tools container (host=$${HOST_SIZE}B, container=$${CONTAINER_SIZE}B)."; \
+		echo "   Most likely cause: your editor atomic-saved .env, breaking the single-file bind mount."; \
+		echo "   Recreating tools container to re-bind the mount (≈5 s)..."; \
+		$(DOCKER_COMPOSE) stop tools >/dev/null 2>&1 || true; \
+		$(DOCKER_COMPOSE) rm -f tools >/dev/null 2>&1 || true; \
+		$(DOCKER_COMPOSE) --profile tools up -d >/dev/null 2>&1; \
+		sleep 3; \
+		NEW_SIZE=$$(docker exec snaplogic-test-example-tools-container sh -c 'wc -c < /app/.env 2>/dev/null' 2>/dev/null | tr -d ' \n' || echo "still-missing"); \
+		NEW_SIZE=$${NEW_SIZE:-still-missing}; \
+		if [ "$$HOST_SIZE" = "$$NEW_SIZE" ]; then \
+			echo "✅ .env now in sync after recreate ($${NEW_SIZE} bytes)."; \
+		else \
+			echo "❌ .env still out of sync after recreate (host=$${HOST_SIZE}B, container=$${NEW_SIZE}B)."; \
+			echo "   Try manually: make reload-env-files"; \
+			exit 1; \
+		fi; \
+	fi; \
+	\
+	echo ""; \
+	echo "🛡️  Version-floor guard: ensuring snaplogic-common-robot >= $(SNAPLOGIC_COMMON_ROBOT_MIN_VERSION)..."; \
+	CUR_VER=$$(docker exec snaplogic-test-example-tools-container pip show snaplogic-common-robot 2>/dev/null | awk '/^Version:/ {print $$2}'); \
+	MIN_VER="$(SNAPLOGIC_COMMON_ROBOT_MIN_VERSION)"; \
+	NEEDS_UPGRADE=0; \
+	if [ -z "$$CUR_VER" ]; then \
+		echo "   ⚠️  snaplogic-common-robot not installed — installing latest..."; \
+		NEEDS_UPGRADE=1; \
+	elif [ "$$CUR_VER" = "$$MIN_VER" ] || [ "$$(printf '%s\n%s\n' "$$MIN_VER" "$$CUR_VER" | sort -V | head -1)" = "$$MIN_VER" ]; then \
+		echo "   ✅ snaplogic-common-robot is at $$CUR_VER (>= $$MIN_VER floor) — no upgrade needed."; \
+	else \
+		echo "   ⚠️  Installed version $$CUR_VER is BELOW required floor $$MIN_VER — upgrading..."; \
+		NEEDS_UPGRADE=1; \
+	fi; \
+	if [ "$$NEEDS_UPGRADE" = "1" ]; then \
+		docker exec snaplogic-test-example-tools-container pip install --upgrade --no-deps --no-cache-dir --quiet snaplogic-common-robot >/dev/null 2>&1 || { \
+			echo "   ❌ Upgrade call failed (network or pip issue?). Container is still running."; \
+			echo "      Current library version: $${CUR_VER:-not installed}"; \
+			echo "      Required floor:          $$MIN_VER"; \
+			echo "      Manual fix: make upgrade-snaplogic-common-robot"; \
+			exit 1; \
+		}; \
+		NEW_VER=$$(docker exec snaplogic-test-example-tools-container pip show snaplogic-common-robot 2>/dev/null | awk '/^Version:/ {print $$2}'); \
+		if [ -z "$$NEW_VER" ]; then \
+			echo "   ❌ Upgrade appeared to succeed but package is not installed. Aborting."; \
+			exit 1; \
+		fi; \
+		if [ "$$NEW_VER" = "$$MIN_VER" ] || [ "$$(printf '%s\n%s\n' "$$MIN_VER" "$$NEW_VER" | sort -V | head -1)" = "$$MIN_VER" ]; then \
+			echo "   ✅ snaplogic-common-robot upgraded: $${CUR_VER:-none} → $$NEW_VER (meets floor $$MIN_VER)."; \
+		else \
+			echo "   ❌ After upgrade, version is $$NEW_VER — still below floor $$MIN_VER. Aborting."; \
+			echo "      This usually means PyPI has no release >= $$MIN_VER yet. Check the version or bump the floor."; \
+			exit 1; \
+		fi; \
+	fi
+
+
+# =============================================================================
+# 🌐 Pre-flight network check for SnapLogic connectivity
+# -----------------------------------------------------------------------------
+# Diagnoses DNS, HTTPS, and TLS issues that would cause the Groundplex
+# container to fail to boot / register with SnapLogic Cloud. Runs all probes
+# INSIDE the tools container so results reflect what the framework will see.
+#
+# Target host is derived from the URL= line in .env — whatever SnapLogic
+# endpoint the framework is actually configured to talk to. Nothing is
+# hardcoded; if the URL changes (e.g., different pod / staging / prod), the
+# probes follow automatically.
+#
+# Typical symptoms this target helps diagnose:
+#   • JCC "PID file not found" loop in groundplex-status (container boots
+#     but can't phone home to register the node)
+#   • "SSLHandshakeException" / "PKIX path building failed" in groundplex logs
+#     (corporate SSL inspection rewriting the cert chain)
+#   • "UnknownHostException" in groundplex logs (DNS broken in WSL)
+#
+# Usage:
+#   make check-network
+# =============================================================================
+check-network:
+	@echo "🌐 SnapLogic network pre-flight check"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@if ! docker ps --format '{{.Names}}' | grep -q '^snaplogic-test-example-tools-container$$'; then \
+		echo "❌ Tools container is not running."; \
+		echo "   Start it first:  make start-tools-service-only"; \
+		exit 1; \
+	fi
+	@URL_RAW=$$(grep -E '^URL=' .env 2>/dev/null | head -1 | cut -d '=' -f 2- | tr -d '"'); \
+	URL_RAW=$$(echo "$$URL_RAW" | tr -d "'"); \
+	URL_RAW=$$(echo "$$URL_RAW" | xargs); \
+	if [ -z "$$URL_RAW" ]; then \
+		echo "❌ URL is not set in .env — cannot run network check."; \
+		echo "   Add a line like 'URL=https://elastic.snaplogic.com' to .env and retry."; \
+		exit 1; \
+	fi; \
+	SNAPLOGIC_HOST=$$(echo "$$URL_RAW" | sed -E 's|^https?://||; s|/.*||'); \
+	FAILED=0; \
+	echo ""; \
+	echo "Target derived from .env URL:"; \
+	echo "  URL:  $$URL_RAW"; \
+	echo "  Host: $$SNAPLOGIC_HOST"; \
+	echo ""; \
+	echo "[1/3] DNS resolution (inside tools container)"; \
+	IP=$$(docker exec snaplogic-test-example-tools-container getent hosts "$$SNAPLOGIC_HOST" 2>/dev/null | head -1 | awk '{print $$1}'); \
+	if [ -n "$$IP" ]; then \
+		echo "  ✅ $$SNAPLOGIC_HOST → $$IP"; \
+	else \
+		echo "  ❌ $$SNAPLOGIC_HOST — DNS resolution FAILED"; \
+		FAILED=$$((FAILED+1)); \
+	fi; \
+	echo ""; \
+	echo "[2/3] HTTPS reachability (port 443)"; \
+	CODE=$$(docker exec snaplogic-test-example-tools-container curl -sS -o /dev/null -w '%{http_code}' --max-time 10 "$$URL_RAW" 2>/dev/null || echo "000"); \
+	if [ -n "$$CODE" ] && [ "$$CODE" != "000" ]; then \
+		echo "  ✅ $$URL_RAW → HTTP $$CODE"; \
+	else \
+		echo "  ❌ $$URL_RAW — NOT reachable (timeout, connection refused, or TLS error)"; \
+		FAILED=$$((FAILED+1)); \
+	fi; \
+	echo ""; \
+	echo "[3/3] TLS certificate trust check for $$SNAPLOGIC_HOST"; \
+	VERIFY=$$(docker exec snaplogic-test-example-tools-container curl -sS -o /dev/null -w '%{http_code}' --max-time 10 --cacert /etc/ssl/certs/ca-certificates.crt "$$URL_RAW" 2>&1); \
+	VERIFY_RC=$$?; \
+	ISSUER=$$(docker exec snaplogic-test-example-tools-container bash -c "echo | openssl s_client -servername $$SNAPLOGIC_HOST -connect $$SNAPLOGIC_HOST:443 2>/dev/null | openssl x509 -noout -issuer 2>/dev/null | sed 's/^issuer=//'"); \
+	if [ -n "$$ISSUER" ]; then \
+		echo "  Issuer: $$ISSUER"; \
+	fi; \
+	if [ "$$VERIFY_RC" = "0" ]; then \
+		echo "  ✅ Cert chain verified against system CA bundle — Groundplex TLS handshake should succeed"; \
+	else \
+		echo "  ❌ Cert chain verification FAILED — Groundplex will reject this TLS handshake"; \
+		echo "     Symptom in groundplex logs: 'PKIX path building failed' / 'unable to find valid certification path'"; \
+		echo "     This usually means corporate SSL inspection (MITM proxy) is re-signing the cert."; \
+		echo "     Fix: import your corporate CA into the Groundplex container's Java truststore."; \
+		echo "     See: README/How To Guides/infra_setup_guides/windows/"; \
+		FAILED=$$((FAILED+1)); \
+	fi; \
+	echo ""; \
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+	if [ $$FAILED -eq 0 ]; then \
+		echo "✅ All network checks passed — Groundplex should be able to reach SnapLogic Cloud."; \
+	else \
+		echo "❌ $$FAILED check(s) failed. Typical fixes:"; \
+		echo "   • DNS:   fix /etc/resolv.conf in WSL; add corporate DNS servers"; \
+		echo "   • HTTPS: unblock port 443 in corporate firewall; set HTTP_PROXY / HTTPS_PROXY env vars"; \
+		echo "   • TLS:   import corporate CA into the Groundplex container Java truststore"; \
+		echo "   • Windows/WSL setup guide: README/How To Guides/infra_setup_guides/windows/"; \
+		echo ""; \
+		exit 1; \
+	fi
 
 
 # =============================================================================

@@ -56,7 +56,22 @@ jobs:
         - make start-services
 
         # Execute Robot Framework tests with tags
-        - make robot-run-all-tests TAGS="oracle sqlserver file_mount postgres_s3 email2" PROJECT_SPACE_SETUP=True
+        # CI wants a fresh, clean environment on every run:
+        #   • FORCE_RECREATE_PROJECT_SPACE=True — destructive wipe of the project
+        #     space (and everything inside — accounts, pipelines, tasks, Snaplex)
+        #     before recreating from scratch. This is what keeps CI reproducible.
+        #   • FORCE_CONFIRM=yes — bypass the interactive "type project space name"
+        #     confirmation prompt (Travis is non-TTY; explicit bypass for clarity).
+        #   • FORCE_REPLACE=yes — bypass the Phase 0 Groundplex swap confirmation
+        #     prompt (non-TTY would also auto-skip; explicit for clarity).
+        #   • PROJECT_SPACE_SETUP=True is the default and redundant to pass, but
+        #     kept here to document the intent.
+        - make robot-run-all-tests
+          TAGS="oracle sqlserver file_mount postgres_s3 email2"
+          PROJECT_SPACE_SETUP=True
+          FORCE_RECREATE_PROJECT_SPACE=True
+          FORCE_CONFIRM=yes
+          FORCE_REPLACE=yes
 
         # Upload test results to TestRail
         - make upload-test-results

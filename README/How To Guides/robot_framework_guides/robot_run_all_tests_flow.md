@@ -29,9 +29,43 @@ make robot-run-all-tests TAGS=oracle
                               │
                               ▼
 ┌──────────────────────────────────────────────────────────────────────────────┐
+│ Phase 0a — External-plex guard                                               │
+│                                                                              │
+│   If .env has EXTERNAL_GROUNDPLEX=yes → ❌ Exit 1 with a message pointing    │
+│   the user at `make robot-run-tests-no-gp` (the correct tool for externally  │
+│   managed plexes). To undo, remove EXTERNAL_GROUNDPLEX from .env.            │
+│                                                                              │
+│   If the flag is NOT set but no local container AND no .slpropz exist →      │
+│   ⚠️ soft warning (5s pause, Ctrl+C to abort, then continues). This covers   │
+│   legitimate first-run scenarios.                                            │
+└──────────────────┬───────────────────────────────────────────────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ Phase 0b — Pre-swap safety check (BEFORE any cloud changes)                  │
+│                                                                              │
+│   Calls `check-groundplex-swap` directly. If an existing                     │
+│   `snaplogic-groundplex` container is attached to a Snaplex DIFFERENT from   │
+│   the one in .env:                                                           │
+│     • Prints a multi-line REPLACING banner (CURRENT ↔ NEW)                   │
+│     • Prompts the user to confirm (interactive) OR auto-proceeds (CI)        │
+│     • Bypass: FORCE_REPLACE=yes                                              │
+│     • On user decline → exit 1, NO cloud resources created                   │
+│                                                                              │
+│   After this phase, `robot-run-all-tests` passes SWAP_CHECK_DONE=1 to        │
+│   Phase 2's `launch-groundplex` to avoid double-prompting.                   │
+└──────────────────┬───────────────────────────────────────────────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
 │ Phase 1 — Runs robot with tag: createplex                                    │
 │           (because PROJECT_SPACE_SETUP defaults to True; pass =False to      │
 │            switch to verify-only mode — see "Verify-only mode" below)        │
+│                                                                              │
+│   NOTE: `robot-run-tests` (invoked internally) calls `make sync-env` first   │
+│   to reconcile the .env bind-mount inode after host-side editor saves and   │
+│   to re-upgrade snaplogic-common-robot inside the tools container if the    │
+│   container was recreated.                                                   │
 └──────────────────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -130,15 +164,42 @@ make robot-run-all-tests TAGS=oracle
                ▼             ▼
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ Phase 2 — Start the Groundplex container                                     │
-│ Calls: make launch-groundplex                                                │
+│ Calls: make launch-groundplex  (self-healing — can also be run standalone)   │
 │                                                                              │
-│   • docker compose --profile gp up -d snaplogic-groundplex                   │
-│   • Container mounts ./.config/${GROUNDPLEX_NAME}.slpropz                    │
-│   • JCC inside container boots, calls home to SnapLogic Cloud,               │
-│     registers itself as an ACTIVE NODE attached to the Snaplex               │
-│     definition created in STEP B                                             │
-│   • Container joins the snaplogicnet Docker bridge so it can                 │
-│     reach oracle-db, postgres-db, etc. by container name                     │
+│   Internal pre-flight inside launch-groundplex (actual order):               │
+│     i.   🛑 External-plex guard: if EXTERNAL_GROUNDPLEX=yes, abort.          │
+│            Normally already caught at Phase 0a, but `launch-groundplex`      │
+│            re-checks when invoked standalone. Also fires the soft            │
+│            heuristic warning if flag is not set but no local container        │
+│            or .slpropz exists.                                               │
+│     ii.  🌐 check-network (DNS / HTTPS / TLS trust)                          │
+│            Skip with SKIP_NETWORK_CHECK=1                                    │
+│     iii. 🔎 pre-swap check: inspect running snaplogic-groundplex             │
+│            • No container → "fresh start" message                            │
+│            • Same mount   → "already attached" message                       │
+│            • Different mount (Snaplex change) → ⚠️ REPLACING banner          │
+│              naming CURRENT + NEW Snaplex, prompts for confirmation          │
+│              (interactive) or auto-proceeds (CI). Skip prompt with           │
+│              FORCE_REPLACE=yes.                                              │
+│            Skipped when SWAP_CHECK_DONE=1 (set by Phase 0b above).           │
+│     iv.  🧹 clean up stale slpropz directory (if a prior failed run          │
+│            left an empty dir at the mount path)                              │
+│     v.   📥 if .slpropz is missing, AUTO-RUN createplex to fetch it          │
+│            (makes standalone `make launch-groundplex` usable from cold       │
+│             state; inside robot-run-all-tests this short-circuits because    │
+│             Phase 1 already downloaded the file)                             │
+│            Skip with SKIP_CREATEPLEX=1                                       │
+│                                                                              │
+│   Main launch:                                                               │
+│     • docker compose --profile gp up -d snaplogic-groundplex                 │
+│     • Container mounts ./.config/${GROUNDPLEX_NAME}.slpropz                  │
+│     • JCC inside container boots, calls home to SnapLogic Cloud,             │
+│       registers itself as an ACTIVE NODE attached to the Snaplex             │
+│       definition created in STEP B                                           │
+│     • Container joins the snaplogicnet Docker bridge so it can               │
+│       reach oracle-db, postgres-db, etc. by container name                   │
+│     • groundplex-status polls until JCC reports "is running"                 │
+│     • Prints a final "✅ Groundplex ACTIVE: <name>" summary footer           │
 └──────────────────┬───────────────────────────────────────────────────────────┘
                    │
                    ▼
@@ -337,18 +398,64 @@ The keyword is defined at
 
 ---
 
+## Standalone `make launch-groundplex` (self-healing)
+
+Since `launch-groundplex` now auto-runs createplex when the `.slpropz` file
+is missing, it can be used as a one-shot command from a cold state — you no
+longer have to run `make robot-run-all-tests` first just to seed the
+Groundplex config:
+
+```bash
+# From scratch: creates project space/project if missing, registers Snaplex,
+# downloads .slpropz, starts Groundplex container, waits for JCC ready.
+make launch-groundplex
+```
+
+Run it a second time — it short-circuits past createplex because the
+slpropz already exists. The only work done is the network pre-flight +
+`docker compose up` (container is already running, so this is a no-op) +
+`groundplex-status` poll.
+
+Escape hatches for the fastest possible re-launch of a known-good setup:
+
+```bash
+SKIP_NETWORK_CHECK=1 SKIP_CREATEPLEX=1 make launch-groundplex
+```
+
+If you're swapping to a different Snaplex and want to skip the interactive
+confirmation prompt:
+
+```bash
+FORCE_REPLACE=yes make launch-groundplex
+```
+
+See [`network_preflight_check.md`](./network_preflight_check.md) and
+[`groundplex_lifecycle.md`](./groundplex_lifecycle.md) for the full
+behavior matrix and swap-warning details.
+
+---
+
 ## Contrast with `robot-run-tests-no-gp`
 
 | Phase | `robot-run-all-tests` | `robot-run-tests-no-gp` |
 |-------|----------------------|-------------------------|
+| 0a — External-plex guard (`EXTERNAL_GROUNDPLEX=yes`) | ✅ hard block + soft heuristic | ❌ allowed (this is the intended target for external plexes) |
+| 0b — Pre-swap safety check | ✅ | ❌ (omitted by design — no Groundplex management) |
 | 1a — Project space + project setup (Before Suite) | ✅ | ✅ |
 | 1b — Register Snaplex definition (`createplex` tag) | ✅ | ❌ (uses `verify_project_space_exists` instead) |
 | 1c — Download `.slpropz` config | ✅ | ❌ |
+| Active-nodes recovery (`FORCE_RECREATE_PROJECT_SPACE=True`) | ✅ auto-stop + retry | ✅ local: auto-stop + retry (leaves container stopped); external: fail-fast with ACTION REQUIRED message |
 | 2 — Start Groundplex container | ✅ | ❌ — explicit skip banner printed |
+| Phase 3 "Groundplex not running" warning | — | ✅ multi-line warning if no local `snaplogic-groundplex` container is found |
 | 3 — Run your tests | ✅ | ✅ |
 
-`robot-run-tests-no-gp` assumes a Groundplex is already running (managed by
-you or a separate CI job). It never creates, starts, or stops one.
+`robot-run-tests-no-gp` assumes a Groundplex is already running (managed
+by you, a separate CI job, or SnapLogic Cloud). It never creates, starts,
+or stops a Groundplex as part of its normal flow. The only exception is
+the narrow active-nodes recovery branch, which auto-stops a *local*
+framework-managed container (never an external one) to unblock a
+destructive project-space recreate, and leaves the container stopped
+afterwards.
 
 ---
 
@@ -356,14 +463,21 @@ you or a separate CI job). It never creates, starts, or stops one.
 
 | Logic | File |
 |-------|------|
-| Orchestration (`robot-run-all-tests`, Phase 2 dispatch) | `{{cookiecutter.primary_pipeline_name}}/makefiles/common_services/Makefile.testing` |
-| `launch-groundplex` target | `{{cookiecutter.primary_pipeline_name}}/makefiles/common_services/Makefile.groundplex` |
-| `stop-groundplex` target (used by recovery branch) | `Makefile.testing` |
+| Orchestration (`robot-run-all-tests`, Phase 0 external-plex guard, Phase 0 pre-swap, Phase 2 dispatch w/ SWAP_CHECK_DONE=1) | `{{cookiecutter.primary_pipeline_name}}/makefiles/common_services/Makefile.testing` |
+| `robot-run-tests-no-gp` orchestration (incl. Option C active-nodes local-vs-external detection + Phase 3 not-running warning) | `Makefile.testing` |
+| `cleanup-stale-projects` target | `Makefile.testing` |
+| `launch-groundplex` target (+ Cloud rejection, pre-flight chain) | `{{cookiecutter.primary_pipeline_name}}/makefiles/common_services/Makefile.groundplex` |
+| `check-groundplex-swap` target (pre-swap banner + prompt) | `Makefile.groundplex` |
+| `stop-groundplex` target (used by both active-nodes recovery branches) | `Makefile.groundplex` |
+| `check-network` target | `{{cookiecutter.primary_pipeline_name}}/makefiles/common_services/Makefile.docker` |
+| `sync-env` target (.env bind-mount reconcile + snaplogic-common-robot auto-upgrade guardrail) | `Makefile.docker` |
 | `Before Suite` keyword chain | `{{cookiecutter.primary_pipeline_name}}/test/suite/__init__.robot` |
 | `Set Up Data`, `Ensure Project Setup Safe`, `Create Project Space`, `Create Project` | `snaplogic-common-robot` library — `snaplogic_keywords.resource` |
 | `Create Snaplex In Project Space`, `Download And Save slpropz File` (createplex tag) | `{{cookiecutter.primary_pipeline_name}}/test/suite/pipeline_tests/env_setup.robot` |
+| `Cleanup Stale Timestamped Projects` (cleanup_stale_projects tag) | `env_setup.robot` |
+| `Validate Project Space Exists` (verify_project_space_exists tag) | `env_setup.robot` |
 | `Create Snaplex`, `Download And Save Config File` keywords | `snaplogic-common-robot` library |
-| Confirmation prompt for destructive path | `Makefile.testing` inside `robot-run-tests` target |
+| Confirmation prompt for destructive path (`FORCE_CONFIRM=yes` to bypass) | `Makefile.testing` inside `robot-run-tests` target |
 
 ---
 
@@ -375,5 +489,11 @@ you or a separate CI job). It never creates, starts, or stops one.
   cleanup keyword.
 - [`robot_framework_test_execution_flow.md`](./robot_framework_test_execution_flow.md) —
   general Robot Framework test flow for this project.
+- [`network_preflight_check.md`](./network_preflight_check.md) — DNS /
+  HTTPS / TLS check, `SKIP_*` flags, `launch-groundplex` pre-flight
+  ordering.
+- [`groundplex_lifecycle.md`](./groundplex_lifecycle.md) — Groundplex
+  container swap behavior, `FORCE_REPLACE`, and `EXTERNAL_GROUNDPLEX`
+  guard.
 - [`robot_tests_make_commands.md`](./robot_tests_make_commands.md) —
   full reference of all make commands.

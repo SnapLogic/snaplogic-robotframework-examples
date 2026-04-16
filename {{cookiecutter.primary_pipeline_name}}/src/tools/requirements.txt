@@ -3,7 +3,7 @@
 # robotframework-databaselibrary, robotframework-pabot, robotframework-jsonlibrary,
 # robotframework-csvlibrary, requests, boto3, and more.
 
-snaplogic-common-robot
+snaplogic-common-robot>=2026.4.16.1
 
 # Database drivers (not included in snaplogic-common-robot)
 oracledb  # Oracle database driver

@@ -5,12 +5,120 @@
 # including launching, stopping, certificate management, and status checks
 # =============================================================================
 
-.PHONY: launch-groundplex groundplex-status stop-groundplex restart-groundplex \
+.PHONY: launch-groundplex groundplex-status stop-groundplex restart-groundplex check-groundplex-swap \
         setup-groundplex-cert launch-groundplex-with-cert groundplex-check-cert groundplex-remove-cert \
         createplex-launch-groundplex
 
 # Include common configuration
 include makefiles/common_services/Makefile.common
+
+
+# =============================================================================
+# 🔎 Pre-swap safety check — prompt BEFORE any cloud/container changes
+# -----------------------------------------------------------------------------
+# If an existing 'snaplogic-groundplex' container is attached to a Snaplex
+# DIFFERENT from the one in .env (GROUNDPLEX_NAME), this target prints a
+# prominent REPLACING banner explaining:
+#   • what will be swapped (current ↔ new)
+#   • what cloud-side changes would follow if the user proceeds
+#   • that aborting here leaves SnapLogic Cloud completely untouched
+# Then it prompts for confirmation.
+#
+# Designed to be called at the START of any user-facing workflow that would
+# otherwise create cloud resources before the swap is actually executed
+# (e.g., robot-run-all-tests Phase 1 creates a Snaplex, then Phase 2 swaps
+# the container — users should confirm BEFORE Phase 1, not after).
+#
+# Behavior:
+#   • No existing container → prints "fresh start" and exits 0
+#   • Same mount as new .env → prints "already attached" and exits 0
+#   • Different mount → shows banner + prompts (or proceeds in CI/FORCE mode)
+#   • User declines → exit 1, caller should halt
+#
+# Flags honored:
+#   FORCE_REPLACE=yes          → skip the prompt (assume yes)
+#   non-interactive shell (CI) → auto-proceed with a notice
+#
+# Usage — typically chained:
+#   robot-run-all-tests: check-env
+#       @$(MAKE) check-groundplex-swap
+#       ... continue with Phase 1 ...
+# =============================================================================
+check-groundplex-swap:
+	@GROUNDPLEX_NAME_VAL=$$(grep -E '^GROUNDPLEX_NAME=' .env | cut -d '=' -f 2); \
+	if [ -z "$$GROUNDPLEX_NAME_VAL" ]; then \
+		echo "⚠️  GROUNDPLEX_NAME not set in .env — skipping swap check."; \
+		exit 0; \
+	fi; \
+	EXTERNAL_GP=$$(grep -E '^EXTERNAL_GROUNDPLEX=' .env 2>/dev/null | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]'); \
+	if [ "$$EXTERNAL_GP" = "yes" ] || [ "$$EXTERNAL_GP" = "true" ]; then \
+		echo ""; \
+		echo "🔎 Checking for existing Groundplex container before any cloud changes..."; \
+		echo "   ℹ️  EXTERNAL_GROUNDPLEX=yes — externally managed plex '$$GROUNDPLEX_NAME_VAL'."; \
+		echo "       Swap check does not apply (framework will not create/replace a"; \
+		echo "       local container for an external plex)."; \
+		exit 0; \
+	fi; \
+	echo ""; \
+	echo "🔎 Checking for existing Groundplex container before any cloud changes..."; \
+	if ! docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q '^snaplogic-groundplex$$'; then \
+		echo "   ℹ️  No existing Groundplex container — fresh start."; \
+		exit 0; \
+	fi; \
+	EXISTING_MOUNT=$$(docker inspect snaplogic-groundplex --format '{{range .Mounts}}{{.Source}}{{"\n"}}{{end}}' 2>/dev/null | grep '\.slpropz$$' | head -1); \
+	if [ -z "$$EXISTING_MOUNT" ]; then \
+		echo "   ℹ️  Existing container has no .slpropz mount — nothing to compare."; \
+		exit 0; \
+	fi; \
+	EXISTING_NAME=$$(basename "$$EXISTING_MOUNT" .slpropz); \
+	if [ "$$EXISTING_NAME" = "$$GROUNDPLEX_NAME_VAL" ]; then \
+		echo "   ✅ Existing container is already attached to [$$GROUNDPLEX_NAME_VAL] — no swap needed."; \
+		exit 0; \
+	fi; \
+	echo ""; \
+	echo "⚠️  ============================================================"; \
+	echo "⚠️   REPLACING EXISTING GROUNDPLEX CONTAINER"; \
+	echo "⚠️  ============================================================"; \
+	echo ""; \
+	echo "   This host can run only ONE 'snaplogic-groundplex' container"; \
+	echo "   at a time (the container name is hardcoded in docker-compose)."; \
+	echo ""; \
+	echo "     CURRENT (will be stopped + removed):  $$EXISTING_NAME"; \
+	echo "     NEW     (will be started):            $$GROUNDPLEX_NAME_VAL"; \
+	echo ""; \
+	echo "   If you proceed, the framework will:"; \
+	echo "     1. Create the NEW project space + project (if missing) in SnapLogic Cloud."; \
+	echo "     2. Register a NEW Snaplex [$$GROUNDPLEX_NAME_VAL] and download its .slpropz."; \
+	echo "     3. Stop + remove the CURRENT container and start a fresh one with the new mount."; \
+	echo ""; \
+	echo "   Side effects:"; \
+	echo "     • The OLD Snaplex [$$EXISTING_NAME] will show an orphan/offline"; \
+	echo "       node record in SnapLogic Cloud for ~5–15 min (cloud auto-cleans"; \
+	echo "       the node; the Snaplex DEFINITION stays in the UI until you delete"; \
+	echo "       it manually)."; \
+	echo "     • The OLD local .slpropz stays on disk as clutter; safe to remove:"; \
+	echo "         rm test/.config/$$EXISTING_NAME.slpropz"; \
+	echo ""; \
+	echo "   If you abort here, NO cloud resources are created — safe to say no."; \
+	echo ""; \
+	if [ "$(FORCE_REPLACE)" = "yes" ]; then \
+		echo "   ▶ FORCE_REPLACE=yes — proceeding without prompt."; \
+	elif [ ! -t 0 ]; then \
+		echo "   ▶ Non-interactive shell (CI) — proceeding automatically."; \
+		echo "     Set FORCE_REPLACE=yes in CI to suppress this notice."; \
+	else \
+		printf "   Continue with the replacement? (type 'yes' to proceed, anything else aborts): "; \
+		read confirm; \
+		if [ "$$confirm" != "yes" ]; then \
+			echo ""; \
+			echo "   ❌ Aborted by user. NO cloud changes were made."; \
+			echo "      (Aborted BEFORE createplex — no new project space / Snaplex in SnapLogic.)"; \
+			exit 1; \
+		fi; \
+	fi; \
+	echo "⚠️  ============================================================"; \
+	echo ""
+
 
 # =============================================================================
 #  Create project space, Create Plex in Project Space, and launch Groundplex
@@ -26,15 +134,111 @@ createplex-launch-groundplex:
 # =============================================================================
 # 🚀 Launch SnapLogic Groundplex container and validate status
 # =============================================================================
-# Guards against a Docker bind-mount pitfall: docker-compose.groundplex.yml
-# mounts ./test/.config/${GROUNDPLEX_NAME}.slpropz into the container. If that
-# path does NOT exist (or is an empty directory left behind from a prior failed
-# run), Docker silently creates it as a directory, which later makes the
-# "Download And Save slpropz File" test fail with IsADirectoryError.
-# We verify the slpropz path is a regular file before starting the container.
+# Self-healing launch — can be run as a standalone command. The target will:
+#
+#   0. External-plex rejection: if EXTERNAL_GROUNDPLEX=yes in .env, refuse to
+#      start a local Docker container (the user declared their plex is managed
+#      externally). User should use 'robot-run-tests-no-gp' instead.
+#      If the flag is not set, a soft heuristic warns (but does not block)
+#      when no local container or .slpropz exists for the configured plex name.
+#
+#   1. Sync .env inside the tools container (handles editor atomic-save quirk).
+#
+#   2. Run the network pre-flight check (DNS / HTTPS / TLS trust).
+#      Skip with:  SKIP_NETWORK_CHECK=1 make launch-groundplex
+#
+#   3. Pre-swap warning — BEFORE any cloud resources are created.
+#      Delegates to the standalone 'check-groundplex-swap' target, which:
+#       • No existing container → "fresh start", exits 0
+#       • Same mount as .env   → "already attached", exits 0
+#       • Different mount       → banner + prompt (bypass: FORCE_REPLACE=yes)
+#      Skipped when the caller already ran the check and sets
+#      SWAP_CHECK_DONE=1 (avoids double-prompting in robot-run-all-tests /
+#      robot-run-tests-no-gp, which run check-groundplex-swap as Phase 0).
+#
+#   4. Clean up any stale slpropz directory left by a prior failed run.
+#
+#   5. If the slpropz config file is missing, AUTO-RUN the createplex phase
+#      to register the Snaplex in SnapLogic and download the config. This
+#      makes `make launch-groundplex` usable as a one-shot command — no need
+#      to run `robot-run-all-tests` first just to seed the config.
+#      Skip with:  SKIP_CREATEPLEX=1 make launch-groundplex
+#
+#   6. docker compose up the Groundplex container.
+#   7. Poll groundplex-status until JCC is running.
+#   8. Print a final summary showing which Snaplex is now active.
 # =============================================================================
 launch-groundplex:
 	@echo "Launching Groundplex..."
+	@# External-plex guard: 'launch-groundplex' can only start SELF-HOSTED
+	@# (sidekick) Groundplexes as local Docker containers. If the user declared
+	@# EXTERNAL_GROUNDPLEX=yes in .env, the plex is managed externally — block.
+	@# If the flag is not set, a soft heuristic warns when no local container
+	@# or .slpropz exists.
+	@EXTERNAL_GP=$$(grep -E '^EXTERNAL_GROUNDPLEX=' .env 2>/dev/null | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]'); \
+	GROUNDPLEX_NAME_VAL=$$(grep -E '^GROUNDPLEX_NAME=' .env | cut -d '=' -f 2); \
+	if [ "$$EXTERNAL_GP" = "yes" ] || [ "$$EXTERNAL_GP" = "true" ]; then \
+		echo ""; \
+		echo "❌ ============================================================"; \
+		echo "❌  CANNOT LAUNCH LOCAL GROUNDPLEX — EXTERNAL_GROUNDPLEX=yes"; \
+		echo "❌ ============================================================"; \
+		echo ""; \
+		echo "   Your .env declares EXTERNAL_GROUNDPLEX=yes, meaning your"; \
+		echo "   Groundplex '$$GROUNDPLEX_NAME_VAL' is externally managed."; \
+		echo ""; \
+		echo "   'make launch-groundplex' starts a LOCAL Docker container."; \
+		echo "   Starting one against an external plex would register"; \
+		echo "   conflicting/duplicate nodes."; \
+		echo ""; \
+		echo "   💡 What you probably want:"; \
+		echo "     make robot-run-tests-no-gp TAGS=\"<your-tags>\""; \
+		echo "       → runs tests against your external plex (framework never"; \
+		echo "         touches the Groundplex — you manage it)."; \
+		echo ""; \
+		echo "   If this is wrong, remove EXTERNAL_GROUNDPLEX from .env and re-run."; \
+		echo "❌ ============================================================"; \
+		echo ""; \
+		exit 1; \
+	fi; \
+	SLPROPZ_PATH="test/.config/$$GROUNDPLEX_NAME_VAL.slpropz"; \
+	if ! docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q '^snaplogic-groundplex$$' \
+	   && [ ! -f "$$SLPROPZ_PATH" ]; then \
+		echo ""; \
+		echo "⚠️  ============================================================"; \
+		echo "⚠️   NO LOCAL GROUNDPLEX HISTORY FOUND FOR '$$GROUNDPLEX_NAME_VAL'"; \
+		echo "⚠️  ============================================================"; \
+		echo ""; \
+		echo "   No local 'snaplogic-groundplex' container exists and no"; \
+		echo "   .slpropz file found at $$SLPROPZ_PATH."; \
+		echo ""; \
+		echo "   This is EXPECTED if this is your first run — the framework will"; \
+		echo "   create the Snaplex and start a local Groundplex for you."; \
+		echo ""; \
+		echo "   But if '$$GROUNDPLEX_NAME_VAL' is an EXTERNAL Groundplex"; \
+		echo "   (Cloud-hosted, shared, or managed outside this framework):"; \
+		echo "     → Use: make robot-run-tests-no-gp TAGS=\"<your-tags>\""; \
+		echo "     → Or add EXTERNAL_GROUNDPLEX=yes to .env to always block this target."; \
+		echo ""; \
+		echo "   Continuing in 5 seconds... (Ctrl+C to abort)"; \
+		echo "⚠️  ============================================================"; \
+		sleep 5; \
+	fi
+	@if [ "$(SKIP_NETWORK_CHECK)" = "1" ]; then \
+		echo "⏩ SKIP_NETWORK_CHECK=1 — skipping pre-flight network check"; \
+	else \
+		$(MAKE) check-network || { \
+			echo ""; \
+			echo "❌ Network pre-flight check failed. Groundplex would not be able to register with SnapLogic Cloud."; \
+			echo "   Fix the connectivity issue above and re-run, OR bypass the check with:"; \
+			echo "     SKIP_NETWORK_CHECK=1 make launch-groundplex"; \
+			exit 1; \
+		}; \
+	fi
+	@if [ "$(SWAP_CHECK_DONE)" = "1" ]; then \
+		echo "⏩ Pre-swap check already done by caller — skipping."; \
+	else \
+		$(MAKE) check-groundplex-swap || exit $$?; \
+	fi
 	@GROUNDPLEX_NAME_VAL=$$(grep -E '^GROUNDPLEX_NAME=' .env | cut -d '=' -f 2); \
 	SLPROPZ_PATH="test/.config/$$GROUNDPLEX_NAME_VAL.slpropz"; \
 	if [ -d "$$SLPROPZ_PATH" ]; then \
@@ -42,14 +246,38 @@ launch-groundplex:
 		rm -rf "$$SLPROPZ_PATH"; \
 	fi; \
 	if [ ! -f "$$SLPROPZ_PATH" ]; then \
-		echo "❌ Groundplex config file not found: $$SLPROPZ_PATH"; \
-		echo "ℹ️  The createplex phase must run successfully first (it downloads this file)."; \
-		echo "ℹ️  Run: make robot-run-all-tests TAGS=... PROJECT_SPACE_SETUP=True"; \
-		exit 1; \
+		if [ "$(SKIP_CREATEPLEX)" = "1" ]; then \
+			echo "❌ Groundplex config file not found: $$SLPROPZ_PATH"; \
+			echo "   SKIP_CREATEPLEX=1 was set, so createplex was not auto-run."; \
+			echo "   To seed the file manually, run: make robot-run-all-tests TAGS=\"createplex\""; \
+			exit 1; \
+		fi; \
+		echo ""; \
+		echo "ℹ️  Groundplex config file not found — auto-running createplex to register"; \
+		echo "   the Snaplex in SnapLogic and download the .slpropz file."; \
+		echo "   (Skip this step with:  SKIP_CREATEPLEX=1 make launch-groundplex)"; \
+		echo ""; \
+		$(MAKE) robot-run-tests TAGS="createplex" PROJECT_SPACE_SETUP=True || { \
+			echo ""; \
+			echo "❌ createplex failed. Cannot proceed with Groundplex launch."; \
+			echo "   See test/robot_output/log-*.html for details."; \
+			exit 1; \
+		}; \
+		if [ ! -f "$$SLPROPZ_PATH" ]; then \
+			echo "❌ createplex ran but $$SLPROPZ_PATH is still missing. Something is wrong."; \
+			exit 1; \
+		fi; \
 	fi; \
 	echo "✅ Groundplex config file present: $$SLPROPZ_PATH"
 	$(DOCKER_COMPOSE) --profile gp up -d snaplogic-groundplex
 	make groundplex-status
+	@GROUNDPLEX_NAME_VAL=$$(grep -E '^GROUNDPLEX_NAME=' .env | cut -d '=' -f 2); \
+	echo ""; \
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+	echo "✅ Groundplex ACTIVE:  $$GROUNDPLEX_NAME_VAL"; \
+	echo "   Container:          snaplogic-groundplex"; \
+	echo "   (only one Groundplex container per host at a time)"; \
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # =============================================================================
 # 🔁 Poll for Groundplex JCC readiness inside container

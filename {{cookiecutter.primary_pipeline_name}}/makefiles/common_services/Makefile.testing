@@ -17,6 +17,7 @@ include makefiles/common_services/Makefile.common
 # =============================================================================
 robot-run-tests: check-env
 	@echo "🧪 Starting Robot Framework tests..."
+	@$(MAKE) sync-env
 	@echo "ℹ️ Tags: $(TAGS)"
 	$(eval INCLUDES=$(foreach arg,$(TAGS),--include $(arg)))
 	$(eval PROJECT_SPACE_SETUP_VAL=$(if $(PROJECT_SPACE_SETUP),$(PROJECT_SPACE_SETUP),True))
@@ -86,6 +87,63 @@ robot-run-tests: check-env
 #    Example: make robot-run-all-tests TAGS="oracle" FORCE_RECREATE_PROJECT_SPACE=True
 # =============================================================================
 robot-run-all-tests: check-env
+	@# ── Phase 0a: External-plex guard ──────────────────────────────────────────
+	@# robot-run-all-tests manages a local Docker Groundplex (Phase 2). If the
+	@# user declared EXTERNAL_GROUNDPLEX=yes in .env, they're running against an
+	@# externally-managed plex — this target is the wrong tool. Fail fast and
+	@# steer them to robot-run-tests-no-gp.
+	@#
+	@# If the flag is NOT set, a soft heuristic checks whether a local container
+	@# or .slpropz already exists. If neither does, the user gets a warning (not
+	@# a block) because this could also be a legitimate first run.
+	@EXTERNAL_GP=$$(grep -E '^EXTERNAL_GROUNDPLEX=' .env 2>/dev/null | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]'); \
+	GROUNDPLEX_NAME_VAL=$$(grep -E '^GROUNDPLEX_NAME=' .env | cut -d '=' -f 2); \
+	if [ "$$EXTERNAL_GP" = "yes" ] || [ "$$EXTERNAL_GP" = "true" ]; then \
+		echo ""; \
+		echo "❌ ============================================================"; \
+		echo "❌  robot-run-all-tests CANNOT BE USED with EXTERNAL_GROUNDPLEX=yes"; \
+		echo "❌ ============================================================"; \
+		echo ""; \
+		echo "   robot-run-all-tests manages a local Docker Groundplex (Phase 2)."; \
+		echo "   Your .env declares EXTERNAL_GROUNDPLEX=yes, meaning your"; \
+		echo "   Groundplex '$$GROUNDPLEX_NAME_VAL' is externally managed — the"; \
+		echo "   framework should not create, start, or stop it."; \
+		echo ""; \
+		echo "   💡 What you probably want:"; \
+		echo "     make robot-run-tests-no-gp TAGS=\"$(TAGS)\""; \
+		echo "       → runs tests against your external plex (framework never"; \
+		echo "         touches the Groundplex — you manage it)."; \
+		echo ""; \
+		echo "   If this is wrong, remove EXTERNAL_GROUNDPLEX from .env and re-run."; \
+		echo "❌ ============================================================"; \
+		echo ""; \
+		exit 1; \
+	fi; \
+	SLPROPZ_PATH="test/.config/$$GROUNDPLEX_NAME_VAL.slpropz"; \
+	if ! docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q '^snaplogic-groundplex$$' \
+	   && [ ! -f "$$SLPROPZ_PATH" ]; then \
+		echo ""; \
+		echo "⚠️  ============================================================"; \
+		echo "⚠️   NO LOCAL GROUNDPLEX HISTORY FOUND FOR '$$GROUNDPLEX_NAME_VAL'"; \
+		echo "⚠️  ============================================================"; \
+		echo ""; \
+		echo "   No local 'snaplogic-groundplex' container exists and no"; \
+		echo "   .slpropz file found at $$SLPROPZ_PATH."; \
+		echo ""; \
+		echo "   This is EXPECTED if this is your first run — the framework will"; \
+		echo "   create the Snaplex and start a local Groundplex for you."; \
+		echo ""; \
+		echo "   But if '$$GROUNDPLEX_NAME_VAL' is an EXTERNAL Groundplex"; \
+		echo "   (Cloud-hosted, shared, or managed outside this framework):"; \
+		echo "     → Use: make robot-run-tests-no-gp TAGS=\"$(TAGS)\""; \
+		echo "     → Or add EXTERNAL_GROUNDPLEX=yes to .env to always block this target."; \
+		echo ""; \
+		echo "   Continuing in 5 seconds... (Ctrl+C to abort)"; \
+		echo "⚠️  ============================================================"; \
+		sleep 5; \
+	fi
+	@echo ":========== [Phase 0] Pre-swap safety check (before any cloud changes) =========="
+	@$(MAKE) check-groundplex-swap || exit $$?
 	@PROJECT_SPACE_SETUP_ACTUAL=$${PROJECT_SPACE_SETUP:-True}; \
 	FORCE_RECREATE_ACTUAL=$${FORCE_RECREATE_PROJECT_SPACE:-False}; \
 	echo ":========== [Phase 1] Create project space and create plex inside project space =========="; \
@@ -112,7 +170,7 @@ robot-run-all-tests: check-env
 	fi; \
 	\
 	echo ":========== [Phase 2] Computing and starting containers using COMPOSE_PROFILES... =========="; \
-	$(MAKE) launch-groundplex; \
+	$(MAKE) launch-groundplex SWAP_CHECK_DONE=1; \
 	\
 	echo ":========== [Phase 2.1] Setting permissions for test data directories (Travis only) =========="; \
 	if [ "$$TRAVIS" = "true" ]; then \
@@ -125,42 +183,6 @@ robot-run-all-tests: check-env
 	echo ":========== [Phase 3] Running user-defined robot tests... =========="; \
 	$(MAKE) robot-run-tests TAGS="$(TAGS)" PROJECT_SPACE_SETUP=False
 
-
-# =============================================================================
-# 🛑 Kill Snaplex JCC and shutdown groundplex container (with retries)
-# =============================================================================
-stop-groundplex:
-	@echo "🛑 Attempting to stop JCC inside snaplogic-groundplex container..."
-	docker exec snaplogic-groundplex /bin/bash -c "cd /opt/snaplogic/bin && sh jcc.sh stop" || true
-
-	@echo "🔁 Waiting for JCC to fully shut down (up to 20 attempts, 10s interval)..."
-	@attempt=1; \
-	while [ $$attempt -le 20 ]; do \
-		echo "⏱️ Attempt $$attempt..."; \
-		container_status=$$(docker inspect -f '{{.State.Status}}' snaplogic-groundplex 2>/dev/null); \
-		if [ "$$container_status" != "running" ]; then \
-			echo "✅ Container is already stopped."; \
-			break; \
-		else \
-			status=$$(docker exec snaplogic-groundplex /bin/bash -c "cd /opt/snaplogic/bin && sh jcc.sh status" 2>&1); \
-			echo "🔍 JCC Status: $$status"; \
-			echo "$$status" | grep -q "PID file not found" && break; \
-			echo "⌛ JCC still shutting down. Retrying in 10s..."; \
-		fi; \
-		sleep 10; \
-		attempt=$$((attempt + 1)); \
-	done; \
-	if [ $$attempt -gt 20 ]; then \
-		echo "❌ JCC failed to stop cleanly after 20 attempts."; \
-		exit 1; \
-	else \
-		echo "✅ JCC shutdown confirmed."; \
-	fi
-
-	@echo "🧹 Bringing down container using Docker Compose profile 'gp'..."
-	$(DOCKER_COMPOSE) --profile gp down --remove-orphans
-
-	@echo "✅ Groundplex successfully stopped and cleaned up."
 
 # =============================================================================
 # 🧪 Robot Test Workflow WITHOUT Groundplex Launch
@@ -178,12 +200,26 @@ stop-groundplex:
 #
 #  FORCE_RECREATE_PROJECT_SPACE=True (DESTRUCTIVE — opt-in):
 #    - Deletes the ENTIRE project space and every project/pipeline/account inside.
-#    - Will FAIL if a Groundplex is attached to the space. Stop/detach it first.
+#    - Active-nodes handling (if the project space has an attached Groundplex):
+#        • LOCAL framework-managed Groundplex (docker container named
+#          'snaplogic-groundplex'): auto-stopped, delete retried. Container is
+#          left STOPPED afterwards — restart manually with `make launch-groundplex`
+#          when you want it back. This target never auto-starts Groundplexes.
+#        • EXTERNAL Groundplex (no local container found): fails fast with an
+#          "ACTION REQUIRED: stop it externally" message. Framework will NOT
+#          touch anything it didn't start.
 #    - Requires confirmation; bypass with FORCE_CONFIRM=yes for CI.
 #    Example: make robot-run-tests-no-gp TAGS="oracle" FORCE_RECREATE_PROJECT_SPACE=True
 # =============================================================================
 
 robot-run-tests-no-gp: check-env
+	@# NOTE: Phase 0 (check-groundplex-swap) is intentionally OMITTED here.
+	@# This target never starts or stops the Groundplex as part of its normal
+	@# flow (only in the narrow FORCE_RECREATE active-nodes recovery branch,
+	@# which already has its own local-vs-external detection). A generic swap
+	@# warning would contradict the "-no-gp" contract ("framework doesn't
+	@# manage your Groundplex"), especially for users running against an
+	@# external SnapLogic Cloud plex where the framework should stay hands-off.
 	@PROJECT_SPACE_SETUP_ACTUAL=$${PROJECT_SPACE_SETUP:-True}; \
 	FORCE_RECREATE_ACTUAL=$${FORCE_RECREATE_PROJECT_SPACE:-False}; \
 	echo ":========== [Phase 1] Create project space (No Plex created) =========="; \
@@ -193,9 +229,28 @@ robot-run-tests-no-gp: check-env
 		$(MAKE) robot-run-tests TAGS="verify_project_space_exists" PROJECT_SPACE_SETUP=True FORCE_RECREATE_PROJECT_SPACE=$$FORCE_RECREATE_ACTUAL FORCE_CONFIRM=$${FORCE_CONFIRM:-} || { \
 			echo "❌ Project space setup failed, checking if error is due to active Snaplex nodes..."; \
 			if grep -rq "cannot be deleted while it contains active nodes" test/robot_output/log-*.html 2>/dev/null; then \
-				echo "🛑 Active Groundplex nodes detected — destructive recreate cannot proceed while a Groundplex is attached."; \
-				echo "ℹ️  Stop the Groundplex externally (this target does not manage it), then re-run."; \
-				exit 1; \
+				if docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^snaplogic-groundplex$$'; then \
+					echo "🛑 Active nodes detected — framework-managed local Groundplex found."; \
+					echo "   Stopping it automatically to unblock destructive recreate..."; \
+					echo "   (This is safe: the container 'snaplogic-groundplex' is owned by"; \
+					echo "    this framework, not an external system.)"; \
+					$(MAKE) stop-groundplex; \
+					echo "⏳ Waiting 60 seconds for SnapLogic Cloud to deregister the node..."; \
+					sleep 60; \
+					echo "🔁 Retrying destructive project space recreate..."; \
+					$(MAKE) robot-run-tests TAGS="verify_project_space_exists" PROJECT_SPACE_SETUP=True FORCE_RECREATE_PROJECT_SPACE=$$FORCE_RECREATE_ACTUAL FORCE_CONFIRM=$${FORCE_CONFIRM:-} || exit 1; \
+					echo ""; \
+					echo "✅ Project space recreated successfully."; \
+					echo "ℹ️  Local Groundplex was stopped. Run 'make launch-groundplex' when you want it back."; \
+					echo "   (This target does not auto-start Groundplexes — by design.)"; \
+				else \
+					echo "🛑 Active nodes detected, but no local framework-managed Groundplex container"; \
+					echo "   found (no container named 'snaplogic-groundplex' on this host)."; \
+					echo "   The Groundplex is external to this framework — framework will NOT touch it."; \
+					echo ""; \
+					echo "   ACTION REQUIRED: Stop the external Groundplex, then re-run this command."; \
+					exit 1; \
+				fi; \
 			else \
 				echo "❌ Project space setup failed for a different reason."; \
 				exit 1; \
@@ -219,6 +274,33 @@ robot-run-tests-no-gp: check-env
 		echo "ℹ️ Skipping set_travis_permissions (not running on Travis CI)"; \
 	fi; \
 	\
+	if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^snaplogic-groundplex$$'; then \
+		echo ""; \
+		echo "⚠️  ============================================================"; \
+		echo "⚠️   GROUNDPLEX IS NOT RUNNING LOCALLY"; \
+		echo "⚠️  ============================================================"; \
+		echo ""; \
+		echo "   No local 'snaplogic-groundplex' container was found on this host."; \
+		echo "   This is expected if:"; \
+		echo "     • You just finished a destructive recreate (FORCE_RECREATE_PROJECT_SPACE=True)"; \
+		echo "       which auto-stopped the local Groundplex (by design — this target"; \
+		echo "       does not auto-restart Groundplexes)."; \
+		echo "     • You rely on an EXTERNAL Groundplex (remote / shared / customer-hosted)."; \
+		echo ""; \
+		echo "   Phase 3 will now run your tests. If tests need a running Snaplex:"; \
+		echo "     • Tests that poll 'Wait Until Snaplex is Up And Running' will HANG"; \
+		echo "       (up to their timeout) until a Groundplex registers against the space."; \
+		echo ""; \
+		echo "   Options:"; \
+		echo "     1. In ANOTHER terminal, run:  make launch-groundplex"; \
+		echo "        Phase 3 will auto-recover as soon as the Snaplex reports up."; \
+		echo "     2. Abort this run now (Ctrl+C) and use 'make robot-run-all-tests'"; \
+		echo "        instead — it manages the Groundplex lifecycle end-to-end."; \
+		echo "     3. If you run an external Groundplex, ensure it's attached to the"; \
+		echo "        current project space and then ignore this warning."; \
+		echo "⚠️  ============================================================"; \
+		echo ""; \
+	fi; \
 	echo ":========== [Phase 3] Running user-defined robot tests... =========="; \
 	$(MAKE) robot-run-tests TAGS="$(TAGS)" PROJECT_SPACE_SETUP=False
 # =============================================================================
