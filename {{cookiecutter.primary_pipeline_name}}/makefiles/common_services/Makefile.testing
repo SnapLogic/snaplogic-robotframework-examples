@@ -152,8 +152,9 @@ robot-run-all-tests: check-env
 		echo "ℹ️  FORCE_RECREATE_PROJECT_SPACE=$$FORCE_RECREATE_ACTUAL (safe default=False)"; \
 		$(MAKE) robot-run-tests TAGS="createplex" PROJECT_SPACE_SETUP=True FORCE_RECREATE_PROJECT_SPACE=$$FORCE_RECREATE_ACTUAL FORCE_CONFIRM=$${FORCE_CONFIRM:-} || { \
 			echo "❌ createplex test failed, checking if error is due to active Snaplex nodes..."; \
-			if grep -rq "cannot be deleted while it contains active nodes" test/robot_output/log-*.html 2>/dev/null; then \
-				echo "🛑 Active Groundplex nodes detected — killing Groundplex and retrying to create project space and plex..."; \
+			LATEST_LOG=$$(ls -t test/robot_output/log-*.html 2>/dev/null | head -1); \
+			if [ -n "$$LATEST_LOG" ] && grep -q "cannot be deleted while it contains active nodes" "$$LATEST_LOG" 2>/dev/null; then \
+				echo "🛑 Active Groundplex nodes detected (in $$LATEST_LOG) — killing Groundplex and retrying to create project space and plex..."; \
 				$(MAKE) stop-groundplex; \
 				echo "⏳ Waiting 60 seconds for nodes to deregister from SnapLogic Cloud..."; \
 				sleep 60; \
@@ -228,7 +229,8 @@ robot-run-tests-no-gp: check-env
 		echo "ℹ️  FORCE_RECREATE_PROJECT_SPACE=$$FORCE_RECREATE_ACTUAL (safe default=False)"; \
 		$(MAKE) robot-run-tests TAGS="verify_project_space_exists" PROJECT_SPACE_SETUP=True FORCE_RECREATE_PROJECT_SPACE=$$FORCE_RECREATE_ACTUAL FORCE_CONFIRM=$${FORCE_CONFIRM:-} || { \
 			echo "❌ Project space setup failed, checking if error is due to active Snaplex nodes..."; \
-			if grep -rq "cannot be deleted while it contains active nodes" test/robot_output/log-*.html 2>/dev/null; then \
+			LATEST_LOG=$$(ls -t test/robot_output/log-*.html 2>/dev/null | head -1); \
+			if [ -n "$$LATEST_LOG" ] && grep -q "cannot be deleted while it contains active nodes" "$$LATEST_LOG" 2>/dev/null; then \
 				if docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^snaplogic-groundplex$$'; then \
 					echo "🛑 Active nodes detected — framework-managed local Groundplex found."; \
 					echo "   Stopping it automatically to unblock destructive recreate..."; \

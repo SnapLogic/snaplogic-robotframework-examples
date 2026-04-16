@@ -248,6 +248,31 @@ Validate Content Contains All Fields
     END
     Log    All ${total} required fields found in content    console=yes
 
+################## LIST VALIDATION ##################
+
+Check File List Is Not Empty
+    [Documentation]    Checks if a file list has entries. Returns TRUE or FALSE.
+    ...    If the list is empty, logs a warning so dependent test cases can skip gracefully.
+    ...
+    ...    *Arguments:*
+    ...    - ``file_list``: List of file paths or S3 object keys to check
+    ...    - ``file_type``: Label for log messages (e.g., ``TXT extract``, ``CSV report``)
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` if list has entries, ``${FALSE}`` if empty
+    ...
+    ...    *Example:*
+    ...    | ${has_files}=    Check File List Is Not Empty    ${csv_files}    CSV report |
+    ...    | Pass Execution If    not ${has_files}    No CSV files to validate — skipping. |
+    [Arguments]    ${file_list}    ${file_type}
+
+    ${count}=    Get Length    ${file_list}
+    IF    ${count} == 0
+        Log    No ${file_type} files found — dependent validations will be skipped.    console=yes    level=WARN
+        RETURN    ${FALSE}
+    END
+    RETURN    ${TRUE}
+
 ################## TEXT CONTENT ANALYSIS ##################
 
 Get First Line
@@ -462,3 +487,134 @@ Clean Up Test Files
         END
     END
     Log    Cleanup completed
+
+################## LINE CONTENT ANALYSIS ##################
+
+Count Lines In Content
+    [Documentation]    Counts the number of non-empty lines in text content.
+    ...
+    ...    *Arguments:*
+    ...    - ``content``: Multi-line text content
+    ...
+    ...    *Returns:*
+    ...    - Number of non-empty lines
+    ...
+    ...    *Example:*
+    ...    | ${count}= | Count Lines In Content | ${file_content} |
+    [Arguments]    ${content}
+
+    @{lines}=    Split To Lines    ${content}
+    @{non_empty}=    Create List
+    FOR    ${line}    IN    @{lines}
+        ${trimmed}=    Strip String    ${line}
+        IF    '${trimmed}' != ''    Append To List    ${non_empty}    ${trimmed}
+    END
+    ${count}=    Get Length    ${non_empty}
+    RETURN    ${count}
+
+Extract Lines By Prefix
+    [Documentation]    Extracts all non-empty lines that start with a given prefix.
+    ...    Useful for isolating record types in fixed-width formats (e.g., CD detail
+    ...    records from TXT extracts, skipping PA headers and PT trailers).
+    ...
+    ...    *Arguments:*
+    ...    - ``content``: Multi-line text content
+    ...    - ``prefix``: Line prefix to match (e.g., ``CD``, ``HDR``, ``DTL``)
+    ...
+    ...    *Returns:*
+    ...    - List of matching lines (trimmed)
+    ...
+    ...    *Example:*
+    ...    | ${cd_lines}= | Extract Lines By Prefix | ${txt_content} | CD |
+    [Arguments]    ${content}    ${prefix}
+
+    @{lines}=    Split To Lines    ${content}
+    @{matching}=    Create List
+    FOR    ${line}    IN    @{lines}
+        ${trimmed}=    Strip String    ${line}
+        IF    '${trimmed}' != ''
+            ${starts}=    Evaluate    $trimmed.startswith($prefix)
+            IF    ${starts}    Append To List    ${matching}    ${trimmed}
+        END
+    END
+    RETURN    ${matching}
+
+################## DATE UTILITIES ##################
+
+Get Today Date As MM DD YYYY
+    [Documentation]    Returns today's date in MM/DD/YYYY format.
+    ...
+    ...    *Example:*
+    ...    | ${today}= | Get Today Date As MM DD YYYY |
+    ...    | # Returns: 04/16/2026 |
+
+    ${date}=    Evaluate    __import__('datetime').datetime.now().strftime('%m/%d/%Y')
+    RETURN    ${date}
+
+Get Yesterday Date As MM DD YYYY
+    [Documentation]    Returns yesterday's date in MM/DD/YYYY format.
+    ...
+    ...    *Example:*
+    ...    | ${yesterday}= | Get Yesterday Date As MM DD YYYY |
+
+    ${date}=    Evaluate
+    ...    (__import__('datetime').datetime.now() - __import__('datetime').timedelta(days=1)).strftime('%m/%d/%Y')
+    RETURN    ${date}
+
+################## LOGGING UTILITIES ##################
+
+Log Query Results
+    [Documentation]    Logs all rows returned from a query in a readable format.
+    ...    Works with any list of tuples (database query results, CSV rows, etc.).
+    ...
+    ...    *Arguments:*
+    ...    - ``results``: List of tuples/rows to log
+    ...    - ``label``: Description prefix for the log output (default: ``Query results``)
+    ...
+    ...    *Example:*
+    ...    | ${rows}= | Query | SELECT * FROM USERS |
+    ...    | Log Query Results | ${rows} | User table contents |
+    [Arguments]    ${results}    ${label}=Query results
+
+    Log    ${label}:    console=yes
+    FOR    ${row}    IN    @{results}
+        Log    ${row}    console=yes
+    END
+
+################## ZIP FILE OPERATIONS ##################
+
+Verify ZIP File Is Readable
+    [Documentation]    Checks if a local ZIP file is valid and can be read.
+    ...
+    ...    *Arguments:*
+    ...    - ``zip_file_path``: Path to the local ZIP file
+    ...
+    ...    *Returns:*
+    ...    - TRUE if valid ZIP, FALSE if corrupted
+    ...
+    ...    *Example:*
+    ...    | ${is_valid}= | Verify ZIP File Is Readable | ${CURDIR}/output/archive.zip |
+    [Arguments]    ${zip_file_path}
+
+    ${is_valid}=    Evaluate
+    ...    __import__('zipfile').is_zipfile('${zip_file_path}')
+    Log    ZIP file valid: ${is_valid}    console=yes
+    RETURN    ${is_valid}
+
+List ZIP File Contents
+    [Documentation]    Lists the files inside a ZIP archive.
+    ...
+    ...    *Arguments:*
+    ...    - ``zip_file_path``: Path to the local ZIP file
+    ...
+    ...    *Returns:*
+    ...    - List of filenames inside the ZIP
+    ...
+    ...    *Example:*
+    ...    | ${contents}= | List ZIP File Contents | ${CURDIR}/output/archive.zip |
+    [Arguments]    ${zip_file_path}
+
+    ${contents}=    Evaluate
+    ...    __import__('zipfile').ZipFile('${zip_file_path}').namelist()
+    Log    ZIP contents: ${contents}    console=yes
+    RETURN    ${contents}

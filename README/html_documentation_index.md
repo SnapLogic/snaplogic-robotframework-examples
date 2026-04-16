@@ -74,6 +74,12 @@ Guides for setting up various infrastructure components.
 | ------------------- | -------------------------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | VS Code Setup Guide | IDE configuration and extensions setup | `README/How To Guides/robot_framework_guides/html_docs/03_vscode_setup_guide.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/robot_framework_guides/html_docs/03_vscode_setup_guide.html) |
 
+### Git
+
+| Document Name | Description | Relative Path | GitHub Link |
+| --- | --- | --- | --- |
+| Git Pull with Local Changes | How to save local changes, pull latest code, and restore your customizations | `README/How To Guides/infra_setup_guides/git/git_pull_with_local_changes.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/README/How%20To%20Guides/infra_setup_guides/git/git_pull_with_local_changes.html) |
+
 ### Windows
 
 | Document Name              | Description                                          | Relative Path                                                                              | GitHub Link                                                                                                                                                                                                          |

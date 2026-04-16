@@ -305,6 +305,249 @@ Check Object Exists
         RETURN    ${FALSE}
     END
 
+Wait Until New S3 Files Appear
+    [Documentation]    Polls an S3 bucket until the number of files with the given extension
+    ...    INCREASES beyond the ``previous_count``. Use this after pipeline execution
+    ...    to wait for the child pipeline to finish uploading NEW files — not just
+    ...    detect files from a prior run.
+    ...
+    ...    *Arguments:*
+    ...    - ``bucket_name``: S3 bucket to poll
+    ...    - ``extension``: File extension to look for (e.g., ``.txt``)
+    ...    - ``previous_count``: Number of files that existed BEFORE pipeline execution.
+    ...      The keyword waits until the count exceeds this number.
+    ...    - ``timeout``: Max seconds to wait (default: 60)
+    ...    - ``interval``: Seconds between polls (default: 5)
+    ...
+    ...    *Returns:*
+    ...    - The new file count after the wait completes
+    ...
+    ...    *Example:*
+    ...    | # Before pipeline execution: snapshot the count |
+    ...    | ${_}    ${count_before}=    Find Files In Bucket By Extension    test-bucket    .txt |
+    ...    | # ... execute pipeline ... |
+    ...    | # After: wait until count increases |
+    ...    | ${new_count}=    Wait Until New S3 Files Appear    test-bucket    .txt    ${count_before} |
+    [Arguments]    ${bucket_name}    ${extension}    ${previous_count}    ${timeout}=60    ${interval}=5
+
+    ${deadline}=    Evaluate    __import__('time').time() + ${timeout}
+    Log    Waiting for new '${extension}' files in bucket '${bucket_name}' (had ${previous_count} before execution)...    console=yes
+
+    WHILE    ${TRUE}
+        ${now}=    Evaluate    __import__('time').time()
+        IF    ${now} >= ${deadline}
+            ${files}    ${current}=    Find Files In Bucket By Extension    ${bucket_name}    ${extension}
+            Fail    Timed out after ${timeout}s waiting for new '${extension}' files. Count before=${previous_count}, now=${current}. Files: ${files}
+        END
+        ${files}    ${current}=    Find Files In Bucket By Extension    ${bucket_name}    ${extension}
+        IF    ${current} > ${previous_count}
+            Log    New files detected: count went from ${previous_count} to ${current} — proceeding.    console=yes
+            RETURN    ${current}
+        ELSE
+            Log    Still ${current} '${extension}' file(s) (need > ${previous_count}) — retrying in ${interval}s...    console=yes
+            Sleep    ${interval}s
+        END
+    END
+
+Download And Get File Content
+    [Documentation]    Downloads a single file from an S3 bucket and returns its content.
+    ...    Wrapper around ``Download Single File From MinIO`` for convenience.
+    ...
+    ...    *Arguments:*
+    ...    - ``bucket_name``: S3 bucket to download from
+    ...    - ``download_dir``: Local directory to save the file
+    ...    - ``object_key``: S3 object key to download
+    ...
+    ...    *Returns:*
+    ...    - File content as string (or binary for non-text files)
+    ...
+    ...    *Example:*
+    ...    | ${content}= | Download And Get File Content | test-bucket | ${DOWNLOAD_DIR} | extract/EXTRACT_20260416_000079.txt |
+    [Arguments]    ${bucket_name}    ${download_dir}    ${object_key}
+
+    ${content}=    Download Single File From MinIO
+    ...    ${download_dir}    ${bucket_name}    ${object_key}
+    RETURN    ${content}
+
+Verify All Files Are Non Empty In Bucket
+    [Documentation]    Checks that all S3 objects in the list have size > 0 bytes.
+    ...
+    ...    *Arguments:*
+    ...    - ``bucket_name``: S3 bucket containing the files
+    ...    - ``file_list``: List of S3 object keys to check
+    ...
+    ...    *Example:*
+    ...    | ${files}    ${_}=    Find Files In Bucket By Extension    test-bucket    .txt |
+    ...    | Verify All Files Are Non Empty In Bucket    test-bucket    ${files} |
+    [Arguments]    ${bucket_name}    ${file_list}
+
+    FOR    ${file_key}    IN    @{file_list}
+        ${metadata}=    Get Object Metadata    ${bucket_name}    ${file_key}
+        ${size}=    Evaluate    $metadata.get('ContentLength', 0)
+        Log    File: ${file_key} — Size: ${size} bytes    console=yes
+        Should Be True    ${size} > 0
+        ...    msg=File '${file_key}' is empty (0 bytes) in bucket '${bucket_name}'
+    END
+
+Get Current And Previous File Content From Bucket
+    [Documentation]    Downloads the two most recent files (by extension) from an S3 bucket
+    ...    and returns their content. Use for current-vs-previous-run comparisons.
+    ...
+    ...    *Arguments:*
+    ...    - ``bucket_name``: S3 bucket to search
+    ...    - ``download_dir``: Local directory to save downloaded files
+    ...    - ``extension``: File extension to filter (e.g., ``.txt``, ``.csv``)
+    ...    - ``line_prefix``: Optional — if set, only lines starting with this prefix
+    ...      are returned (e.g., ``CD`` to extract only detail records, skipping
+    ...      headers/trailers with dynamic values). If empty, full content is returned.
+    ...
+    ...    *Returns:*
+    ...    - ``${current_content}``: Content (or filtered lines) from the latest file
+    ...    - ``${previous_content}``: Content (or filtered lines) from the second-latest file
+    ...    - ``${current_file}``: S3 key of the latest file
+    ...    - ``${previous_file}``: S3 key of the second-latest file
+    ...    - ``${file_count}``: Total number of matching files in the bucket
+    ...
+    ...    *Fails if:*
+    ...    - No files found with the given extension
+    ...    - Fewer than 2 files found (no previous run to compare against)
+    ...
+    ...    *Examples:*
+    ...    | # Compare full content |
+    ...    | ${cur}    ${prev}    ${cur_f}    ${prev_f}    ${cnt}=    Get Current And Previous File Content From Bucket    test-bucket    ${DL_DIR}    .csv |
+    ...    |
+    ...    | # Compare only CD-prefixed lines (skip PA header / PT trailer) |
+    ...    | ${cur}    ${prev}    ${cur_f}    ${prev_f}    ${cnt}=    Get Current And Previous File Content From Bucket    test-bucket    ${DL_DIR}    .txt    line_prefix=CD |
+    [Arguments]    ${bucket_name}    ${download_dir}    ${extension}    ${line_prefix}=${EMPTY}
+
+    ${files}    ${file_count}=    Find Files In Bucket By Extension    ${bucket_name}    ${extension}
+
+    IF    ${file_count} == 0
+        Fail    No '${extension}' files found in bucket '${bucket_name}'.
+    END
+
+    IF    ${file_count} < 2
+        Fail    Only ${file_count} '${extension}' file(s) found in bucket '${bucket_name}'. Comparison requires at least 2 (current + previous). Run the pipeline a second time to generate a previous-run file.
+    END
+
+    ${current_file}=    Get From List    ${files}    0
+    ${previous_file}=    Get From List    ${files}    1
+
+    Log    Current file (latest): ${current_file}    console=yes
+    Log    Previous file: ${previous_file}    console=yes
+
+    ${current_raw}=    Download Single File From MinIO    ${download_dir}    ${bucket_name}    ${current_file}
+    ${previous_raw}=    Download Single File From MinIO    ${download_dir}    ${bucket_name}    ${previous_file}
+
+    IF    '${line_prefix}' != '${EMPTY}'
+        ${current_content}=    Extract Lines By Prefix    ${current_raw}    ${line_prefix}
+        ${previous_content}=    Extract Lines By Prefix    ${previous_raw}    ${line_prefix}
+    ELSE
+        ${current_content}=    Set Variable    ${current_raw}
+        ${previous_content}=    Set Variable    ${previous_raw}
+    END
+
+    RETURN    ${current_content}    ${previous_content}    ${current_file}    ${previous_file}    ${file_count}
+
+Find Files In Bucket By Extension
+    [Documentation]    Lists all objects in an S3 bucket filtered by file extension and optional path prefixes.
+    ...
+    ...    Returns a list of matching object keys, sorted descending (latest/highest first).
+    ...
+    ...    *Arguments:*
+    ...    - ``bucket_name``: S3 bucket to search in
+    ...    - ``extension``: File extension to filter by (e.g., ``.txt``, ``.csv``, ``.html``)
+    ...    - ``path_filters``: Optional list of path substrings to include. Only objects whose key
+    ...      contains at least one of these substrings are returned. Default: ``['extract/', 'output/']``.
+    ...      Pass an empty list to match ALL paths (no filtering).
+    ...
+    ...    *Returns:*
+    ...    - ``${files}``: List of matching object keys, sorted descending
+    ...    - ``${count}``: Number of matching files (integer)
+    ...
+    ...    *Examples:*
+    ...    | ${files}    ${count}=    Find Files In Bucket By Extension    test-bucket    .txt |
+    ...    | Should Be True    ${count} > 0    msg=No TXT files found |
+    ...    |
+    ...    | # Custom path filter |
+    ...    | ${files}=    Find Files In Bucket By Extension    test-bucket    .csv    path_filters=['reports/'] |
+    ...    |
+    ...    | # No path filtering — match all .json files in bucket |
+    ...    | ${files}=    Find Files In Bucket By Extension    test-bucket    .json    path_filters=[] |
+    [Arguments]    ${bucket_name}    ${extension}    @{path_filters}
+
+    # Default path filters if none provided
+    ${filter_count}=    Get Length    ${path_filters}
+    IF    ${filter_count} == 0
+        @{path_filters}=    Create List    extract/    output/
+    END
+
+    ${all_objects}=    List Objects In Bucket    ${bucket_name}
+    @{matching}=    Create List
+
+    FOR    ${key}    IN    @{all_objects}
+        ${ends_match}=    Evaluate    $key.endswith($extension)
+        IF    ${ends_match}
+            # If path_filters is empty after explicit pass, include all
+            ${pf_count}=    Get Length    ${path_filters}
+            IF    ${pf_count} == 0
+                Append To List    ${matching}    ${key}
+            ELSE
+                FOR    ${prefix}    IN    @{path_filters}
+                    ${contains}=    Evaluate    $prefix in $key
+                    IF    ${contains}
+                        Append To List    ${matching}    ${key}
+                        EXIT FOR LOOP
+                    END
+                END
+            END
+        END
+    END
+
+    Sort List    ${matching}
+    Reverse List    ${matching}
+    ${count}=    Get Length    ${matching}
+    Log    Found ${count} files with extension '${extension}' in bucket '${bucket_name}': ${matching}    console=yes
+    RETURN    ${matching}    ${count}
+
+Find Specific File In Bucket
+    [Documentation]    Searches for a specific file in an S3 bucket by listing all files
+    ...    matching the given extension and checking if the expected filename is present.
+    ...
+    ...    Returns two values:
+    ...    - ``${match_found}``: Boolean — True if the expected file was found
+    ...    - ``${files}``: List of all files matching the extension (for debugging)
+    ...
+    ...    *Arguments:*
+    ...    - ``bucket_name``: S3 bucket to search in
+    ...    - ``expected_filename``: The exact object key to look for (e.g., ``output/baseline/EXTRACT_20260410_000001.txt``)
+    ...    - ``extension``: File extension to filter by (e.g., ``.txt``, ``.csv``)
+    ...
+    ...    *Example:*
+    ...    | ${found}    ${files}=    Find Specific File In Bucket    test-bucket    output/EXTRACT_20260410_000001.txt    .txt |
+    ...    | Should Be True    ${found}    msg=Expected file not found. Found: ${files} |
+    [Arguments]    ${bucket_name}    ${expected_filename}    ${extension}
+
+    ${all_objects}=    List Objects In Bucket    ${bucket_name}
+    @{matching}=    Create List
+
+    FOR    ${key}    IN    @{all_objects}
+        ${ends_match}=    Evaluate    $key.endswith($extension)
+        IF    ${ends_match}
+            ${is_extract}=    Evaluate    'extract/' in $key or 'output/' in $key
+            IF    ${is_extract}    Append To List    ${matching}    ${key}
+        END
+    END
+
+    Sort List    ${matching}
+    Reverse List    ${matching}
+
+    ${match_found}=    Evaluate    $expected_filename in $matching
+    Log    Looking for: ${expected_filename}    console=yes
+    Log    Found ${matching.__len__()} files with extension '${extension}': ${matching}    console=yes
+
+    RETURN    ${match_found}    ${matching}
+
 Upload File To MinIO
     [Documentation]    Uploads a local file to a MinIO (S3 mock) bucket at the specified path.
     ...

@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Git Pull with Local Changes — Quick Reference</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .container { max-width: 1100px; margin: 0 auto; }
+        h1 {
+            font-size: 2rem;
+            color: #00d4ff;
+            margin-bottom: 0.3rem;
+        }
+        .subtitle {
+            color: #8892b0;
+            font-size: 1rem;
+            margin-bottom: 2rem;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 1.2rem;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat-card .number { font-size: 1.8rem; font-weight: 700; color: #00d4ff; }
+        .stat-card .label { font-size: 0.8rem; color: #8892b0; margin-top: 0.3rem; }
+        .section {
+            background: rgba(255,255,255,0.04);
+            border-radius: 12px;
+            padding: 1.5rem 2rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .section h2 {
+            color: #00d4ff;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(0,212,255,0.2);
+        }
+        .section h3 {
+            color: #64ffda;
+            font-size: 1.05rem;
+            margin: 1.2rem 0 0.6rem 0;
+        }
+        p, li { line-height: 1.7; margin-bottom: 0.5rem; }
+        ul { padding-left: 1.5rem; }
+        pre {
+            background: #0d1117;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+            overflow-x: auto;
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+            font-size: 0.88rem;
+            line-height: 1.6;
+            margin: 0.8rem 0;
+            color: #e6edf3;
+        }
+        code {
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+            background: rgba(255,255,255,0.08);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.88rem;
+            color: #ff7b72;
+        }
+        pre code { background: none; padding: 0; color: #e6edf3; }
+        .comment { color: #8b949e; }
+        .cmd { color: #d2a8ff; }
+        .flag { color: #79c0ff; }
+        .string { color: #a5d6ff; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.8rem 0;
+        }
+        th, td {
+            padding: 0.7rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        th {
+            background: rgba(0,212,255,0.1);
+            color: #00d4ff;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+        .info-box {
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+            margin: 0.8rem 0;
+            border-left: 4px solid;
+        }
+        .info-box.green { background: rgba(100,255,218,0.08); border-color: #64ffda; }
+        .info-box.blue { background: rgba(0,212,255,0.08); border-color: #00d4ff; }
+        .info-box.yellow { background: rgba(255,193,7,0.08); border-color: #ffc107; }
+        .info-box.red { background: rgba(255,82,82,0.08); border-color: #ff5252; }
+        .info-box strong { color: #ffffff; }
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge.green { background: rgba(100,255,218,0.15); color: #64ffda; }
+        .badge.yellow { background: rgba(255,193,7,0.15); color: #ffc107; }
+        .badge.red { background: rgba(255,82,82,0.15); color: #ff5252; }
+        .flow-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            margin: 1rem 0;
+        }
+        .flow-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        .step-num {
+            min-width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(0,212,255,0.2);
+            color: #00d4ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+        .step-content { flex: 1; }
+        .footer {
+            text-align: center;
+            color: #4a5568;
+            font-size: 0.8rem;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <h1>Git Pull with Local Changes</h1>
+    <p class="subtitle">Quick reference for updating your local repo while preserving your configuration changes</p>
+
+    <!-- Stats -->
+    <div class="stats">
+        <div class="stat-card">
+            <div class="number">4</div>
+            <div class="label">Options Available</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">Stash</div>
+            <div class="label">Recommended Approach</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">.env</div>
+            <div class="label">Usually Safe (gitignored)</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">3 min</div>
+            <div class="label">Time to Complete</div>
+        </div>
+    </div>
+
+    <!-- Pro Tip: Backup Folder -->
+    <div class="section">
+        <h2>Pro Tip &mdash; Use a <code>backup/</code> Folder for Your Custom Files</h2>
+
+        <div class="info-box green">
+            <strong>Best practice:</strong> Keep ALL your customized files (modified test configs, custom .env overrides,
+            pipeline tweaks, SQL scripts, etc.) in a <code>backup/</code> folder inside the project.
+            This folder is listed in <code>.gitignore</code>, so git will <strong>never touch it</strong> during pull/merge.
+        </div>
+
+        <h3>One-time setup</h3>
+<pre><code><span class="comment"># Create the backup folder</span>
+<span class="cmd">mkdir</span> <span class="flag">-p</span> backup
+
+<span class="comment"># Verify it's gitignored (should print "backup/")</span>
+<span class="cmd">git</span> check-ignore backup/</code></pre>
+
+        <div class="info-box yellow">
+            <strong>If <code>git check-ignore backup/</code> prints nothing</strong>, add it to <code>.gitignore</code>:
+<pre><code><span class="cmd">echo</span> <span class="string">"backup/"</span> >> .gitignore</code></pre>
+        </div>
+
+        <h3>Save your customized files</h3>
+<pre><code><span class="comment"># Copy any files you've customized into backup/</span>
+<span class="cmd">cp</span> .env backup/.env
+<span class="cmd">cp</span> test/suite/pipeline_tests/oracle/my_custom_test.robot backup/
+<span class="cmd">cp</span> env_files/database_accounts/.env.oracle backup/.env.oracle
+<span class="cmd">cp</span> src/pipelines/my_pipeline.slp backup/</code></pre>
+
+        <h3>Now git pull is painless</h3>
+<pre><code><span class="comment"># Pull with confidence — backup/ is invisible to git</span>
+<span class="cmd">git</span> pull
+
+<span class="comment"># Restore your files from backup</span>
+<span class="cmd">cp</span> backup/.env .env
+<span class="cmd">cp</span> backup/my_custom_test.robot test/suite/pipeline_tests/oracle/
+<span class="cmd">cp</span> backup/.env.oracle env_files/database_accounts/</code></pre>
+
+        <h3>Why this works</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Without backup/</th>
+                    <th>With backup/</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Edit files in place &rarr; git pull conflicts</td>
+                    <td>Edit files in place &rarr; copy to backup/ &rarr; git pull &rarr; copy back</td>
+                </tr>
+                <tr>
+                    <td>Must remember which files you changed</td>
+                    <td>backup/ folder IS the list of changed files</td>
+                </tr>
+                <tr>
+                    <td>Stash/unstash can be confusing</td>
+                    <td>Simple cp commands, no git knowledge needed</td>
+                </tr>
+                <tr>
+                    <td>Lose track of your overrides across updates</td>
+                    <td>backup/ persists across all git operations</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="info-box blue">
+            <strong>Tip:</strong> You can also keep notes in <code>backup/README.txt</code> describing what each file
+            overrides and why. Since the whole folder is gitignored, it's your private workspace.
+        </div>
+    </div>
+
+    <!-- Before You Start -->
+    <div class="section">
+        <h2>Before You Start</h2>
+        <div class="info-box blue">
+            <strong>Check if .env is tracked by git:</strong>
+            <pre><code><span class="cmd">git</span> check-ignore .env</code></pre>
+            <p>If it prints <code>.env</code> &rarr; your <code>.env</code> is gitignored and <code>git pull</code> will NOT touch it. You only need to worry about other files you changed.</p>
+            <p>If it prints nothing &rarr; <code>.env</code> IS tracked. Use one of the options below to save it.</p>
+        </div>
+
+        <h3>See what you changed</h3>
+<pre><code><span class="comment"># Show which files you modified</span>
+<span class="cmd">git</span> status
+
+<span class="comment"># Show the actual changes (line by line)</span>
+<span class="cmd">git</span> diff
+
+<span class="comment"># Show only filenames that changed</span>
+<span class="cmd">git</span> diff <span class="flag">--name-only</span></code></pre>
+    </div>
+
+    <!-- Option 1: Stash -->
+    <div class="section">
+        <h2>Option 1 &mdash; Git Stash <span class="badge green">Recommended</span></h2>
+        <p>Temporarily saves your changes, pulls the latest code, then re-applies your changes on top.</p>
+
+        <div class="flow-steps">
+            <div class="flow-step">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                    <strong>Save your local changes</strong>
+<pre><code><span class="cmd">git</span> stash</code></pre>
+                    <p>This removes your changes from the working directory and saves them in a temporary stash.</p>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                    <strong>Pull latest code</strong>
+<pre><code><span class="cmd">git</span> pull</code></pre>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="step-num">3</div>
+                <div class="step-content">
+                    <strong>Re-apply your changes</strong>
+<pre><code><span class="cmd">git</span> stash pop</code></pre>
+                    <p>Your local changes are now applied on top of the latest code.</p>
+                </div>
+            </div>
+        </div>
+
+        <h3>If you get merge conflicts</h3>
+<pre><code><span class="comment"># See which files have conflicts</span>
+<span class="cmd">git</span> status
+
+<span class="comment"># Open the conflicted file in your editor — look for &lt;&lt;&lt;&lt;&lt; and &gt;&gt;&gt;&gt;&gt; markers</span>
+<span class="comment"># Resolve the conflict manually, then:</span>
+<span class="cmd">git</span> add &lt;filename&gt;
+<span class="cmd">git</span> stash drop</code></pre>
+    </div>
+
+    <!-- Option 2: Manual Copy -->
+    <div class="section">
+        <h2>Option 2 &mdash; Manual Backup &amp; Restore <span class="badge yellow">Simple</span></h2>
+        <p>Best when you only changed a few specific files (like <code>.env</code> or test config).</p>
+
+        <div class="flow-steps">
+            <div class="flow-step">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                    <strong>Copy your changed files somewhere safe</strong>
+<pre><code><span class="cmd">cp</span> .env .env.backup
+<span class="cmd">cp</span> path/to/your/file path/to/your/file.backup</code></pre>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                    <strong>Pull latest code</strong>
+<pre><code><span class="cmd">git</span> pull</code></pre>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="step-num">3</div>
+                <div class="step-content">
+                    <strong>Copy your files back</strong>
+<pre><code><span class="cmd">cp</span> .env.backup .env
+<span class="cmd">cp</span> path/to/your/file.backup path/to/your/file</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Option 3: Branch -->
+    <div class="section">
+        <h2>Option 3 &mdash; Save Changes to a Branch <span class="badge green">Best for Long-Term</span></h2>
+        <p>Creates a permanent record of your changes that you can merge with any future update.</p>
+
+        <div class="flow-steps">
+            <div class="flow-step">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                    <strong>Create a branch with your changes</strong>
+<pre><code><span class="cmd">git</span> checkout <span class="flag">-b</span> my-local-changes</code></pre>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                    <strong>Commit your changes</strong>
+<pre><code><span class="cmd">git</span> add <span class="flag">-A</span>
+<span class="cmd">git</span> commit <span class="flag">-m</span> <span class="string">"My local config changes"</span></code></pre>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="step-num">3</div>
+                <div class="step-content">
+                    <strong>Switch back to main and pull</strong>
+<pre><code><span class="cmd">git</span> checkout main
+<span class="cmd">git</span> pull</code></pre>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="step-num">4</div>
+                <div class="step-content">
+                    <strong>Merge your changes on top</strong>
+<pre><code><span class="cmd">git</span> merge my-local-changes</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Option 4: Discard -->
+    <div class="section">
+        <h2>Option 4 &mdash; Discard Local Changes <span class="badge red">Destructive</span></h2>
+
+        <div class="info-box red">
+            <strong>Warning:</strong> This permanently deletes your local changes. Only use if you don't need them.
+        </div>
+
+<pre><code><span class="comment"># Throw away ALL local changes and match the remote exactly</span>
+<span class="cmd">git</span> checkout <span class="flag">--</span> .
+<span class="cmd">git</span> pull</code></pre>
+    </div>
+
+    <!-- Quick Reference Table -->
+    <div class="section">
+        <h2>Quick Reference</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Situation</th>
+                    <th>Command</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>I just changed <code>.env</code></td>
+                    <td><code>.env</code> is usually in <code>.gitignore</code> &mdash; just <code>git pull</code>. It won't be touched.</td>
+                </tr>
+                <tr>
+                    <td>I changed test files or Makefiles</td>
+                    <td><code>git stash</code> &rarr; <code>git pull</code> &rarr; <code>git stash pop</code></td>
+                </tr>
+                <tr>
+                    <td>I want to see what I changed</td>
+                    <td><code>git diff</code> (unstaged) or <code>git diff --cached</code> (staged)</td>
+                </tr>
+                <tr>
+                    <td>I want to throw away everything</td>
+                    <td><code>git checkout -- .</code> &rarr; <code>git pull</code></td>
+                </tr>
+                <tr>
+                    <td>I want to see if .env is safe</td>
+                    <td><code>git check-ignore .env</code> (prints .env if gitignored)</td>
+                </tr>
+                <tr>
+                    <td>I stashed but want to see what's in the stash</td>
+                    <td><code>git stash show -p</code></td>
+                </tr>
+                <tr>
+                    <td>I stashed but want to throw it away</td>
+                    <td><code>git stash drop</code></td>
+                </tr>
+                <tr>
+                    <td>I have multiple stashes</td>
+                    <td><code>git stash list</code> to see all, <code>git stash pop stash@{1}</code> to apply a specific one</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Common Errors -->
+    <div class="section">
+        <h2>Common Errors &amp; Fixes</h2>
+
+        <h3>"error: Your local changes would be overwritten by merge"</h3>
+        <p>Git is telling you that files you changed locally were also changed in the remote. Use Option 1 (stash) to save your changes first.</p>
+<pre><code><span class="cmd">git</span> stash
+<span class="cmd">git</span> pull
+<span class="cmd">git</span> stash pop</code></pre>
+
+        <h3>"CONFLICT (content): Merge conflict in &lt;filename&gt;"</h3>
+        <p>Both you and the remote changed the same lines. Open the file, find the <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code> markers, keep the version you want, delete the markers, then:</p>
+<pre><code><span class="cmd">git</span> add &lt;filename&gt;
+<span class="cmd">git</span> commit <span class="flag">-m</span> <span class="string">"Resolved merge conflict"</span></code></pre>
+
+        <h3>"Already up to date" but I know there are changes</h3>
+        <p>You might be on the wrong branch:</p>
+<pre><code><span class="comment"># Check which branch you're on</span>
+<span class="cmd">git</span> branch
+
+<span class="comment"># Switch to main if needed</span>
+<span class="cmd">git</span> checkout main
+<span class="cmd">git</span> pull</code></pre>
+    </div>
+
+    <div class="footer">
+        SnapLogic QA Automation &mdash; Git Quick Reference &mdash; Last updated: April 2026
+    </div>
+
+</div>
+</body>
+</html>

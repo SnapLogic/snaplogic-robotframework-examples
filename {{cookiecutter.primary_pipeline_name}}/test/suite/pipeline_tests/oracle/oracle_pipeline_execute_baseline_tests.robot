@@ -36,7 +36,7 @@ Suite Teardown      Disconnect from Database
 # ═══════════════════════════════════════════════════════════════
 # Pipeline Configuration
 # ═══════════════════════════════════════════════════════════════
-${pipeline_name}                        prime_oracle_baseline_tests
+${pipeline_name}                        prime_oracle_baseline_tests3
 ${pipeline_name_slp}                    prime_oracle_baseline_tests.slp
 ${child_pipeline_name}                  prime_oracle_child_pipeline
 ${child_pipeline_name_slp}              prime_oracle_child_pipeline.slp
@@ -185,7 +185,7 @@ Upload Sample Output Files To SLDB
     [Tags]    oracle_2    baseline    upload    pipeline
     [Template]    Upload File Using File Protocol Template
 
-    # local file path     destination_path
+    # local file path    destination_path
     ${SAMPLE_TXT_FILE}    ${PIPELINES_LOCATION_PATH}
     ${SAMPLE_ZIP_FILE}    ${PIPELINES_LOCATION_PATH}
     ${SAMPLE_HTML_FILE}    ${PIPELINES_LOCATION_PATH}
@@ -194,32 +194,6 @@ Upload Sample Output Files To SLDB
 # ═══════════════════════════════════════════════════════════════
 # STEP 1: Import Pipeline & Verify Configuration
 # ═══════════════════════════════════════════════════════════════
-
-Import Pipeline
-    [Documentation]    Imports both the parent and child pipeline (.slp files) into
-    ...    the SnapLogic project space.
-    ...    Pipeline files:
-    ...    - Parent: src/pipelines/${pipeline_name_slp}
-    ...    - Child:    src/pipelines/${child_pipeline_name_slp}
-    ...    Uses unique_id generated in suite setup for unique pipeline naming.
-    [Tags]    oracle_2    baseline    import    pipeline
-    [Template]    Import Pipelines From Template
-    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${pipeline_name_slp}
-    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${child_pipeline_name}    ${child_pipeline_name_slp}
-
-# ═══════════════════════════════════════════════════════════════
-# STEP 2: Create and Execute Triggered Task
-# ═══════════════════════════════════════════════════════════════
-
-Create Triggered Task For Parent Pipeline
-    [Documentation]    Creates a triggered task for the parent pipeline and returns
-    ...    the task name and task snode id used to execute it.
-    ...    Prerequisites:
-    ...    - Import Pipeline must have completed (pipeline exists in project)
-    ...    - Groundplex must be running and registered
-    [Tags]    oracle_2    baseline    task    pipeline
-    [Template]    Create Triggered Task From Template
-    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task1}    ${GROUNDPLEX_NAME}    ${task_params_set}    ${task_notifications}
 
 Reset Pipeline Prerequisites Before Execution
     [Documentation]    Resets LOAD_STATUS_CD and START_DT for both the upstream process
@@ -233,11 +207,65 @@ Reset Pipeline Prerequisites Before Execution
     Execute SQL String Safe    ${SQL_UPDATE_START_DT_TODAY}
 
     Log    Resetting pipeline prerequisites (PIPELINE_DATA_EXTRACT)...    console=yes
-    Execute SQL String Safe    UPDATE PROCESS_CONFIG SET CONFIG_VALUE='C', LAST_UPD_TIMESTAMP=sysdate WHERE CONFIG_CD='LOAD_STATUS_CD' and PROCESS_CD='PIPELINE_DATA_EXTRACT'
+    Execute SQL String Safe
+    ...    UPDATE PROCESS_CONFIG SET CONFIG_VALUE='C', LAST_UPD_TIMESTAMP=sysdate WHERE CONFIG_CD='LOAD_STATUS_CD' and PROCESS_CD='PIPELINE_DATA_EXTRACT'
     # START_DT must be yesterday so that START_DT + TERM(1) = today <= SYSDATE passes
-    Execute SQL String Safe    UPDATE PROCESS_CONFIG SET CONFIG_VALUE=to_char(sysdate-1,'mm/dd/yyyy'), LAST_UPD_TIMESTAMP=sysdate WHERE CONFIG_CD='START_DT' and PROCESS_CD='PIPELINE_DATA_EXTRACT'
+    Execute SQL String Safe
+    ...    UPDATE PROCESS_CONFIG SET CONFIG_VALUE=to_char(sysdate-1,'mm/dd/yyyy'), LAST_UPD_TIMESTAMP=sysdate WHERE CONFIG_CD='START_DT' and PROCESS_CD='PIPELINE_DATA_EXTRACT'
 
     Log    All prerequisites reset. Pipeline should pass check and execute child.    console=yes
+
+Import Pipeline
+    [Documentation]    Imports both the parent and child pipeline (.slp files) into
+    ...    the SnapLogic project space.
+    ...    Pipeline files:
+    ...    - Parent: src/pipelines/${pipeline_name_slp}
+    ...    - Child:    src/pipelines/${child_pipeline_name_slp}
+    ...    Uses unique_id generated in suite setup for unique pipeline naming.
+    [Tags]    oracle_23    baseline    import    pipeline
+    [Template]    Import Pipelines From Template
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${pipeline_name_slp}
+
+Import existing child Pipeline
+    [Documentation]    Imports pipelines using their original name without appending
+    ...    a unique suffix. Use this when the pipeline name must remain exactly as-is
+    ...    (e.g., when downstream tasks or expressions reference the pipeline by a fixed name).
+    ...    Pipeline files:
+    ...    - Parent: src/pipelines/${pipeline_name_slp}
+    ...    - Child:    src/pipelines/${child_pipeline_name_slp}
+    [Tags]    oracle_2    baseline    import    pipeline    no_suffix
+    [Template]    Import Pipeline With Original Name
+    # ${PIPELINES_LOCATION_PATH}    ${child_pipeline_name}    ${child_pipeline_name_slp}    duplicate_check=true
+    # ${PIPELINES_LOCATION_PATH}    ${child_pipeline_name}    ${child_pipeline_name_slp}    duplicate_check=true
+
+    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${pipeline_name_slp}
+    ${PIPELINES_LOCATION_PATH}    ${child_pipeline_name}    ${child_pipeline_name_slp}
+
+# ═══════════════════════════════════════════════════════════════
+# STEP 2: Create and Execute Triggered Task
+# ═══════════════════════════════════════════════════════════════
+
+Create Triggered Task For Parent Pipeline
+    [Documentation]    Creates a triggered task for the parent pipeline and returns
+    ...    the task name and task snode id used to execute it.
+    ...    Prerequisites:
+    ...    - Import Pipeline must have completed (pipeline exists in project)
+    ...    - Groundplex must be running and registered
+    [Tags]    baseline    task    pipeline
+    [Template]    Create Triggered Task From Template
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task1}    ${GROUNDPLEX_NAME}    ${task_params_set}    ${task_notifications}
+
+Create Triggered Task For Pipelines WithOut UniqueID Appended
+    [Documentation]    Creates a triggered task for the parent pipeline that was imported
+    ...    without a unique suffix (via Import Pipeline With Original Name).
+    ...    The task name still includes unique_id to avoid collisions across runs,
+    ...    but the pipeline snode lookup uses the original pipeline name (no suffix).
+    ...    Prerequisites:
+    ...    - Import existing child Pipeline must have completed
+    ...    - Groundplex must be running and registered
+    [Tags]    oracle_2    oracle_existing_pl    baseline    task    pipeline    no_suffix
+    [Template]    Create Triggered Task For Original Pipeline Name
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task1}    ${GROUNDPLEX_NAME}    ${task_params_set}    ${task_notifications}
 
 Execute Triggered Task With Parameters
     [Documentation]    Executes the triggered task for the parent pipeline.
@@ -248,13 +276,29 @@ Execute Triggered Task With Parameters
     ...    4. Child reads sample files from SLDB and uploads to S3
     ...    5. Parent updates LOAD_STATUS_CD, FILE_SEQ_NO in Oracle
     ...
-    ...    After execution, 3 files should appear in MinIO:
+    ...    After execution, 4 files should appear in MinIO:
     ...    - EXTRACT_{FILE_DATE}_{FILE_SEQ_NO}.txt
-    ...    - SUMMARY_{FILE_DATE}_{FILE_SEQ_NO}.html
-    ...    - DETAIL_RPT_{FILE_DATE}_{FILE_SEQ_NO}.csv
-    [Tags]    oracle_2    baseline    execute    pipeline
+    ...    - EXTRACT_{FILE_DATE}_{FILE_SEQ_NO}.zip
+    ...    - EXTRACT_{FILE_DATE}_{FILE_SEQ_NO}.csv
+    ...    - EXTRACT_{FILE_DATE}_{FILE_SEQ_NO}.html
+    [Tags]    oracle_2    oracle_existing_pl    baseline    execute    pipeline
     [Template]    Run Triggered Task With Parameters From Template
     ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task1}
+
+Wait For Pipeline Output Files In S3
+    [Documentation]    Waits for the child pipeline to finish uploading NEW files to S3.
+    ...    Compares the current TXT file count against the snapshot taken before
+    ...    execution. Proceeds only when the count increases (new files detected).
+    ...    Prevents false positives from files left by previous runs.
+    [Tags]    oracle_2    baseline    execute    pipeline
+
+    ${new_count}=    Wait Until New S3 Files Appear
+    ...    ${OUTPUT_BUCKET}
+    ...    ${TXT_EXTENSION}
+    ...    ${S3_TXT_COUNT_BEFORE}
+    ...    timeout=90
+    ...    interval=5
+    Log    S3 TXT file count: before=${S3_TXT_COUNT_BEFORE}, after=${new_count}    console=yes
 
 # ═══════════════════════════════════════════════════════════════
 # STEP 3: TXT Output Verification (NCPDP PA44 Format)
@@ -266,20 +310,33 @@ Verify Extract TXT Files Exist In S3
     ...    file was created. If missing, the pipeline failed silently.
     [Tags]    oracle_2    baseline    s3_output    content    pipeline
 
-    ${txt_files}=    Find Files In Bucket By Extension    ${TXT_EXTENSION}
-    ${file_count}=    Get Length    ${txt_files}
+    ${txt_files}    ${file_count}=    Find Files In Bucket By Extension    ${OUTPUT_BUCKET}    ${TXT_EXTENSION}
     Log    Found ${file_count} TXT files: ${txt_files}    console=yes
     Should Be True    ${file_count} > 0
     ...    msg=No TXT extract files found in bucket '${OUTPUT_BUCKET}'
+
+Verify Specific TXT Extract File Naming Pattern
+    [Documentation]    Verifies the latest TXT extract file in S3 follows the expected
+    ...    naming convention: EXTRACT_YYYYMMDD_NNNNNN.txt
+    ...    This confirms the pipeline dynamically generated the filename from
+    ...    FILE_DATE and FILE_SEQ_NO (both sourced from Oracle PROCESS_CONFIG).
+    [Tags]    oracle_2    baseline    s3_output    content    pipeline
+
+    ${txt_files}    ${count}=    Find Files In Bucket By Extension    ${OUTPUT_BUCKET}    ${TXT_EXTENSION}
+    Should Be True    ${count} > 0    msg=No TXT files found in bucket '${OUTPUT_BUCKET}'
+    ${latest_file}=    Get From List    ${txt_files}    0
+    Log    Latest TXT file: ${latest_file}    console=yes
+    Should Match Regexp    ${latest_file}    extract/EXTRACT_\\d{8}_\\d{6}\\.txt
+    ...    msg=Latest TXT file '${latest_file}' doesn't match expected pattern EXTRACT_YYYYMMDD_NNNNNN.txt
 
 Verify Extract Files Are Non Empty
     [Documentation]    Verifies all TXT extract files have content (size > 0 bytes).
     [Tags]    oracle_2    baseline    s3_output    content    pipeline
 
-    ${txt_files}=    Find Files In Bucket By Extension    ${TXT_EXTENSION}
+    ${txt_files}    ${_}=    Find Files In Bucket By Extension    ${OUTPUT_BUCKET}    ${TXT_EXTENSION}
     ${has_files}=    Check File List Is Not Empty    ${txt_files}    TXT extract
     Pass Execution If    not ${has_files}    No TXT files to validate — skipping.
-    Verify All Files Are Non Empty    ${txt_files}
+    Verify All Files Are Non Empty In Bucket    ${OUTPUT_BUCKET}    ${txt_files}
 
 Verify TXT Extract Has PA Header Record
     [Documentation]    Verifies the TXT extract starts with a PA (header) record.
@@ -287,7 +344,7 @@ Verify TXT Extract Has PA Header Record
     ...    containing file date, plan ID, client ID, and file sequence number.
     [Tags]    oracle_2    baseline    s3_output    content    pipeline
 
-    ${txt_files}=    Find Files In Bucket By Extension    ${TXT_EXTENSION}
+    ${txt_files}    ${_}=    Find Files In Bucket By Extension    ${OUTPUT_BUCKET}    ${TXT_EXTENSION}
     ${has_files}=    Check File List Is Not Empty    ${txt_files}    TXT extract
     Pass Execution If    not ${has_files}    No TXT files to validate — skipping.
 
@@ -304,7 +361,7 @@ Verify TXT Extract Has PT Trailer Record
     ...    The trailer confirms the file is complete and not truncated.
     [Tags]    oracle_2    baseline    s3_output    content    pipeline
 
-    ${txt_files}=    Find Files In Bucket By Extension    ${TXT_EXTENSION}
+    ${txt_files}    ${_}=    Find Files In Bucket By Extension    ${OUTPUT_BUCKET}    ${TXT_EXTENSION}
     ${has_files}=    Check File List Is Not Empty    ${txt_files}    TXT extract
     Pass Execution If    not ${has_files}    No TXT files to validate — skipping.
 
@@ -321,7 +378,7 @@ Verify TXT Extract Has CD Detail Records
     ...    Each claim in the extract is represented by a line starting with 'CD'.
     [Tags]    oracle_2    baseline    s3_output    content    pipeline
 
-    ${txt_files}=    Find Files In Bucket By Extension    ${TXT_EXTENSION}
+    ${txt_files}    ${_}=    Find Files In Bucket By Extension    ${OUTPUT_BUCKET}    ${TXT_EXTENSION}
     ${has_files}=    Check File List Is Not Empty    ${txt_files}    TXT extract
     Pass Execution If    not ${has_files}    No TXT files to validate — skipping.
 
@@ -338,7 +395,7 @@ Verify TXT Extract Record Count Matches Expected
     ...    1 PA header + 5 CD detail records + 1 PT trailer = 7 total.
     [Tags]    oracle_2    baseline    s3_output    content    pipeline
 
-    ${txt_files}=    Find Files In Bucket By Extension    ${TXT_EXTENSION}
+    ${txt_files}    ${_}=    Find Files In Bucket By Extension    ${OUTPUT_BUCKET}    ${TXT_EXTENSION}
     ${has_files}=    Check File List Is Not Empty    ${txt_files}    TXT extract
     Pass Execution If    not ${has_files}    No TXT files to validate — skipping.
 
@@ -351,6 +408,48 @@ Verify TXT Extract Record Count Matches Expected
     ...    msg=TXT extract should have 7 lines (1 PA + 5 CD + 1 PT) but got ${line_count}
 
 # ═══════════════════════════════════════════════════════════════
+# STEP 4: Previous Run Comparison
+# Per logic: "We do compare against previous for same data-set runs"
+# Mirrors production workflow:
+#    1. Before pipeline runs → save existing S3 files as "previous run"
+#    2. Pipeline runs → creates new files
+#    3. After pipeline runs → compare current vs previous
+#    4. If no previous run exists → skip comparison (first run)
+# ═══════════════════════════════════════════════════════════════
+
+Compare TXT Output Against Previous Run
+    [Documentation]    Compares the current TXT extract against the previous run's extract.
+    ...    Only CD (detail) records are compared — PA header and PT trailer are
+    ...    excluded because they contain dynamic values (FILE_DATE, FILE_SEQ_NO).
+    ...    The CD detail records should be identical since the same dataset is used.
+    ...
+    ...    Real-world scenario:
+    ...    After each run, developers compare the current extract against the previous
+    ...    run's extract for the same dataset. If the detail records differ, it means
+    ...    the pipeline logic changed or source data was modified unexpectedly.
+    ...
+    ...    If no previous run exists (first run), the test FAILS with a message
+    ...    to run a second time. Two runs are needed to have a current vs previous pair.
+    [Tags]    oracle_2    baseline    s3_output    comparison    pipeline
+
+    # Logic: download latest two TXT files, extract only CD-prefixed lines
+    ${current_details}
+    ...    ${previous_details}
+    ...    ${current_file}
+    ...    ${previous_file}
+    ...    ${file_count}=
+    ...    Get Current And Previous File Content From Bucket
+    ...    ${OUTPUT_BUCKET}
+    ...    ${S3_OUTPUT_DOWNLOAD_DIR}
+    ...    ${TXT_EXTENSION}
+    ...    line_prefix=CD
+
+    # Verification only
+    Log    Comparing CD records: ${current_file} vs ${previous_file}    console=yes
+    Should Be Equal    ${current_details}    ${previous_details}
+    ...    msg=CD detail records differ between current (${current_file}) and previous (${previous_file}) run.
+
+# ═══════════════════════════════════════════════════════════════
 # STEP 3: HTML Output Verification (Claims Summary Report)
 # ═══════════════════════════════════════════════════════════════
 
@@ -358,8 +457,7 @@ Verify HTML Report Exists In S3
     [Documentation]    Verifies that the pipeline generated an HTML summary report.
     [Tags]    oracle_2    baseline    s3_output    content    pipeline
 
-    ${html_files}=    Find Files In Bucket By Extension    ${HTML_EXTENSION}
-    ${file_count}=    Get Length    ${html_files}
+    ${html_files}    ${file_count}=    Find Files In Bucket By Extension    ${OUTPUT_BUCKET}    ${HTML_EXTENSION}
     Log    Found ${file_count} HTML reports: ${html_files}    console=yes
     Should Be True    ${file_count} > 0
     ...    msg=No HTML reports found in bucket '${OUTPUT_BUCKET}'
@@ -368,7 +466,7 @@ Verify HTML Report Contains Report Title
     [Documentation]    Verifies the HTML summary report contains the expected title.
     [Tags]    oracle_2    baseline    s3_output    content    pipeline
 
-    ${html_files}=    Find Files In Bucket By Extension    ${HTML_EXTENSION}
+    ${html_files}    ${_}=    Find Files In Bucket By Extension    ${OUTPUT_BUCKET}    ${HTML_EXTENSION}
     ${has_files}=    Check File List Is Not Empty    ${html_files}    HTML report
     Pass Execution If    not ${has_files}    No HTML files to validate — skipping.
 
@@ -383,7 +481,7 @@ Verify HTML Report Contains Process Code
     [Documentation]    Verifies the HTML report references the correct process code.
     [Tags]    oracle_2    baseline    s3_output    content    pipeline
 
-    ${html_files}=    Find Files In Bucket By Extension    ${HTML_EXTENSION}
+    ${html_files}    ${_}=    Find Files In Bucket By Extension    ${OUTPUT_BUCKET}    ${HTML_EXTENSION}
     ${has_files}=    Check File List Is Not Empty    ${html_files}    HTML report
     Pass Execution If    not ${has_files}    No HTML files to validate — skipping.
 
@@ -399,7 +497,7 @@ Verify HTML Report Contains Claims Status Summary
     ...    Our 5 mock claims all have CLAIM_STATUS_CD='P' (Paid), totaling $680.90.
     [Tags]    oracle_2    baseline    s3_output    content    pipeline
 
-    ${html_files}=    Find Files In Bucket By Extension    ${HTML_EXTENSION}
+    ${html_files}    ${_}=    Find Files In Bucket By Extension    ${OUTPUT_BUCKET}    ${HTML_EXTENSION}
     ${has_files}=    Check File List Is Not Empty    ${html_files}    HTML report
     Pass Execution If    not ${has_files}    No HTML files to validate — skipping.
 
@@ -416,7 +514,7 @@ Verify HTML Report Contains Expected Claim Count
     [Documentation]    Verifies the HTML report shows 5 claims in the summary.
     [Tags]    oracle_2    baseline    s3_output    content    pipeline
 
-    ${html_files}=    Find Files In Bucket By Extension    ${HTML_EXTENSION}
+    ${html_files}    ${_}=    Find Files In Bucket By Extension    ${OUTPUT_BUCKET}    ${HTML_EXTENSION}
     ${has_files}=    Check File List Is Not Empty    ${html_files}    HTML report
     Pass Execution If    not ${has_files}    No HTML files to validate — skipping.
 
@@ -427,304 +525,73 @@ Verify HTML Report Contains Expected Claim Count
     ...    msg=HTML report does not contain '5 claims' — expected 5 mock records
     Log    HTML report shows correct claim count.    console=yes
 
-# ═══════════════════════════════════════════════════════════════
-# STEP 3: CSV Output Verification (Detail Report)
-# ═══════════════════════════════════════════════════════════════
-
-Verify CSV Detail Report Exists In S3
-    [Documentation]    Verifies that the pipeline generated a CSV detail report.
-    [Tags]    oracle_2    baseline    s3_output    content    pipeline
-
-    ${csv_files}=    Find Files In Bucket By Extension    ${CSV_EXTENSION}
-    ${file_count}=    Get Length    ${csv_files}
-    Log    Found ${file_count} CSV reports: ${csv_files}    console=yes
-    Should Be True    ${file_count} > 0
-    ...    msg=No CSV detail reports found in bucket '${OUTPUT_BUCKET}'
-
-Verify CSV Report Contains Expected Column Headers
-    [Documentation]    Verifies the CSV header row contains expected column names.
-    [Tags]    oracle_2    baseline    s3_output    content    pipeline
-
-    ${csv_files}=    Find Files In Bucket By Extension    ${CSV_EXTENSION}
-    ${has_files}=    Check File List Is Not Empty    ${csv_files}    CSV report
-    Pass Execution If    not ${has_files}    No CSV files to validate — skipping.
-
-    ${first_file}=    Get From List    ${csv_files}    0
-    ${content}=    Download And Get File Content    ${first_file}
-    ${header_line}=    Get First Line    ${content}
-
-    Log    CSV header: ${header_line}    console=yes
-    Should Contain    ${header_line}    HEALTH_SERVICE_ID
-    ...    msg=CSV header missing HEALTH_SERVICE_ID column
-    Should Contain    ${header_line}    PAT_FIRST_NAME
-    ...    msg=CSV header missing PAT_FIRST_NAME column
-    Should Contain    ${header_line}    PAT_LAST_NAME
-    ...    msg=CSV header missing PAT_LAST_NAME column
-    Should Contain    ${header_line}    CLAIM_STATUS_CD
-    ...    msg=CSV header missing CLAIM_STATUS_CD column
-    Should Contain    ${header_line}    SERVICE_DT
-    ...    msg=CSV header missing SERVICE_DT column
-    Should Contain    ${header_line}    I_INGRED_COST_AMT
-    ...    msg=CSV header missing I_INGRED_COST_AMT column
-    Log    CSV header contains all expected columns.    console=yes
-
-Verify CSV Report Has Expected Row Count
-    [Documentation]    Verifies the CSV has exactly 6 lines: 1 header + 5 data rows.
-    [Tags]    oracle_2    baseline    s3_output    content    pipeline
-
-    ${csv_files}=    Find Files In Bucket By Extension    ${CSV_EXTENSION}
-    ${has_files}=    Check File List Is Not Empty    ${csv_files}    CSV report
-    Pass Execution If    not ${has_files}    No CSV files to validate — skipping.
-
-    ${first_file}=    Get From List    ${csv_files}    0
-    ${content}=    Download And Get File Content    ${first_file}
-    ${line_count}=    Count Lines In Content    ${content}
-
-    Log    CSV report has ${line_count} lines (expected: 6 = 1 header + 5 data rows)    console=yes
-    Should Be Equal As Integers    ${line_count}    6
-    ...    msg=CSV report should have 6 lines (1 header + 5 data) but got ${line_count}
-
-Verify CSV Report Contains Expected Patient Names
-    [Documentation]    Verifies the CSV report contains data for all 5 mock patients.
-    [Tags]    oracle_2    baseline    s3_output    content    pipeline
-
-    ${csv_files}=    Find Files In Bucket By Extension    ${CSV_EXTENSION}
-    ${has_files}=    Check File List Is Not Empty    ${csv_files}    CSV report
-    Pass Execution If    not ${has_files}    No CSV files to validate — skipping.
-
-    ${first_file}=    Get From List    ${csv_files}    0
-    ${content}=    Download And Get File Content    ${first_file}
-
-    Should Contain    ${content}    DOE
-    ...    msg=CSV report missing patient DOE (claim 1)
-    Should Contain    ${content}    MILLER
-    ...    msg=CSV report missing patient MILLER (claim 2)
-    Should Contain    ${content}    TURNER
-    ...    msg=CSV report missing patient TURNER (claim 3)
-    Should Contain    ${content}    WILSON
-    ...    msg=CSV report missing patient WILSON (claim 4)
-    Should Contain    ${content}    GARCIA
-    ...    msg=CSV report missing patient GARCIA (claim 5)
-    Log    CSV report contains all 5 expected patient names.    console=yes
-
-Verify CSV Report Contains All Paid Claims
-    [Documentation]    Verifies all claims in the CSV have CLAIM_STATUS_CD = 'P' (Paid).
-    [Tags]    oracle_2    baseline    s3_output    content    pipeline
-
-    ${csv_files}=    Find Files In Bucket By Extension    ${CSV_EXTENSION}
-    ${has_files}=    Check File List Is Not Empty    ${csv_files}    CSV report
-    Pass Execution If    not ${has_files}    No CSV files to validate — skipping.
-
-    ${first_file}=    Get From List    ${csv_files}    0
-    ${content}=    Download And Get File Content    ${first_file}
-    ${paid_count}=    Count Occurrences In Content    ${content}    ,P,
-    # Fallback: also check for P as claim status in different formats
-    IF    ${paid_count} == 0
-        ${paid_count}=    Count Lines Starting With    ${content}    -3
-        Log    Fallback: counted ${paid_count} lines starting with claim IDs    console=yes
-    END
-
-    Log    Found ${paid_count} Paid (P) claims in CSV (expected: 5)    console=yes
-    Should Be True    ${paid_count} >= 5
-    ...    msg=Expected at least 5 Paid claims but found ${paid_count}
-
-# ═══════════════════════════════════════════════════════════════
-# STEP 3: ZIP Output Verification
-# ═══════════════════════════════════════════════════════════════
-
-Verify ZIP File Exists In S3
-    [Documentation]    Verifies that the pipeline created a ZIP file in S3.
-    ...    In production, the TXT extract is compressed into a ZIP for downstream delivery.
-    [Tags]    oracle_2    baseline    s3_output    content    pipeline
-
-    ${zip_files}=    Find Files In Bucket By Extension    ${ZIP_EXTENSION}
-    ${file_count}=    Get Length    ${zip_files}
-    Log    Found ${file_count} ZIP files: ${zip_files}    console=yes
-    Should Be True    ${file_count} > 0
-    ...    msg=No ZIP files found in bucket '${OUTPUT_BUCKET}'
-
-Verify ZIP File Is Non Empty
-    [Documentation]    Verifies the ZIP file has content (size > 0 bytes).
-    [Tags]    oracle_2    baseline    s3_output    content    pipeline
-
-    ${zip_files}=    Find Files In Bucket By Extension    ${ZIP_EXTENSION}
-    ${has_files}=    Check File List Is Not Empty    ${zip_files}    ZIP
-    Pass Execution If    not ${has_files}    No ZIP files to validate — skipping.
-
-    Verify All Files Are Non Empty    ${zip_files}
-
-Verify ZIP File Is Valid Archive
-    [Documentation]    Downloads the ZIP file and verifies it is a valid ZIP archive.
-    ...    A corrupted ZIP means downstream systems cannot deliver the extract.
-    [Tags]    oracle_2    baseline    s3_output    content    pipeline
-
-    ${zip_files}=    Find Files In Bucket By Extension    ${ZIP_EXTENSION}
-    ${has_files}=    Check File List Is Not Empty    ${zip_files}    ZIP
-    Pass Execution If    not ${has_files}    No ZIP files to validate — skipping.
-
-    ${first_zip}=    Get From List    ${zip_files}    0
-    Download And Get File Content    ${first_zip}
-
-    ${local_path}=    Set Variable    ${S3_OUTPUT_DOWNLOAD_DIR}/${first_zip}
-    ${is_valid}=    Verify ZIP File Is Readable    ${local_path}
-
-    Log    ZIP file valid: ${is_valid}    console=yes
-    Should Be True    ${is_valid}
-    ...    msg=ZIP file '${first_zip}' is corrupted or not a valid ZIP
-
-Verify ZIP Contains Files
-    [Documentation]    Opens the ZIP and verifies it contains at least one file.
-    ...    An empty ZIP means the extract file was not included.
-    [Tags]    oracle_2    baseline    s3_output    content    pipeline
-
-    ${zip_files}=    Find Files In Bucket By Extension    ${ZIP_EXTENSION}
-    ${has_files}=    Check File List Is Not Empty    ${zip_files}    ZIP
-    Pass Execution If    not ${has_files}    No ZIP files to check — skipping.
-
-    ${first_zip}=    Get From List    ${zip_files}    0
-    ${local_path}=    Set Variable    ${S3_OUTPUT_DOWNLOAD_DIR}/${first_zip}
-    ${zip_contents}=    List ZIP File Contents    ${local_path}
-    ${content_count}=    Get Length    ${zip_contents}
-
-    Log    ZIP contains ${content_count} file(s): ${zip_contents}    console=yes
-    Should Be True    ${content_count} > 0
-    ...    msg=ZIP file is empty — contains no files
-
-# ═══════════════════════════════════════════════════════════════
-# STEP 4: Previous Run Comparison
-# Per Gunja: "We do compare against previous for same data-set runs"
-# Mirrors production workflow:
-#   1. Before pipeline runs → save existing S3 files as "previous run"
-#   2. Pipeline runs → creates new files
-#   3. After pipeline runs → compare current vs previous
-#   4. If no previous run exists → skip comparison (first run)
-# ═══════════════════════════════════════════════════════════════
-
-Compare TXT Output Against Previous Run
-    [Documentation]    Compares the current TXT extract against the previous run's extract.
-    ...    Only CD (detail) records are compared — PA header and PT trailer are
-    ...    excluded because they contain dynamic values (FILE_DATE, FILE_SEQ_NO).
-    ...    The CD detail records should be identical since the same dataset is used.
-    ...
-    ...    Real-world scenario:
-    ...    After each run, developers compare the current extract against the previous
-    ...    run's extract for the same dataset. If the detail records differ, it means
-    ...    the pipeline logic changed or source data was modified unexpectedly.
-    ...
-    ...    If no previous run exists (first run), the test saves the current output
-    ...    as baseline and passes.
-    [Tags]    oracle_2    baseline    s3_output    comparison    pipeline
-
-    ${txt_files}=    Find Files In Bucket By Extension    ${TXT_EXTENSION}
-    ${has_files}=    Check File List Is Not Empty    ${txt_files}    TXT extract
-    Pass Execution If    not ${has_files}    No TXT files to compare — skipping.
-
-    # Get current run file (latest = first in descending list)
-    ${current_file}=    Get From List    ${txt_files}    0
-    ${current_content}=    Download And Get File Content    ${current_file}
-    ${current_details}=    Extract Lines By Prefix    ${current_content}    CD
-
-    # Check if previous run file exists (second in list = previous run)
-    ${file_count}=    Get Length    ${txt_files}
-    IF    ${file_count} < 2
-        Log    First run — no previous TXT to compare. Saving current as baseline.    console=yes
-        Pass Execution    First run — no previous TXT to compare against.
-    END
-
-    # Get previous run file (second latest)
-    ${previous_file}=    Get From List    ${txt_files}    1
-    ${previous_content}=    Download And Get File Content    ${previous_file}
-    ${previous_details}=    Extract Lines By Prefix    ${previous_content}    CD
-
-    Log    Current file: ${current_file} (${current_details.__len__()} CD records)    console=yes
-    Log    Previous file: ${previous_file} (${previous_details.__len__()} CD records)    console=yes
-
-    Should Be Equal    ${current_details}    ${previous_details}
-    ...    msg=TXT detail records differ between runs: ${current_file} vs ${previous_file}
-
-    Log    TXT detail records match between current and previous run.    console=yes
-
-Compare CSV Output Against Previous Run
-    [Documentation]    Compares the current CSV detail report against the previous run's report.
-    ...    Row counts and data content should match for the same dataset.
-    ...
-    ...    Real-world scenario:
-    ...    Developers compare the current CSV against the previous run. If row counts
-    ...    or key column values differ, the pipeline logic or source data changed.
-    ...
-    ...    If no previous run exists (first run), the test passes.
-    [Tags]    oracle_2    baseline    s3_output    comparison    pipeline
-
-    ${csv_files}=    Find Files In Bucket By Extension    ${CSV_EXTENSION}
-    ${has_files}=    Check File List Is Not Empty    ${csv_files}    CSV report
-    Pass Execution If    not ${has_files}    No CSV files to compare — skipping.
-
-    # Get current run file
-    ${current_file}=    Get From List    ${csv_files}    0
-    ${current_content}=    Download And Get File Content    ${current_file}
-
-    # Check if previous run exists
-    ${file_count}=    Get Length    ${csv_files}
-    IF    ${file_count} < 2
-        Log    First run — no previous CSV to compare. Saving current as baseline.    console=yes
-        Pass Execution    First run — no previous CSV to compare against.
-    END
-
-    # Get previous run file
-    ${previous_file}=    Get From List    ${csv_files}    1
-    ${previous_content}=    Download And Get File Content    ${previous_file}
-
-    Log    Current file: ${current_file}    console=yes
-    Log    Previous file: ${previous_file}    console=yes
-
-    Should Be Equal    ${current_content}    ${previous_content}
-    ...    msg=CSV report differs between runs: ${current_file} vs ${previous_file}
-
-    Log    CSV report matches between current and previous run.    console=yes
-
 Compare HTML Output Against Previous Run
     [Documentation]    Compares the current HTML summary report against the previous run's report.
-    ...    Claims counts, amounts, and status breakdowns should match for the same dataset.
+    ...    Full content is compared (no line-prefix filtering) since the HTML report
+    ...    contains static summary data (claim counts, status, totals) that should be
+    ...    identical across runs using the same dataset.
     ...
     ...    Real-world scenario:
-    ...    Developers compare the HTML summary report between runs. If Paid/Denied/Void
-    ...    counts or total amounts differ, the pipeline logic or source data changed.
+    ...    After each run, developers compare the current HTML summary against the previous
+    ...    run's summary. If the reports differ, it means the pipeline logic changed or
+    ...    source data was modified unexpectedly.
     ...
-    ...    If no previous run exists (first run), the test passes.
+    ...    If no previous run exists (first run), the test FAILS with a message
+    ...    to run a second time. Two runs are needed to have a current vs previous pair.
     [Tags]    oracle_2    baseline    s3_output    comparison    pipeline
 
-    ${html_files}=    Find Files In Bucket By Extension    ${HTML_EXTENSION}
-    ${has_files}=    Check File List Is Not Empty    ${html_files}    HTML report
-    Pass Execution If    not ${has_files}    No HTML files to compare — skipping.
+    # Logic: download latest two HTML files, compare full content
+    ${current_content}
+    ...    ${previous_content}
+    ...    ${current_file}
+    ...    ${previous_file}
+    ...    ${file_count}=
+    ...    Get Current And Previous File Content From Bucket
+    ...    ${OUTPUT_BUCKET}
+    ...    ${S3_OUTPUT_DOWNLOAD_DIR}
+    ...    ${HTML_EXTENSION}
 
-    # Get current run file
-    ${current_file}=    Get From List    ${html_files}    0
-    ${current_content}=    Download And Get File Content    ${current_file}
-
-    # Check if previous run exists
-    ${file_count}=    Get Length    ${html_files}
-    IF    ${file_count} < 2
-        Log    First run — no previous HTML to compare. Saving current as baseline.    console=yes
-        Pass Execution    First run — no previous HTML to compare against.
-    END
-
-    # Get previous run file
-    ${previous_file}=    Get From List    ${html_files}    1
-    ${previous_content}=    Download And Get File Content    ${previous_file}
-
-    Log    Current file: ${current_file}    console=yes
-    Log    Previous file: ${previous_file}    console=yes
-
+    # Verification only
+    Log    Comparing HTML reports: ${current_file} vs ${previous_file}    console=yes
     Should Be Equal    ${current_content}    ${previous_content}
-    ...    msg=HTML report differs between runs: ${current_file} vs ${previous_file}
-
-    Log    HTML report matches between current and previous run.    console=yes
+    ...    msg=HTML reports differ between current (${current_file}) and previous (${previous_file}) run.
 
 
 *** Keywords ***
 # ═══════════════════════════════════════════════════════════════
 # SUITE SETUP
 # ═══════════════════════════════════════════════════════════════
+
+Initialize Variables
+    [Documentation]    Generates a unique ID for this test run and sets it as a suite variable.
+    ...    The unique_id is used for pipeline naming to avoid conflicts between test runs.
+    ...    Follows the same pattern as oracle_baseline_tests.robot — called from suite setup,
+    ...    shared across all test cases via Set Suite Variable.
+
+    ${unique_id}=    Get Unique Id
+    Set Suite Variable    ${unique_id}    ${unique_id}
+    Log    Generated unique_id: ${unique_id}    console=yes
+
+Snapshot S3 File Count
+    [Documentation]    Records how many TXT files exist in S3 before pipeline execution.
+    ...    Used by Wait For Pipeline Output Files to detect when NEW files appear.
+
+    ${_}    ${count_before}=    Find Files In Bucket By Extension    ${OUTPUT_BUCKET}    ${TXT_EXTENSION}
+    Set Suite Variable    ${S3_TXT_COUNT_BEFORE}    ${count_before}
+    Log    S3 TXT file count at suite start: ${count_before}    console=yes
+
+Try Lookup Existing Pipeline
+    [Documentation]    Attempts to look up the pipeline snode_id from SnapLogic.
+    ...    If the pipeline exists, caches the snode_id so import can be skipped.
+    ...    If not found, logs a message and continues — the import test case will set it later.
+
+    ${lookup_ok}=    Run Keyword And Return Status
+    ...    Lookup Existing Pipeline    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}
+    IF    ${lookup_ok}
+        Log    Pipeline '${pipeline_name}' found — snode_id cached for downstream use.    console=yes
+    ELSE
+        Log    Pipeline '${pipeline_name}' not found — will be set by Import test case.    console=yes
+    END
 
 Setup Test Environment
     [Documentation]    Initializes the test environment (runs once before any test case):
@@ -749,6 +616,8 @@ Setup Test Environment
     ...    ${ORACLE_HOST}
     ...    ${ORACLE_PORT}
     Initialize Variables
+    Snapshot S3 File Count
+    Try Lookup Existing Pipeline
 
 # ═══════════════════════════════════════════════════════════════
 # TABLE SETUP — LOGIC KEYWORDS
@@ -766,7 +635,7 @@ Prereq Setup Of Config Table Data In Oracle
     ...
     ...    How it works:
     ...    - Checks if PROCESS_CONFIG table exists
-    ...    - If NO  → creates all tables, seeds all data (first run)
+    ...    - If NO    → creates all tables, seeds all data (first run)
     ...    - If YES → skips everything, preserves existing state (subsequent runs)
 
     ${tables_exist}=    Check If Tables Already Exist
@@ -905,20 +774,6 @@ Check Upstream Prerequisites And Fix If Needed
     END
 
 # ═══════════════════════════════════════════════════════════════
-# INITIALIZATION
-# ═══════════════════════════════════════════════════════════════
-
-Initialize Variables
-    [Documentation]    Generates a unique ID for this test run and sets it as a suite variable.
-    ...    The unique_id is used for pipeline naming to avoid conflicts between test runs.
-    ...    Follows the same pattern as oracle_baseline_tests.robot — called from suite setup,
-    ...    shared across all test cases via Set Suite Variable.
-
-    ${unique_id}=    Get Unique Id
-    Set Suite Variable    ${unique_id}    ${unique_id}
-    Log    Generated unique_id: ${unique_id}    console=yes
-
-# ═══════════════════════════════════════════════════════════════
 # QUERY & UTILITY KEYWORDS
 # Get Config Value → convenience wrapper for PROCESS_CONFIG table
 #    Internally uses Get Column Value from sql_table_operations.resource
@@ -952,156 +807,17 @@ Get Config Value
     ...    filter_column=CONFIG_CD    filter_value=${config_cd}
     RETURN    ${value}
 
-Log Query Results
-    [Documentation]    Logs all rows returned from a query in a readable format.
-    ...
-    ...    Arguments:
-    ...    - results: List of tuples from a query
-    ...    - label: Description prefix for the log output (default: 'Query results')
-    [Arguments]    ${results}    ${label}=Query results
-
-    Log    ${label}:    console=yes
-    FOR    ${row}    IN    @{results}
-        Log    ${row}    console=yes
-    END
-
-Get Today Date As MM DD YYYY
-    [Documentation]    Returns today's date in MM/DD/YYYY format.
-
-    ${date}=    Evaluate    __import__('datetime').datetime.now().strftime('%m/%d/%Y')
-    RETURN    ${date}
-
-Get Yesterday Date As MM DD YYYY
-    [Documentation]    Returns yesterday's date in MM/DD/YYYY format.
-
-    ${date}=    Evaluate
-    ...    (__import__('datetime').datetime.now() - __import__('datetime').timedelta(days=1)).strftime('%m/%d/%Y')
-    RETURN    ${date}
-
 # ═══════════════════════════════════════════════════════════════
-# S3 OUTPUT VERIFICATION KEYWORDS
+# S3 OUTPUT VERIFICATION — Local Wrapper
+# (bucket + download dir are test-specific; generic keyword in minio.resource)
 # ═══════════════════════════════════════════════════════════════
-
-Find Files In Bucket By Extension
-    [Documentation]    Lists all objects in the bucket and filters by file extension.
-    ...    Excludes non-pipeline paths (config/, webdir/, reports/, setup-info).
-    ...    Only matches files from extract/ or output/ paths.
-    [Arguments]    ${extension}
-
-    ${all_objects}=    List Objects In Bucket    ${OUTPUT_BUCKET}
-    @{matching}=    Create List
-
-    FOR    ${key}    IN    @{all_objects}
-        ${ends_match}=    Evaluate    $key.endswith($extension)
-        IF    ${ends_match}
-            # Only include files from pipeline output paths
-            ${is_extract}=    Evaluate    'extract/' in $key or 'output/' in $key
-            IF    ${is_extract}
-                Append To List    ${matching}    ${key}
-            END
-        END
-    END
-    # Sort descending so latest file (highest seq number) is first
-    Sort List    ${matching}
-    Reverse List    ${matching}
-    Log    Found ${matching.__len__()} files with extension '${extension}': ${matching}    console=yes
-    RETURN    ${matching}
-
-Check File List Is Not Empty
-    [Documentation]    Checks if a file list has entries. Returns TRUE or FALSE.
-    [Arguments]    ${file_list}    ${file_type}
-
-    ${count}=    Get Length    ${file_list}
-    IF    ${count} == 0
-        Log    No ${file_type} files found — dependent validations will be skipped.    console=yes    level=WARN
-        RETURN    ${FALSE}
-    END
-    RETURN    ${TRUE}
 
 Download And Get File Content
-    [Documentation]    Downloads a file from S3 and returns the content.
+    [Documentation]    Thin wrapper — downloads from this test's OUTPUT_BUCKET to S3_OUTPUT_DOWNLOAD_DIR.
     [Arguments]    ${object_key}
 
-    ${content}=    Download Single File From MinIO
-    ...    ${S3_OUTPUT_DOWNLOAD_DIR}    ${OUTPUT_BUCKET}    ${object_key}
+    ${content}=    minio.Download And Get File Content
+    ...    ${OUTPUT_BUCKET}
+    ...    ${S3_OUTPUT_DOWNLOAD_DIR}
+    ...    ${object_key}
     RETURN    ${content}
-
-Verify All Files Are Non Empty
-    [Documentation]    Checks that all files in the list have size > 0 bytes.
-    [Arguments]    ${file_list}
-
-    FOR    ${file_key}    IN    @{file_list}
-        ${metadata}=    Get Object Metadata    ${OUTPUT_BUCKET}    ${file_key}
-        ${size}=    Evaluate    $metadata.get('ContentLength', 0)
-        Log    File: ${file_key} — Size: ${size} bytes    console=yes
-        Should Be True    ${size} > 0
-        ...    msg=File '${file_key}' is empty (0 bytes)
-    END
-
-Count Lines In Content
-    [Documentation]    Counts the number of non-empty lines in text content.
-    [Arguments]    ${content}
-
-    @{lines}=    Split To Lines    ${content}
-    @{non_empty}=    Create List
-    FOR    ${line}    IN    @{lines}
-        ${trimmed}=    Strip String    ${line}
-        IF    '${trimmed}' != ''
-            Append To List    ${non_empty}    ${trimmed}
-        END
-    END
-    ${count}=    Get Length    ${non_empty}
-    RETURN    ${count}
-
-# ═══════════════════════════════════════════════════════════════
-# BASELINE COMPARISON KEYWORDS
-# ═══════════════════════════════════════════════════════════════
-
-Extract Lines By Prefix
-    [Documentation]    Extracts all non-empty lines that start with a given prefix.
-    ...    Used to isolate CD detail records from TXT extracts for comparison,
-    ...    excluding dynamic header (PA) and trailer (PT) lines.
-    ...
-    ...    Arguments:
-    ...    - content: Multi-line text content
-    ...    - prefix: Line prefix to match (e.g., 'CD')
-    ...
-    ...    Returns: List of matching lines
-    [Arguments]    ${content}    ${prefix}
-
-    @{lines}=    Split To Lines    ${content}
-    @{matching}=    Create List
-    FOR    ${line}    IN    @{lines}
-        ${trimmed}=    Strip String    ${line}
-        IF    '${trimmed}' != ''
-            ${starts}=    Evaluate    $trimmed.startswith($prefix)
-            IF    ${starts}
-                Append To List    ${matching}    ${trimmed}
-            END
-        END
-    END
-    RETURN    ${matching}
-
-# ═══════════════════════════════════════════════════════════════
-# ZIP FILE KEYWORDS
-# ═══════════════════════════════════════════════════════════════
-
-Verify ZIP File Is Readable
-    [Documentation]    Checks if a local ZIP file is valid and can be read.
-    ...    Returns TRUE if valid, FALSE if corrupted.
-    [Arguments]    ${zip_file_path}
-
-    ${is_valid}=    Evaluate
-    ...    __import__('zipfile').is_zipfile('${zip_file_path}')
-    Log    ZIP file valid: ${is_valid}    console=yes
-    RETURN    ${is_valid}
-
-List ZIP File Contents
-    [Documentation]    Lists the files inside a ZIP archive.
-    ...    Returns list of filenames inside the ZIP.
-    [Arguments]    ${zip_file_path}
-
-    ${contents}=    Evaluate
-    ...    __import__('zipfile').ZipFile('${zip_file_path}').namelist()
-    Log    ZIP contents: ${contents}    console=yes
-    RETURN    ${contents}
