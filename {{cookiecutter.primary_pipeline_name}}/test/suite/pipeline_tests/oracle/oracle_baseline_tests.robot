@@ -134,13 +134,13 @@ Execute Triggered Task Via Custom URL
     ...
     ...    Examples of valid TRIGGERED_TASK_BEARER_TOKEN values:
     ...    - Raw token (no prefix):    TRIGGERED_TASK_BEARER_TOKEN=eyJhbGc...
-    ...      → sends:  Authorization: eyJhbGc...
-    ...    - Bearer prefix:            TRIGGERED_TASK_BEARER_TOKEN=Bearer eyJhbGc...
-    ...      → sends:  Authorization: Bearer eyJhbGc...
-    ...    - Token scheme:             TRIGGERED_TASK_BEARER_TOKEN=Token eyJhbGc...
-    ...      → sends:  Authorization: Token eyJhbGc...
-    ...    - SnapLogic llfeed_token:   TRIGGERED_TASK_BEARER_TOKEN=Bearer JNqovrcPPz6Jkzy3HnkBVJrq4qgs63Yg
-    ...      → sends:  Authorization: Bearer JNqovrcPPz6Jkzy3HnkBVJrq4qgs63Yg
+    ...    → sends:    Authorization: eyJhbGc...
+    ...    - Bearer prefix:    TRIGGERED_TASK_BEARER_TOKEN=Bearer eyJhbGc...
+    ...    → sends:    Authorization: Bearer eyJhbGc...
+    ...    - Token scheme:    TRIGGERED_TASK_BEARER_TOKEN=Token eyJhbGc...
+    ...    → sends:    Authorization: Token eyJhbGc...
+    ...    - SnapLogic llfeed_token:    TRIGGERED_TASK_BEARER_TOKEN=Bearer JNqovrcPPz6Jkzy3HnkBVJrq4qgs63Yg
+    ...    → sends:    Authorization: Bearer JNqovrcPPz6Jkzy3HnkBVJrq4qgs63Yg
     ...
     ...    Choose the format your gateway/IdP expects. If unsure, test with curl/Postman first
     ...    to confirm what value works in the Authorization header, then put that exact value
@@ -157,8 +157,8 @@ Execute Triggered Task Via Custom URL
     # ${TRIGGERED_TASK_URL}    ${TRIGGERED_TASK_BEARER_TOKEN}    schema_name=DEMO&table_name=DEMO.TEST_TABLE1
 
     # Example 3: Multiple URLs in one test (data-driven across environments)
-    # ${DEV_TRIGGERED_TASK_URL}     ${DEV_TOKEN}
-    # ${UAT_TRIGGERED_TASK_URL}     ${UAT_TOKEN}
+    # ${DEV_TRIGGERED_TASK_URL}    ${DEV_TOKEN}
+    # ${UAT_TRIGGERED_TASK_URL}    ${UAT_TOKEN}
     # ${PROD_TRIGGERED_TASK_URL}    ${PROD_TOKEN}
 
 Execute Triggered Task Via Captured Cloud URL
@@ -274,6 +274,146 @@ Compare Actual vs Expected CSV Output
     # Test Data: file1_path    file2_path    ignore_order    show_details    expected_status
 
     ${actual_output_file1_path_from_db}    ${expected_output_file1_path}    ${FALSE}    ${TRUE}    IDENTICAL
+
+# ═══════════════════════════════════════════════════════════════════════════
+# END-TO-END FLOW (DEMONSTRATION TEST CASE)
+# ═══════════════════════════════════════════════════════════════════════════
+# This test case shows the COMPLETE pipeline lifecycle in ONE place — from
+# account creation through pipeline execution to result verification.
+#
+#
+# For PRODUCTION test suites, prefer the modular pattern (one test case per
+# step) shown above. Use this end-to-end test for:
+#    • Onboarding new team members
+#    • Smoke testing the full happy path
+#    • Debugging "where did it break?" by running the entire flow in sequence
+# ═══════════════════════════════════════════════════════════════════════════
+
+End To End Oracle Pipeline Flow
+    [Documentation]    COMPLETE end-to-end Oracle pipeline test in a single test case.
+    ...
+    ...    Executes the full lifecycle in 9 sequential steps:
+    ...    1. Generate unique_id for this run
+    ...    2. Create Oracle account in SnapLogic
+    ...    3. Upload expression library file via file:/// protocol
+    ...    4. Upload .expr file via standard upload
+    ...    5. Import the .slp pipeline into the project space
+    ...    6. Create a triggered task pointing to the pipeline
+    ...    7. Execute the triggered task with runtime parameters
+    ...    8. Verify Oracle table has the expected number of records
+    ...    9. Export Oracle data to CSV and compare against expected baseline
+    ...
+    ...    Prerequisites:
+    ...    • Suite Setup (Check connections) has run — Oracle connected, Snaplex up, table cleaned
+    ...    • Pipeline file exists at src/pipelines/oracle2.slp
+    ...    • Expected output baseline exists at expected_output/oracle/expected_output_file1.csv
+    [Tags]    oracle_end_to_end    end_to_end    smoke    tutorial
+
+    # ─────────────────────────────────────────────────────────────────────
+    # STEP 1: Generate Unique ID (avoid name collisions across test runs)
+    # ─────────────────────────────────────────────────────────────────────
+    Log    === STEP 1: Generating unique ID for this run ===    console=yes
+    ${unique_id}=    Get Unique Id
+    Set Test Variable    ${unique_id}    ${unique_id}
+    Log    Unique ID: ${unique_id}    console=yes
+
+    # ─────────────────────────────────────────────────────────────────────
+    # STEP 2: Create Oracle Account in SnapLogic Project Space
+    # ─────────────────────────────────────────────────────────────────────
+    Log    === STEP 2: Creating Oracle account: ${oracle_acct_name} ===    console=yes
+    Create Account From Template
+    ...    ${ACCOUNT_LOCATION_PATH}
+    ...    ${ORACLE_ACCOUNT_PAYLOAD_FILE_NAME}
+    ...    ${oracle_acct_name}
+    Log    Oracle account created at ${ACCOUNT_LOCATION_PATH}/${oracle_acct_name}    console=yes
+
+    # ─────────────────────────────────────────────────────────────────────
+    # STEP 3: Upload Expression Library File Via file:/// Protocol
+    # ─────────────────────────────────────────────────────────────────────
+    Log    === STEP 3: Uploading oracle_library.expr via file:/// protocol ===    console=yes
+    Upload File Using File Protocol Template
+    ...    ${CURDIR}/../../test_data/actual_expected_data/expression_libraries/oracle/oracle_library.expr
+    ...    ${ACCOUNT_LOCATION_PATH}
+    Log    Expression library uploaded to SLDB    console=yes
+
+    # ─────────────────────────────────────────────────────────────────────
+    # STEP 4: Upload .expr File Using Standard Upload Template
+    # ─────────────────────────────────────────────────────────────────────
+    Log    === STEP 4: Uploading test.expr via standard upload ===    console=yes
+    Upload Files To SnapLogic From Template
+    ...    ${upload_source_file_path}
+    ...    test.expr
+    ...    ${ACCOUNT_LOCATION_PATH}
+    Log    test.expr uploaded successfully    console=yes
+
+    # ─────────────────────────────────────────────────────────────────────
+    # STEP 5: Import Pipeline (.slp file) into Project Space
+    # ─────────────────────────────────────────────────────────────────────
+    Log    === STEP 5: Importing pipeline ${pipeline_name_slp} ===    console=yes
+    Import Pipelines From Template
+    ...    ${unique_id}
+    ...    ${PIPELINES_LOCATION_PATH}
+    ...    ${pipeline_name}
+    ...    ${pipeline_name_slp}
+    Log    Pipeline imported: ${pipeline_name}_${unique_id}    console=yes
+
+    # ─────────────────────────────────────────────────────────────────────
+    # STEP 6: Create Triggered Task for the Imported Pipeline
+    # ─────────────────────────────────────────────────────────────────────
+    Log    === STEP 6: Creating triggered task: ${task1} ===    console=yes
+    Create Triggered Task From Template
+    ...    ${unique_id}
+    ...    ${PIPELINES_LOCATION_PATH}
+    ...    ${pipeline_name}
+    ...    ${task1}
+    ...    ${GROUNDPLEX_NAME}
+    ...    ${task_params_set}
+    ...    ${task_notifications}
+    Log    Triggered task created: ${task1}_${unique_id}    console=yes
+
+    # ─────────────────────────────────────────────────────────────────────
+    # STEP 7: Execute the Triggered Task With Runtime Parameters
+    # ─────────────────────────────────────────────────────────────────────
+    Log    === STEP 7: Executing triggered task ===    console=yes
+    Log    Parameters: schema=${task_params_set}[schema_name], table=${task_params_set}[table_name]    console=yes
+    Run Triggered Task With Parameters From Template
+    ...    ${unique_id}
+    ...    ${PIPELINES_LOCATION_PATH}
+    ...    ${pipeline_name}
+    ...    ${task1}
+    Log    Pipeline execution completed    console=yes
+
+    # ─────────────────────────────────────────────────────────────────────
+    # STEP 8: Verify Record Count in Oracle Table
+    # ─────────────────────────────────────────────────────────────────────
+    Log    === STEP 8: Verifying Oracle table record count ===    console=yes
+    Capture And Verify Number of records From DB Table
+    ...    ${task_params_set}[table_name]
+    ...    ${task_params_set}[schema_name]
+    ...    ${db_order_by_column}
+    ...    2
+    Log    Oracle table verification passed — 2 records found    console=yes
+
+    # ─────────────────────────────────────────────────────────────────────
+    # STEP 9: Export Oracle Data to CSV and Compare Against Expected Baseline
+    # ─────────────────────────────────────────────────────────────────────
+    Log    === STEP 9a: Exporting Oracle data to CSV ===    console=yes
+    Export DB Table Data To CSV
+    ...    ${task_params_set}[table_name]
+    ...    ${db_order_by_column}
+    ...    ${actual_output_file1_path_from_db}
+    Log    Oracle data exported to: ${actual_output_file1_path_from_db}    console=yes
+
+    Log    === STEP 9b: Comparing actual CSV against expected baseline ===    console=yes
+    Compare CSV Files With Exclusions Template
+    ...    ${actual_output_file1_path_from_db}
+    ...    ${expected_output_file1_path}
+    ...    ${FALSE}
+    ...    ${TRUE}
+    ...    IDENTICAL
+    Log    CSV comparison passed — actual matches expected baseline    console=yes
+
+    Log    === END-TO-END FLOW COMPLETED SUCCESSFULLY ===    console=yes
 
 
 *** Keywords ***

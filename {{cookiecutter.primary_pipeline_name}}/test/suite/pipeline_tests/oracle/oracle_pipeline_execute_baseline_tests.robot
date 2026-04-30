@@ -226,7 +226,7 @@ Import Pipeline
     [Template]    Import Pipelines From Template
     ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${pipeline_name_slp}
 
-Import existing child Pipeline
+Import existing child Pipeline Wihout Unique ID
     [Documentation]    Imports pipelines using their original name without appending
     ...    a unique suffix. Use this when the pipeline name must remain exactly as-is
     ...    (e.g., when downstream tasks or expressions reference the pipeline by a fixed name).

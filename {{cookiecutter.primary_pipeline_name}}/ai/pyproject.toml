@@ -1,0 +1,53 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[project]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Testing",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+description = "AI-powered CLI for generating Robot Framework test cases for SnapLogic pipeline testing"
+keywords = ["robotframework", "snaplogic", "pipeline", "testing", "automation", "claude", "ai"]
+license = {text = "MIT"}
+name = "rf-forge"
+readme = "README.md"
+requires-python = ">=3.12"
+version = "0.1.0"
+
+dependencies = [
+  "claude-gen-agent @ git+https://github.com/snaplogic/claude-gen-agent.git@main",
+  "jupyterlab>=4.0",
+  "ipywidgets>=8.0",
+  "nest_asyncio>=1.6",
+]
+
+[project.scripts]
+rf-forge = "rf_forge.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/snaplogic/snaplogic-robotframework-examples"
+Repository = "https://github.com/snaplogic/snaplogic-robotframework-examples"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rf_forge"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"context" = "rf_forge/_data/context"
+# plugins/ not included — runner.py discovers .claude/skills/ at runtime
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/src",
+  "/context",
+  "/README.md",
+]

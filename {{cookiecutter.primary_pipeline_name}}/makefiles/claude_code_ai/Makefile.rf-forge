@@ -1,0 +1,231 @@
+# =============================================================================
+# RF Forge — AI-Powered Robot Framework Test Generation
+# =============================================================================
+# Uses Claude AI to generate Robot Framework test cases for SnapLogic
+# pipeline testing. Each target maps to an rf-forge skill.
+#
+# Prerequisites:
+#   1. pip install -e ai/
+#   2. Configure .env with AWS Bedrock credentials
+#   3. Source .env: set -a; source .env; set +a
+#
+# Usage:
+#   make rf-create-account INSTRUCTION="Create Oracle account"
+#   make rf-e2e INSTRUCTION="MySQL E2E tests"
+#   make rf-help
+# =============================================================================
+
+.PHONY: rf-setup rf-help rf-create-account rf-import-pipeline rf-upload-file \
+        rf-create-task rf-compare-csv rf-verify-db rf-export-csv rf-e2e rf-analyze-pipeline
+
+# Include common configuration
+include makefiles/common_services/Makefile.common
+
+# ── Configuration ──────────────────────────────────────────────────────────
+RF_FORGE         := rf-forge
+CODEBASE         := $(shell pwd)
+MODEL            ?= sonnet
+MAX_BUDGET       ?=
+CONTEXT_FILE     ?=
+OUTPUT_DIR       ?=
+FILE             ?=
+
+# Build optional flags dynamically
+_RF_OPTS :=
+ifdef MAX_BUDGET
+  _RF_OPTS += --max-budget $(MAX_BUDGET)
+endif
+ifdef CONTEXT_FILE
+  _RF_OPTS += --context-file $(CONTEXT_FILE)
+endif
+ifdef OUTPUT_DIR
+  _RF_OPTS += --output-dir $(OUTPUT_DIR)
+endif
+ifdef FILE
+  _RF_OPTS += --file $(FILE)
+endif
+
+
+# =============================================================================
+# 🔧 Setup & Help
+# =============================================================================
+
+## Install rf-forge into the current Python environment
+rf-setup:
+	@echo "📦 Installing rf-forge..."
+	@pip install -e ai/
+	@echo ""
+	@echo "✅ rf-forge installed. Verify with:"
+	@echo "   rf-forge --version"
+	@echo "   rf-forge --help"
+	@echo ""
+	@echo "⚠️  Don't forget to source your .env:"
+	@echo "   set -a; source .env; set +a"
+
+## Show all available rf-forge targets and usage
+rf-help:
+	@echo ""
+	@echo "╔══════════════════════════════════════════════════════════════════╗"
+	@echo "║            RF Forge — AI-Powered Test Generation               ║"
+	@echo "╚══════════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "  SETUP"
+	@echo "    make rf-setup                         Install rf-forge"
+	@echo ""
+	@echo "  SKILLS"
+	@echo "    make rf-create-account INSTRUCTION=\"Create Oracle account\""
+	@echo "    make rf-import-pipeline INSTRUCTION=\"Import MySQL pipeline\""
+	@echo "    make rf-upload-file INSTRUCTION=\"Upload MySQL JAR\""
+	@echo "    make rf-create-task INSTRUCTION=\"Create MySQL triggered task\""
+	@echo "    make rf-compare-csv INSTRUCTION=\"Compare Oracle CSV output\""
+	@echo "    make rf-verify-db INSTRUCTION=\"Verify employee data in MySQL\""
+	@echo "    make rf-export-csv INSTRUCTION=\"Export Oracle employees to CSV\""
+	@echo "    make rf-e2e INSTRUCTION=\"Complete MySQL E2E tests\""
+	@echo "    make rf-analyze-pipeline INSTRUCTION=\"Analyze oracle.slp\""
+	@echo ""
+	@echo "  OPTIONAL FLAGS"
+	@echo "    MODEL=opus                            Use Opus model (default: sonnet)"
+	@echo "    MAX_BUDGET=2.0                        Dollar cap per run"
+	@echo "    CONTEXT_FILE=./docs/conventions.md    Extra context for Claude"
+	@echo "    OUTPUT_DIR=./ai-logs/oracle            Save session log"
+	@echo "    FILE=./requirements/JIRA-4567.md      Load instruction from file"
+	@echo ""
+	@echo "  EXAMPLES"
+	@echo "    make rf-create-account INSTRUCTION=\"Create Oracle and Snowflake accounts\""
+	@echo "    make rf-e2e INSTRUCTION=\"MySQL E2E\" MODEL=opus MAX_BUDGET=3.0"
+	@echo "    make rf-create-account FILE=./requirements/account-req.md"
+	@echo "    make rf-verify-db INSTRUCTION=\"Verify data\" OUTPUT_DIR=./ai-logs"
+	@echo ""
+
+
+# =============================================================================
+# 🔧 Account & Setup Skills
+# =============================================================================
+
+## Generate account test cases (payload JSON, env file, .robot, README)
+rf-create-account:
+ifndef INSTRUCTION
+ifndef FILE
+	$(error ❌ INSTRUCTION is required. Usage: make rf-create-account INSTRUCTION="Create Oracle account")
+endif
+endif
+	@$(RF_FORGE) create-account $(if $(INSTRUCTION),"$(INSTRUCTION)",) \
+		--codebase-path $(CODEBASE) \
+		--model $(MODEL) \
+		$(_RF_OPTS)
+
+## Generate pipeline import test cases
+rf-import-pipeline:
+ifndef INSTRUCTION
+ifndef FILE
+	$(error ❌ INSTRUCTION is required. Usage: make rf-import-pipeline INSTRUCTION="Import MySQL pipeline")
+endif
+endif
+	@$(RF_FORGE) import-pipeline $(if $(INSTRUCTION),"$(INSTRUCTION)",) \
+		--codebase-path $(CODEBASE) \
+		--model $(MODEL) \
+		$(_RF_OPTS)
+
+## Generate file upload test cases (JSON, CSV, JARs, expression libraries)
+rf-upload-file:
+ifndef INSTRUCTION
+ifndef FILE
+	$(error ❌ INSTRUCTION is required. Usage: make rf-upload-file INSTRUCTION="Upload MySQL JAR")
+endif
+endif
+	@$(RF_FORGE) upload-file $(if $(INSTRUCTION),"$(INSTRUCTION)",) \
+		--codebase-path $(CODEBASE) \
+		--model $(MODEL) \
+		$(_RF_OPTS)
+
+
+# =============================================================================
+# 🔧 Execution Skills
+# =============================================================================
+
+## Generate triggered task test cases (create + execute with parameters)
+rf-create-task:
+ifndef INSTRUCTION
+ifndef FILE
+	$(error ❌ INSTRUCTION is required. Usage: make rf-create-task INSTRUCTION="Create MySQL task")
+endif
+endif
+	@$(RF_FORGE) create-triggered-task $(if $(INSTRUCTION),"$(INSTRUCTION)",) \
+		--codebase-path $(CODEBASE) \
+		--model $(MODEL) \
+		$(_RF_OPTS)
+
+
+# =============================================================================
+# 🔧 Verification Skills
+# =============================================================================
+
+## Generate CSV comparison test cases (actual vs expected)
+rf-compare-csv:
+ifndef INSTRUCTION
+ifndef FILE
+	$(error ❌ INSTRUCTION is required. Usage: make rf-compare-csv INSTRUCTION="Compare Oracle output")
+endif
+endif
+	@$(RF_FORGE) compare-csv $(if $(INSTRUCTION),"$(INSTRUCTION)",) \
+		--codebase-path $(CODEBASE) \
+		--model $(MODEL) \
+		$(_RF_OPTS)
+
+## Generate database verification test cases (row counts, data integrity)
+rf-verify-db:
+ifndef INSTRUCTION
+ifndef FILE
+	$(error ❌ INSTRUCTION is required. Usage: make rf-verify-db INSTRUCTION="Verify employee data")
+endif
+endif
+	@$(RF_FORGE) verify-data-in-db $(if $(INSTRUCTION),"$(INSTRUCTION)",) \
+		--codebase-path $(CODEBASE) \
+		--model $(MODEL) \
+		$(_RF_OPTS)
+
+## Generate data export test cases (database table → CSV)
+rf-export-csv:
+ifndef INSTRUCTION
+ifndef FILE
+	$(error ❌ INSTRUCTION is required. Usage: make rf-export-csv INSTRUCTION="Export Oracle employees")
+endif
+endif
+	@$(RF_FORGE) export-data-to-csv $(if $(INSTRUCTION),"$(INSTRUCTION)",) \
+		--codebase-path $(CODEBASE) \
+		--model $(MODEL) \
+		$(_RF_OPTS)
+
+
+# =============================================================================
+# 🔧 End-to-End
+# =============================================================================
+
+## Generate complete E2E test suite (accounts + uploads + pipeline + tasks + verify)
+rf-e2e:
+ifndef INSTRUCTION
+ifndef FILE
+	$(error ❌ INSTRUCTION is required. Usage: make rf-e2e INSTRUCTION="MySQL E2E tests")
+endif
+endif
+	@$(RF_FORGE) end-to-end-pipeline-verification $(if $(INSTRUCTION),"$(INSTRUCTION)",) \
+		--codebase-path $(CODEBASE) \
+		--model $(MODEL) \
+		$(_RF_OPTS)
+
+
+# =============================================================================
+# 🔍 Pipeline Analysis
+# =============================================================================
+
+## Analyze .slp pipeline file — extract accounts, parameters, snaps, data flow
+rf-analyze-pipeline:
+ifndef INSTRUCTION
+ifndef FILE
+	$(error ❌ INSTRUCTION is required. Usage: make rf-analyze-pipeline INSTRUCTION="Analyze oracle.slp")
+endif
+endif
+	@$(RF_FORGE) analyze-pipeline $(if $(INSTRUCTION),"$(INSTRUCTION)",) \
+		--codebase-path $(CODEBASE) \
+		--model $(MODEL) \
+		$(_RF_OPTS)
