@@ -6,14 +6,14 @@ initialization steps, the keyword calls, and the files involved.
 
 ### When to read this vs the other guides
 
-| If you want to... | Read this |
-|-------------------|-----------|
-| Understand each phase the framework walks through at runtime (dev / debugging perspective) | **This guide** |
-| See a ready-to-copy reference of every `make` command and its flags | [`robot_tests_make_commands.md`](./robot_tests_make_commands.md) |
-| Understand the `PROJECT_SPACE_SETUP` / `FORCE_RECREATE_PROJECT_SPACE` semantics | [`project_space_setup_safe_mode.md`](./project_space_setup_safe_mode.md) |
-| See the full `robot-run-all-tests` end-to-end diagram | [`robot_run_all_tests_flow.md`](./robot_run_all_tests_flow.md) |
-| Understand the Groundplex network pre-flight check | [`network_preflight_check.md`](./network_preflight_check.md) |
-| Understand Groundplex lifecycle, container swaps, and the `FORCE_REPLACE` flag | [`groundplex_lifecycle.md`](./groundplex_lifecycle.md) |
+| If you want to...                                                                          | Read this                                                                |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| Understand each phase the framework walks through at runtime (dev / debugging perspective) | **This guide**                                                           |
+| See a ready-to-copy reference of every `make` command and its flags                        | [`robot_tests_make_commands.md`](./robot_tests_make_commands.md)         |
+| Understand the `PROJECT_SPACE_SETUP` / `FORCE_RECREATE_PROJECT_SPACE` semantics            | [`project_space_setup_safe_mode.md`](./project_space_setup_safe_mode.md) |
+| See the full `robot-run-all-tests` end-to-end diagram                                      | [`robot_run_all_tests_flow.md`](./robot_run_all_tests_flow.md)           |
+| Understand the Groundplex network pre-flight check                                         | [`network_preflight_check.md`](./network_preflight_check.md)             |
+| Understand Groundplex lifecycle, container swaps, and the `FORCE_REPLACE` flag             | [`groundplex_lifecycle.md`](./groundplex_lifecycle.md)                   |
 
 ---
 
@@ -131,7 +131,7 @@ Before Suite
     Detect Auth Method
     Validate Environment Variables
     Set Up Global Variables
-    Project Set Up-Delete Project Space-Create New Project space-Create Accounts
+    Authenticate And Set Up Project Space
 ```
 
 #### `Load Environment Variables`
@@ -148,12 +148,12 @@ Loads `.env` files in precedence order (lowest → highest):
 Each file is parsed line-by-line; comments and blanks are skipped. Every
 value is tried as JSON first and, if it parses:
 
-| Parsed type | Becomes |
-|-------------|---------|
-| Dictionary  | `&{lowercase_var_name}` global |
-| List        | `@{lowercase_var_name}` global |
-| Primitive (number / bool / string) | `${var_name}` global |
-| Plain string (JSON parse failed)   | `${var_name}` global |
+| Parsed type                        | Becomes                        |
+| ---------------------------------- | ------------------------------ |
+| Dictionary                         | `&{lowercase_var_name}` global |
+| List                               | `@{lowercase_var_name}` global |
+| Primitive (number / bool / string) | `${var_name}` global           |
+| Plain string (JSON parse failed)   | `${var_name}` global           |
 
 Each variable is also exported as an OS environment variable so Python
 libraries (e.g., `auth_manager`) can read it.
@@ -163,11 +163,11 @@ libraries (e.g., `auth_manager`) can read it.
 Auto-detects the authentication method if `AUTH_METHOD` is not already
 set in `.env`:
 
-| Signal in `.env` | Detected `AUTH_METHOD` |
-|------------------|------------------------|
-| `OAUTH2_TOKEN_URL` is set | `oauth2` |
-| `BEARER_TOKEN` is set (but no OAUTH2_TOKEN_URL) | `jwt` |
-| Neither is set | `basic` (default) |
+| Signal in `.env`                                | Detected `AUTH_METHOD` |
+| ----------------------------------------------- | ---------------------- |
+| `OAUTH2_TOKEN_URL` is set                       | `oauth2`               |
+| `BEARER_TOKEN` is set (but no OAUTH2_TOKEN_URL) | `jwt`                  |
+| Neither is set                                  | `basic` (default)      |
 
 Supported values: `basic`, `jwt`, `oauth2`, `sltoken`.
 
@@ -183,12 +183,12 @@ Required vars (always):
 
 Plus auth-method-specific vars:
 
-| Auth method | Additional required vars |
-|-------------|--------------------------|
-| `basic`     | `ORG_ADMIN_USER`, `ORG_ADMIN_PASSWORD` |
-| `jwt`       | `BEARER_TOKEN` |
+| Auth method | Additional required vars                                       |
+| ----------- | -------------------------------------------------------------- |
+| `basic`     | `ORG_ADMIN_USER`, `ORG_ADMIN_PASSWORD`                         |
+| `jwt`       | `BEARER_TOKEN`                                                 |
 | `oauth2`    | `OAUTH2_TOKEN_URL`, `OAUTH2_CLIENT_ID`, `OAUTH2_CLIENT_SECRET` |
-| `sltoken`   | `ORG_ADMIN_USER`, `ORG_ADMIN_PASSWORD` |
+| `sltoken`   | `ORG_ADMIN_USER`, `ORG_ADMIN_PASSWORD`                         |
 
 If any are missing, the suite fails fast with:
 
@@ -213,7 +213,7 @@ to **`True`** (idempotent, non-destructive).
 > "Verify-only mode" = `PROJECT_SPACE_SETUP=False`.
 
 The `Before Suite` keyword calls
-`Project Set Up-Delete Project Space-Create New Project space-Create Accounts`,
+`Authenticate And Set Up Project Space`,
 which dispatches to `Set Up Data` with the correct auth payload. `Set Up Data`
 then calls `Ensure Project Setup Safe`, which handles Phase 3 semantics.
 
@@ -221,11 +221,11 @@ then calls `Ensure Project Setup Safe`, which handles Phase 3 semantics.
 
 Idempotent, non-destructive:
 
-| State found in SnapLogic org | Action |
-|------------------------------|--------|
-| Project space MISSING | Create project space + create project |
-| Project space EXISTS, target project MISSING | Reuse space, create only the target project |
-| BOTH already exist | No-op — the run simply reuses them. No delete, no rename. |
+| State found in SnapLogic org                 | Action                                                    |
+| -------------------------------------------- | --------------------------------------------------------- |
+| Project space MISSING                        | Create project space + create project                     |
+| Project space EXISTS, target project MISSING | Reuse space, create only the target project               |
+| BOTH already exist                           | No-op — the run simply reuses them. No delete, no rename. |
 
 No existing project space or project is ever deleted in this mode. Other
 projects in the same space are never touched.
@@ -406,11 +406,11 @@ make robot-run-all-tests TAGS="cleanup_stale_projects" # Legacy timestamped-proj
 
 Results are written by Robot Framework to `test/robot_output/`:
 
-| File | Purpose |
-|------|---------|
-| `report-<timestamp>.html` | Summary report with pass/fail stats |
+| File                      | Purpose                                |
+| ------------------------- | -------------------------------------- |
+| `report-<timestamp>.html` | Summary report with pass/fail stats    |
 | `log-<timestamp>.html`    | Detailed execution log (keyword-level) |
-| `output-<timestamp>.xml`  | Machine-readable XML for CI |
+| `output-<timestamp>.xml`  | Machine-readable XML for CI            |
 
 Open the HTML files in any browser:
 

@@ -1,0 +1,23 @@
+{
+    "liveServer.settings.port": 5505,
+    "files.associations": {
+        "Makefile.*": "makefile",
+        "*.txt": "markdown"
+    },
+    "explorer.compactFolders": false,
+    // ✅ Better readability for text files
+    "editor.wordWrap": "on",
+    "editor.fontSize": 14,
+    "editor.lineHeight": 22,
+    "editor.rulers": [
+        80,
+        120
+    ],
+    // ✅ Highlighting improvements
+    "editor.selectionHighlight": true,
+    "editor.occurrencesHighlight": "singleFile",
+    // ✅ Optional navigation
+    "editor.minimap.enabled": true,
+    "python.defaultInterpreterPath": "/Users/spothana/QADocs/SNAPLOGIC_RF_EXAMPLES2/.venv/bin/python",
+    "robot.python.executable": "/Users/spothana/QADocs/SNAPLOGIC_RF_EXAMPLES2/.venv/bin/python"
+}

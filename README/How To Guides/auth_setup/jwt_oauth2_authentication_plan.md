@@ -13,23 +13,23 @@ The SnapLogic platform natively supports JWT authentication (configurable via Ad
 
 ## 2. Supported Authentication Methods
 
-| Method | ENV Variable | Required Env Vars | Description |
-|--------|-------------|-------------------|-------------|
-| `basic` (default) | `AUTH_METHOD=basic` | `ORG_ADMIN_USER`, `ORG_ADMIN_PASSWORD` | Current behavior, no changes needed |
-| `jwt` | `AUTH_METHOD=jwt` | `BEARER_TOKEN` | Pre-generated JWT token used as Bearer token |
-| `oauth2` | `AUTH_METHOD=oauth2` | `OAUTH2_TOKEN_URL`, `OAUTH2_CLIENT_ID`, `OAUTH2_CLIENT_SECRET`, `OAUTH2_SCOPE` (optional) | Framework auto-fetches token from IdP |
-| `sltoken` | `AUTH_METHOD=sltoken` | `ORG_ADMIN_USER`, `ORG_ADMIN_PASSWORD` | Authenticates once, uses session token for all subsequent calls |
+| Method            | ENV Variable          | Required Env Vars                                                                         | Description                                                     |
+| ----------------- | --------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `basic` (default) | `AUTH_METHOD=basic`   | `ORG_ADMIN_USER`, `ORG_ADMIN_PASSWORD`                                                    | Current behavior, no changes needed                             |
+| `jwt`             | `AUTH_METHOD=jwt`     | `BEARER_TOKEN`                                                                            | Pre-generated JWT token used as Bearer token                    |
+| `oauth2`          | `AUTH_METHOD=oauth2`  | `OAUTH2_TOKEN_URL`, `OAUTH2_CLIENT_ID`, `OAUTH2_CLIENT_SECRET`, `OAUTH2_SCOPE` (optional) | Framework auto-fetches token from IdP                           |
+| `sltoken`         | `AUTH_METHOD=sltoken` | `ORG_ADMIN_USER`, `ORG_ADMIN_PASSWORD`                                                    | Authenticates once, uses session token for all subsequent calls |
 
 If `AUTH_METHOD` is not set, the framework **auto-detects** based on which env vars are present. Note: `sltoken` cannot be auto-detected (same env vars as `basic`) — it must be explicitly set via `AUTH_METHOD=sltoken`.
 
 ### Security Comparison
 
-| Auth Method | Credentials Sent Per API Call | External IdP Required | Setup Effort |
-|-------------|-------------------------------|----------------------|--------------|
-| `basic` | Username + password on **every** request | No | None |
-| `sltoken` | Only **once** (to get token), then session token | No | Minimal (1 env var change) |
-| `jwt` | Never (pre-generated token) | Yes | Medium (IdP + SnapLogic JWT tab) |
-| `oauth2` | Never (auto-fetched token) | Yes | Medium (IdP + SnapLogic JWT tab) |
+| Auth Method | Credentials Sent Per API Call                    | External IdP Required | Setup Effort                     |
+| ----------- | ------------------------------------------------ | --------------------- | -------------------------------- |
+| `basic`     | Username + password on **every** request         | No                    | None                             |
+| `sltoken`   | Only **once** (to get token), then session token | No                    | Minimal (1 env var change)       |
+| `jwt`       | Never (pre-generated token)                      | Yes                   | Medium (IdP + SnapLogic JWT tab) |
+| `oauth2`    | Never (auto-fetched token)                       | Yes                   | Medium (IdP + SnapLogic JWT tab) |
 
 **Recommended upgrade path:** `basic` → `sltoken` → `jwt` / `oauth2`
 
@@ -116,13 +116,13 @@ ORG_ADMIN_PASSWORD      Validate (USER/PASS)        Pass auth_method=sltoken 2. 
 
 ### Overview
 
-| # | File | Repository | Change Type |
-|---|------|-----------|-------------|
-| 1 | `libraries/auth_manager.py` | snaplogic-common-robot | **NEW FILE** |
-| 2 | `snaplogic_apis_keywords/snaplogic_apis.resource` | snaplogic-common-robot | MODIFY |
-| 3 | `snaplogic_apis_keywords/snaplogic_keywords.resource` | snaplogic-common-robot | MODIFY |
-| 4 | `test/suite/__init__.robot` | snaplogic-robotframework-examples | MODIFY |
-| 5 | `.env.example` | snaplogic-robotframework-examples | MODIFY |
+| #   | File                                                  | Repository                        | Change Type  |
+| --- | ----------------------------------------------------- | --------------------------------- | ------------ |
+| 1   | `libraries/auth_manager.py`                           | snaplogic-common-robot            | **NEW FILE** |
+| 2   | `snaplogic_apis_keywords/snaplogic_apis.resource`     | snaplogic-common-robot            | MODIFY       |
+| 3   | `snaplogic_apis_keywords/snaplogic_keywords.resource` | snaplogic-common-robot            | MODIFY       |
+| 4   | `test/suite/__init__.robot`                           | snaplogic-robotframework-examples | MODIFY       |
+| 5   | `.env.example`                                        | snaplogic-robotframework-examples | MODIFY       |
 
 ### 5.1 NEW: `auth_manager.py`
 
@@ -130,12 +130,12 @@ ORG_ADMIN_PASSWORD      Validate (USER/PASS)        Pass auth_method=sltoken 2. 
 
 Python library with `@keyword` decorators (same pattern as existing `utils.py`):
 
-| Keyword | Purpose |
-|---------|---------|
-| `Configure OAuth2 Client Credentials` | Stores token_url, client_id, client_secret, scope |
-| `Get OAuth2 Access Token` | POSTs to token endpoint, caches token, auto-refreshes 60s before expiry |
-| `Is OAuth2 Token Expired` | Checks if cached token needs refresh |
-| `Clear OAuth2 Token` | Clears token cache |
+| Keyword                               | Purpose                                                                 |
+| ------------------------------------- | ----------------------------------------------------------------------- |
+| `Configure OAuth2 Client Credentials` | Stores token_url, client_id, client_secret, scope                       |
+| `Get OAuth2 Access Token`             | POSTs to token endpoint, caches token, auto-refreshes 60s before expiry |
+| `Is OAuth2 Token Expired`             | Checks if cached token needs refresh                                    |
+| `Clear OAuth2 Token`                  | Clears token cache                                                      |
 
 **Dependencies:** Uses only `requests` (already in requirements) and `time` (stdlib). No new packages needed.
 
@@ -290,7 +290,7 @@ Python library with `@keyword` decorators (same pattern as existing `utils.py`):
        Detect Auth Method
        Validate Environment Variables
        Set Up Global Variables
-       Project Set Up-Delete Project Space-Create New Project space-Create Accounts
+       Authenticate And Set Up Project Space
    ```
 
 3. **Update `Validate Environment Variables`** — auth-method-aware validation:
@@ -351,27 +351,27 @@ Add new section documenting all auth options:
 
 ## 6. Backward Compatibility
 
-| Scenario | Behavior |
-|----------|----------|
-| No `AUTH_METHOD` set, `ORG_ADMIN_USER`/`ORG_ADMIN_PASSWORD` present | Auto-detects `basic`, works exactly as today |
-| `Set Up Data` called with positional args (url, user, pass) | Still works — new params all have defaults |
-| `Login Api` called with just `${auth}` list | Still works — `auth_method` defaults to `basic` |
-| Existing `.env` files unchanged | No modifications needed |
-| Existing test files unchanged | No modifications needed |
+| Scenario                                                            | Behavior                                        |
+| ------------------------------------------------------------------- | ----------------------------------------------- |
+| No `AUTH_METHOD` set, `ORG_ADMIN_USER`/`ORG_ADMIN_PASSWORD` present | Auto-detects `basic`, works exactly as today    |
+| `Set Up Data` called with positional args (url, user, pass)         | Still works — new params all have defaults      |
+| `Login Api` called with just `${auth}` list                         | Still works — `auth_method` defaults to `basic` |
+| Existing `.env` files unchanged                                     | No modifications needed                         |
+| Existing test files unchanged                                       | No modifications needed                         |
 
 ## 7. Implementation Order
 
-| Step | Task | Depends On |
-|------|------|-----------|
-| 1 | Create `auth_manager.py` | None |
-| 2 | Modify `snaplogic_apis.resource` | Step 1 |
-| 3 | Modify `snaplogic_keywords.resource` | Step 2 |
-| 4 | Modify `__init__.robot` | Steps 2-3 |
-| 5 | Update `.env.example` | None |
-| 6 | Test backward compatibility (basic auth) | Steps 1-5 |
-| 7 | Test SLToken auth | Steps 1-5 |
-| 8 | Test JWT auth | Steps 1-5 |
-| 9 | Test OAuth2 auth | Steps 1-5 |
+| Step | Task                                     | Depends On |
+| ---- | ---------------------------------------- | ---------- |
+| 1    | Create `auth_manager.py`                 | None       |
+| 2    | Modify `snaplogic_apis.resource`         | Step 1     |
+| 3    | Modify `snaplogic_keywords.resource`     | Step 2     |
+| 4    | Modify `__init__.robot`                  | Steps 2-3  |
+| 5    | Update `.env.example`                    | None       |
+| 6    | Test backward compatibility (basic auth) | Steps 1-5  |
+| 7    | Test SLToken auth                        | Steps 1-5  |
+| 8    | Test JWT auth                            | Steps 1-5  |
+| 9    | Test OAuth2 auth                         | Steps 1-5  |
 
 ## 8. Environment Variable Reference
 
@@ -427,33 +427,33 @@ ORG_NAME=org-name
 
 ## 9. Testing Plan
 
-| Test Case | `.env` Config | Expected Result |
-|-----------|--------------|-----------------|
-| Backward compat (no changes) | Current `.env` unchanged | Tests pass as before |
-| Explicit basic | Add `AUTH_METHOD=basic` | Tests pass |
-| SLToken auth | `AUTH_METHOD=sltoken` + `ORG_ADMIN_USER` + `ORG_ADMIN_PASSWORD` | Session token obtained, all API calls use SLToken header |
-| JWT auth | `AUTH_METHOD=jwt` + `BEARER_TOKEN=<token>` | Session created with Bearer header |
-| OAuth2 auth | `AUTH_METHOD=oauth2` + OAuth2 vars | Token fetched, session created |
-| Auto-detect basic | No `AUTH_METHOD`, only user/pass | Detects basic |
-| Auto-detect jwt | No `AUTH_METHOD`, only `BEARER_TOKEN` | Detects jwt |
-| Auto-detect oauth2 | No `AUTH_METHOD`, only `OAUTH2_TOKEN_URL` | Detects oauth2 |
-| Missing vars (jwt) | `AUTH_METHOD=jwt`, no `BEARER_TOKEN` | Clear error message |
-| Missing vars (oauth2) | `AUTH_METHOD=oauth2`, no `OAUTH2_CLIENT_ID` | Clear error message |
-| Missing vars (sltoken) | `AUTH_METHOD=sltoken`, no `ORG_ADMIN_USER` | Clear error message |
-| Invalid method | `AUTH_METHOD=saml` | Clear error message |
-| Token refresh (oauth2) | Long-running test suite | Token auto-refreshed |
+| Test Case                    | `.env` Config                                                   | Expected Result                                          |
+| ---------------------------- | --------------------------------------------------------------- | -------------------------------------------------------- |
+| Backward compat (no changes) | Current `.env` unchanged                                        | Tests pass as before                                     |
+| Explicit basic               | Add `AUTH_METHOD=basic`                                         | Tests pass                                               |
+| SLToken auth                 | `AUTH_METHOD=sltoken` + `ORG_ADMIN_USER` + `ORG_ADMIN_PASSWORD` | Session token obtained, all API calls use SLToken header |
+| JWT auth                     | `AUTH_METHOD=jwt` + `BEARER_TOKEN=<token>`                      | Session created with Bearer header                       |
+| OAuth2 auth                  | `AUTH_METHOD=oauth2` + OAuth2 vars                              | Token fetched, session created                           |
+| Auto-detect basic            | No `AUTH_METHOD`, only user/pass                                | Detects basic                                            |
+| Auto-detect jwt              | No `AUTH_METHOD`, only `BEARER_TOKEN`                           | Detects jwt                                              |
+| Auto-detect oauth2           | No `AUTH_METHOD`, only `OAUTH2_TOKEN_URL`                       | Detects oauth2                                           |
+| Missing vars (jwt)           | `AUTH_METHOD=jwt`, no `BEARER_TOKEN`                            | Clear error message                                      |
+| Missing vars (oauth2)        | `AUTH_METHOD=oauth2`, no `OAUTH2_CLIENT_ID`                     | Clear error message                                      |
+| Missing vars (sltoken)       | `AUTH_METHOD=sltoken`, no `ORG_ADMIN_USER`                      | Clear error message                                      |
+| Invalid method               | `AUTH_METHOD=saml`                                              | Clear error message                                      |
+| Token refresh (oauth2)       | Long-running test suite                                         | Token auto-refreshed                                     |
 
 ## 10. Error Handling
 
-| Error Scenario | Where Caught | Error Message |
-|---------------|-------------|---------------|
-| Missing required env vars | `Validate Environment Variables` | "Missing required environment variables for AUTH_METHOD=jwt: BEARER_TOKEN" |
-| Invalid `AUTH_METHOD` | `Validate Environment Variables` + `Login Api` | "Invalid AUTH_METHOD: saml. Supported: basic, jwt, oauth2, sltoken" |
-| OAuth2 token request fails | `auth_manager.py` | "OAuth2 token request failed: HTTP 401 ..." |
-| OAuth2 response missing token | `auth_manager.py` | "OAuth2 response missing 'access_token'. Response: {...}" |
-| SLToken session API fails | `Login Api` → `Get Auth Token` | Standard HTTP error from session endpoint |
-| SLToken missing auth list | `Login Api` | "SLToken auth requires auth list [username, password]" |
-| JWT/Bearer rejected by SnapLogic | Subsequent API call (401) | Standard SnapLogic error via `Handle API Error` |
+| Error Scenario                   | Where Caught                                   | Error Message                                                              |
+| -------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------- |
+| Missing required env vars        | `Validate Environment Variables`               | "Missing required environment variables for AUTH_METHOD=jwt: BEARER_TOKEN" |
+| Invalid `AUTH_METHOD`            | `Validate Environment Variables` + `Login Api` | "Invalid AUTH_METHOD: saml. Supported: basic, jwt, oauth2, sltoken"        |
+| OAuth2 token request fails       | `auth_manager.py`                              | "OAuth2 token request failed: HTTP 401 ..."                                |
+| OAuth2 response missing token    | `auth_manager.py`                              | "OAuth2 response missing 'access_token'. Response: {...}"                  |
+| SLToken session API fails        | `Login Api` → `Get Auth Token`                 | Standard HTTP error from session endpoint                                  |
+| SLToken missing auth list        | `Login Api`                                    | "SLToken auth requires auth list [username, password]"                     |
+| JWT/Bearer rejected by SnapLogic | Subsequent API call (401)                      | Standard SnapLogic error via `Handle API Error`                            |
 
 ## 11. Dependencies
 
@@ -477,9 +477,9 @@ For JWT and OAuth2 to work, the SnapLogic org must have JWT configured:
 
 #### SnapLogic JWT Tab Values by Identity Provider
 
-| Field | Okta | Microsoft Entra ID |
-|-------|------|-------------------|
-| **Issuer ID** | `https://company.okta.com/oauth2/default` | `https://login.microsoftonline.com/{tenant-id}/v2.0` |
+| Field                 | Okta                                              | Microsoft Entra ID                                                  |
+| --------------------- | ------------------------------------------------- | ------------------------------------------------------------------- |
+| **Issuer ID**         | `https://company.okta.com/oauth2/default`         | `https://login.microsoftonline.com/{tenant-id}/v2.0`                |
 | **JWKS Endpoint URL** | `https://company.okta.com/oauth2/default/v1/keys` | `https://login.microsoftonline.com/{tenant-id}/discovery/v2.0/keys` |
 
 ### SLToken — No Additional Configuration Required
@@ -493,13 +493,13 @@ SLToken authentication uses the SnapLogic Session API (`/api/1/rest/asset/sessio
 1. **Create an Application:** Okta Admin Console → Applications → Create App Integration → Select **API Services** (Client Credentials)
 2. **Collect Required Information:**
 
-| Value | Where to Find |
-|-------|--------------|
-| **Client ID** | General tab → Client ID |
-| **Client Secret** | General tab → Client Secret |
-| **Token URL** | `https://your-org.okta.com/oauth2/default/v1/token` |
-| **Issuer URL** | `https://your-org.okta.com/oauth2/default` |
-| **JWKS URL** | `https://your-org.okta.com/oauth2/default/v1/keys` |
+| Value             | Where to Find                                       |
+| ----------------- | --------------------------------------------------- |
+| **Client ID**     | General tab → Client ID                             |
+| **Client Secret** | General tab → Client Secret                         |
+| **Token URL**     | `https://your-org.okta.com/oauth2/default/v1/token` |
+| **Issuer URL**    | `https://your-org.okta.com/oauth2/default`          |
+| **JWKS URL**      | `https://your-org.okta.com/oauth2/default/v1/keys`  |
 
 3. **Verify Setup:**
 ```bash
@@ -532,14 +532,14 @@ curl -X POST https://your-org.okta.com/oauth2/default/v1/token \
 
 #### Step 3: Collect Required Information
 
-| Value | Where to Find | Example |
-|-------|--------------|---------|
-| **Client ID** | App → Overview → Application (client) ID | `12345678-abcd-efgh-ijkl-123456789012` |
-| **Client Secret** | App → Certificates & secrets (copied in Step 2) | `AbCdEfGh~123456789...` |
-| **Tenant ID** | App → Overview → Directory (tenant) ID | `abcdefgh-1234-5678-9012-abcdefghijkl` |
-| **Token URL** | `https://login.microsoftonline.com/{TENANT_ID}/oauth2/v2.0/token` | |
-| **Issuer URL** | `https://login.microsoftonline.com/{TENANT_ID}/v2.0` | |
-| **JWKS URL** | `https://login.microsoftonline.com/{TENANT_ID}/discovery/v2.0/keys` | |
+| Value             | Where to Find                                                       | Example                                |
+| ----------------- | ------------------------------------------------------------------- | -------------------------------------- |
+| **Client ID**     | App → Overview → Application (client) ID                            | `12345678-abcd-efgh-ijkl-123456789012` |
+| **Client Secret** | App → Certificates & secrets (copied in Step 2)                     | `AbCdEfGh~123456789...`                |
+| **Tenant ID**     | App → Overview → Directory (tenant) ID                              | `abcdefgh-1234-5678-9012-abcdefghijkl` |
+| **Token URL**     | `https://login.microsoftonline.com/{TENANT_ID}/oauth2/v2.0/token`   |                                        |
+| **Issuer URL**    | `https://login.microsoftonline.com/{TENANT_ID}/v2.0`                |                                        |
+| **JWKS URL**      | `https://login.microsoftonline.com/{TENANT_ID}/discovery/v2.0/keys` |                                        |
 
 #### Step 4: Configure API Permissions (Optional)
 
@@ -583,12 +583,12 @@ ORG_NAME=your-org-name
 
 The framework works with any Identity Provider that supports **OAuth2 Client Credentials** flow and issues **JWT tokens**. Common providers:
 
-| Provider | Token URL Format | JWKS URL Format |
-|----------|-----------------|-----------------|
-| **Ping Identity** | `https://auth.pingone.com/{env_id}/as/token` | `https://auth.pingone.com/{env_id}/as/jwks` |
-| **Auth0** | `https://YOUR_DOMAIN/oauth/token` | `https://YOUR_DOMAIN/.well-known/jwks.json` |
-| **Google Workspace** | `https://oauth2.googleapis.com/token` | `https://www.googleapis.com/oauth2/v3/certs` |
-| **Keycloak** | `https://host/realms/{realm}/protocol/openid-connect/token` | `https://host/realms/{realm}/protocol/openid-connect/certs` |
+| Provider             | Token URL Format                                            | JWKS URL Format                                             |
+| -------------------- | ----------------------------------------------------------- | ----------------------------------------------------------- |
+| **Ping Identity**    | `https://auth.pingone.com/{env_id}/as/token`                | `https://auth.pingone.com/{env_id}/as/jwks`                 |
+| **Auth0**            | `https://YOUR_DOMAIN/oauth/token`                           | `https://YOUR_DOMAIN/.well-known/jwks.json`                 |
+| **Google Workspace** | `https://oauth2.googleapis.com/token`                       | `https://www.googleapis.com/oauth2/v3/certs`                |
+| **Keycloak**         | `https://host/realms/{realm}/protocol/openid-connect/token` | `https://host/realms/{realm}/protocol/openid-connect/certs` |
 
 For any provider, you need:
 1. **Client ID** and **Client Secret** from an app registration
@@ -601,17 +601,17 @@ After SnapLogic verifies a token is authentic (using Issuer ID + JWKS URL), it n
 
 ### Common Mapping Approaches
 
-| Mapping | How It Works | When It's Used |
-|---------|-------------|----------------|
-| **Email claim** | Token's `email` field matches a SnapLogic user's email | Most common with Okta |
-| **Subject claim** | Token's `sub` field matches a SnapLogic username | Common with Entra ID |
-| **Custom claim** | A custom field you define in your IdP matches a SnapLogic username | When email/sub don't match |
+| Mapping           | How It Works                                                       | When It's Used             |
+| ----------------- | ------------------------------------------------------------------ | -------------------------- |
+| **Email claim**   | Token's `email` field matches a SnapLogic user's email             | Most common with Okta      |
+| **Subject claim** | Token's `sub` field matches a SnapLogic username                   | Common with Entra ID       |
+| **Custom claim**  | A custom field you define in your IdP matches a SnapLogic username | When email/sub don't match |
 
 ### For Robot Framework / CI/CD
 
 The identity in the token must map to a real SnapLogic user with the right permissions (typically org admin or project admin):
 
-| Approach | How It Works |
-|----------|-------------|
-| **Personal user mapping** | IdP user `user1@company.com` → token carries `email: user1@company.com` → SnapLogic user `user1@company.com` (must be org admin) |
+| Approach                                    | How It Works                                                                                                                                                      |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Personal user mapping**                   | IdP user `user1@company.com` → token carries `email: user1@company.com` → SnapLogic user `user1@company.com` (must be org admin)                                  |
 | **Service account (recommended for CI/CD)** | IdP app authenticates as itself → token carries `sub: <client_id>` or mapped claim → SnapLogic user created for this purpose (e.g., `automation-svc@company.com`) |
