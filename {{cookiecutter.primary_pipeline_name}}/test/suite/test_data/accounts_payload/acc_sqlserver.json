@@ -83,7 +83,17 @@
                                         "expression": false
                                     },
                                     "urlPropertyValue": {
-                                        "value": "false",
+                                        "value": "true",
+                                        "expression": false
+                                    }
+                                },
+                                {
+                                    "urlPropertyName": {
+                                        "value": "trustServerCertificate",
+                                        "expression": false
+                                    },
+                                    "urlPropertyValue": {
+                                        "value": "true",
                                         "expression": false
                                     }
                                 }

@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Robot Framework — __init__.robot Flow Walkthrough</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #1a2030;
+    --border: #2d3548;
+    --text: #e6e9ef;
+    --muted: #8893a8;
+    --accent: #4ea1ff;
+    --accent-soft: #1f3a5f;
+    --success: #4ade80;
+    --warn: #fbbf24;
+    --danger: #f87171;
+    --code-bg: #0a0e15;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+  }
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 30px;
+  }
+  header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 24px;
+    margin-bottom: 32px;
+  }
+  h1 {
+    font-size: 2.2em;
+    margin: 0 0 8px;
+    color: var(--accent);
+  }
+  .subtitle { color: var(--muted); font-size: 1.05em; }
+  h2 {
+    color: var(--accent);
+    border-left: 4px solid var(--accent);
+    padding-left: 14px;
+    margin-top: 48px;
+    margin-bottom: 16px;
+    font-size: 1.6em;
+  }
+  h3 {
+    color: var(--text);
+    margin-top: 28px;
+    margin-bottom: 12px;
+    font-size: 1.2em;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 18px 0;
+  }
+  .panel-accent {
+    border-left: 4px solid var(--accent);
+  }
+  .panel-success { border-left: 4px solid var(--success); }
+  .panel-warn    { border-left: 4px solid var(--warn); }
+  .panel-danger  { border-left: 4px solid var(--danger); }
+  code, pre {
+    font-family: "JetBrains Mono", Monaco, Consolas, monospace;
+    font-size: 0.92em;
+  }
+  code {
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  pre code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+  }
+  .keyword { color: #c084fc; }
+  .var     { color: #fbbf24; }
+  .str     { color: #4ade80; }
+  .comment { color: var(--muted); font-style: italic; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 0.95em;
+  }
+  th, td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  tr:hover td { background: rgba(78, 161, 255, 0.04); }
+  .flow {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin: 24px 0;
+  }
+  .step {
+    display: flex;
+    align-items: center;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    position: relative;
+  }
+  .step-num {
+    background: var(--accent);
+    color: var(--bg);
+    font-weight: 700;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+    flex-shrink: 0;
+  }
+  .step-body strong { color: var(--accent); }
+  .arrow {
+    text-align: center;
+    color: var(--muted);
+    font-size: 1.4em;
+    margin: -2px 0 -2px 16px;
+  }
+  .precedence-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 20px 0;
+  }
+  .precedence-layer {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .layer-1 { background: linear-gradient(90deg, #1a2030 0%, #1f3a5f 100%); }
+  .layer-2 { background: linear-gradient(90deg, #1a2030 0%, #2d4f7a 100%); }
+  .layer-3 { background: linear-gradient(90deg, #1a2030 0%, #4ea1ff 100%); }
+  .precedence-tag {
+    background: rgba(0,0,0,0.3);
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 0.85em;
+  }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-weight: 600;
+    margin-right: 6px;
+  }
+  .badge-basic   { background: #1f3a5f; color: var(--accent); }
+  .badge-jwt     { background: #2d4f1a; color: var(--success); }
+  .badge-oauth2  { background: #4f3d1a; color: var(--warn); }
+  .badge-sltoken { background: #4f1a3a; color: #f472b6; }
+  .toc {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .toc ol { margin: 0; padding-left: 22px; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .file-ref {
+    color: var(--muted);
+    font-size: 0.9em;
+    font-style: italic;
+  }
+  .check { color: var(--success); }
+  .x     { color: var(--danger); }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>Robot Framework Suite Initialization Walkthrough</h1>
+  <p class="subtitle">
+    A line-by-line tour of <code>test/suite/__init__.robot</code> — the file that runs <strong>once before every test</strong> to load env vars, detect auth, and create the project space in SnapLogic.
+  </p>
+</header>
+
+<!-- ───── Table of Contents ───── -->
+<div class="toc">
+  <strong>Table of Contents</strong>
+  <ol>
+    <li><a href="#big-picture">The big picture — when does <code>__init__.robot</code> run?</a></li>
+    <li><a href="#step1">Step 1 — Load Environment Variables</a></li>
+    <li><a href="#step2">Step 2 — Detect Auth Method</a></li>
+    <li><a href="#step3">Step 3 — Validate Environment Variables</a></li>
+    <li><a href="#step4">Step 4 — Set Up Global Variables</a></li>
+    <li><a href="#step5">Step 5 — Project Setup (PROJECT_SPACE_SETUP=True)</a></li>
+    <li><a href="#make-targets">The two main Make targets (with workflow diagrams)</a></li>
+    <li><a href="#takeaways">TL;DR cheat sheet</a></li>
+  </ol>
+</div>
+
+<!-- ───── Big Picture ───── -->
+<h2 id="big-picture">1. The big picture</h2>
+
+<p>Robot Framework looks for a file named <code>__init__.robot</code> in <strong>every test-suite directory</strong> when a suite is executed. The <code>Suite Setup</code> declared inside runs <em>once</em>, before any test case in any sub-directory.</p>
+
+<div class="panel panel-accent">
+  <strong>File location:</strong> <code>test/suite/__init__.robot</code><br>
+  <strong>Trigger:</strong> automatic — Robot finds it; you never call it<br>
+  <strong>Purpose:</strong> load <code>.env</code> values, detect auth, create the SnapLogic project space + accounts before any pipeline test runs
+</div>
+
+<div class="flow">
+  <div class="step">
+    <div class="step-num">▸</div>
+    <div class="step-body">
+      <code>make robot-run-tests-no-gp TAGS="sqlserver2"</code>
+      <span class="file-ref">— user runs make</span>
+    </div>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step">
+    <div class="step-num">▸</div>
+    <div class="step-body">
+      Robot Framework discovers the test file and walks up directories looking for <code>__init__.robot</code>
+    </div>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step">
+    <div class="step-num">▸</div>
+    <div class="step-body">
+      <code>__init__.robot</code> Suite Setup → <strong>Before Suite</strong> keyword runs
+    </div>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step">
+    <div class="step-num">▸</div>
+    <div class="step-body">
+      5 sub-keywords run sequentially (covered below)
+    </div>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step">
+    <div class="step-num">▸</div>
+    <div class="step-body">
+      <strong>Only after</strong> all 5 succeed, the actual test cases run (e.g. <code>sql_server2.robot</code>, <code>oracle_baseline_tests.robot</code>)
+    </div>
+  </div>
+</div>
+
+<h3>The 5 sub-keywords inside <code>Before Suite</code></h3>
+
+<pre><code><span class="keyword">Before Suite</span>
+    Load Environment Variables       <span class="comment"># Step 1 — read .env files</span>
+    Detect Auth Method               <span class="comment"># Step 2 — basic / jwt / oauth2 / sltoken</span>
+    Validate Environment Variables   <span class="comment"># Step 3 — fail fast on missing vars</span>
+    Set Up Global Variables          <span class="comment"># Step 4 — expose paths to all tests</span>
+    Project Set Up-...-Create Accounts  <span class="comment"># Step 5 — talk to SnapLogic API</span></code></pre>
+
+<!-- ───── Step 1 ───── -->
+<h2 id="step1">2. Step 1 — Load Environment Variables</h2>
+
+<p>This is the single most important step. It's where <code>.env</code> files become <code>${VARIABLE}</code> values that the rest of the test suite can use.</p>
+
+<h3>Three layers, last layer wins</h3>
+
+<p>Three separate sources are loaded in a <strong>specific order</strong>. If the same variable is defined in multiple places, the <strong>later layer overrides</strong> the earlier one.</p>
+
+<div class="precedence-stack">
+  <div class="precedence-layer layer-1">
+    <span><strong>Layer 1.</strong> All <code>.env*</code> files in <code>env_files/</code> and its sub-directories</span>
+    <span class="precedence-tag">LOWEST priority</span>
+  </div>
+  <div class="precedence-layer layer-2">
+    <span><strong>Layer 2.</strong> Root <code>.env</code> file at the project root</span>
+    <span class="precedence-tag">overrides layer 1</span>
+  </div>
+  <div class="precedence-layer layer-3">
+    <span><strong>Layer 3.</strong> File passed via <code>ENV=path/to/file</code> on the command line</span>
+    <span class="precedence-tag">HIGHEST priority</span>
+  </div>
+</div>
+
+<h3>What lives where</h3>
+
+<table>
+  <tr><th>Layer</th><th>Folder / File</th><th>What goes there</th></tr>
+  <tr><td>1</td><td><code>env_files/database_accounts/.env.sqlserver</code></td><td>SQL Server host, port, user, password</td></tr>
+  <tr><td>1</td><td><code>env_files/database_accounts/.env.oracle</code></td><td>Oracle defaults</td></tr>
+  <tr><td>1</td><td><code>env_files/messaging_service_accounts/.env.kafka</code></td><td>Kafka defaults</td></tr>
+  <tr><td>1</td><td><code>env_files/mock_service_accounts/.env.s3</code></td><td>MinIO / S3 mock</td></tr>
+  <tr><td>2</td><td><code>.env</code> (project root)</td><td>SnapLogic org credentials, project space name, per-test overrides</td></tr>
+  <tr><td>3</td><td>e.g. <code>.env.stage</code></td><td>Environment-specific overrides (passed via <code>ENV=.env.stage</code>)</td></tr>
+</table>
+
+<h3>Concrete example</h3>
+
+<p>Imagine you have:</p>
+
+<pre><code><span class="comment"># env_files/database_accounts/.env.sqlserver  (Layer 1)</span>
+SQLSERVER_DATABASE=master
+SQLSERVER_HOST=sqlserver-db
+
+<span class="comment"># .env  (Layer 2 — overrides Layer 1)</span>
+SQLSERVER_DATABASE=TEST
+ORG_NAME=ml-legacy-migration
+PROJECT_SPACE=test9_project_space</code></pre>
+
+<p>Result after <code>Load Environment Variables</code>:</p>
+<ul>
+  <li><code>${SQLSERVER_DATABASE}</code> = <code>TEST</code> &nbsp;<span class="check">✓ Layer 2 won</span></li>
+  <li><code>${SQLSERVER_HOST}</code> = <code>sqlserver-db</code> &nbsp;<span class="check">✓ from Layer 1, no override</span></li>
+  <li><code>${ORG_NAME}</code>, <code>${PROJECT_SPACE}</code> = from Layer 2</li>
+</ul>
+
+<!-- ───── Step 2 ───── -->
+<h2 id="step2">3. Step 2 — Detect Auth Method</h2>
+
+<p>SnapLogic supports four authentication methods. The framework picks one automatically unless you set <code>AUTH_METHOD</code> explicitly.</p>
+
+<h3>Decision tree</h3>
+
+<pre><code>Is <span class="var">${AUTH_METHOD}</span> set in .env?
+├─ YES → use that value
+└─ NO  → auto-detect:
+         ├─ <span class="var">${OAUTH2_TOKEN_URL}</span> set?  → <span class="badge badge-oauth2">oauth2</span>
+         ├─ <span class="var">${BEARER_TOKEN}</span>     set?  → <span class="badge badge-jwt">jwt</span>
+         └─ neither                       → <span class="badge badge-basic">basic</span> (default)</code></pre>
+
+<h3>The 4 supported methods</h3>
+
+<table>
+  <tr><th>Method</th><th>Required env vars</th><th>Typical use</th></tr>
+  <tr><td><span class="badge badge-basic">basic</span></td><td><code>ORG_ADMIN_USER</code>, <code>ORG_ADMIN_PASSWORD</code></td><td>Local dev, internal envs</td></tr>
+  <tr><td><span class="badge badge-jwt">jwt</span></td><td><code>BEARER_TOKEN</code></td><td>CI pipelines, short-lived tokens</td></tr>
+  <tr><td><span class="badge badge-oauth2">oauth2</span></td><td><code>OAUTH2_TOKEN_URL</code>, <code>OAUTH2_CLIENT_ID</code>, <code>OAUTH2_CLIENT_SECRET</code></td><td>Customer-managed identity</td></tr>
+  <tr><td><span class="badge badge-sltoken">sltoken</span></td><td><code>ORG_ADMIN_USER</code>, <code>ORG_ADMIN_PASSWORD</code></td><td>SnapLogic-issued tokens</td></tr>
+</table>
+
+<!-- ───── Step 3 ───── -->
+<h2 id="step3">4. Step 3 — Validate Environment Variables</h2>
+
+<p>This step <strong>fails fast</strong>. Before talking to any external service, it checks that every required variable is non-empty. If anything is missing, the suite stops with a clear error pointing you at the problem.</p>
+
+<h3>Common required variables (always)</h3>
+
+<table>
+  <tr><th>Variable</th><th>Used for</th></tr>
+  <tr><td><code>URL</code></td><td>SnapLogic control plane URL (e.g. <code>https://elastic.snaplogic.com</code>)</td></tr>
+  <tr><td><code>ORG_NAME</code></td><td>SnapLogic organisation</td></tr>
+  <tr><td><code>PROJECT_SPACE</code></td><td>Project space to create / use</td></tr>
+  <tr><td><code>PROJECT_NAME</code></td><td>Project to create inside the space</td></tr>
+  <tr><td><code>GROUNDPLEX_NAME</code></td><td>Groundplex node where pipelines run</td></tr>
+</table>
+
+<h3>Auth-method-specific extras</h3>
+
+<table>
+  <tr><th>If AUTH_METHOD =</th><th>Also required</th></tr>
+  <tr><td><span class="badge badge-basic">basic</span> / <span class="badge badge-sltoken">sltoken</span></td><td><code>ORG_ADMIN_USER</code> + <code>ORG_ADMIN_PASSWORD</code></td></tr>
+  <tr><td><span class="badge badge-jwt">jwt</span></td><td><code>BEARER_TOKEN</code></td></tr>
+  <tr><td><span class="badge badge-oauth2">oauth2</span></td><td><code>OAUTH2_TOKEN_URL</code> + <code>OAUTH2_CLIENT_ID</code> + <code>OAUTH2_CLIENT_SECRET</code></td></tr>
+</table>
+
+<div class="panel panel-danger">
+  <strong>If a variable is missing</strong> the suite fails with a message like:<br>
+  <em>"Missing required environment variables for AUTH_METHOD=basic: ORG_NAME, PROJECT_SPACE. Please check your .env file..."</em>
+  <br><br>
+  This is intentional. It's much better to fail at startup than mid-test with an obscure HTTP error.
+</div>
+
+<!-- ───── Step 4 ───── -->
+<h2 id="step4">5. Step 4 — Set Up Global Variables</h2>
+
+<p>This step turns local paths into <code>Set Global Variable</code>s, making them available to every test case in every sub-directory without re-importing.</p>
+
+<table>
+  <tr><th>Variable</th><th>Resolves to</th><th>Used by</th></tr>
+  <tr><td><code>${account_payload_path}</code></td><td><code>test/suite/test_data/accounts_payload</code></td><td>Account-creation tests</td></tr>
+  <tr><td><code>${env_file_path}</code></td><td><code>.env</code> at project root</td><td>SnapLogic API setup</td></tr>
+  <tr><td><code>${pipeline_payload_path}</code></td><td><code>src/pipelines</code></td><td>Pipeline import tests</td></tr>
+  <tr><td><code>${generative_slp_pipelines_path}</code></td><td><code>src/generative_pipelines</code></td><td>SLIM-generated pipelines</td></tr>
+</table>
+
+<!-- ───── Step 5 ───── -->
+<h2 id="step5">6. Step 5 — Project Setup (the SnapLogic API call)</h2>
+
+<p>This is where the framework actually <strong>talks to SnapLogic</strong>. Based on the detected auth method, it dispatches to one of four branches and ultimately calls <code>Set Up Data</code> (a keyword from the <code>snaplogic_common_robot</code> library).</p>
+
+<h3>What <code>Set Up Data</code> does internally</h3>
+
+<p>Behaviour depends on whether you passed <code>PROJECT_SPACE_SETUP=True</code> on the command line:</p>
+
+<table>
+  <tr><th>Flag</th><th>Behaviour</th></tr>
+  <tr>
+    <td><code>PROJECT_SPACE_SETUP=True</code></td>
+    <td>
+      <ol>
+        <li><strong>Delete</strong> the existing project space (if present)</li>
+        <li><strong>Create</strong> a new project space named <code>${PROJECT_SPACE}</code></li>
+        <li><strong>Create</strong> a project inside it named <code>${PROJECT_NAME}</code></li>
+        <li><strong>Set up</strong> the Snaplex pointer to <code>${GROUNDPLEX_NAME}</code></li>
+        <li>Pre-create the <strong>shared accounts directory</strong> (where the test framework will later POST account JSON)</li>
+      </ol>
+    </td>
+  </tr>
+  <tr>
+    <td><code>PROJECT_SPACE_SETUP=False</code> <em>(default)</em></td>
+    <td><strong>Verify</strong> the project space exists. If missing, <strong>fail</strong> with a clear error. Nothing is created or deleted.</td>
+  </tr>
+</table>
+
+<h3>Visual: PROJECT_SPACE_SETUP=True flow</h3>
+
+<div class="flow">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">Robot calls <code>Set Up Data</code> with the URL, credentials, and target project-space name from <code>.env</code></div>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">Library auths against the SnapLogic API using the detected method</div>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">Issues <strong>DELETE</strong> for the existing project space (idempotent — succeeds even if absent)</div>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">Issues <strong>POST</strong> to create a fresh project space</div>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-body">Issues <strong>POST</strong> to create the project inside the space</div>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step">
+    <div class="step-num">6</div>
+    <div class="step-body">Sets up Groundplex binding so pipelines can execute</div>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step">
+    <div class="step-num">7</div>
+    <div class="step-body">Pre-creates <code>shared/</code> folder for accounts (used by per-test "Create Account" cases)</div>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step">
+    <div class="step-num">✓</div>
+    <div class="step-body"><strong>Suite Setup complete.</strong> Test cases now run, each calling <code>Create Account From Template</code> etc. against this fresh project space.</div>
+  </div>
+</div>
+
+<div class="panel panel-warn">
+  <strong>When to use <code>PROJECT_SPACE_SETUP=True</code>:</strong>
+  <ul>
+    <li>Very first run after pulling the repo</li>
+    <li>Snaplex configuration changed</li>
+    <li>Project space is corrupted or you want a clean slate</li>
+    <li>Always in CI/CD pipelines — gives a deterministic starting point</li>
+  </ul>
+
+  <strong>When to skip it (default <code>False</code>):</strong>
+  <ul>
+    <li>You're iterating on tests and want to keep accounts/pipelines around</li>
+    <li>Quick smoke tests that should fail loudly if the project is missing</li>
+  </ul>
+</div>
+
+<h3>Practical command-line invocations</h3>
+
+<pre><code><span class="comment"># First time / CI — full setup</span>
+make robot-run-all-tests TAGS="sqlserver2" PROJECT_SPACE_SETUP=True
+
+<span class="comment"># Re-run on existing project space</span>
+make robot-run-tests-no-gp TAGS="sqlserver2"
+
+<span class="comment"># Use stage-specific overrides (loads .env.stage as Layer 3)</span>
+make robot-run-all-tests TAGS="sqlserver2" ENV=.env.stage</code></pre>
+
+<h3>Switching environments with <code>ENV=</code></h3>
+
+<p>The <code>ENV=&lt;file&gt;</code> flag is the right way to point one test run at a different SnapLogic org, project space, or database without editing your <code>.env</code> file. The override file is loaded as <strong>Layer 3</strong> (highest priority) — anything defined in it wins over the same variable in <code>.env</code> or <code>env_files/</code>.</p>
+
+<div class="panel panel-warn">
+  <strong>Important nuance:</strong> <code>ENV=.env.stage</code> does <strong>not</strong> skip your <code>.env</code> file — both are loaded; the override just wins on conflicts. To effectively "ignore" <code>.env</code>, put every variable you care about into the override file. Anything not redefined there will fall back to <code>.env</code>.
+</div>
+
+<h4>Use case 1 — Run the same tests against multiple environments</h4>
+
+<p>Keep one credentials file per environment, switch on the command line:</p>
+
+<pre><code><span class="comment"># File: .env.stage</span>
+URL=https://stage.snaplogic.com
+ORG_NAME=my-org-stage
+PROJECT_SPACE=stage_pipeline_tests
+ORG_ADMIN_USER=stage_user
+ORG_ADMIN_PASSWORD=stage_pass
+
+<span class="comment"># File: .env.prod</span>
+URL=https://elastic.snaplogic.com
+ORG_NAME=my-org-prod
+PROJECT_SPACE=prod_pipeline_tests
+ORG_ADMIN_USER=prod_user
+ORG_ADMIN_PASSWORD=prod_pass</code></pre>
+
+<p>Then run either with:</p>
+
+<pre><code><span class="comment"># Run against stage</span>
+make robot-run-tests-no-gp TAGS="sqlserver2" ENV=.env.stage
+
+<span class="comment"># Run against prod</span>
+make robot-run-tests-no-gp TAGS="sqlserver2" ENV=.env.prod
+
+<span class="comment"># Run with default .env (no override)</span>
+make robot-run-tests-no-gp TAGS="sqlserver2"</code></pre>
+
+<h4>Use case 2 — Override a single variable for one test run</h4>
+
+<p>Create a tiny override file with only what you want to change:</p>
+
+<pre><code><span class="comment"># File: .env.testdb</span>
+SQLSERVER_DATABASE=TEST_BACKUP</code></pre>
+
+<pre><code>make robot-run-tests-no-gp TAGS="sqlserver2" ENV=.env.testdb</code></pre>
+
+<p>Everything else (URL, org, credentials, hosts) comes from your normal <code>.env</code>. Only <code>SQLSERVER_DATABASE</code> is swapped.</p>
+
+<h4>Use case 3 — CI/CD with injected secrets</h4>
+
+<p>In CI, the runner usually writes secrets into a temporary file and points the test at it:</p>
+
+<pre><code><span class="comment"># GitHub Actions / GitLab CI / Travis snippet</span>
+- name: Run pipeline tests
+  run: |
+    cat > /tmp/.env.ci &lt;&lt;EOF
+    URL=${SECRET_SNAPLOGIC_URL}
+    ORG_ADMIN_USER=${SECRET_USER}
+    ORG_ADMIN_PASSWORD=${SECRET_PASS}
+    ORG_NAME=${SECRET_ORG}
+    PROJECT_SPACE=ci_${BUILD_ID}
+    EOF
+    make robot-run-all-tests TAGS="sqlserver2" ENV=/tmp/.env.ci PROJECT_SPACE_SETUP=True</code></pre>
+
+<p>The repo's committed <code>.env</code> stays a placeholder; real credentials never land on disk outside the CI runner.</p>
+
+<h4>How to verify the override actually loaded</h4>
+
+<p>When the suite starts, <code>__init__.robot</code> prints the load order to the console:</p>
+
+<pre><code>Loading 4 environment files from /app/env_files/database_accounts:
+Loading: .env.sqlserver
+Loading: .env.oracle
+...
+Loading root .env file:
+Loaded environment variables from: /app/.env
+
+========================================
+Loading ENV override file (HIGHEST PRECEDENCE):
+/app/.env.stage
+========================================
+Loaded environment variables from: /app/.env.stage</code></pre>
+
+<p>If you don't see the "ENV override file" block, the flag wasn't picked up — check your <code>make</code> command spelling.</p>
+
+<!-- ───── Make Targets ───── -->
+<h2 id="make-targets">7. The two main Make targets</h2>
+
+<p>The Robot suite is invoked through one of two Make targets. Both ultimately call <code>robot-run-tests</code>, but they differ in <strong>how much they manage around it</strong>:</p>
+
+<table>
+  <tr><th>Target</th><th>Manages Groundplex?</th><th>Use when</th></tr>
+  <tr>
+    <td><code>robot-run-all-tests</code></td>
+    <td>Yes — starts and stops a local Docker Groundplex</td>
+    <td>Local dev; one command brings everything up</td>
+  </tr>
+  <tr>
+    <td><code>robot-run-tests-no-gp</code></td>
+    <td>Never — assumes the Groundplex is already running (or external)</td>
+    <td>Running against a cloud / external plex, or you started one yourself</td>
+  </tr>
+</table>
+
+<h3>Workflow: <code>robot-run-all-tests</code></h3>
+
+<pre><code>make robot-run-all-tests TAGS="sqlserver2"
+            │
+            ▼
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 0a — External-plex guard                             │
+│    ✗ EXTERNAL_GROUNDPLEX=yes in .env?                       │
+│      └─ FAIL with "use robot-run-tests-no-gp instead"       │
+│    ✗ No local container AND no .slpropz?                    │
+│      └─ ⚠ Warning, sleep 5s, continue (likely first run)    │
+└────────────────────────────┬────────────────────────────────┘
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 0 — check-groundplex-swap                            │
+│    Confirm Groundplex name didn't change underneath us.     │
+│    Prevents accidentally swapping into someone else's plex. │
+└────────────────────────────┬────────────────────────────────┘
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 1 — Project space + plex creation                    │
+│                                                             │
+│   PROJECT_SPACE_SETUP=True (default)                        │
+│   ──────────────────────────────────                        │
+│   Run: robot-run-tests TAGS="createplex"                    │
+│    • Creates project space (idempotent)                     │
+│    • Creates project inside it                              │
+│    • Registers Snaplex definition                           │
+│    • Downloads .slpropz                                     │
+│                                                             │
+│   On failure → check log for "active nodes" error:          │
+│     ├─ YES → make stop-groundplex → wait 60s → retry        │
+│     └─ NO  → exit 1                                         │
+│                                                             │
+│   PROJECT_SPACE_SETUP=False                                 │
+│   ─────────────────────────                                 │
+│   Run: robot-run-tests TAGS="verify_project_space_exists"   │
+│    • Just checks it's there → fail if missing               │
+└────────────────────────────┬────────────────────────────────┘
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 2 — Launch Groundplex                                │
+│   make launch-groundplex SWAP_CHECK_DONE=1                  │
+│    • docker-compose up the snaplogic-groundplex container   │
+│    • Mounts .slpropz, joins snaplogicnet network            │
+│    • Waits for plex to come online                          │
+└────────────────────────────┬────────────────────────────────┘
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 2.1 — Travis permissions (CI only)                   │
+│   if $TRAVIS == "true": chmod test_data/                    │
+│   Otherwise: skip                                           │
+└────────────────────────────┬────────────────────────────────┘
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 3 — Run user-defined tests                           │
+│   robot-run-tests TAGS="sqlserver2" PROJECT_SPACE_SETUP=False
+│   (Setup already done in Phase 1; don't re-do it.)          │
+└─────────────────────────────────────────────────────────────┘</code></pre>
+
+<div class="panel panel-accent">
+  <strong>Use when:</strong> local dev, you want one command to bring everything up.<br>
+  <strong>Cannot use when:</strong> <code>EXTERNAL_GROUNDPLEX=yes</code> in <code>.env</code>.
+</div>
+
+<h3>Workflow: <code>robot-run-tests-no-gp</code></h3>
+
+<pre><code>make robot-run-tests-no-gp TAGS="sqlserver2"
+            │
+            ▼
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 0 — Skipped intentionally                            │
+│   No swap-check. Reason: "-no-gp" contract = framework      │
+│   doesn't manage your Groundplex, especially externals.     │
+└────────────────────────────┬────────────────────────────────┘
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 1 — Project space (no plex)                          │
+│                                                             │
+│   PROJECT_SPACE_SETUP=True (default)                        │
+│   ──────────────────────────────────                        │
+│   Run: robot-run-tests TAGS="verify_project_space_exists"   │
+│         PROJECT_SPACE_SETUP=True                            │
+│    • Idempotent project space + project create              │
+│    • NO Snaplex registration (that's the point of -no-gp)   │
+│                                                             │
+│   On failure → "active nodes" error?                        │
+│     ├─ YES, local container exists → stop, wait 60s, retry  │
+│     │      (leaves GP STOPPED; user restarts manually)      │
+│     ├─ YES, NO local container → external GP → fail with    │
+│     │      "ACTION REQUIRED: stop it externally"            │
+│     └─ NO  → exit 1                                         │
+│                                                             │
+│   PROJECT_SPACE_SETUP=False                                 │
+│   ─────────────────────────                                 │
+│   Run: robot-run-tests TAGS="verify_project_space_exists"   │
+│         PROJECT_SPACE_SETUP=False                           │
+│    • Verify-only → fail-fast if missing                     │
+└────────────────────────────┬────────────────────────────────┘
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 2 — ⏩ SKIP all Groundplex/Plex operations           │
+│   echo "Ensure Groundplex is already running."              │
+│   (No launch, no stop, no .slpropz refresh.)                │
+└────────────────────────────┬────────────────────────────────┘
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 2.1 — Travis permissions (CI only) — same as above   │
+└────────────────────────────┬────────────────────────────────┘
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 2.5 — No-local-Groundplex warning                    │
+│   docker ps | grep snaplogic-groundplex?                    │
+│     ├─ FOUND → continue silently                            │
+│     └─ NOT FOUND → ⚠ warn:                                  │
+│         "If your tests need a plex, either:                 │
+│           1. Run 'make launch-groundplex' in another tab    │
+│           2. Ctrl+C and use 'make robot-run-all-tests'      │
+│           3. Use an external Groundplex"                    │
+└────────────────────────────┬────────────────────────────────┘
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 3 — Run user-defined tests                           │
+│   robot-run-tests TAGS="sqlserver2" PROJECT_SPACE_SETUP=False
+│   (Same as robot-run-all-tests — only Phase 3 actually runs │
+│    your tests; Phases 0–2.5 are setup/safety scaffolding.)  │
+└─────────────────────────────────────────────────────────────┘</code></pre>
+
+<div class="panel panel-accent">
+  <strong>Use when:</strong> external Groundplex already exists, OR you launched the local one yourself with <code>make launch-groundplex</code>.<br>
+  <strong>Skips:</strong> all Groundplex lifecycle management. Will warn (not fail) if no plex is running.
+</div>
+
+<h3>Side-by-side phase comparison</h3>
+
+<table>
+  <tr><th>Phase</th><th><code>robot-run-all-tests</code></th><th><code>robot-run-tests-no-gp</code></th></tr>
+  <tr><td>0a — External-plex guard</td><td>✅ blocks if external</td><td>❌ omitted</td></tr>
+  <tr><td>0 — Swap check</td><td>✅ runs</td><td>❌ omitted by design</td></tr>
+  <tr><td>1 — Project space</td><td>✅ <code>createplex</code></td><td>✅ <code>verify_project_space_exists</code> w/ create</td></tr>
+  <tr><td>2 — Launch Groundplex</td><td>✅ <code>launch-groundplex</code></td><td>❌ skipped — your job</td></tr>
+  <tr><td>2.1 — Travis perms</td><td>✅</td><td>✅</td></tr>
+  <tr><td>2.5 — Plex-running warning</td><td>n/a (just launched it)</td><td>✅ warns if missing</td></tr>
+  <tr><td>3 — Run user tests</td><td>✅</td><td>✅</td></tr>
+</table>
+
+<h3>The two safety checks in detail</h3>
+
+<h4>External-plex guard (Phase 0a)</h4>
+
+<p>Reads <code>EXTERNAL_GROUNDPLEX</code> from <code>.env</code>. If set to <code>yes</code> or <code>true</code>, the target <strong>refuses to run</strong> and points you at <code>robot-run-tests-no-gp</code> instead.</p>
+
+<div class="panel panel-danger">
+  <strong>Why it exists — the footgun it prevents:</strong>
+  <p>Imagine a customer's Groundplex called <code>prod-plex</code> running in their cloud, managed by their ops team. You set <code>GROUNDPLEX_NAME=prod-plex</code> in <code>.env</code> and run <code>make robot-run-all-tests</code>.</p>
+  <p>Without the guard, Phase 2 would start a <strong>local</strong> Docker container also named <code>prod-plex</code> that registers itself with the customer's org. Two Groundplexes fighting over the same registration → their ops team gets paged.</p>
+  <p>The guard makes you set <code>EXTERNAL_GROUNDPLEX=yes</code> as an explicit "don't touch" signal.</p>
+</div>
+
+<table>
+  <tr><th>Setting in <code>.env</code></th><th>Behavior</th></tr>
+  <tr><td><code>EXTERNAL_GROUNDPLEX=yes</code></td><td><strong>Hard fail</strong> — must use <code>-no-gp</code> target</td></tr>
+  <tr><td>No flag, no local artifacts</td><td><strong>Soft warn</strong> — 5-second sleep, continue (likely first run)</td></tr>
+  <tr><td>No flag, local artifacts exist</td><td>Silent continue — looks like a normal repeat run</td></tr>
+</table>
+
+<h4>Swap check (Phase 0)</h4>
+
+<p>Calls <code>make check-groundplex-swap</code>. Compares the <code>GROUNDPLEX_NAME</code> in your current <code>.env</code> against any local artifacts (the <code>snaplogic-groundplex</code> container and the <code>.slpropz</code> config file). If they don't match, it stops and asks for confirmation.</p>
+
+<div class="panel panel-danger">
+  <strong>Why it exists — the footgun it prevents:</strong>
+  <p><strong>Day 1:</strong> <code>GROUNDPLEX_NAME=test_plex</code> in <code>.env</code>. Run tests. Container + <code>.slpropz</code> stay on disk for <code>test_plex</code>.</p>
+  <p><strong>Day 2:</strong> Co-worker hands you a different <code>.env</code> with <code>GROUNDPLEX_NAME=customer_prod</code>. You run <code>make robot-run-all-tests</code> without thinking.</p>
+  <p>Without the swap check, Phase 2 might start your old <code>test_plex</code> container and register it under the new project space, OR fail in confusing ways because the <code>.slpropz</code> on disk doesn't match the plex you think you're using.</p>
+</div>
+
+<p><strong>Why <code>robot-run-tests-no-gp</code> skips this check:</strong> if the framework isn't going to touch the Groundplex anyway, warning about a name swap would just be noise. The <code>-no-gp</code> contract is "framework doesn't manage your plex" — that includes not policing your config.</p>
+
+<h3>Both targets ultimately call the same workhorse</h3>
+
+<p>The actual Robot command lives in <code>robot-run-tests</code>. Both wrappers eventually invoke it as their final step (Phase 3):</p>
+
+<pre><code>$(MAKE) robot-run-tests TAGS="$(TAGS)" PROJECT_SPACE_SETUP=False</code></pre>
+
+<p>which expands inside the <code>tools</code> Docker container to:</p>
+
+<pre><code>robot --variable PROJECT_SPACE_SETUP:False \
+      --variable FORCE_RECREATE_PROJECT_SPACE:False \
+      --variable TAGS:"sqlserver2" \
+      --include sqlserver2 \
+      --outputdir robot_output \
+      suite/</code></pre>
+
+<p>Phase 3 in both targets is the same call. Everything in earlier phases is preparation: ensuring the project space exists, the Groundplex is reachable, and (in the all-tests case) the local plex is running.</p>
+
+<!-- ───── Cheat Sheet ───── -->
+<h2 id="takeaways">8. TL;DR cheat sheet</h2>
+
+<div class="panel panel-success">
+  <strong>The whole flow in 30 seconds:</strong>
+  <ol>
+    <li>Robot auto-finds <code>__init__.robot</code> when you run any test</li>
+    <li>It loads <code>.env</code> in 3 layers (env_files/ → root .env → ENV= override)</li>
+    <li>It picks an auth method (auto or explicit)</li>
+    <li>It validates required env vars exist (fails fast if not)</li>
+    <li>It exposes paths as global variables</li>
+    <li>It calls SnapLogic to set up (or verify) the project space</li>
+    <li>Only then do your actual test cases run</li>
+  </ol>
+</div>
+
+<h3>Files referenced in this walkthrough</h3>
+
+<table>
+  <tr><th>Path</th><th>Purpose</th></tr>
+  <tr><td><code>test/suite/__init__.robot</code></td><td>The file this guide explains</td></tr>
+  <tr><td><code>.env</code></td><td>Root-level credentials and overrides (Layer 2)</td></tr>
+  <tr><td><code>env_files/</code></td><td>Per-service defaults (Layer 1)</td></tr>
+  <tr><td><code>test/suite/test_data/accounts_payload/</code></td><td>JSON templates for SnapLogic accounts</td></tr>
+  <tr><td><code>src/pipelines/</code></td><td>The .slp pipeline files</td></tr>
+</table>
+
+<h3>Common failure modes</h3>
+
+<table>
+  <tr><th>Symptom</th><th>Likely cause</th></tr>
+  <tr><td><code>Missing required environment variables for AUTH_METHOD=basic: ...</code></td><td>You forgot to fill in <code>.env</code> — go back to step 3</td></tr>
+  <tr><td><code>Project space 'X' is not created</code></td><td>You ran without <code>PROJECT_SPACE_SETUP=True</code> on first run</td></tr>
+  <tr><td><code>Connection refused</code> on first API call</td><td><code>URL</code> in .env is wrong, or VPN/firewall</td></tr>
+  <tr><td>Variables silently empty</td><td>JSON parse error in <code>.env</code> — check for unmatched quotes / brackets</td></tr>
+</table>
+
+<footer style="margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9em;">
+  <p>Generated for SnapLogic Robot Framework demo series · Companion document to <code>docs/D0365_pipeline_overview.md</code></p>
+</footer>
+
+</div>
+</body>
+</html>

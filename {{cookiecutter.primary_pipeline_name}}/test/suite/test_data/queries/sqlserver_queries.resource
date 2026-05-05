@@ -125,3 +125,194 @@ ${INSERT_TBLITEMS_SAMPLE_DATA}
 ...                             (6, 6, 1, 'PN-6001', 'LED Panel Light', 'Electrical', 'EA', '9405', 'LP-40W', 'LP-40W-A', 30, 650.00, '2025-26', 'EGI-011', NULL, NULL),
 ...                             (8, 7, 1, 'PN-8001', 'Packing Material', 'Consumables', 'KG', '3923', 'PM-STD', 'PM-STD-A', 100, 35.00, '2025-26', 'EGI-012', 'VC-003', NULL),
 ...                             (8, 7, 2, 'PN-8002', 'Stretch Film Roll', 'Consumables', 'EA', '3920', 'SF-500', 'SF-500-B', 20, 180.00, '2025-26', 'EGI-013', 'VC-003', NULL)
+
+# ═══════════════════════════════════════════════════════════════
+# D0365 Pipeline — DDL for esb schema tables
+# ═══════════════════════════════════════════════════════════════
+# Used by:
+#   - D0365_test_clean_version_2026_05_04.slp  (8 INSERT snaps)
+#   - D0365_Error_Pipeline_SQL_Delete_2026_05_04.slp  (6 DELETE snaps)
+#
+# Column lists derived from Script London output and Mapper transformations
+# in the main pipeline. All IDs are hierarchical strings produced by the
+# script (e.g. fileId_fromId_invoicePos_cfdPos_bpPos_unitId).
+# ═══════════════════════════════════════════════════════════════
+
+${SQL_CREATE_SCHEMA_ESB}
+...                             IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = 'esb') EXEC('CREATE SCHEMA esb')
+
+# --- esb.D0365Interchange (from ZHV record) ---
+
+${SQL_DROP_TABLE_D0365INTERCHANGE}
+...                             IF OBJECT_ID('esb.D0365Interchange', 'U') IS NOT NULL DROP TABLE esb.D0365Interchange
+
+${SQL_CREATE_TABLE_D0365INTERCHANGE}
+...                             CREATE TABLE esb.D0365Interchange (
+...                             D0365InterchangeID NVARCHAR(200) NOT NULL PRIMARY KEY,
+...                             CreatedDate        DATETIME2     NOT NULL
+...                             )
+
+# --- esb.EMRInvoiceHeader (from 86I record) ---
+
+${SQL_DROP_TABLE_EMRINVOICEHEADER}
+...                             IF OBJECT_ID('esb.EMRInvoiceHeader', 'U') IS NOT NULL DROP TABLE esb.EMRInvoiceHeader
+
+${SQL_CREATE_TABLE_EMRINVOICEHEADER}
+...                             CREATE TABLE esb.EMRInvoiceHeader (
+...                             EMRInvoiceHeaderID NVARCHAR(200) NOT NULL PRIMARY KEY,
+...                             PartyID            NVARCHAR(50)  NULL,
+...                             InvoiceNumber      INT           NULL,
+...                             InvoiceDate        DATE          NULL,
+...                             InvoicePaymentDate DATE          NULL,
+...                             InvoiceTotal       DECIMAL(18,2) NULL,
+...                             CreatedDate        DATETIME2     NULL
+...                             )
+
+# --- esb.ContractForDifference (from 87I record) ---
+
+${SQL_DROP_TABLE_CONTRACTFORDIFFERENCE}
+...                             IF OBJECT_ID('esb.ContractForDifference', 'U') IS NOT NULL DROP TABLE esb.ContractForDifference
+
+${SQL_CREATE_TABLE_CONTRACTFORDIFFERENCE}
+...                             CREATE TABLE esb.ContractForDifference (
+...                             ContractForDifferenceID    NVARCHAR(200)  NOT NULL PRIMARY KEY,
+...                             EMRInvoiceHeaderID         NVARCHAR(200)  NULL,
+...                             CFDID                      NVARCHAR(50)   NULL,
+...                             ContractType               NVARCHAR(20)   NULL,
+...                             TotalAggregateDifference   DECIMAL(18,4)  NULL,
+...                             TotalReconciliationAmount  DECIMAL(18,4)  NULL,
+...                             TotalInterest              DECIMAL(18,4)  NULL,
+...                             NetPayableAmount           DECIMAL(18,4)  NULL,
+...                             TotalAdHocPayment          DECIMAL(18,4)  NULL
+...                             )
+
+# --- esb.CFDBillingPeriod (from 88I record) ---
+
+${SQL_DROP_TABLE_CFDBILLINGPERIOD}
+...                             IF OBJECT_ID('esb.CFDBillingPeriod', 'U') IS NOT NULL DROP TABLE esb.CFDBillingPeriod
+
+${SQL_CREATE_TABLE_CFDBILLINGPERIOD}
+...                             CREATE TABLE esb.CFDBillingPeriod (
+...                             CFDBillingPeriodID         NVARCHAR(200) NOT NULL PRIMARY KEY,
+...                             ContractForDifferenceID    NVARCHAR(200) NULL,
+...                             SettlementDate             DATE          NULL,
+...                             SettlementCode             NVARCHAR(20)  NULL,
+...                             AggregateDifferenceAmount  DECIMAL(18,4) NULL,
+...                             ReconciliationAmount       DECIMAL(18,4) NULL,
+...                             CompensatoryInterest       DECIMAL(18,4) NULL,
+...                             Validated                  BIT           NULL
+...                             )
+
+# --- esb.CFDSettlementUnit (from 89I record) ---
+
+${SQL_DROP_TABLE_CFDSETTLEMENTUNIT}
+...                             IF OBJECT_ID('esb.CFDSettlementUnit', 'U') IS NOT NULL DROP TABLE esb.CFDSettlementUnit
+
+${SQL_CREATE_TABLE_CFDSETTLEMENTUNIT}
+...                             CREATE TABLE esb.CFDSettlementUnit (
+...                             CFDSettlementUnitID                NVARCHAR(200) NOT NULL PRIMARY KEY,
+...                             CFDBillingPeriodID                 NVARCHAR(200) NULL,
+...                             SettlementUnitID                   INT           NULL,
+...                             MeteredVolume                      DECIMAL(18,4) NULL,
+...                             DSFUnitMeteredVolume               DECIMAL(18,4) NULL,
+...                             DSFStationLoad                     DECIMAL(18,4) NULL,
+...                             DSFStationLoadProportion           DECIMAL(18,4) NULL,
+...                             TransmissionLossMultiplier         DECIMAL(18,4) NULL,
+...                             ReferencePrice                     DECIMAL(18,4) NULL,
+...                             StrikePrice                        DECIMAL(18,4) NULL,
+...                             RenewableQualifyingMultiplier      DECIMAL(18,4) NULL,
+...                             RenewableQualifyingMultiplierType  NVARCHAR(20)  NULL,
+...                             CHPQualifyingMultiplier            DECIMAL(18,4) NULL,
+...                             Difference                         DECIMAL(18,4) NULL,
+...                             DifferenceAmount                   DECIMAL(18,4) NULL,
+...                             Validated                          BIT           NULL
+...                             )
+
+# --- esb.CFDDefaultInterest (from 90I record) ---
+
+${SQL_DROP_TABLE_CFDDEFAULTINTEREST}
+...                             IF OBJECT_ID('esb.CFDDefaultInterest', 'U') IS NOT NULL DROP TABLE esb.CFDDefaultInterest
+
+${SQL_CREATE_TABLE_CFDDEFAULTINTEREST}
+...                             CREATE TABLE esb.CFDDefaultInterest (
+...                             CFDDefaultInterestID     NVARCHAR(200) NOT NULL PRIMARY KEY,
+...                             ContractForDifferenceID  NVARCHAR(200) NULL,
+...                             EMRInvoiceNumber         INT           NULL,
+...                             EMRInvoiceDate           DATE          NULL,
+...                             AmountInDefault          DECIMAL(18,4) NULL,
+...                             InterestPaymentFromDate  DATE          NULL,
+...                             InterestPaymentToDate    DATE          NULL,
+...                             InterestAmount           DECIMAL(18,4) NULL
+...                             )
+
+# --- esb.CFDDefaultInterestRate (from 91I record) ---
+
+${SQL_DROP_TABLE_CFDDEFAULTINTERESTRATE}
+...                             IF OBJECT_ID('esb.CFDDefaultInterestRate', 'U') IS NOT NULL DROP TABLE esb.CFDDefaultInterestRate
+
+${SQL_CREATE_TABLE_CFDDEFAULTINTERESTRATE}
+...                             CREATE TABLE esb.CFDDefaultInterestRate (
+...                             CFDDefaultInterestRateID   NVARCHAR(200) NOT NULL PRIMARY KEY,
+...                             CFDDefaultInterestID       NVARCHAR(200) NULL,
+...                             InterestRateEffectiveDate  DATE          NULL,
+...                             InterestRate               DECIMAL(10,6) NULL
+...                             )
+
+# --- esb.CFDAdHocPayment (from 92I record) ---
+
+${SQL_DROP_TABLE_CFDADHOCPAYMENT}
+...                             IF OBJECT_ID('esb.CFDAdHocPayment', 'U') IS NOT NULL DROP TABLE esb.CFDAdHocPayment
+
+${SQL_CREATE_TABLE_CFDADHOCPAYMENT}
+...                             CREATE TABLE esb.CFDAdHocPayment (
+...                             CFDAdHocPaymentID                NVARCHAR(200) NOT NULL PRIMARY KEY,
+...                             ContractForDifferenceID          NVARCHAR(200) NULL,
+...                             Description                      NVARCHAR(255) NULL,
+...                             CurtailmentCompAmount            DECIMAL(18,4) NULL,
+...                             TerminationAmount                DECIMAL(18,4) NULL,
+...                             QualChangeInLawAmount            DECIMAL(18,4) NULL,
+...                             GenerationTaxAmount              DECIMAL(18,4) NULL,
+...                             SustainabilityChangeInLawAmount  DECIMAL(18,4) NULL,
+...                             OtherCFDAdHocPayment             DECIMAL(18,4) NULL,
+...                             CompensatoryInterest             DECIMAL(18,4) NULL,
+...                             CompensatoryInterestFromDate     DATE          NULL,
+...                             CompensatoryInterestToDate       DATE          NULL
+...                             )
+
+# --- Existence probe used by idempotent setup ---
+
+${SQL_CHECK_D0365_TABLES_EXIST}
+...                             SELECT COUNT(*) AS cnt FROM sys.tables t JOIN sys.schemas s ON s.schema_id = t.schema_id WHERE s.name = 'esb' AND t.name = 'D0365Interchange'
+
+# --- Truncate-before-run (resets state to allow re-running with the same input file) ---
+# IDs in the D0365 pipeline are deterministic (fileId_fromId_...), so re-running
+# the same file twice without clearing rows triggers PRIMARY KEY violations.
+# Order: child tables first, then parents.
+
+${SQL_DELETE_FROM_CFDADHOCPAYMENT}            DELETE FROM esb.CFDAdHocPayment
+${SQL_DELETE_FROM_CFDDEFAULTINTERESTRATE}     DELETE FROM esb.CFDDefaultInterestRate
+${SQL_DELETE_FROM_CFDDEFAULTINTEREST}         DELETE FROM esb.CFDDefaultInterest
+${SQL_DELETE_FROM_CFDSETTLEMENTUNIT}          DELETE FROM esb.CFDSettlementUnit
+${SQL_DELETE_FROM_CFDBILLINGPERIOD}           DELETE FROM esb.CFDBillingPeriod
+${SQL_DELETE_FROM_CONTRACTFORDIFFERENCE}      DELETE FROM esb.ContractForDifference
+${SQL_DELETE_FROM_EMRINVOICEHEADER}           DELETE FROM esb.EMRInvoiceHeader
+${SQL_DELETE_FROM_D0365INTERCHANGE}           DELETE FROM esb.D0365Interchange
+
+# --- Row-count queries used by data verification test cases ---
+
+${SQL_COUNT_D0365INTERCHANGE}            SELECT COUNT(*) FROM esb.D0365Interchange
+${SQL_COUNT_EMRINVOICEHEADER}            SELECT COUNT(*) FROM esb.EMRInvoiceHeader
+${SQL_COUNT_CONTRACTFORDIFFERENCE}       SELECT COUNT(*) FROM esb.ContractForDifference
+${SQL_COUNT_CFDBILLINGPERIOD}            SELECT COUNT(*) FROM esb.CFDBillingPeriod
+${SQL_COUNT_CFDSETTLEMENTUNIT}           SELECT COUNT(*) FROM esb.CFDSettlementUnit
+${SQL_COUNT_CFDDEFAULTINTEREST}          SELECT COUNT(*) FROM esb.CFDDefaultInterest
+${SQL_COUNT_CFDDEFAULTINTERESTRATE}      SELECT COUNT(*) FROM esb.CFDDefaultInterestRate
+${SQL_COUNT_CFDADHOCPAYMENT}             SELECT COUNT(*) FROM esb.CFDAdHocPayment
+
+# --- Content lookups used by content-verification test cases ---
+
+${SQL_SELECT_INTERCHANGE_ID}             SELECT D0365InterchangeID FROM esb.D0365Interchange
+${SQL_SELECT_INVOICE_TOTAL}              SELECT InvoiceTotal FROM esb.EMRInvoiceHeader
+${SQL_SELECT_NET_PAYABLE_AMOUNT}         SELECT NetPayableAmount FROM esb.ContractForDifference
+# Settlement unit IDs are read directly via Get Column Values (table + column)
+# from sql_table_operations.resource — no dedicated SELECT variable needed.

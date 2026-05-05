@@ -28,9 +28,9 @@ Before Suite
     Detect Auth Method
     Validate Environment Variables
     Set Up Global Variables
-    Project Set Up-Delete Project Space-Create New Project space-Create Accounts
+    Authenticate And Set Up Project Space
 
-Project Set Up-Delete Project Space-Create New Project space-Create Accounts
+Authenticate And Set Up Project Space
     ${auth_method}=    Get Environment Variable    AUTH_METHOD    basic
     Log To Console    \nAuthentication method: ${auth_method}
 

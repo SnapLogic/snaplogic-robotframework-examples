@@ -1,0 +1,21 @@
+{
+    convert_dtn_date: (d) => d.substring(0, 4) + "-" + d.substring(4, 6) + "-" + d.substring(6, 8),
+
+    convert_dtn_datetime: (dt) => dt.substring(0, 4) + "-" + dt.substring(4, 6) + "-" + dt.substring(6, 8) + "T" + dt.substring(8, 10) + ":" + dt.substring(10, 12) + ":" + dt.substring(12, 14),
+
+    generate_interchange_id: (fileId, fromId) => fileId + "_" + fromId,
+
+    generate_invoice_id: (interchangeId, idx) => interchangeId + "_" + idx,
+
+    generate_contract_id: (invoiceId, idx) => invoiceId + "_" + idx,
+
+    generate_period_id: (contractId, idx) => contractId + "_" + idx,
+
+    generate_unit_id: (periodId, idx) => periodId + "_" + idx,
+
+    generate_default_interest_id: (contractId, idx) => contractId + "_DI_" + idx,
+
+    generate_interest_rate_id: (diId, idx) => diId + "_" + idx,
+
+    generate_adhoc_payment_id: (contractId, idx) => contractId + "_AH_" + idx
+}
