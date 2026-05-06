@@ -37,6 +37,18 @@ Detailed guides for Robot Framework test development and execution.
 
 ---
 
+## Test Case Tutorials
+
+Walkthroughs of specific test cases inside the framework — designed for layman audiences and demo recordings. Each tutorial sits next to the corresponding `.robot` test file.
+
+| Document Name | Description | Relative Path | GitHub Link |
+| --- | --- | --- | --- |
+| Create Account &mdash; Manual vs Automation | Side-by-side comparison of creating a SnapLogic account by hand in Designer versus via the `Create Account From Template` Robot keyword. Includes a sample test case, the `overwrite_if_exists` flag, and `make` invocation examples. | `{{cookiecutter.primary_pipeline_name}}/test/suite/pipeline_tests/tutorial_testcases/accounts/create_account_explained.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/%7B%7Bcookiecutter.primary_pipeline_name%7D%7D/test/suite/pipeline_tests/tutorial_testcases/accounts/create_account_explained.html) |
+| Import Pipeline &mdash; Two Ways | Walkthrough of `Import Pipelines From Template` vs `Import Pipeline With Original Name`. Covers all 4–5 arguments per keyword, the `duplicate_check` flag, the `unique_id` suffix behaviour, common pitfalls, and the suite-variable side effects. | `{{cookiecutter.primary_pipeline_name}}/test/suite/pipeline_tests/tutorial_testcases/03.pipelines/import_pipeline_explained.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/%7B%7Bcookiecutter.primary_pipeline_name%7D%7D/test/suite/pipeline_tests/tutorial_testcases/03.pipelines/import_pipeline_explained.html) |
+| Create Triggered Task &mdash; Two Ways | Walkthrough of `Create Triggered Task From Template` vs `Create Triggered Task For Original Pipeline Name`. Explains the 8 arguments, Robot Framework positional vs named arguments, when `unique_id` is appended (task only, never pipeline), all 11 valid call patterns, and which import keyword pairs with which task keyword. | `{{cookiecutter.primary_pipeline_name}}/test/suite/pipeline_tests/tutorial_testcases/04.tasks/triggered_task_explained.html` | [Open](https://htmlpreview.github.io/?https://github.com/SnapLogic/snaplogic-robotframework-examples/blob/main/%7B%7Bcookiecutter.primary_pipeline_name%7D%7D/test/suite/pipeline_tests/tutorial_testcases/04.tasks/triggered_task_explained.html) |
+
+---
+
 ## Infrastructure Setup Guides
 
 Guides for setting up various infrastructure components.

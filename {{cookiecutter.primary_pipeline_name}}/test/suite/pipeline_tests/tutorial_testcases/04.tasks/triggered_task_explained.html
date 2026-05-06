@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creating a Triggered Task &mdash; Two Ways</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
+            min-height: 100vh;
+            padding: 20px;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        /* Header */
+        .header {
+            background: white;
+            border-radius: 10px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .header h1 { color: #333; font-size: 26px; }
+        .header-subtitle { color: #666; font-size: 15px; }
+
+        /* Data sections */
+        .data-section {
+            background: white; border-radius: 10px; padding: 25px 30px;
+            margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .data-section h2 {
+            color: #333; margin-bottom: 16px; font-size: 22px;
+            border-bottom: 2px solid #e0e0e0; padding-bottom: 8px;
+        }
+        .data-section h3 { color: #444; margin: 22px 0 10px 0; font-size: 18px; }
+        .data-section h4 { color: #2d6a4f; margin: 16px 0 8px 0; font-size: 16px; }
+        .data-section p { color: #555; font-size: 16px; line-height: 1.7; margin-bottom: 12px; }
+        .data-section ul, .data-section ol { color: #555; padding-left: 24px; margin-bottom: 12px; }
+        .data-section li { margin-bottom: 6px; line-height: 1.6; }
+
+        /* Info boxes */
+        .info-box {
+            background: #e8f5e9; border-left: 4px solid #2d6a4f;
+            padding: 14px 18px; margin: 14px 0; border-radius: 0 5px 5px 0;
+            font-size: 15px; color: #1b4332; line-height: 1.6;
+        }
+        .info-box code {
+            background: #d8f3dc; padding: 2px 6px; border-radius: 3px;
+            font-family: 'Courier New', monospace; font-size: 14px;
+        }
+        .info-box.blue   { background: #e8f0fe; border-left-color: #2980b9; color: #1a3a5c; }
+        .info-box.blue code   { background: #d0e3f7; }
+        .info-box.purple { background: #f3e8fa; border-left-color: #8e44ad; color: #4a1a6b; }
+        .info-box.purple code { background: #e8d5f5; }
+        .info-box.orange { background: #fef3e2; border-left-color: #e67e22; color: #6b3a0a; }
+        .info-box.orange code { background: #fde6c8; }
+        .info-box.red    { background: #fde8e8; border-left-color: #e74c3c; color: #6b1a1a; }
+        .info-box.red code    { background: #f9d0d0; }
+
+        /* Tables */
+        .table-container { overflow-x: auto; margin: 14px 0; }
+        table {
+            width: 100%; border-collapse: collapse; background: white;
+            border-radius: 8px; overflow: hidden; border: 1px solid #e0e0e0;
+        }
+        th {
+            background: #2d6a4f; color: white; padding: 12px;
+            text-align: left; font-weight: 600; font-size: 15px;
+        }
+        td {
+            padding: 12px; border-bottom: 1px solid #f0f0f0;
+            font-size: 15px; vertical-align: top;
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background: #f9f9f9; }
+        td code, th code {
+            background: #f5f5f5; padding: 2px 6px; border-radius: 3px;
+            font-family: 'Courier New', monospace; font-size: 14px; color: #333;
+        }
+        th code { background: rgba(255,255,255,0.2); color: white; }
+        .center { text-align: center; }
+
+        /* Code blocks */
+        .code-block {
+            background: #1e1e1e; color: #d4d4d4; padding: 18px;
+            border-radius: 5px; font-family: 'Courier New', monospace;
+            font-size: 14px; overflow-x: auto; white-space: pre;
+            margin: 12px 0; line-height: 1.55;
+        }
+        .code-block .comment  { color: #6a9955; }
+        .code-block .keyword  { color: #569cd6; }
+        .code-block .string   { color: #ce9178; }
+        .code-block .function { color: #dcdcaa; }
+        .code-block .variable { color: #9cdcfe; }
+        .code-block .highlight { background: #264f2a; display: inline; }
+
+        /* Comparison header cards */
+        .headline-strip {
+            display: grid; grid-template-columns: 1fr auto 1fr;
+            gap: 16px; align-items: center; margin: 14px 0;
+        }
+        .headline-card {
+            background: white; border-radius: 8px; padding: 18px;
+            text-align: center; border: 2px solid;
+        }
+        .headline-card.template { border-color: #e67e22; color: #e67e22; }
+        .headline-card.original { border-color: #2980b9; color: #2980b9; }
+        .headline-card h4 { font-size: 17px; margin-bottom: 6px; }
+        .headline-card p  { color: #666; font-size: 14px; margin: 0; }
+        .vs-badge { font-size: 22px; font-weight: bold; color: #2d6a4f; }
+
+        /* Section accent */
+        .keyword-section { border-left: 5px solid; padding-left: 20px; margin-left: -5px; }
+        .keyword-section.template { border-left-color: #e67e22; }
+        .keyword-section.original { border-left-color: #2980b9; }
+
+        strong { color: #1b4332; }
+        .footer-note {
+            text-align: center; color: rgba(255,255,255,0.85);
+            font-size: 14px; padding: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .headline-strip { grid-template-columns: 1fr; }
+            .header { flex-direction: column; gap: 10px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- ============== HEADER ============== -->
+    <div class="header">
+        <div>
+            <h1>Creating a Triggered Task &mdash; Two Ways</h1>
+            <div class="header-subtitle">A focused walk-through of <code>triggered_task.robot</code></div>
+        </div>
+        <div class="header-subtitle">Robot Framework Tutorial</div>
+    </div>
+
+    <!-- ============== INTRO + CALLOUTS ============== -->
+    <div class="data-section">
+        <div class="info-box blue">
+            <strong>What is a triggered task?</strong><br>
+            A SnapLogic asset that wraps a pipeline so it can be executed on demand &mdash; via an HTTP URL, a scheduler, or another test step. Think of it as the "Run" button for a pipeline, plus the configuration around it (which Snaplex to run on, parameters, notifications, timeouts).
+        </div>
+
+        <div class="info-box purple">
+            <strong>📚 Concept to understand before reading this tutorial</strong>
+            <p style="margin-top:8px;color:inherit;">Robot Framework supports <strong>positional</strong> and <strong>named</strong> arguments. Several rows in this tutorial mix the two styles to demonstrate which optional arguments can be skipped and how. If those terms are new, skim the section <a href="#args-positional-or-named" style="color:#8e44ad;text-decoration:underline;"><em>"Are these arguments positional or named?"</em></a> below first &mdash; it explains the rules in 60 seconds.</p>
+        </div>
+
+        <div class="info-box orange">
+            <strong>⚠ Prerequisites &mdash; do these first</strong>
+            <p style="margin-top:8px;color:inherit;">Before creating a triggered task:</p>
+            <ol style="margin:6px 0 6px 20px;color:inherit;">
+                <li><strong>The pipeline must already exist</strong> in the project space &mdash; imported via one of the keywords described in <code>../03.pipelines/import_pipeline_explained.md</code>.</li>
+                <li><strong>The Groundplex must be running and registered</strong> to the project space &mdash; the task needs a Snaplex to execute on.</li>
+                <li><strong><code>${unique_id}</code> must be set</strong> as a suite variable (Suite Setup).</li>
+            </ol>
+            <p style="margin-top:8px;color:inherit;">If you skip step 1 the task creation fails with <code>pipeline_snode_id is None</code>.</p>
+        </div>
+    </div>
+
+    <!-- ============== TWO KEYWORDS ============== -->
+    <div class="data-section">
+        <h2>The two task-creation keywords</h2>
+
+        <p>The framework gives you two choices, both imported from the <code>snaplogic-common-robot</code> pip package:</p>
+
+        <div class="headline-strip">
+            <div class="headline-card template">
+                <h4>Create Triggered Task<br>From Template</h4>
+                <p>Pairs with <strong>Import Pipelines From Template</strong><br>
+                Looks up <code>${pipeline_name}_${unique_id}_snode_id</code></p>
+            </div>
+            <div class="vs-badge">VS</div>
+            <div class="headline-card original">
+                <h4>Create Triggered Task For<br>Original Pipeline Name</h4>
+                <p>Pairs with <strong>Import Pipeline With Original Name</strong><br>
+                Looks up <code>${pipeline_name}_snode_id</code></p>
+            </div>
+        </div>
+
+        <p>Both create the same kind of triggered task and take the <strong>same 8 arguments</strong>. The <strong>only difference</strong> is which suite variable they read to find the pipeline's <code>snode_id</code>.</p>
+    </div>
+
+    <!-- ============== WHEN TO USE WHICH ============== -->
+    <div class="data-section">
+        <h2>When to use which</h2>
+
+<pre class="code-block">                  ┌──────────────────────────────────────┐
+                  │  How was the pipeline imported?      │
+                  └──────────────────────────────────────┘
+                                   │
+              ┌────────────────────┴────────────────────┐
+              │                                         │
+              ▼                                         ▼
+   With "Import Pipelines                    With "Import Pipeline
+   From Template"                            With Original Name"
+   (name has _&lt;unique_id&gt;                    (name is exact, no suffix)
+    suffix in SnapLogic)                          │
+              │                                   │
+              ▼                                   ▼
+   ┌─────────────────────────────┐    ┌──────────────────────────────────┐
+   │ Create Triggered Task From  │    │ Create Triggered Task For        │
+   │ Template                    │    │ Original Pipeline Name           │
+   └─────────────────────────────┘    └──────────────────────────────────┘</pre>
+
+        <div class="table-container">
+            <table>
+                <tr><th>Scenario</th><th>Pick</th></tr>
+                <tr><td>You used <code>Import Pipelines From Template</code></td><td><code>Create Triggered Task From Template</code></td></tr>
+                <tr><td>You used <code>Import Pipeline With Original Name</code></td><td><code>Create Triggered Task For Original Pipeline Name</code></td></tr>
+                <tr><td>Mixed &mdash; you imported child as original-name and parent with suffix</td><td>Use the matching task keyword for each</td></tr>
+            </table>
+        </div>
+
+        <div class="info-box purple">
+            <strong>💡 Mental model:</strong> the import keyword sets a suite variable; the task keyword reads it. They have to match.
+        </div>
+    </div>
+
+    <!-- ============== 8 ARGUMENTS ============== -->
+    <div class="data-section">
+        <h2>The 8 arguments (same for both keywords)</h2>
+
+<pre class="code-block"><span class="keyword">[Arguments]</span>
+...    <span class="variable">${unique_id}</span>                                   <span class="comment"># required</span>
+...    <span class="variable">${project_path}</span>                                <span class="comment"># required</span>
+...    <span class="variable">${pipeline_name}</span>                               <span class="comment"># required</span>
+...    <span class="variable">${task_name}</span>                                   <span class="comment"># required</span>
+...    <span class="variable">${plex_name}</span>=<span class="variable">${groundplex_name}</span>                <span class="comment"># optional</span>
+...    <span class="variable">${pipeline_params}</span>=<span class="variable">${None}</span>                     <span class="comment"># optional</span>
+...    <span class="variable">${notification}</span>=<span class="variable">${None}</span>                        <span class="comment"># optional</span>
+...    <span class="variable">${execution_timeout}</span>=<span class="variable">${None}</span>                   <span class="comment"># optional</span></pre>
+
+        <div class="table-container">
+            <table>
+                <tr><th>#</th><th>Argument</th><th>Required</th><th>Default</th><th>Purpose</th></tr>
+                <tr><td>1</td><td><code>unique_id</code></td><td>✅</td><td>—</td><td>Suffix appended to the <strong>task name</strong> (always &mdash; even with the "Original Name" keyword). Generated once per suite via <code>Get Unique Id</code>.</td></tr>
+                <tr><td>2</td><td><code>project_path</code></td><td>✅</td><td>—</td><td>Where the task lands. Usually <code>${PIPELINES_LOCATION_PATH}</code>.</td></tr>
+                <tr><td>3</td><td><code>pipeline_name</code></td><td>✅</td><td>—</td><td>Used to (a) build the task name and (b) look up the pipeline's <code>snode_id</code>.</td></tr>
+                <tr><td>4</td><td><code>task_name</code></td><td>✅</td><td>—</td><td>Middle part of the resulting task name. Becomes <code>&lt;pipeline_name&gt;_&lt;task_name&gt;_&lt;unique_id&gt;</code> in SnapLogic.</td></tr>
+                <tr><td>5</td><td><code>plex_name</code></td><td>❌</td><td><code>${groundplex_name}</code></td><td>Which Snaplex executes the task. Defaults to the global Groundplex from <code>.env</code>.</td></tr>
+                <tr><td>6</td><td><code>pipeline_params</code></td><td>❌</td><td><code>${None}</code></td><td>Dictionary of pipeline parameters (<code>&{...}</code>). Passed at task-creation time, can be overridden at execution time.</td></tr>
+                <tr><td>7</td><td><code>notification</code></td><td>❌</td><td><code>${None}</code></td><td>Dictionary describing notification config (e.g. emails on Completed / Failed states).</td></tr>
+                <tr><td>8</td><td><code>execution_timeout</code></td><td>❌</td><td><code>${None}</code></td><td>Maximum task execution time in seconds. <code>None</code> means no timeout.</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ============== POSITIONAL OR NAMED ============== -->
+    <div class="data-section" id="args-positional-or-named">
+        <h2>Are these arguments positional or named?</h2>
+
+        <p><strong>All of them are <em>positional-or-named</em></strong> &mdash; Robot Framework lets you supply each one either by its slot in the row or by <code>name=value</code>. None of them are "named-only".</p>
+
+        <h3>Quick reference</h3>
+        <div class="table-container">
+            <table>
+                <tr><th>#</th><th>Argument</th><th class="center">Positional?</th><th class="center">Named (<code>name=value</code>)?</th><th class="center">Required?</th></tr>
+                <tr><td>1</td><td><code>unique_id</code></td><td class="center">✅</td><td class="center">✅</td><td class="center">✅</td></tr>
+                <tr><td>2</td><td><code>project_path</code></td><td class="center">✅</td><td class="center">✅</td><td class="center">✅</td></tr>
+                <tr><td>3</td><td><code>pipeline_name</code></td><td class="center">✅</td><td class="center">✅</td><td class="center">✅</td></tr>
+                <tr><td>4</td><td><code>task_name</code></td><td class="center">✅</td><td class="center">✅</td><td class="center">✅</td></tr>
+                <tr><td>5</td><td><code>plex_name</code></td><td class="center">✅</td><td class="center">✅</td><td class="center">❌ (default <code>${groundplex_name}</code>)</td></tr>
+                <tr><td>6</td><td><code>pipeline_params</code></td><td class="center">✅</td><td class="center">✅</td><td class="center">❌ (default <code>${None}</code>)</td></tr>
+                <tr><td>7</td><td><code>notification</code></td><td class="center">✅</td><td class="center">✅</td><td class="center">❌ (default <code>${None}</code>)</td></tr>
+                <tr><td>8</td><td><code>execution_timeout</code></td><td class="center">✅</td><td class="center">✅</td><td class="center">❌ (default <code>${None}</code>)</td></tr>
+            </table>
+        </div>
+
+        <div class="info-box purple">
+            <strong>💡 The "required" column</strong> only affects whether you can <strong>omit</strong> the arg &mdash; not <strong>how</strong> you pass it. Even required args can be supplied by name (e.g. <code>pipeline_name=oracle</code>).
+        </div>
+
+        <p>Robot has three argument categories:</p>
+        <div class="table-container">
+            <table>
+                <tr><th>Category</th><th>Marker in <code>[Arguments]</code></th><th>Required?</th><th>Caller can pass...</th></tr>
+                <tr><td><strong>Positional, required</strong></td><td><code>${name}</code></td><td>✅ Yes</td><td>Position only</td></tr>
+                <tr><td><strong>Positional-or-named</strong></td><td><code>${name}=default</code></td><td>❌ No</td><td>Position <strong>or</strong> <code>name=value</code></td></tr>
+                <tr><td><strong>Named-only</strong></td><td><code>${name}</code> after a <code>@{varargs}</code></td><td>❌ No</td><td><code>name=value</code> only</td></tr>
+            </table>
+        </div>
+
+        <p>Looking at the keyword's signature, <strong>none</strong> of the arguments come after a <code>@{varargs}</code> &mdash; so all 8 are accessible positionally. The four with <code>=default</code> (<code>plex_name</code>, <code>pipeline_params</code>, <code>notification</code>, <code>execution_timeout</code>) can also be passed by name.</p>
+
+        <h3>Three rules for skipping arguments</h3>
+        <ol>
+            <li><strong>Trailing optionals</strong> can always be omitted &mdash; they take their default.</li>
+            <li><strong>Middle optionals</strong> can only be skipped if the next one you DO pass is given as <code>name=value</code>.</li>
+            <li><strong>Required positional args</strong> must always come first, in order.</li>
+        </ol>
+
+        <h3>What happens when you omit <code>plex_name</code>?</h3>
+        <p>A common case worth calling out: when you skip <code>plex_name</code>, Robot <strong>does not raise an error</strong>. It evaluates the default <code>${groundplex_name}</code> &mdash; a global variable Robot loads from your <code>.env</code> files (case-insensitive, so it matches <code>GROUNDPLEX_NAME</code>).</p>
+
+        <p>Example &mdash; Case 6 below skips <code>plex_name</code> and <code>pipeline_params</code>:</p>
+<pre class="code-block"><span class="variable">${unique_id}</span>    <span class="variable">${path}</span>    <span class="variable">${pl}</span>    <span class="variable">${tn}</span>    notification=<span class="variable">${task_notifications}</span></pre>
+
+        <p>Resolves to:</p>
+        <div class="table-container">
+            <table>
+                <tr><th>Slot</th><th>Value</th></tr>
+                <tr><td><code>plex_name</code></td><td><strong>default → <code>${groundplex_name}</code></strong> ← from .env</td></tr>
+                <tr><td><code>pipeline_params</code></td><td>default → <code>${None}</code></td></tr>
+                <tr><td><code>notification</code></td><td><code>${task_notifications}</code> (named)</td></tr>
+                <tr><td><code>execution_timeout</code></td><td>default → <code>${None}</code></td></tr>
+            </table>
+        </div>
+
+        <p>So the task still runs on the same Groundplex you'd get by passing it positionally &mdash; you just didn't have to type it.</p>
+
+        <div class="info-box red">
+            <strong>⚠ Edge case:</strong> if <code>GROUNDPLEX_NAME</code> is missing or empty in <code>.env</code>, the default resolves to empty string and the API call fails with "plex not found". If you want a non-default plex for one specific row, pass it explicitly (positionally or as <code>plex_name=&lt;value&gt;</code>).
+        </div>
+
+        <div class="info-box purple">
+            <strong>💡 Rule of thumb:</strong> as soon as you want to skip an optional argument that's not at the very end, switch to <code>name=value</code> syntax for the args after it.
+        </div>
+
+        <p>The <code>triggered_task.robot</code> test case <code>Create Triggered Task For Pipeline</code> demonstrates 11 different patterns as separate rows &mdash; useful for scanning visually during a demo.</p>
+    </div>
+
+    <!-- ============== RESULTING TASK NAME ============== -->
+    <div class="data-section">
+        <h2>Resulting task name</h2>
+
+        <p><strong>Both</strong> keywords build the task name the same way:</p>
+<pre class="code-block">&lt;pipeline_name&gt;_&lt;task_name&gt;_&lt;unique_id&gt;</pre>
+
+        <p>For example, with <code>pipeline_name = oracle</code>, <code>task_name = MyTask</code>, <code>unique_id = abc123</code>:</p>
+<pre class="code-block">oracle_MyTask_abc123</pre>
+
+        <p>The task name <strong>always</strong> has the unique suffix &mdash; it's the only thing keeping concurrent test runs from colliding on task names.</p>
+
+        <h3><code>unique_id</code> is appended ONLY to the task &mdash; never to the pipeline</h3>
+
+        <p>This is a common point of confusion, especially with <code>Create Triggered Task For Original Pipeline Name</code>. The <code>unique_id</code> argument is used <strong>twice</strong>:</p>
+        <ol>
+            <li>To <strong>build the task name</strong> → appended as a suffix</li>
+            <li>To <strong>look up the pipeline</strong> (in <code>Create Triggered Task From Template</code> only) → appended as a suffix to the variable name</li>
+        </ol>
+
+        <p>It is <strong>never</strong> appended to the actual pipeline name in SnapLogic. So with <code>Create Triggered Task For Original Pipeline Name</code>:</p>
+        <div class="table-container">
+            <table>
+                <tr><th>Asset in SnapLogic</th><th>Has <code>_&lt;unique_id&gt;</code> suffix?</th></tr>
+                <tr><td>Pipeline</td><td>❌ No &mdash; used the bare name as imported</td></tr>
+                <tr><td>Triggered task</td><td>✅ Yes &mdash; name is <code>&lt;pipeline&gt;_&lt;task&gt;_&lt;unique_id&gt;</code></td></tr>
+            </table>
+        </div>
+
+        <p>Concrete example with <code>pipeline_name = oracle_child</code>, <code>task_name = MyTask</code>, <code>unique_id = abc123</code>:</p>
+        <div class="table-container">
+            <table>
+                <tr><th>Step</th><th>Built / Looked up</th><th>Resolved value</th></tr>
+                <tr><td>Build full task name</td><td><code>&lt;pl&gt;_&lt;task&gt;_&lt;uid&gt;</code></td><td><code>oracle_child_MyTask_abc123</code></td></tr>
+                <tr><td>Look up pipeline <code>snode_id</code></td><td><code>${oracle_child_snode_id}</code></td><td>(no suffix in the variable name)</td></tr>
+                <tr><td>Final result in SnapLogic</td><td>Pipeline <code>oracle_child</code> + task <code>oracle_child_MyTask_abc123</code></td><td>The task points at the bare-name pipeline</td></tr>
+            </table>
+        </div>
+
+        <p>This is by design &mdash; the test framework wants tasks to be unique per run (so parallel runs don't fight) but still attached to a "well-known" pipeline that other things can reference by exact name.</p>
+    </div>
+
+    <!-- ============== KEY DIFFERENCE ============== -->
+    <div class="data-section">
+        <h2>The KEY difference &mdash; how the pipeline <code>snode_id</code> is looked up</h2>
+
+        <p>This is the single line that differs between the two keywords:</p>
+        <div class="table-container">
+            <table>
+                <tr><th>Keyword</th><th>Lookup variable</th></tr>
+                <tr><td><code>Create Triggered Task From Template</code></td><td><code>${${pipeline_name}_${unique_id}_snode_id}</code></td></tr>
+                <tr><td><code>Create Triggered Task For Original Pipeline Name</code></td><td><code>${${pipeline_name}_snode_id}</code></td></tr>
+            </table>
+        </div>
+
+        <p>The variable is <strong>set</strong> by the matching <code>Import</code> keyword:</p>
+        <div class="table-container">
+            <table>
+                <tr><th>Import keyword</th><th>Sets variable</th><th>Read by task keyword</th></tr>
+                <tr><td><code>Import Pipelines From Template</code></td><td><code>${oracle_abc123_snode_id}</code></td><td><code>Create Triggered Task From Template</code></td></tr>
+                <tr><td><code>Import Pipeline With Original Name</code></td><td><code>${oracle_snode_id}</code></td><td><code>Create Triggered Task For Original Pipeline Name</code></td></tr>
+            </table>
+        </div>
+
+        <p>If you mix-and-match the wrong pair, the lookup returns <code>None</code> and the task creation fails with the friendly-but-confusing error you saw earlier:</p>
+<pre class="code-block">Expecting type of asset [None] to be Pipeline but was Org</pre>
+    </div>
+
+    <!-- ============== SUITE VARIABLES ============== -->
+    <div class="data-section">
+        <h2>Suite variables created (both keywords)</h2>
+
+        <p>After successful task creation, two suite variables are set, keyed by the <strong>full task name</strong> (<code>&lt;pipeline_name&gt;_&lt;task_name&gt;_&lt;unique_id&gt;</code>):</p>
+<pre class="code-block"><span class="variable">${&lt;full_task_name&gt;_payload}</span>    = &lt;task API response JSON&gt;
+<span class="variable">${&lt;full_task_name&gt;_snodeid}</span>    = &lt;task snode ID&gt;</pre>
+
+        <p>These are used by the downstream <code>Run Triggered Task With Parameters From Template</code> keyword in execution test cases.</p>
+    </div>
+
+    <!-- ============== EXAMPLE CALLS ============== -->
+    <div class="data-section keyword-section template">
+        <h2>Example call &mdash; <code>Create Triggered Task From Template</code></h2>
+
+<pre class="code-block"><span class="keyword">*** Test Cases ***</span>
+<span class="function">Create Triggered Task For Pipeline</span>
+    [Tags]    baseline    task    pipeline
+    <span class="keyword">[Template]</span>    <span class="function">Create Triggered Task From Template</span>
+    <span class="variable">${unique_id}</span>    <span class="variable">${PIPELINES_LOCATION_PATH}</span>    <span class="variable">${pipeline_name}</span>    <span class="variable">${task1}</span>    <span class="variable">${GROUNDPLEX_NAME}</span>    <span class="variable">${task_params_set}</span>    <span class="variable">${task_notifications}</span></pre>
+
+        <p>8 columns map directly to the 8 arguments. The pipeline at <code>${pipeline_name}_${unique_id}</code> (e.g. <code>oracle_abc123</code>) must already exist.</p>
+    </div>
+
+    <div class="data-section keyword-section original">
+        <h2>Example call &mdash; <code>Create Triggered Task For Original Pipeline Name</code></h2>
+
+<pre class="code-block"><span class="keyword">*** Test Cases ***</span>
+<span class="function">Create Triggered Task For Pipelines WithOut UniqueID Appended</span>
+    [Tags]    oracle_2    baseline    task    pipeline    no_suffix
+    <span class="keyword">[Template]</span>    <span class="function">Create Triggered Task For Original Pipeline Name</span>
+    <span class="variable">${unique_id}</span>    <span class="variable">${PIPELINES_LOCATION_PATH}</span>    <span class="variable">${pipeline_name}</span>    <span class="variable">${task1}</span>    <span class="variable">${GROUNDPLEX_NAME}</span>    <span class="variable">${task_params_set}</span>    <span class="variable">${task_notifications}</span></pre>
+
+        <p>Same 8 columns. The pipeline at <code>${pipeline_name}</code> (e.g. <code>oracle</code>, no suffix) must already exist.</p>
+    </div>
+
+    <!-- ============== SIDE-BY-SIDE ============== -->
+    <div class="data-section">
+        <h2>Side-by-side comparison</h2>
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th>Aspect</th>
+                    <th><code>Create Triggered Task From Template</code></th>
+                    <th><code>Create Triggered Task For Original Pipeline Name</code></th>
+                </tr>
+                <tr><td>Argument count</td><td>8 (4 required + 4 optional)</td><td>8 (4 required + 4 optional)</td></tr>
+                <tr><td>Task name format</td><td><code>&lt;pipeline&gt;_&lt;task&gt;_&lt;unique_id&gt;</code></td><td><code>&lt;pipeline&gt;_&lt;task&gt;_&lt;unique_id&gt;</code></td></tr>
+                <tr><td>Pipeline lookup variable</td><td><code>${&lt;pipeline&gt;_&lt;unique_id&gt;_snode_id}</code></td><td><code>${&lt;pipeline&gt;_snode_id}</code></td></tr>
+                <tr><td>Pairs with import keyword</td><td><code>Import Pipelines From Template</code></td><td><code>Import Pipeline With Original Name</code></td></tr>
+                <tr><td>Best for</td><td>Most use cases (parallel/CI runs)</td><td>Pipelines with fixed names (referenced by tasks/pipelines elsewhere)</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ============== UNDER THE HOOD ============== -->
+    <div class="data-section">
+        <h2>What both keywords do under the hood</h2>
+
+<pre class="code-block">        ┌─────────────────────────────────────────────────────────┐
+        │ Build full task name:                                   │
+        │   &lt;pipeline_name&gt;_&lt;task_name&gt;_&lt;unique_id&gt;               │
+        └────────────────────────┬────────────────────────────────┘
+                                 ▼
+                  ┌──────────────────────────┐
+                  │     Which keyword?       │
+                  └──────────────────────────┘
+                    │                       │
+   From Template    │                       │   For Original Pipeline Name
+                    ▼                       ▼
+   ┌─────────────────────────────┐    ┌─────────────────────────────┐
+   │ Look up pipeline_snode_id   │    │ Look up pipeline_snode_id   │
+   │ from suite var:             │    │ from suite var:             │
+   │   ${&lt;pipeline&gt;_&lt;uid&gt;        │    │   ${&lt;pipeline&gt;_snode_id}    │
+   │     _snode_id}              │    │                             │
+   └────────────┬────────────────┘    └────────────┬────────────────┘
+                │                                  │
+                └──────────────────┬───────────────┘
+                                   ▼
+                ┌────────────────────────────────────┐
+                │ Call low-level Create Triggered    │
+                │ Task keyword with:                 │
+                │  - full_task_name                  │
+                │  - pipeline_snode_id               │
+                │  - plex_name                       │
+                │  - project_path                    │
+                │  - pipeline_params                 │
+                │  - notification                    │
+                │  - execution_timeout               │
+                └────────────────┬───────────────────┘
+                                 ▼
+                ┌────────────────────────────────────┐
+                │ POST to SnapLogic Task API         │
+                └────────────────┬───────────────────┘
+                                 ▼
+                ┌────────────────────────────────────┐
+                │ Set suite variables:               │
+                │  ${&lt;full_task_name&gt;_payload}       │
+                │  ${&lt;full_task_name&gt;_snodeid}       │
+                └────────────────┬───────────────────┘
+                                 ▼
+                          ┌─────────────┐
+                          │   ✅ Done   │
+                          └─────────────┘</pre>
+    </div>
+
+    <!-- ============== OPTIONAL ARGS ============== -->
+    <div class="data-section">
+        <h2>Optional arguments &mdash; when do you need them?</h2>
+
+        <h3><code>pipeline_params</code> &mdash; pass values into the pipeline at task creation</h3>
+        <p>If your pipeline has parameters (e.g. <code>oracle_acct</code>, <code>target_table</code>), you can wire them up at task creation time so the task always passes them:</p>
+<pre class="code-block"><span class="keyword">*** Variables ***</span>
+&{task_params_set}
+...    oracle_acct=../shared/<span class="variable">${oracle_acct_name}</span>
+...    target_table=DEMO.TEST_TABLE1</pre>
+        <p>Pass <code>${task_params_set}</code> as the 6th argument. The task will run with these values unless overridden at execution time.</p>
+
+        <h3><code>notification</code> &mdash; send emails on completion / failure</h3>
+<pre class="code-block"><span class="keyword">*** Variables ***</span>
+@{notification_states}    Completed    Failed
+&{task_notifications}
+...    recipients=test@example.com
+...    states=<span class="variable">${notification_states}</span></pre>
+        <p>Pass <code>${task_notifications}</code> as the 7th argument. SnapLogic will email on the listed states.</p>
+
+        <h3><code>execution_timeout</code> &mdash; cap how long the task can run</h3>
+<pre class="code-block"><span class="variable">${task_timeout}</span>    300       <span class="comment"># 5 minutes</span></pre>
+        <p>Pass <code>${task_timeout}</code> as the 8th argument. If the pipeline doesn't finish in time, the task is killed and reports a Failed state.</p>
+
+        <div class="info-box purple">
+            <strong>💡 If you don't need any of the optional ones</strong>, omit the trailing arguments &mdash; Robot will use the defaults.
+        </div>
+    </div>
+
+    <!-- ============== EXECUTE TRIGGERED TASK ============== -->
+    <div class="data-section">
+        <h2>Executing the task &mdash; <code>Run Triggered Task With Parameters From Template</code></h2>
+
+        <p>After creating a task with one of the two <code>Create Triggered Task ...</code> keywords, the next step is to actually <strong>run</strong> it. The framework provides one keyword for that:</p>
+
+<pre class="code-block"><span class="function">Run Triggered Task With Parameters From Template</span></pre>
+
+        <p>It does three things in order:</p>
+        <ol>
+            <li>Looks up the task payload + <code>snode_id</code> from suite variables (set by the create-task keyword).</li>
+            <li><strong>Merges</strong> any new <code>key=value</code> pairs you pass into the pipeline's parameters.</li>
+            <li>Calls the SnapLogic API to <strong>update</strong> the task definition, then <strong>triggers</strong> execution.</li>
+        </ol>
+
+        <h3>Signature</h3>
+<pre class="code-block"><span class="keyword">[Arguments]</span>
+...    <span class="variable">${unique_id}</span>
+...    <span class="variable">${project_path}</span>
+...    <span class="variable">${pipeline_name}</span>
+...    <span class="variable">${task_name}</span>
+...    <span class="variable">&{new_parameters}</span></pre>
+
+        <h3>Arguments</h3>
+        <div class="table-container">
+            <table>
+                <tr><th>#</th><th>Argument</th><th>Type</th><th>Required</th><th>Purpose</th></tr>
+                <tr><td>1</td><td><code>unique_id</code></td><td>scalar</td><td>✅</td><td>Same <code>unique_id</code> that was used to create the task &mdash; used to find the suite variables.</td></tr>
+                <tr><td>2</td><td><code>project_path</code></td><td>scalar</td><td>✅</td><td>Where the task lives. Usually <code>${PIPELINES_LOCATION_PATH}</code>.</td></tr>
+                <tr><td>3</td><td><code>pipeline_name</code></td><td>scalar</td><td>✅</td><td>Pipeline name (used to reconstruct the full task name).</td></tr>
+                <tr><td>4</td><td><code>task_name</code></td><td>scalar</td><td>✅</td><td>Task name prefix (used to reconstruct the full task name).</td></tr>
+                <tr><td>5</td><td><code>&{new_parameters}</code></td><td><strong>kwargs collector</strong></td><td>❌</td><td>Any number of <code>key=value</code> pairs. Each pair is treated as a pipeline-parameter override merged into the existing parameters. Pass none and the task runs with whatever parameters were set at creation time.</td></tr>
+            </table>
+        </div>
+
+        <h3>What's special about <code>&{new_parameters}</code></h3>
+        <p>This is a <strong>kwargs collector</strong> (the <code>&{...}</code> syntax). Anything you pass after <code>${task_name}</code> as <code>key=value</code> is collected into a dictionary called <code>new_parameters</code>. It's not a single argument &mdash; it's a "catch all the extra named args" bucket.</p>
+
+        <p>So all of these are valid:</p>
+
+<pre class="code-block"><span class="comment"># No overrides — task runs with parameters set at creation time</span>
+<span class="variable">${unique_id}</span>    <span class="variable">${path}</span>    <span class="variable">${pipeline_name}</span>    <span class="variable">${task_name}</span>
+
+<span class="comment"># Override a single parameter</span>
+<span class="variable">${unique_id}</span>    <span class="variable">${path}</span>    <span class="variable">${pipeline_name}</span>    <span class="variable">${task_name}</span>    input_file=data.csv
+
+<span class="comment"># Override multiple parameters</span>
+<span class="variable">${unique_id}</span>    <span class="variable">${path}</span>    <span class="variable">${pipeline_name}</span>    <span class="variable">${task_name}</span>    env=prod    debug=<span class="variable">${FALSE}</span>    target_table=DEMO.OUT</pre>
+
+        <p>The keyword then <strong>merges</strong> these into the task's existing <code>pipeline_parameters</code> (set when the task was created):</p>
+
+<pre class="code-block">existing pipeline_parameters     new_parameters             merged result
+─────────────────────────        ────────────────           ─────────────
+{                                {                          {
+  oracle_acct: "shared/A"          input_file: "data.csv"     oracle_acct: "shared/A",
+}                                }                            input_file: "data.csv"
+                                                            }</pre>
+
+        <p>Existing keys are preserved; new keys are added; matching keys are overwritten by the new value.</p>
+
+        <h3>Required suite variables (set by the create-task keyword)</h3>
+        <p>The keyword reads these two suite variables to find the task it should run. They're set automatically by <code>Create Triggered Task From Template</code> (or the "Original Pipeline Name" variant) when the task was created:</p>
+
+<pre class="code-block"><span class="variable">${&lt;pipeline_name&gt;_&lt;task_name&gt;_&lt;unique_id&gt;_payload}</span>    <span class="comment">← the full task JSON</span>
+<span class="variable">${&lt;pipeline_name&gt;_&lt;task_name&gt;_&lt;unique_id&gt;_snodeid}</span>    <span class="comment">← the task's snode ID</span></pre>
+
+        <p>The full task name is reconstructed inside the keyword as:</p>
+<pre class="code-block">&lt;pipeline_name&gt;_&lt;task_name&gt;_&lt;unique_id&gt;</pre>
+
+        <div class="info-box red">
+            <strong>⚠</strong> The same <code>${unique_id}</code>, <code>${pipeline_name}</code>, and <code>${task_name}</code> you passed to the create-task keyword <strong>must</strong> be passed here too &mdash; otherwise the lookup fails and the task can't be found.
+        </div>
+
+        <h3>Returns</h3>
+        <div class="table-container">
+            <table>
+                <tr><th>Position</th><th>Value</th><th>Use it for</th></tr>
+                <tr><td>1</td><td>Updated task payload (dict)</td><td>Inspecting the final task config; logging</td></tr>
+                <tr><td>2</td><td>Job ID (string)</td><td>Polling execution status; correlating logs</td></tr>
+            </table>
+        </div>
+        <p>Most tests don't capture the return &mdash; they let the framework log it and assert the run succeeded by checking the database afterwards.</p>
+
+        <h3>Example call (from <code>02.execute_trigger_task.robot</code>)</h3>
+<pre class="code-block"><span class="function">Execute Triggered Task With Parameters</span>
+    [Tags]    execute_triggered_task_sample
+    <span class="keyword">[Template]</span>    <span class="function">Run Triggered Task With Parameters From Template</span>
+    <span class="variable">${unique_id}</span>    <span class="variable">${PIPELINES_LOCATION_PATH}</span>    <span class="variable">${pipeline_name}</span>    <span class="variable">${task1}</span></pre>
+
+        <p>No parameter overrides &mdash; the task runs with the parameters it was created with.</p>
+
+        <h3>Example with parameter overrides</h3>
+<pre class="code-block"><span class="function">Execute Triggered Task With Overrides</span>
+    [Tags]    execute_triggered_task_sample
+    <span class="keyword">[Template]</span>    <span class="function">Run Triggered Task With Parameters From Template</span>
+    <span class="comment"># required args                                                          # &{new_parameters} collector</span>
+    <span class="variable">${unique_id}</span>    <span class="variable">${PIPELINES_LOCATION_PATH}</span>    <span class="variable">${pipeline_name}</span>    <span class="variable">${task1}</span>    input_file=monthly.csv    env=stage</pre>
+
+        <p><code>input_file</code> and <code>env</code> are merged into the task's existing pipeline_parameters before execution.</p>
+
+        <h3>Under the hood</h3>
+<pre class="code-block">   ┌──────────────────────────────────────────────────────────┐
+   │ Reconstruct full_task_name:                              │
+   │   &lt;pipeline_name&gt;_&lt;task_name&gt;_&lt;unique_id&gt;                │
+   └────────────────────────┬─────────────────────────────────┘
+                            ▼
+   ┌──────────────────────────────────────────────────────────┐
+   │ Read suite variables set by Create Triggered Task:       │
+   │   ${&lt;full_task_name&gt;_payload}                            │
+   │   ${&lt;full_task_name&gt;_snodeid}                            │
+   └────────────────────────┬─────────────────────────────────┘
+                            ▼
+   ┌──────────────────────────────────────────────────────────┐
+   │ Extract pipeline_parameters from payload                 │
+   │ Merge &{new_parameters} into it (overrides win)          │
+   └────────────────────────┬─────────────────────────────────┘
+                            ▼
+   ┌──────────────────────────────────────────────────────────┐
+   │ Update Task API with the merged payload                  │
+   └────────────────────────┬─────────────────────────────────┘
+                            ▼
+   ┌──────────────────────────────────────────────────────────┐
+   │ Trigger task execution → returns job_id                  │
+   └────────────────────────┬─────────────────────────────────┘
+                            ▼
+                   ┌──────────────────┐
+                   │ ✅ Returns:       │
+                   │   payload, jobId │
+                   └──────────────────┘</pre>
+    </div>
+
+    <!-- ============== COMMON PITFALLS ============== -->
+    <div class="data-section">
+        <h2>Common pitfalls</h2>
+        <div class="table-container">
+            <table>
+                <tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr>
+                <tr><td><code>pipeline_snode_id is None</code></td><td>Wrong task keyword for the import keyword used</td><td>Match the pair (see "When to use which")</td></tr>
+                <tr><td><code>Asset [None] to be Pipeline but was Org</code></td><td>Same as above &mdash; task creation got <code>null</code> for the pipeline</td><td>Match the import / task keyword pair</td></tr>
+                <tr><td><code>Variable '${unique_id}' not found</code></td><td>Suite Setup didn't run <code>Initialize Variables</code></td><td>Add <code>Suite Setup    Initialize Variables</code> to <code>*** Settings ***</code></td></tr>
+                <tr><td>Task created but execution fails with "Snaplex not found"</td><td><code>plex_name</code> is wrong or Groundplex isn't registered</td><td>Check <code>${GROUNDPLEX_NAME}</code> in <code>.env</code> and run <code>make groundplex-status</code></td></tr>
+                <tr><td>Notifications not sent</td><td><code>recipients</code> empty or <code>states</code> list missing</td><td>Build the <code>&{notification}</code> dict with both keys</td></tr>
+                <tr><td><code>${oracle_MyTask_abc123_snodeid}</code> undefined later</td><td>Task creation failed silently OR using a different <code>unique_id</code></td><td>Check the suite log; confirm <code>unique_id</code> is the same suite-wide variable</td></tr>
+                <tr><td><code>Run Triggered Task With Parameters From Template</code> fails with "task not found"</td><td>Mismatched <code>unique_id</code> / <code>pipeline_name</code> / <code>task_name</code> between create and execute keywords</td><td>All four args must be identical to the ones used during create &mdash; they reconstruct the suite-variable key</td></tr>
+                <tr><td>Pipeline-parameter override doesn't take effect</td><td>Passed it positionally instead of as <code>key=value</code></td><td>The <code>&{new_parameters}</code> collector ONLY accepts named pairs &mdash; anything positional after the 4th arg is ignored</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ============== USAGE EXAMPLE ============== -->
+    <div class="data-section">
+        <h2>Usage example</h2>
+
+        <p>Run this test case:</p>
+<pre class="code-block">make robot-run-tests-no-gp TAGS=<span class="string">"tag_name"</span>     <span class="comment"># eg: TAGS="baseline"</span></pre>
+
+        <h3>What happens:</h3>
+        <ol>
+            <li>Robot loads <code>.env</code> and <code>env_files/...</code></li>
+            <li>Suite Setup → <code>Initialize Variables</code> generates <code>${unique_id}</code></li>
+            <li>The pipeline must already be imported (run <code>Import Pipeline</code> test before this one)</li>
+            <li>Task-creation keyword:
+                <ul>
+                    <li>Builds <code>full_task_name = &lt;pipeline&gt;_&lt;task&gt;_&lt;unique_id&gt;</code></li>
+                    <li>Looks up pipeline <code>snode_id</code> from the appropriate suite variable</li>
+                    <li>Calls SnapLogic API to create the task</li>
+                </ul>
+            </li>
+            <li>Suite variables <code>${&lt;full_task_name&gt;_payload}</code> and <code>${&lt;full_task_name&gt;_snodeid}</code> are set</li>
+            <li>✅ The task appears in the SnapLogic UI under the project space → Manager tab</li>
+        </ol>
+
+        <h3>Run against a different environment (e.g. stage)</h3>
+<pre class="code-block">make robot-run-tests-no-gp TAGS=<span class="string">"tag_name"</span> ENV=.env.stage     <span class="comment"># eg: TAGS="baseline"</span></pre>
+    </div>
+
+    <!-- ============== TL;DR ============== -->
+    <div class="data-section">
+        <h2>TL;DR cheat sheet</h2>
+        <ul>
+            <li>Two keywords, <strong>same 8 arguments</strong>, only the pipeline-lookup variable differs.</li>
+            <li>Use <strong><code>Create Triggered Task From Template</code></strong> when you imported with <code>Import Pipelines From Template</code> (suffixed name).</li>
+            <li>Use <strong><code>Create Triggered Task For Original Pipeline Name</code></strong> when you imported with <code>Import Pipeline With Original Name</code> (bare name).</li>
+            <li>The <strong>task name always includes <code>_&lt;unique_id&gt;</code></strong> &mdash; only the pipeline lookup differs.</li>
+            <li>Pipeline must exist before task creation (run import test first).</li>
+            <li>Optional args (<code>plex_name</code>, <code>pipeline_params</code>, <code>notification</code>, <code>execution_timeout</code>) can be omitted; sensible defaults apply.</li>
+            <li>Suite variables <code>${&lt;task&gt;_payload}</code> and <code>${&lt;task&gt;_snodeid}</code> are set automatically for downstream test cases.</li>
+            <li><strong>To execute</strong> the task, use <code>Run Triggered Task With Parameters From Template</code> &mdash; same first 4 args as create, plus optional <code>key=value</code> pairs to override pipeline parameters at run time.</li>
+        </ul>
+    </div>
+
+    <div class="footer-note">
+        SnapLogic Robot Framework Tutorial Series &middot; Companion to <code>triggered_task.robot</code>
+    </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<!--
+═══════════════════════════════════════════════════════════════════════════════
+  REUSABLE HTML TEMPLATE — SnapLogic Robot Framework Documentation Style
+═══════════════════════════════════════════════════════════════════════════════
+
+  This file is a skeleton you can copy and paste from when creating a new
+  documentation page. It includes:
+
+    1. The full CSS used by `robotframework_end_to_end_workflow_steps.html`
+    2. Working examples of EVERY component (with code comments)
+    3. Both single-page AND multi-tab structure (pick one, delete the other)
+    4. The tab-switching JavaScript
+
+  HOW TO USE
+  ──────────
+    1. Copy this file:
+         cp _template_skeleton.html your_new_doc.html
+
+    2. Update the <title> and the <h1> in the header.
+
+    3. Decide structure:
+         (a) SINGLE-PAGE     → keep the “.data-section” blocks below the header,
+                                delete everything inside the “MULTI-TAB” block.
+         (b) MULTI-TAB       → keep the tab-nav + tab-content blocks,
+                                delete the “SINGLE-PAGE EXAMPLES” section.
+
+    4. Replace placeholder content. All TODO markers are inside HTML comments.
+
+  COMPONENT REFERENCE
+  ───────────────────
+    .header             page header bar
+    .stats              stat cards row (4–6 cards, colour variants: blue,
+                        purple, orange, red, gray)
+    .nav-section        tab strip (multi-tab pages only)
+    .tab-btn            tab button (variants: blue-tab, purple-tab,
+                        orange-tab, red-tab, gray-tab, pink-tab, teal-tab)
+    .tab-content        wraps each tab's content; .active makes one visible
+    .data-section       white card holding section content
+    .info-box           callout (variants: blue, purple, orange, red)
+    .comparison         2-column compare grid (variants: real, mock,
+                        danger, success)
+    .flow-step          numbered step (number variants: blue, purple,
+                        orange, red)
+    .workflow-step-dark larger numbered step with connector line
+                        (use inside dark-themed sections)
+    .phase-box          big phased box (variants: phase1, phase2, phase3)
+    .phase-label        pill label inside .phase-box (variants: p1, p2, p3)
+    .code-block         code block (highlight classes inside: comment,
+                        keyword, string, function, variable, highlight,
+                        highlight-blue, highlight-red, dim, arrow, match,
+                        nomatch, warn, danger, success)
+    .code-label         label sitting on top of a code-block (variants:
+                        blue, purple, orange, red)
+    .checklist          unordered list with checkboxes; <li class="done"> = ✓
+    .status-badge       inline pill (variants: yes, no, partial, required,
+                        recommended, optional)
+    table (.key-file-table) standard table with green-header variant
+
+  BACKGROUND
+  ──────────
+    Body uses a green gradient.  Override per page if needed.
+═══════════════════════════════════════════════════════════════════════════════
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- TODO: page title (browser tab) -->
+    <title>SnapLogic Robot Framework &mdash; Doc Title Here</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
+            min-height: 100vh;
+            padding: 20px;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        /* ===================================================================
+           Header
+           =================================================================== */
+        .header {
+            background: white;
+            border-radius: 10px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { color: #333; display: flex; align-items: center; gap: 10px; font-size: 26px; }
+        .header-subtitle { color: #666; font-size: 15px; }
+
+        /* ===================================================================
+           Navigation (multi-tab pages)
+           =================================================================== */
+        .nav-section {
+            background: white;
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .nav-section h3 {
+            color: #333;
+            font-size: 15px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .tab-nav { display: flex; gap: 5px; flex-wrap: wrap; }
+
+        .tab-btn {
+            padding: 8px 16px;
+            border: 2px solid #2d6a4f;
+            background: white;
+            color: #2d6a4f;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+        .tab-btn:hover, .tab-btn.active { background: #2d6a4f; color: white; }
+        .tab-btn.blue-tab    { border-color: #2980b9; color: #2980b9; }
+        .tab-btn.blue-tab:hover, .tab-btn.blue-tab.active     { background: #2980b9; color: white; }
+        .tab-btn.purple-tab  { border-color: #8e44ad; color: #8e44ad; }
+        .tab-btn.purple-tab:hover, .tab-btn.purple-tab.active { background: #8e44ad; color: white; }
+        .tab-btn.orange-tab  { border-color: #e67e22; color: #e67e22; }
+        .tab-btn.orange-tab:hover, .tab-btn.orange-tab.active { background: #e67e22; color: white; }
+        .tab-btn.red-tab     { border-color: #e74c3c; color: #e74c3c; }
+        .tab-btn.red-tab:hover, .tab-btn.red-tab.active       { background: #e74c3c; color: white; }
+        .tab-btn.gray-tab    { border-color: #7f8c8d; color: #7f8c8d; }
+        .tab-btn.gray-tab:hover, .tab-btn.gray-tab.active     { background: #7f8c8d; color: white; }
+        .tab-btn.pink-tab    { border-color: #e91e63; color: #e91e63; }
+        .tab-btn.pink-tab:hover, .tab-btn.pink-tab.active     { background: #e91e63; color: white; }
+        .tab-btn.teal-tab    { border-color: #16a085; color: #16a085; }
+        .tab-btn.teal-tab:hover, .tab-btn.teal-tab.active     { background: #16a085; color: white; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* ===================================================================
+           Data Sections / Cards
+           =================================================================== */
+        .data-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .data-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 22px;
+        }
+        .data-section h2 .badge {
+            background: #2d6a4f;
+            color: white;
+            font-size: 13px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: normal;
+        }
+        .data-section h2 .badge.blue   { background: #2980b9; }
+        .data-section h2 .badge.purple { background: #8e44ad; }
+        .data-section h2 .badge.orange { background: #e67e22; }
+        .data-section h2 .badge.red    { background: #e74c3c; }
+        .data-section h3 { color: #444; margin: 20px 0 10px 0; font-size: 18px; }
+        .data-section p  { color: #555; font-size: 16px; line-height: 1.7; margin-bottom: 12px; }
+
+        /* ===================================================================
+           Info Boxes
+           =================================================================== */
+        .info-box {
+            background: #e8f5e9;
+            border-left: 4px solid #2d6a4f;
+            padding: 12px 16px;
+            margin-bottom: 15px;
+            border-radius: 0 5px 5px 0;
+            font-size: 15px;
+            color: #1b4332;
+            line-height: 1.6;
+        }
+        .info-box code {
+            background: #d8f3dc;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .info-box.blue   { background: #e8f0fe; border-left-color: #2980b9; color: #1a3a5c; }
+        .info-box.blue code   { background: #d0e3f7; }
+        .info-box.purple { background: #f3e8fa; border-left-color: #8e44ad; color: #4a1a6b; }
+        .info-box.purple code { background: #e8d5f5; }
+        .info-box.orange { background: #fef3e2; border-left-color: #e67e22; color: #6b3a0a; }
+        .info-box.orange code { background: #fde6c8; }
+        .info-box.red    { background: #fde8e8; border-left-color: #e74c3c; color: #6b1a1a; }
+        .info-box.red code    { background: #f9d0d0; }
+
+        /* ===================================================================
+           Tables
+           =================================================================== */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th {
+            background: #f7f7f7;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+            font-size: 15px;
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 15px;
+            vertical-align: top;
+        }
+        tr:hover { background: #f9f9f9; }
+        td code, th code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #333;
+        }
+        .key-file-table th { background: #2d6a4f; color: white; }
+        .key-file-table th code { background: rgba(255,255,255,0.2); color: white; }
+
+        /* ===================================================================
+           Code Blocks
+           =================================================================== */
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 600px;
+            overflow-y: auto;
+            white-space: pre;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        .code-block .comment        { color: #6a9955; }
+        .code-block .keyword        { color: #569cd6; }
+        .code-block .string         { color: #ce9178; }
+        .code-block .function       { color: #dcdcaa; }
+        .code-block .variable       { color: #9cdcfe; }
+        .code-block .highlight      { background: #264f2a; display: inline; }
+        .code-block .highlight-blue { background: #1e3a5f; display: inline; }
+        .code-block .highlight-red  { background: #5f1e1e; display: inline; }
+        .code-block .dim            { color: #666; }
+        .code-block .arrow          { color: #27ae60; font-weight: bold; }
+        .code-block .match          { color: #27ae60; font-weight: bold; }
+        .code-block .nomatch        { color: #e74c3c; }
+        .code-block .warn           { color: #e67e22; font-weight: bold; }
+        .code-block .danger         { color: #e74c3c; font-weight: bold; }
+        .code-block .success        { color: #27ae60; font-weight: bold; }
+
+        .code-label {
+            background: #2d6a4f;
+            color: white;
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 5px 5px 0 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .code-label.blue   { background: #2980b9; }
+        .code-label.purple { background: #8e44ad; }
+        .code-label.orange { background: #e67e22; }
+        .code-label.red    { background: #e74c3c; }
+
+        /* ===================================================================
+           Stats Cards
+           =================================================================== */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-card h3 {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        .stat-card .label-text { font-size: 16px; font-weight: bold; color: #2d6a4f; }
+        .stat-card.blue   .label-text { color: #2980b9; }
+        .stat-card.purple .label-text { color: #8e44ad; }
+        .stat-card.orange .label-text { color: #e67e22; }
+        .stat-card.red    .label-text { color: #e74c3c; }
+        .stat-card.gray   .label-text { color: #7f8c8d; }
+
+        /* ===================================================================
+           Comparison Columns
+           =================================================================== */
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 15px 0;
+        }
+        .comparison-col {
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+        }
+        .comparison-col h4 { margin-bottom: 10px; font-size: 16px; color: #333; }
+        .comparison-col.real     { border-color: #2980b9; background: #e8f0fe; }
+        .comparison-col.real h4  { color: #2980b9; }
+        .comparison-col.mock     { border-color: #2d6a4f; background: #e8f5e9; }
+        .comparison-col.mock h4  { color: #2d6a4f; }
+        .comparison-col.danger   { border-color: #e74c3c; background: #fde8e8; }
+        .comparison-col.danger h4 { color: #e74c3c; }
+        .comparison-col.success  { border-color: #27ae60; background: #e8f5e9; }
+        .comparison-col.success h4 { color: #27ae60; }
+
+        /* ===================================================================
+           Flow Steps
+           =================================================================== */
+        .flow-step { display: flex; align-items: flex-start; margin-bottom: 15px; }
+        .flow-number {
+            background: #2d6a4f;
+            color: white;
+            min-width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        .flow-number.blue   { background: #2980b9; }
+        .flow-number.purple { background: #8e44ad; }
+        .flow-number.orange { background: #e67e22; }
+        .flow-number.red    { background: #e74c3c; }
+        .flow-content { flex: 1; }
+        .flow-content h4 { color: #333; margin-bottom: 5px; font-size: 16px; }
+        .flow-content p  { color: #666; font-size: 15px; line-height: 1.5; }
+
+        /* ===================================================================
+           Status Badges
+           =================================================================== */
+        .status-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 700;
+            color: white;
+        }
+        .status-badge.yes         { background: #27ae60; }
+        .status-badge.no          { background: #e74c3c; }
+        .status-badge.partial     { background: #e67e22; }
+        .status-badge.required    { background: #e74c3c; }
+        .status-badge.recommended { background: #8e44ad; }
+        .status-badge.optional    { background: #7f8c8d; }
+
+        /* ===================================================================
+           Checklist
+           =================================================================== */
+        .checklist { list-style: none; padding: 0; }
+        .checklist li {
+            padding: 6px 0;
+            font-size: 15px;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .checklist li::before { content: "\2610"; font-size: 16px; color: #2d6a4f; }
+        .checklist li.done::before { content: "\2611"; color: #27ae60; }
+
+        /* ===================================================================
+           Phase Boxes
+           =================================================================== */
+        .phase-box {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+            border: 2px solid;
+            position: relative;
+        }
+        .phase-box.phase1 { border-color: #e74c3c; }
+        .phase-box.phase2 { border-color: #f39c12; }
+        .phase-box.phase3 { border-color: #27ae60; }
+        .phase-label {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        .phase-label.p1 { background: #e74c3c; }
+        .phase-label.p2 { background: #f39c12; }
+        .phase-label.p3 { background: #27ae60; }
+
+        /* ===================================================================
+           Workflow Steps (dark-themed)
+           =================================================================== */
+        .workflow-step-dark {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            margin-bottom: 5px;
+            position: relative;
+        }
+        .wf-number {
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            background: linear-gradient(135deg, #2d6a4f, #1b4332);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 0 15px rgba(45,106,79,0.4);
+            position: relative;
+            z-index: 2;
+        }
+        .wf-connector {
+            position: absolute;
+            left: 21px;
+            top: 44px;
+            width: 3px;
+            height: calc(100% - 44px);
+            background: linear-gradient(180deg, #2d6a4f, #1b4332);
+            z-index: 1;
+        }
+        .workflow-step-dark:last-child .wf-connector { display: none; }
+        .wf-content {
+            flex: 1;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            padding: 18px 22px;
+            margin-bottom: 10px;
+        }
+        .wf-content h4 { color: #333; font-size: 17px; margin-bottom: 8px; }
+        .wf-content p  { color: #666; font-size: 15px; line-height: 1.6; margin-bottom: 10px; }
+        .wf-details {
+            background: #1e1e1e;
+            border-radius: 6px;
+            padding: 12px 16px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #4ec9b0;
+            border-left: 3px solid #2d6a4f;
+            line-height: 1.6;
+            white-space: pre;
+        }
+        .wf-tag {
+            display: inline-block;
+            background: #e8f5e9;
+            color: #2d6a4f;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-right: 6px;
+            margin-top: 8px;
+        }
+        .wf-tag.api    { background: #e8f0fe; color: #2980b9; }
+        .wf-tag.db     { background: #fef3e2; color: #e67e22; }
+        .wf-tag.report { background: #f3e8fa; color: #8e44ad; }
+
+        /* ===================================================================
+           Responsive
+           =================================================================== */
+        @media (max-width: 768px) {
+            .comparison { grid-template-columns: 1fr; }
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .header { flex-direction: column; gap: 10px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- ═════════════════════════════════════════════════════════════════════
+         HEADER  (always present, top of page)
+         ═════════════════════════════════════════════════════════════════════ -->
+    <div class="header">
+        <div>
+            <!-- TODO: page title -->
+            <h1>Page Title Goes Here</h1>
+            <!-- TODO: short subtitle / one-line description -->
+            <div class="header-subtitle">A short tagline for this page.</div>
+        </div>
+        <!-- TODO: right-side label, e.g. "Robot Framework Automation Docs" -->
+        <div class="header-subtitle">Right-side label</div>
+    </div>
+
+    <!-- ═════════════════════════════════════════════════════════════════════
+         STATS  (optional — 4-6 quick fact cards)
+         Colour variants: blue, purple, orange, red, gray
+         ═════════════════════════════════════════════════════════════════════ -->
+    <div class="stats">
+        <div class="stat-card">
+            <h3>Label</h3>
+            <div class="label-text">Value</div>
+        </div>
+        <div class="stat-card blue">
+            <h3>Label</h3>
+            <div class="label-text">Value</div>
+        </div>
+        <div class="stat-card purple">
+            <h3>Label</h3>
+            <div class="label-text">Value</div>
+        </div>
+        <div class="stat-card orange">
+            <h3>Label</h3>
+            <div class="label-text">Value</div>
+        </div>
+    </div>
+
+    <!-- ═════════════════════════════════════════════════════════════════════
+         OPTION A — MULTI-TAB STRUCTURE
+         ═════════════════════════════════════════════════════════════════════
+         Use this when the page has 3+ distinct topics. Each topic gets its
+         own .tab-content block. The tab buttons drive visibility via the
+         JavaScript at the bottom of this file.
+
+         ► If you DO want tabs:
+             - Keep this whole block (.nav-section + .tab-content blocks)
+             - Delete OPTION B below
+         ► If you DO NOT want tabs:
+             - Delete this whole block
+             - Keep OPTION B below
+         ═════════════════════════════════════════════════════════════════════ -->
+
+    <div class="nav-section">
+        <h3>Documentation Sections</h3>
+        <div class="tab-nav">
+            <!-- Add one button per tab. data-tab must match the tab-content id below. -->
+            <button class="tab-btn active"           data-tab="tab-overview"   onclick="showTab('tab-overview')">Overview</button>
+            <button class="tab-btn blue-tab"         data-tab="tab-details"    onclick="showTab('tab-details')">Details</button>
+            <button class="tab-btn purple-tab"       data-tab="tab-examples"   onclick="showTab('tab-examples')">Examples</button>
+            <!-- Add more tabs here as needed -->
+        </div>
+    </div>
+
+    <!-- ───── TAB 1 — Overview ───── -->
+    <div id="tab-overview" class="tab-content active">
+        <div class="data-section">
+            <h2>Tab 1 — Overview <span class="badge">Getting Started</span></h2>
+            <p>Replace this with the overview content for the first tab.</p>
+        </div>
+    </div>
+
+    <!-- ───── TAB 2 — Details ───── -->
+    <div id="tab-details" class="tab-content">
+        <div class="data-section">
+            <h2>Tab 2 — Details <span class="badge blue">Reference</span></h2>
+            <p>Replace this with deeper-dive content for the second tab.</p>
+        </div>
+    </div>
+
+    <!-- ───── TAB 3 — Examples ───── -->
+    <div id="tab-examples" class="tab-content">
+        <div class="data-section">
+            <h2>Tab 3 — Examples <span class="badge purple">Examples</span></h2>
+            <p>Replace this with worked examples for the third tab.</p>
+        </div>
+    </div>
+
+    <!-- ═════════════════════════════════════════════════════════════════════
+         OPTION B — SINGLE-PAGE STRUCTURE
+         ═════════════════════════════════════════════════════════════════════
+         Use this when the page covers ONE topic linearly (as in
+         create_account_test_case_explained.html). All content is just a list
+         of .data-section blocks; no tabs, no JavaScript needed.
+
+         The blocks below also serve as a COMPONENT REFERENCE — every
+         component supported by the CSS appears at least once. Copy the bits
+         you need and delete the rest.
+         ═════════════════════════════════════════════════════════════════════ -->
+
+    <!-- ───── SECTION: Plain text + info boxes ───── -->
+    <div class="data-section">
+        <h2>Section Heading</h2>
+        <p>Regular paragraph text inside a section. Use <code>&lt;code&gt;</code> for inline literals.</p>
+
+        <div class="info-box">          <strong>Default (green) info box:</strong> tip, definition, callout. </div>
+        <div class="info-box blue">     <strong>Blue info box:</strong> reference, link, neutral fact. </div>
+        <div class="info-box purple">   <strong>Purple info box:</strong> insight, mental model. </div>
+        <div class="info-box orange">   <strong>Orange info box:</strong> warning / caution. </div>
+        <div class="info-box red">      <strong>Red info box:</strong> hard danger / footgun. </div>
+    </div>
+
+    <!-- ───── SECTION: Tables ───── -->
+    <div class="data-section">
+        <h2>Tables</h2>
+
+        <h3>Standard table (default header style)</h3>
+        <div class="table-container">
+            <table>
+                <tr><th>Column A</th><th>Column B</th><th>Column C</th></tr>
+                <tr><td>Row 1</td><td><code>some_var</code></td><td>Description.</td></tr>
+                <tr><td>Row 2</td><td><code>another_var</code></td><td>Description.</td></tr>
+            </table>
+        </div>
+
+        <h3>Key-file table (green header)</h3>
+        <div class="table-container">
+            <table class="key-file-table">
+                <tr><th>File</th><th>Purpose</th></tr>
+                <tr><td><code>some/path.robot</code></td><td>What this file does.</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ───── SECTION: Code blocks ───── -->
+    <div class="data-section">
+        <h2>Code Blocks</h2>
+
+        <p>Optional label sitting on top of the block (variants: <code>blue</code>, <code>purple</code>, <code>orange</code>, <code>red</code>):</p>
+        <div class="code-label">filename.robot</div>
+<pre class="code-block"><span class="comment"># A comment line</span>
+<span class="keyword">Library</span>            <span class="function">DatabaseLibrary</span>
+<span class="variable">${VAR}</span>             <span class="string">"hello"</span>
+<span class="highlight">highlighted text</span>     <span class="dim">dimmed</span>
+<span class="warn">warning text</span>      <span class="success">success text</span>      <span class="danger">danger text</span></pre>
+    </div>
+
+    <!-- ───── SECTION: Flow steps ───── -->
+    <div class="data-section">
+        <h2>Flow Steps (numbered)</h2>
+        <p>Number colour variants: default green, <code>blue</code>, <code>purple</code>, <code>orange</code>, <code>red</code>.</p>
+
+        <div class="flow-step">
+            <div class="flow-number">1</div>
+            <div class="flow-content">
+                <h4>Step title</h4>
+                <p>Step description.</p>
+            </div>
+        </div>
+        <div class="flow-step">
+            <div class="flow-number blue">2</div>
+            <div class="flow-content"><h4>Another step</h4><p>Description.</p></div>
+        </div>
+        <div class="flow-step">
+            <div class="flow-number purple">3</div>
+            <div class="flow-content"><h4>Yet another</h4><p>Description.</p></div>
+        </div>
+    </div>
+
+    <!-- ───── SECTION: Comparison columns ───── -->
+    <div class="data-section">
+        <h2>Comparison Columns (2-column grid)</h2>
+        <p>Variants: <code>real</code> (blue), <code>mock</code> (green), <code>danger</code> (red), <code>success</code> (green).</p>
+
+        <div class="comparison">
+            <div class="comparison-col real">
+                <h4>Left side</h4>
+                <p>Content for the left column.</p>
+            </div>
+            <div class="comparison-col mock">
+                <h4>Right side</h4>
+                <p>Content for the right column.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ───── SECTION: Phase boxes ───── -->
+    <div class="data-section">
+        <h2>Phase Boxes</h2>
+
+        <div class="phase-box phase1">
+            <span class="phase-label p1">Phase 1</span>
+            <p>Phase content.</p>
+        </div>
+        <div class="phase-box phase2">
+            <span class="phase-label p2">Phase 2</span>
+            <p>Phase content.</p>
+        </div>
+        <div class="phase-box phase3">
+            <span class="phase-label p3">Phase 3</span>
+            <p>Phase content.</p>
+        </div>
+    </div>
+
+    <!-- ───── SECTION: Status badges & checklist ───── -->
+    <div class="data-section">
+        <h2>Status Badges &amp; Checklist</h2>
+
+        <p>
+            <span class="status-badge yes">Yes</span>
+            <span class="status-badge no">No</span>
+            <span class="status-badge partial">Partial</span>
+            <span class="status-badge required">Required</span>
+            <span class="status-badge recommended">Recommended</span>
+            <span class="status-badge optional">Optional</span>
+        </p>
+
+        <h3>Checklist</h3>
+        <ul class="checklist">
+            <li class="done">Completed item</li>
+            <li>Pending item</li>
+            <li class="done">Another completed item</li>
+        </ul>
+    </div>
+
+    <!-- ───── SECTION: Workflow steps (dark) ───── -->
+    <div class="data-section" style="background: linear-gradient(135deg,#1b4332,#2d6a4f); padding:30px;">
+        <h2 style="color:white;">Workflow Steps (dark-themed)</h2>
+
+        <div class="workflow-step-dark">
+            <div class="wf-number">1</div>
+            <div class="wf-connector"></div>
+            <div class="wf-content">
+                <h4>Step name</h4>
+                <p>Description of the step.</p>
+                <div class="wf-details">command --to --run goes here</div>
+                <span class="wf-tag api">API</span>
+                <span class="wf-tag db">DB</span>
+                <span class="wf-tag report">Report</span>
+            </div>
+        </div>
+        <div class="workflow-step-dark">
+            <div class="wf-number">2</div>
+            <div class="wf-connector"></div>
+            <div class="wf-content">
+                <h4>Next step</h4>
+                <p>Description.</p>
+            </div>
+        </div>
+        <div class="workflow-step-dark">
+            <div class="wf-number">3</div>
+            <div class="wf-content">
+                <h4>Final step</h4>
+                <p>Description.</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- =====================================================================
+     JavaScript: Tab switching
+     - Required only if the page uses Option A (multi-tab structure).
+     - Safe to leave in place even on single-page docs (does nothing).
+     - Reads URL hash on load so deep-links to a tab work.
+     ===================================================================== -->
+<script>
+    function showTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        const tabEl = document.getElementById(tabId);
+        if (tabEl) tabEl.classList.add('active');
+        const btnEl = document.querySelector(`[data-tab="${tabId}"]`);
+        if (btnEl) btnEl.classList.add('active');
+        history.replaceState(null, '', '#' + tabId);
+    }
+
+    window.addEventListener('load', () => {
+        const hash = window.location.hash.substring(1);
+        if (hash && document.getElementById(hash)) {
+            showTab(hash);
+        }
+    });
+</script>
+</body>
+</html>

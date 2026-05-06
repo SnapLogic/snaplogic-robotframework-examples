@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importing a SnapLogic Pipeline &mdash; Two Ways</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
+            min-height: 100vh;
+            padding: 20px;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        /* Header */
+        .header {
+            background: white;
+            border-radius: 10px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { color: #333; font-size: 26px; }
+        .header-subtitle { color: #666; font-size: 15px; }
+
+        /* Data sections */
+        .data-section {
+            background: white;
+            border-radius: 10px;
+            padding: 25px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .data-section h2 {
+            color: #333;
+            margin-bottom: 16px;
+            font-size: 22px;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 8px;
+        }
+        .data-section h3 { color: #444; margin: 22px 0 10px 0; font-size: 18px; }
+        .data-section h4 { color: #2d6a4f; margin: 16px 0 8px 0; font-size: 16px; }
+        .data-section p { color: #555; font-size: 16px; line-height: 1.7; margin-bottom: 12px; }
+        .data-section ul, .data-section ol { color: #555; padding-left: 24px; margin-bottom: 12px; }
+        .data-section li { margin-bottom: 6px; line-height: 1.6; }
+
+        /* Info boxes */
+        .info-box {
+            background: #e8f5e9;
+            border-left: 4px solid #2d6a4f;
+            padding: 14px 18px;
+            margin: 14px 0;
+            border-radius: 0 5px 5px 0;
+            font-size: 15px;
+            color: #1b4332;
+            line-height: 1.6;
+        }
+        .info-box code {
+            background: #d8f3dc;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .info-box.blue   { background: #e8f0fe; border-left-color: #2980b9; color: #1a3a5c; }
+        .info-box.blue code   { background: #d0e3f7; }
+        .info-box.purple { background: #f3e8fa; border-left-color: #8e44ad; color: #4a1a6b; }
+        .info-box.purple code { background: #e8d5f5; }
+        .info-box.orange { background: #fef3e2; border-left-color: #e67e22; color: #6b3a0a; }
+        .info-box.orange code { background: #fde6c8; }
+        .info-box.red    { background: #fde8e8; border-left-color: #e74c3c; color: #6b1a1a; }
+        .info-box.red code    { background: #f9d0d0; }
+
+        /* Tables */
+        .table-container { overflow-x: auto; margin: 14px 0; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e0e0e0;
+        }
+        th {
+            background: #2d6a4f;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 15px;
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 15px;
+            vertical-align: top;
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background: #f9f9f9; }
+        td code, th code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #333;
+        }
+        th code { background: rgba(255,255,255,0.2); color: white; }
+
+        /* Code blocks */
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 18px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            white-space: pre;
+            margin: 12px 0;
+            line-height: 1.55;
+        }
+        .code-block .comment  { color: #6a9955; }
+        .code-block .keyword  { color: #569cd6; }
+        .code-block .string   { color: #ce9178; }
+        .code-block .function { color: #dcdcaa; }
+        .code-block .variable { color: #9cdcfe; }
+        .code-block .highlight { background: #264f2a; display: inline; }
+
+        /* Comparison header */
+        .headline-strip {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 16px;
+            align-items: center;
+            margin: 14px 0;
+        }
+        .headline-card {
+            background: white;
+            border-radius: 8px;
+            padding: 18px;
+            text-align: center;
+            border: 2px solid;
+        }
+        .headline-card.template { border-color: #e67e22; color: #e67e22; }
+        .headline-card.original { border-color: #2980b9; color: #2980b9; }
+        .headline-card h4 { font-size: 17px; margin-bottom: 6px; }
+        .headline-card p { color: #666; font-size: 14px; margin: 0; }
+        .vs-badge {
+            font-size: 22px;
+            font-weight: bold;
+            color: #2d6a4f;
+        }
+
+        /* Section accent strips */
+        .keyword-section {
+            border-left: 5px solid;
+            padding-left: 20px;
+            margin-left: -5px;
+        }
+        .keyword-section.template { border-left-color: #e67e22; }
+        .keyword-section.original { border-left-color: #2980b9; }
+
+        strong { color: #1b4332; }
+        .footer-note {
+            text-align: center;
+            color: rgba(255,255,255,0.85);
+            font-size: 14px;
+            padding: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .headline-strip { grid-template-columns: 1fr; }
+            .header { flex-direction: column; gap: 10px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- ============== HEADER ============== -->
+    <div class="header">
+        <div>
+            <h1>Importing a SnapLogic Pipeline &mdash; Two Ways</h1>
+            <div class="header-subtitle">A focused walk-through of <code>import_pipeline.robot</code></div>
+        </div>
+        <div class="header-subtitle">Robot Framework Tutorial</div>
+    </div>
+
+    <!-- ============== INTRO + PREREQS ============== -->
+    <div class="data-section">
+        <div class="info-box blue">
+            <strong>What is "importing" a pipeline?</strong><br>
+            Uploading a <code>.slp</code> file into your SnapLogic project space so that tests (and the SnapLogic UI) can see it as a registered asset.
+        </div>
+
+        <div class="info-box orange">
+            <strong>⚠ Prerequisites &mdash; do these first</strong>
+            <p style="margin-top:8px;color:inherit;">Before importing a pipeline, make sure:</p>
+            <ol style="margin:6px 0 6px 20px;color:inherit;">
+                <li><strong>Accounts are created</strong> &mdash; every account the pipeline references (databases, S3, Kafka, etc.) must already exist in the project space. See <code>../accounts/create_account_explained.md</code>.</li>
+                <li><strong>Required files are uploaded to SLDB</strong> &mdash; any expression libraries (<code>.expr</code>), JDBC JARs, or other supporting files referenced by the pipeline must already be in SLDB. See <code>../upload_files/upload_files.robot</code>.</li>
+            </ol>
+            <p style="margin-top:8px;color:inherit;">If you skip either step, the pipeline will import successfully but <strong>will fail at execution time</strong> with "asset not found" errors that look like infrastructure problems but are really setup-order problems.</p>
+        </div>
+    </div>
+
+    <!-- ============== THE TWO KEYWORDS ============== -->
+    <div class="data-section">
+        <h2>The two import keywords</h2>
+
+        <p>The framework gives you two choices, both imported from the <code>snaplogic-common-robot</code> pip package:</p>
+
+        <div class="headline-strip">
+            <div class="headline-card template">
+                <h4>Import Pipelines<br>From Template</h4>
+                <p>Appends <code>_&lt;unique_id&gt;</code> to the name</p>
+            </div>
+            <div class="vs-badge">VS</div>
+            <div class="headline-card original">
+                <h4>Import Pipeline<br>With Original Name</h4>
+                <p>Uses the EXACT name you give</p>
+            </div>
+        </div>
+
+        <p>Both upload the same <code>.slp</code> file &mdash; they differ in <strong>what name the pipeline ends up with in SnapLogic</strong>.</p>
+    </div>
+
+    <!-- ============== WHEN TO USE WHICH ============== -->
+    <div class="data-section">
+        <h2>When to use which</h2>
+
+<pre class="code-block">                  ┌──────────────────────────────────────┐
+                  │  Will another asset reference this   │
+                  │       pipeline by name?              │
+                  └──────────────────────────────────────┘
+                                  │
+        ┌─────────────────────────┼─────────────────────────┐
+        │ YES                     │ NO                      │ Parallel CI
+        │ (triggered task,        │ (just running           │ runs on the
+        │  another pipeline,      │  tests in isolation)    │ same env
+        │  hardcoded path)        │                         │
+        ▼                         ▼                         ▼
+┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐
+│ Import Pipeline  │    │ Import Pipelines │    │ Import Pipelines │
+│ With Original    │    │ From Template    │    │ From Template    │
+│ Name             │    │                  │    │                  │
+└──────────────────┘    └──────────────────┘    └──────────────────┘</pre>
+
+        <div class="table-container">
+            <table>
+                <tr><th>Scenario</th><th>Pick</th></tr>
+                <tr><td>Triggered task / another pipeline references it by exact name</td><td><code>Import Pipeline With Original Name</code></td></tr>
+                <tr><td>Multiple test runs on the same SnapLogic org (parallel CI, dev iteration)</td><td><code>Import Pipelines From Template</code></td></tr>
+                <tr><td>Pipeline name appears in a customer doc or external system</td><td><code>Import Pipeline With Original Name</code></td></tr>
+                <tr><td>Demos, tutorials, dev iteration</td><td>Either; <code>From Template</code> is safer</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ============== KEYWORD 1: FROM TEMPLATE ============== -->
+    <div class="data-section keyword-section template">
+        <h2><code>Import Pipelines From Template</code></h2>
+
+        <h3>Signature</h3>
+<pre class="code-block"><span class="keyword">[Arguments]</span>    <span class="variable">${unique_id}</span>    <span class="variable">${project_path}</span>    <span class="variable">${pipeline_name}</span>    <span class="variable">${slp_file_name}</span>    <span class="variable">${duplicate_check}</span>=<span class="string">false</span></pre>
+
+        <h3>Arguments</h3>
+        <div class="table-container">
+            <table>
+                <tr><th>#</th><th>Argument</th><th>Required</th><th>Default</th><th>Purpose</th></tr>
+                <tr><td>1</td><td><code>unique_id</code></td><td>✅</td><td>—</td><td>Suffix appended to pipeline name. Usually generated once per suite via <code>Get Unique Id</code>.</td></tr>
+                <tr><td>2</td><td><code>project_path</code></td><td>✅</td><td>—</td><td>Where the pipeline lands. Usually <code>${PIPELINES_LOCATION_PATH}</code>.</td></tr>
+                <tr><td>3</td><td><code>pipeline_name</code></td><td>✅</td><td>—</td><td><strong>Base</strong> name. The keyword appends <code>_${unique_id}</code> automatically.</td></tr>
+                <tr><td>4</td><td><code>slp_file_name</code></td><td>✅</td><td>—</td><td>Filename of the <code>.slp</code> (looked up in <code>src/pipelines/</code>).</td></tr>
+                <tr><td>5</td><td><code>duplicate_check</code></td><td>❌</td><td><code>false</code></td><td><code>false</code> = overwrite, <code>true</code> = fail-if-exists.</td></tr>
+            </table>
+        </div>
+
+        <h3>Resulting pipeline name</h3>
+<pre class="code-block">&lt;pipeline_name&gt;_&lt;unique_id&gt;</pre>
+        <p><strong>Example:</strong> <code>pipeline_name = oracle</code>, <code>unique_id = abc123</code> &rarr; SnapLogic shows <strong><code>oracle_abc123</code></strong>.</p>
+
+        <h3>Side effect</h3>
+        <p>A suite variable is set, keyed by the <strong>suffixed</strong> name:</p>
+<pre class="code-block"><span class="variable">${&lt;pipeline_name&gt;_&lt;unique_id&gt;_snode_id}</span> = &lt;pipeline_id&gt;</pre>
+        <p>So <code>${oracle_abc123_snode_id}</code> is now usable in downstream test cases.</p>
+
+        <h3>Example call</h3>
+<pre class="code-block"><span class="keyword">*** Test Cases ***</span>
+<span class="function">Import Pipeline</span>
+    [Tags]    import_pipeline_sample
+    <span class="keyword">[Template]</span>    <span class="function">Import Pipelines From Template</span>
+    <span class="variable">${unique_id}</span>    <span class="variable">${PIPELINES_LOCATION_PATH}</span>    oracle    oracle.slp</pre>
+
+        <p>After the run, SnapLogic shows: <code>oracle_abc123</code> (where <code>abc123</code> is the suite-wide <code>unique_id</code>).</p>
+    </div>
+
+    <!-- ============== KEYWORD 2: ORIGINAL NAME ============== -->
+    <div class="data-section keyword-section original">
+        <h2><code>Import Pipeline With Original Name</code></h2>
+
+        <h3>Signature</h3>
+<pre class="code-block"><span class="keyword">[Arguments]</span>    <span class="variable">${project_path}</span>    <span class="variable">${pipeline_name}</span>    <span class="variable">${slp_file_name}</span>    <span class="variable">${duplicate_check}</span>=<span class="string">false</span></pre>
+
+        <h3>Arguments</h3>
+        <div class="table-container">
+            <table>
+                <tr><th>#</th><th>Argument</th><th>Required</th><th>Default</th><th>Purpose</th></tr>
+                <tr><td>1</td><td><code>project_path</code></td><td>✅</td><td>—</td><td>Where the pipeline lands. Usually <code>${PIPELINES_LOCATION_PATH}</code>.</td></tr>
+                <tr><td>2</td><td><code>pipeline_name</code></td><td>✅</td><td>—</td><td><strong>Exact</strong> name. No suffix appended.</td></tr>
+                <tr><td>3</td><td><code>slp_file_name</code></td><td>✅</td><td>—</td><td>Filename of the <code>.slp</code> (looked up in <code>src/pipelines/</code>).</td></tr>
+                <tr><td>4</td><td><code>duplicate_check</code></td><td>❌</td><td><code>false</code></td><td><code>false</code> = overwrite, <code>true</code> = fail-if-exists.</td></tr>
+            </table>
+        </div>
+
+        <h3>Resulting pipeline name</h3>
+<pre class="code-block">&lt;pipeline_name&gt;     (exactly what you typed)</pre>
+
+        <h3>Side effect</h3>
+<pre class="code-block"><span class="variable">${&lt;pipeline_name&gt;_snode_id}</span> = &lt;pipeline_id&gt;</pre>
+
+        <h3>Example call</h3>
+<pre class="code-block"><span class="keyword">*** Test Cases ***</span>
+<span class="function">Import existing child Pipeline Wihout Unique ID</span>
+    [Tags]    import_pipeline_sample
+    <span class="keyword">[Template]</span>    <span class="function">Import Pipeline With Original Name</span>
+    <span class="variable">${PIPELINES_LOCATION_PATH}</span>    email    email.slp    duplicate_check=<span class="variable">${TRUE}</span></pre>
+
+        <p>After the run, SnapLogic shows: <code>email</code> (no suffix). If <code>email</code> already existed, the test row fails because of <code>duplicate_check=${TRUE}</code>.</p>
+    </div>
+
+    <!-- ============== DUPLICATE_CHECK FLAG ============== -->
+    <div class="data-section">
+        <h2>The <code>duplicate_check</code> flag &mdash; the same in both keywords</h2>
+
+        <div class="table-container">
+            <table>
+                <tr><th>Value</th><th>Behavior</th></tr>
+                <tr>
+                    <td><code>false</code> <em>(default)</em></td>
+                    <td><strong>Overwrite.</strong> Replaces existing pipeline content; preserves <code>snode_id</code> so triggered tasks keep working.</td>
+                </tr>
+                <tr>
+                    <td><code>true</code></td>
+                    <td><strong>Fail-if-exists.</strong> API returns an error; the test row fails.</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="info-box purple">
+            <strong>💡 Practical:</strong> keep the default (<code>false</code>) most of the time. Use <code>true</code> only when you need a "don't clobber my colleague's pipeline" guard on a shared org.
+        </div>
+    </div>
+
+    <!-- ============== SIDE-BY-SIDE COMPARISON ============== -->
+    <div class="data-section">
+        <h2>Side-by-side comparison</h2>
+
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th>Aspect</th>
+                    <th><code>Import Pipelines From Template</code></th>
+                    <th><code>Import Pipeline With Original Name</code></th>
+                </tr>
+                <tr><td>Argument count</td><td>5 (4 required + 1 optional)</td><td>4 (3 required + 1 optional)</td></tr>
+                <tr><td>Final pipeline name</td><td><code>&lt;name&gt;_&lt;unique_id&gt;</code></td><td><code>&lt;name&gt;</code></td></tr>
+                <tr><td>Re-run on same env</td><td>✅ Safe (different <code>unique_id</code> per run)</td><td>⚠ Will collide &rarr; use <code>duplicate_check=true</code> to guard</td></tr>
+                <tr><td>Suffix appended</td><td>✅ Yes</td><td>❌ No</td></tr>
+                <tr><td>Suite variable key</td><td><code>${&lt;name&gt;_&lt;unique_id&gt;_snode_id}</code></td><td><code>${&lt;name&gt;_snode_id}</code></td></tr>
+                <tr><td>Best for</td><td>Parallel CI, isolated runs</td><td>Pipelines referenced by exact name</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ============== UNDER THE HOOD ============== -->
+    <div class="data-section">
+        <h2>What both keywords do under the hood</h2>
+
+        <p>Both are thin wrappers around the lower-level <code>Import Pipeline</code> keyword. The flow is the same &mdash; only the name handling differs:</p>
+
+<pre class="code-block">        ┌─────────────────────────────────────────────────┐
+        │ Read .slp file from                             │
+        │ ${PIPELINE_PAYLOAD_PATH}/&lt;filename&gt;             │
+        └────────────────────────┬────────────────────────┘
+                                 ▼
+                  ┌──────────────────────────┐
+                  │     Which keyword?       │
+                  └──────────────────────────┘
+                    │                       │
+    From Template   │                       │  With Original Name
+                    ▼                       ▼
+        ┌────────────────────────┐    ┌────────────────────┐
+        │ Suffix:                │    │ Use name as-is     │
+        │ name = name +          │    │                    │
+        │ "_" + unique_id        │    │                    │
+        └───────────┬────────────┘    └─────────┬──────────┘
+                    │                           │
+                    └───────────┬───────────────┘
+                                ▼
+                ┌────────────────────────────────┐
+                │   Call Import Pipeline API     │
+                └────────────────┬───────────────┘
+                                 ▼
+                    ┌────────────────────────┐
+                    │   duplicate_check?     │
+                    └────────────────────────┘
+                       │                    │
+              false    │                    │  true
+                       ▼                    ▼
+        ┌────────────────────────┐  ┌────────────────────┐
+        │ Overwrite if exists    │  │ Fail if exists     │
+        └───────────┬────────────┘  └─────────┬──────────┘
+                    │                         │
+                    └───────────┬─────────────┘
+                                ▼
+                ┌────────────────────────────────┐
+                │ Store snode_id as              │
+                │ suite variable                 │
+                └────────────────┬───────────────┘
+                                 ▼
+                          ┌─────────────┐
+                          │   ✅ Done   │
+                          └─────────────┘</pre>
+    </div>
+
+    <!-- ============== COMMON PITFALLS ============== -->
+    <div class="data-section">
+        <h2>Common pitfalls</h2>
+
+        <div class="table-container">
+            <table>
+                <tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr>
+                <tr>
+                    <td><code>Asset already exists</code> error from the API</td>
+                    <td><code>duplicate_check=true</code> and the pipeline really does exist</td>
+                    <td>Drop the flag (use the default <code>false</code>) &mdash; or delete it manually first</td>
+                </tr>
+                <tr>
+                    <td>Triggered task can't find pipeline</td>
+                    <td>Used <code>Import Pipelines From Template</code>, but the task config references the bare name</td>
+                    <td>Switch to <code>Import Pipeline With Original Name</code>, <strong>or</strong> suffix the task name too</td>
+                </tr>
+                <tr>
+                    <td><code>${oracle_snode_id}</code> is undefined in a later test</td>
+                    <td>You imported with the <code>From Template</code> keyword but reference the bare name</td>
+                    <td>Reference <code>${oracle_&lt;unique_id&gt;_snode_id}</code> instead</td>
+                </tr>
+                <tr>
+                    <td><code>.slp</code> not found</td>
+                    <td>Filename wrong, or the file isn't in <code>src/pipelines/</code></td>
+                    <td>Check <code>${PIPELINE_PAYLOAD_PATH}</code> (set in <code>__init__.robot</code>) and confirm the file exists there</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ============== USAGE EXAMPLE ============== -->
+    <div class="data-section">
+        <h2>Usage example</h2>
+
+        <p>Run this test case:</p>
+
+<pre class="code-block">make robot-run-tests-no-gp TAGS=<span class="string">"tag_name"</span>     <span class="comment"># eg: TAGS="import_pipeline_sample"</span></pre>
+
+        <h3>What happens:</h3>
+        <ol>
+            <li>Robot loads <code>.env</code> and <code>env_files/...</code></li>
+            <li>Suite Setup runs in <code>__init__.robot</code> &rarr; exposes <code>${PIPELINES_LOCATION_PATH}</code>, <code>${PIPELINE_PAYLOAD_PATH}</code></li>
+            <li>Each row in the <code>[Template]</code> triggers one upload</li>
+            <li>After all rows succeed, suite variables are set:<br><code>${&lt;pipeline_name&gt;_snode_id}</code> (or <code>${&lt;pipeline_name&gt;_&lt;unique_id&gt;_snode_id}</code>)</li>
+            <li>✅ The pipelines appear in the SnapLogic UI under <code>&lt;ORG&gt; &rarr; &lt;project_space&gt; &rarr; &lt;project&gt;</code></li>
+        </ol>
+
+        <h3>Run against a different environment (e.g. stage)</h3>
+<pre class="code-block">make robot-run-tests-no-gp TAGS=<span class="string">"tag_name"</span> ENV=.env.stage     <span class="comment"># eg: TAGS="import_pipeline_sample"</span></pre>
+    </div>
+
+    <!-- ============== TL;DR ============== -->
+    <div class="data-section">
+        <h2>TL;DR cheat sheet</h2>
+
+        <ul>
+            <li><strong><code>Import Pipelines From Template</code></strong> &mdash; appends <code>_&lt;unique_id&gt;</code>. Use for isolated/parallel runs.</li>
+            <li><strong><code>Import Pipeline With Original Name</code></strong> &mdash; keeps the name exact. Use when other assets reference the pipeline by name.</li>
+            <li>Both default to <strong>overwrite</strong> on existing pipeline. Pass <code>duplicate_check=true</code> to fail instead.</li>
+            <li>Both auto-store the <code>snode_id</code> as a suite variable for downstream test cases.</li>
+            <li>Both look for the <code>.slp</code> file inside <code>src/pipelines/</code> (path set in <code>__init__.robot</code>).</li>
+        </ul>
+    </div>
+
+    <div class="footer-note">
+        SnapLogic Robot Framework Tutorial Series &middot; Companion to <code>import_pipeline.robot</code>
+    </div>
+
+</div>
+</body>
+</html>

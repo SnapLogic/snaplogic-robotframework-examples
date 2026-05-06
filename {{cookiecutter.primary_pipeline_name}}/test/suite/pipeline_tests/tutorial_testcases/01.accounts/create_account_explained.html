@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creating a SnapLogic Account &mdash; Manual vs Automation</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
+            min-height: 100vh;
+            padding: 20px;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        /* Header */
+        .header {
+            background: white;
+            border-radius: 10px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { color: #333; font-size: 26px; }
+        .header-subtitle { color: #666; font-size: 15px; }
+
+        /* Data sections */
+        .data-section {
+            background: white;
+            border-radius: 10px;
+            padding: 25px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .data-section h2 {
+            color: #333;
+            margin-bottom: 16px;
+            font-size: 22px;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 8px;
+        }
+        .data-section h3 { color: #444; margin: 22px 0 10px 0; font-size: 18px; }
+        .data-section p { color: #555; font-size: 16px; line-height: 1.7; margin-bottom: 12px; }
+        .data-section ul, .data-section ol { color: #555; padding-left: 24px; margin-bottom: 12px; }
+        .data-section li { margin-bottom: 6px; line-height: 1.6; }
+
+        /* Info boxes */
+        .info-box {
+            background: #e8f5e9;
+            border-left: 4px solid #2d6a4f;
+            padding: 14px 18px;
+            margin: 14px 0;
+            border-radius: 0 5px 5px 0;
+            font-size: 15px;
+            color: #1b4332;
+            line-height: 1.6;
+        }
+        .info-box code {
+            background: #d8f3dc;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .info-box.blue   { background: #e8f0fe; border-left-color: #2980b9; color: #1a3a5c; }
+        .info-box.blue code   { background: #d0e3f7; }
+        .info-box.purple { background: #f3e8fa; border-left-color: #8e44ad; color: #4a1a6b; }
+        .info-box.purple code { background: #e8d5f5; }
+        .info-box.orange { background: #fef3e2; border-left-color: #e67e22; color: #6b3a0a; }
+        .info-box.orange code { background: #fde6c8; }
+        .info-box.red    { background: #fde8e8; border-left-color: #e74c3c; color: #6b1a1a; }
+        .info-box.red code    { background: #f9d0d0; }
+
+        /* Tables */
+        .table-container { overflow-x: auto; margin: 14px 0; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e0e0e0;
+        }
+        th {
+            background: #2d6a4f;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 15px;
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 15px;
+            vertical-align: top;
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background: #f9f9f9; }
+        td code, th code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #333;
+        }
+        th code { background: rgba(255,255,255,0.2); color: white; }
+
+        /* Code blocks */
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 18px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            white-space: pre;
+            margin: 12px 0;
+            line-height: 1.55;
+        }
+        .code-block .comment  { color: #6a9955; }
+        .code-block .keyword  { color: #569cd6; }
+        .code-block .string   { color: #ce9178; }
+        .code-block .function { color: #dcdcaa; }
+        .code-block .variable { color: #9cdcfe; }
+        .code-block .highlight { background: #264f2a; display: inline; }
+
+        /* Two-column comparison (manual vs automation) */
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            margin: 18px 0;
+        }
+        .comparison-col {
+            border-radius: 10px;
+            padding: 20px 24px;
+            border: 2px solid;
+        }
+        .col-manual {
+            background: #fff4e6;
+            border-color: #e67e22;
+        }
+        .col-manual h3 {
+            color: #e67e22 !important;
+            margin: 0 0 14px 0;
+            font-size: 18px;
+        }
+        .col-auto {
+            background: #e8f0fe;
+            border-color: #2980b9;
+        }
+        .col-auto h3 {
+            color: #2980b9 !important;
+            margin: 0 0 14px 0;
+            font-size: 18px;
+        }
+        .form-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px dashed rgba(0,0,0,0.15);
+            padding: 6px 0;
+            font-size: 15px;
+            color: #444;
+        }
+        .form-row:last-child { border-bottom: none; }
+        .form-row .label { font-weight: 500; }
+        .form-row .blank {
+            display: inline-block;
+            min-width: 100px;
+            border-bottom: 1px solid #888;
+            height: 1em;
+        }
+        .col-footer {
+            margin-top: 14px;
+            font-style: italic;
+            font-size: 14px;
+            color: #6b3a0a;
+        }
+        .col-auto .col-footer { color: #1a3a5c; }
+        .file-card {
+            background: white;
+            border: 1px solid #cdd9e8;
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin: 8px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #333;
+        }
+        .file-card .filename {
+            display: block;
+            font-weight: bold;
+            color: #2980b9;
+            margin-bottom: 4px;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 14px;
+        }
+
+        /* Headline strip */
+        .headline-strip {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 16px;
+            align-items: center;
+            margin: 14px 0;
+        }
+        .headline-card {
+            background: white;
+            border-radius: 8px;
+            padding: 18px;
+            text-align: center;
+            border: 2px solid;
+        }
+        .headline-card.manual { border-color: #e67e22; color: #e67e22; }
+        .headline-card.auto   { border-color: #2980b9; color: #2980b9; }
+        .headline-card h4 { font-size: 20px; margin-bottom: 6px; }
+        .headline-card p { color: #666; font-size: 14px; margin: 0; }
+        .vs-badge {
+            font-size: 22px;
+            font-weight: bold;
+            color: #2d6a4f;
+        }
+
+        /* File-location box */
+        .file-loc {
+            background: #f7f7f7;
+            border-left: 4px solid #2d6a4f;
+            padding: 12px 16px;
+            border-radius: 0 5px 5px 0;
+            margin: 10px 0;
+            font-size: 15px;
+        }
+        .file-loc strong { color: #1b4332; }
+        .file-loc code {
+            background: white;
+            border: 1px solid #d8f3dc;
+            color: #1b4332;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            display: inline-block;
+            margin-top: 4px;
+        }
+
+        /* Flow steps */
+        .flow-step { display: flex; align-items: flex-start; margin-bottom: 12px; }
+        .flow-number {
+            background: #2d6a4f;
+            color: white;
+            min-width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            margin-right: 14px;
+            flex-shrink: 0;
+        }
+        .flow-content { flex: 1; }
+        .flow-content p { color: #444; font-size: 15px; line-height: 1.5; margin: 0; }
+
+        strong { color: #1b4332; }
+        .footer-note {
+            text-align: center;
+            color: rgba(255,255,255,0.85);
+            font-size: 14px;
+            padding: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .comparison { grid-template-columns: 1fr; }
+            .headline-strip { grid-template-columns: 1fr; }
+            .header { flex-direction: column; gap: 10px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- ============== HEADER ============== -->
+    <div class="header">
+        <div>
+            <h1>Creating a SnapLogic Account &mdash; Manual vs Automation</h1>
+            <div class="header-subtitle">A short tutorial for the demo series</div>
+        </div>
+        <div class="header-subtitle">Robot Framework Tutorial</div>
+    </div>
+
+    <!-- ============== INTRO ============== -->
+    <div class="data-section">
+        <div class="info-box blue">
+            <strong>What is an account?</strong><br>
+            A small piece of config that tells SnapLogic <em>how</em> to connect to a system &mdash; a database, S3, Kafka, etc. Pipelines reference it by name.
+        </div>
+    </div>
+
+    <!-- ============== THE TWO WAYS ============== -->
+    <div class="data-section">
+        <h2>The two ways</h2>
+
+        <div class="headline-strip">
+            <div class="headline-card manual">
+                <h4>🖱️ MANUAL (UI)</h4>
+                <p>Click around in Designer</p>
+            </div>
+            <div class="vs-badge">VS</div>
+            <div class="headline-card auto">
+                <h4>🤖 AUTOMATION</h4>
+                <p>Run a make command</p>
+            </div>
+        </div>
+
+        <p>Both produce the <strong>same end result</strong>: an account asset stored in SnapLogic. Only the <em>path to get there</em> is different.</p>
+    </div>
+
+    <!-- ============== WHAT DATA IS NEEDED ============== -->
+    <div class="data-section">
+        <h2>What data is needed &mdash; side-by-side</h2>
+
+        <div class="comparison">
+            <!-- Manual side -->
+            <div class="comparison-col col-manual">
+                <h3>🖱️ Manual</h3>
+                <p style="color:#6b3a0a;font-size:14px;margin-bottom:10px;">Typed into Designer form:</p>
+                <div class="form-row"><span class="label">Hostname</span><span class="blank"></span></div>
+                <div class="form-row"><span class="label">Port</span><span class="blank"></span></div>
+                <div class="form-row"><span class="label">Username</span><span class="blank"></span></div>
+                <div class="form-row"><span class="label">Password</span><span class="blank"></span></div>
+                <div class="form-row"><span class="label">Database</span><span class="blank"></span></div>
+                <div class="form-row"><span class="label">Account label</span><span class="blank"></span></div>
+                <div class="form-row"><span class="label">Encrypt?</span><span class="blank"></span></div>
+                <div class="form-row"><span class="label">Trust cert?</span><span class="blank"></span></div>
+                <div class="col-footer">Per account. Per environment. Every time.</div>
+            </div>
+
+            <!-- Automation side -->
+            <div class="comparison-col col-auto">
+                <h3>🤖 Automation</h3>
+                <p style="color:#1a3a5c;font-size:14px;margin-bottom:10px;">Stored in 2 files:</p>
+
+                <div class="file-card">
+                    <span class="filename">📄 acc_sqlserver.json (payload template)</span>
+{<br>
+&nbsp;&nbsp;"host": "{{HOST}}",<br>
+&nbsp;&nbsp;"user": "{{USER}}",<br>
+&nbsp;&nbsp;"password": "{{PASSWORD}}",<br>
+&nbsp;&nbsp;...<br>
+}
+                </div>
+
+                <div class="file-card">
+                    <span class="filename">📄 .env.sqlserver (credentials)</span>
+SQLSERVER_HOST=sqlserver-db<br>
+SQLSERVER_USER=sa<br>
+SQLSERVER_PASSWORD=...<br>
+...
+                </div>
+
+                <div class="col-footer">Define once, reuse forever.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============== VARIABLE-TO-FILE TABLE ============== -->
+    <div class="data-section">
+        <h2>Where the automation reads each variable from</h2>
+
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th>Variable</th>
+                    <th>Source file</th>
+                </tr>
+                <tr>
+                    <td><code>${ACCOUNT_LOCATION_PATH}</code></td>
+                    <td><code>.env</code> (project root)</td>
+                </tr>
+                <tr>
+                    <td><code>${ACCOUNT_PAYLOAD_FILE_NAME}</code></td>
+                    <td><code>env_files/database_accounts/env.&lt;filename&gt;</code> &nbsp;(e.g. <code>.env.sqlserver</code>)</td>
+                </tr>
+                <tr>
+                    <td><code>${ACCOUNT_NAME}</code></td>
+                    <td><code>env_files/database_accounts/.env.sqlserver</code></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ============== WHERE THE FILES LIVE ============== -->
+    <div class="data-section">
+        <h2>Where the actual files live</h2>
+
+        <div class="file-loc">
+            <strong>Account payload templates</strong> &mdash; the JSON files referenced by <code>${ACCOUNT_PAYLOAD_FILE_NAME}</code> live here:
+            <br><code>📁 test/suite/test_data/accounts_payload/</code>
+        </div>
+
+        <div class="file-loc">
+            <strong>JAR files (when needed)</strong> &mdash; some account types (MySQL, DB2, Teradata, JMS) require a JDBC driver JAR. These must be <strong>uploaded to SLDB before</strong> the account is created.
+            <br><code>📁 test/suite/test_data/accounts_jar_files/&lt;type&gt;/</code>
+        </div>
+    </div>
+
+    <!-- ============== SAMPLE TEST CASE ============== -->
+    <div class="data-section">
+        <h2>Sample account-creation test case</h2>
+
+        <p>Here's the actual Robot test case that creates an account (<code>create_account.robot</code>):</p>
+
+<pre class="code-block"><span class="keyword">*** Settings ***</span>
+<span class="keyword">Resource</span>    snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource
+
+<span class="keyword">*** Test Cases ***</span>
+<span class="function">Create Account</span>
+    [Tags]    sqlserver2_demo2
+    <span class="keyword">[Template]</span>    <span class="function">Create Account From Template</span>
+
+    <span class="comment"># account_location_path             payload_file_name                       account_name</span>
+    <span class="variable">${ACCOUNT_LOCATION_PATH}</span>    <span class="variable">${SQLSERVER_ACCOUNT_PAYLOAD_FILE_NAME}</span>    <span class="variable">${SQLSERVER_ACCOUNT_NAME}</span>
+
+    <span class="comment"># Same call, but force-replace the account if it already exists</span>
+    <span class="variable">${ACCOUNT_LOCATION_PATH}</span>    <span class="variable">${SQLSERVER_ACCOUNT_PAYLOAD_FILE_NAME}</span>    <span class="variable">${SQLSERVER_ACCOUNT_NAME}</span>    <span class="highlight">overwrite_if_exists=<span class="variable">${TRUE}</span></span></pre>
+
+        <p>Three positional arguments per row, plus one optional named argument:</p>
+        <ol>
+            <li><strong>Where</strong> to create the account (location in the project space)</li>
+            <li><strong>Which</strong> JSON template to use (file name in <code>accounts_payload/</code>)</li>
+            <li><strong>What name</strong> the account should have in SnapLogic</li>
+            <li><em>(optional)</em> <code>overwrite_if_exists=${TRUE}</code> &mdash; see below</li>
+        </ol>
+
+        <h3>About <code>overwrite_if_exists</code></h3>
+
+        <p>By default, if an account with the same name already exists in the project space, the keyword <strong>skips creation</strong> and the row passes silently. That's the safe default &mdash; it makes re-runs idempotent.</p>
+
+        <p>Set <code>overwrite_if_exists=${TRUE}</code> to force a <strong>delete + recreate</strong> when the account exists. Use it when:</p>
+        <ul>
+            <li>You changed values in <code>.env</code> (e.g. password rotated) and need the account to pick them up</li>
+            <li>The existing account got into a bad state and you want a clean slate</li>
+            <li>You're iterating on the JSON template and want each run to apply the latest version</li>
+        </ul>
+
+        <div class="info-box red">
+            <strong>⚠ Destructive:</strong> any manual edits made in the SnapLogic UI to that account are wiped out. For demos and CI it's usually what you want; for shared accounts on a customer org, double-check first.
+        </div>
+
+        <p>Add more rows to create more accounts in the same test case &mdash; Robot calls <code>Create Account From Template</code> once per row.</p>
+    </div>
+
+    <!-- ============== USAGE EXAMPLE ============== -->
+    <div class="data-section">
+        <h2>Usage example</h2>
+
+        <p>Run this test case:</p>
+
+<pre class="code-block">make robot-run-tests-no-gp TAGS=<span class="string">"tag_name"</span>     <span class="comment"># eg: TAGS="sql_server"</span></pre>
+
+        <h3>What happens:</h3>
+
+        <div class="flow-step">
+            <div class="flow-number">1</div>
+            <div class="flow-content"><p>Robot loads <code>.env</code> and <code>env_files/.../.env.sqlserver</code></p></div>
+        </div>
+        <div class="flow-step">
+            <div class="flow-number">2</div>
+            <div class="flow-content"><p>Reads <code>acc_sqlserver.json</code> from <code>test/suite/test_data/accounts_payload/</code></p></div>
+        </div>
+        <div class="flow-step">
+            <div class="flow-number">3</div>
+            <div class="flow-content"><p><strong>In PAYLOAD:</strong> Substitutes placeholders (<code>{{HOST}}</code>, <code>{{USER}}</code>, <code>{{PASSWORD}}</code>...) with values from the env files</p></div>
+        </div>
+        <div class="flow-step">
+            <div class="flow-number">4</div>
+            <div class="flow-content"><p>POSTs the rendered JSON to SnapLogic</p></div>
+        </div>
+        <div class="flow-step">
+            <div class="flow-number">5</div>
+            <div class="flow-content"><p>✅ The account appears in the SnapLogic UI under the project space &rarr; <code>shared</code></p></div>
+        </div>
+
+        <h3>Run against a different environment (e.g. stage)</h3>
+
+<pre class="code-block">make robot-run-tests-no-gp TAGS=<span class="string">"tag_name"</span> ENV=.env.stage     <span class="comment"># eg: TAGS="sql_server"</span></pre>
+    </div>
+
+    <div class="footer-note">
+        SnapLogic Robot Framework Tutorial Series &middot; Companion to <code>create_account.robot</code>
+    </div>
+
+</div>
+</body>
+</html>

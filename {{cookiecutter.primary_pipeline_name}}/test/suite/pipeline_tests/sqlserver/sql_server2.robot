@@ -65,9 +65,10 @@ ${expected_output_file_path}        ${CURDIR}/../../test_data/actual_expected_da
 Create Account
     [Documentation]    Creates an account in the project space using the provided payload file.
     ...    "account_payload_path"    value as assigned to global variable    in __init__.robot file
-    [Tags]    sqlserver2
+    [Tags]    sqlserver2_demo
     [Template]    Create Account From Template
     ${ACCOUNT_LOCATION_PATH}    ${SQLSERVER_ACCOUNT_PAYLOAD_FILE_NAME}    ${SQLSERVER_ACCOUNT_NAME}
+    ${ACCOUNT_LOCATION_PATH}    ${SQLSERVER_ACCOUNT_PAYLOAD_FILE_NAME}    sqlserveracct2
 
 Upload Files To SLDB
     [Documentation]    Uploads the 4 sample output files (TXT, ZIP, HTML, CSV) to SnapLogic SLDB
@@ -436,7 +437,7 @@ Initialize Test Environment
 
 Check connections
     [Documentation]    Verifies SQL Server database connection and Snaplex availability
-    Wait Until Plex Status Is Up    /${ORG_NAME}/${GROUNDPLEX_LOCATION_PATH}/${GROUNDPLEX_NAME}
+    # Wait Until Plex Status Is Up    /${ORG_NAME}/${GROUNDPLEX_LOCATION_PATH}/${GROUNDPLEX_NAME}
     Connect to SQL Server Database
     ...    ${SQLSERVER_DATABASE}
     ...    ${SQLSERVER_USER}
