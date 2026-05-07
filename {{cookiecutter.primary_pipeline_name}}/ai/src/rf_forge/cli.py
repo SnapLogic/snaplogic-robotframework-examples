@@ -78,8 +78,11 @@ def _build_parser() -> argparse.ArgumentParser:
         )
         p.add_argument(
             "--model",
-            default="sonnet",
-            help="Claude model: opus, sonnet, haiku, or full model ID (default: sonnet)",
+            default="claude-opus-4-7",
+            help=(
+                "Claude model. Default: claude-opus-4-7 (full ID, bypasses auto-1M-context "
+                "behavior of opus/sonnet aliases). Use haiku for cheaper/faster runs."
+            ),
         )
         p.add_argument(
             "--raw-json",

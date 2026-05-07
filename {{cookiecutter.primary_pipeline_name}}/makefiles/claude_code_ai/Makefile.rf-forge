@@ -24,7 +24,11 @@ include makefiles/common_services/Makefile.common
 # ── Configuration ──────────────────────────────────────────────────────────
 RF_FORGE         := rf-forge
 CODEBASE         := $(shell pwd)
-MODEL            ?= sonnet
+MODEL            ?= claude-opus-4-7
+# NOTE: We use the full model ID instead of the "opus"/"sonnet" alias because
+# claude-gen-agent auto-appends [1m] (1M context) for those aliases, which
+# requires a paid Anthropic Extra Usage tier. Full IDs bypass that logic.
+# Override with MODEL=haiku for cheaper / faster runs.
 MAX_BUDGET       ?=
 CONTEXT_FILE     ?=
 OUTPUT_DIR       ?=
@@ -84,7 +88,7 @@ rf-help:
 	@echo "    make rf-analyze-pipeline INSTRUCTION=\"Analyze oracle.slp\""
 	@echo ""
 	@echo "  OPTIONAL FLAGS"
-	@echo "    MODEL=opus                            Use Opus model (default: sonnet)"
+	@echo "    MODEL=haiku                           Use Haiku (cheaper/faster); default: claude-opus-4-7"
 	@echo "    MAX_BUDGET=2.0                        Dollar cap per run"
 	@echo "    CONTEXT_FILE=./docs/conventions.md    Extra context for Claude"
 	@echo "    OUTPUT_DIR=./ai-logs/oracle            Save session log"

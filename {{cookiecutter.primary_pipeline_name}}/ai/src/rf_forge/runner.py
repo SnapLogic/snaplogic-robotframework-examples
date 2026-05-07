@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import shutil
+import tempfile
 from pathlib import Path
 
 from claude_gen_agent import ClaudeGenAgent
@@ -92,11 +94,56 @@ def _find_context_dir() -> Path:
     )
 
 
+def _build_filtered_plugins_dir(plugins_dir: Path, skill_name: str) -> Path:
+    """Create a temp plugins directory containing only the matched skill.
+
+    Why this exists:
+        Without filtering, ClaudeGenAgent loads ALL SKILL.md files in the
+        plugins directory (~150K tokens for 15 skills). Each rf-forge run
+        uses exactly ONE skill, so loading the others wastes tokens AND can
+        push context past Claude's standard 200K limit (triggering the
+        "Extra usage required for 1M context" error).
+
+        This function creates a temp directory with only the matched skill
+        symlinked in. The agent loads ~25K tokens instead of ~150K — a 6×
+        reduction with no functional change.
+
+    Args:
+        plugins_dir: The full plugins directory (containing all skill subdirs).
+        skill_name: The name of the skill to load (e.g., "create-account").
+
+    Returns:
+        Path to a temp directory containing only the matched skill.
+        Caller is responsible for cleanup via shutil.rmtree.
+
+    Raises:
+        FileNotFoundError: If the skill subdirectory cannot be found.
+    """
+    # Locate the skill source directory — try both nesting conventions
+    skill_src = plugins_dir / skill_name
+    if not skill_src.is_dir():
+        # Pattern A nesting: plugins/skills/<name>
+        skill_src = plugins_dir / "skills" / skill_name
+        if not skill_src.is_dir():
+            raise FileNotFoundError(
+                f"Skill '{skill_name}' not found in {plugins_dir}. "
+                f"Looked for {plugins_dir / skill_name} and "
+                f"{plugins_dir / 'skills' / skill_name}."
+            )
+
+    # Create a temp dir and symlink only the matched skill into it
+    temp_root = Path(tempfile.mkdtemp(prefix="rf-forge-plugins-"))
+    target = temp_root / skill_name
+    target.symlink_to(skill_src.resolve())
+
+    return temp_root
+
+
 def run_skill(
     skill: SkillDef,
     args: dict[str, str],
     *,
-    model: str = "opus",
+    model: str = "claude-opus-4-7",
     provider: str | None = None,
     bedrock_region: str | None = None,
     effort: str = "high",
@@ -151,41 +198,50 @@ def run_skill(
     report_instructions = get_report_instructions(skill.name)
     prompt += f"\n\n{report_instructions}"
 
-    agent = ClaudeGenAgent(
-        allowed_tools=list(skill.tools),
-        system_prompt={"type": "preset", "preset": "claude_code"},
-        context_files=all_context_files,
-        plugins=[str(plugins_dir)],
-        permission_mode="bypassPermissions",
-        setting_sources=None,
-        title=f"RF Forge: {skill.name}",
-        model=model,
-        provider=provider,
-        bedrock_region=bedrock_region,
-        effort=effort,
-        max_turns=max_turns,
-        max_budget_usd=max_budget,
-        init_timeout_seconds=init_timeout,
-        cwd=cwd,
-        enable_jsonl_logging=enable_jsonl,
-        jsonl_log_path=jsonl_path,
-    )
+    # Filter plugins to ONLY the matched skill — saves ~125K tokens per run
+    # (loads ~25K instead of ~150K for all 15 skills). See
+    # _build_filtered_plugins_dir docstring for details.
+    filtered_plugins_dir = _build_filtered_plugins_dir(plugins_dir, skill.name)
 
-    mode = "raw-json" if raw_json else "pretty"
-    asyncio.run(agent.run(prompt, mode=mode))
-
-    # Print cost summary and return stats
-    if agent.result_message:
-        rm = agent.result_message
-        print(
-            f"\n--- RF Forge session complete ---\n"
-            f"Turns: {rm.num_turns}  "
-            f"Cost: ${rm.total_cost_usd:.4f}  "
-            f"Duration: {rm.duration_ms / 1000:.1f}s"
+    try:
+        agent = ClaudeGenAgent(
+            allowed_tools=list(skill.tools),
+            system_prompt={"type": "preset", "preset": "claude_code"},
+            context_files=all_context_files,
+            plugins=[str(filtered_plugins_dir)],
+            permission_mode="bypassPermissions",
+            setting_sources=None,
+            title=f"RF Forge: {skill.name}",
+            model=model,
+            provider=provider,
+            bedrock_region=bedrock_region,
+            effort=effort,
+            max_turns=max_turns,
+            max_budget_usd=max_budget,
+            init_timeout_seconds=init_timeout,
+            cwd=cwd,
+            enable_jsonl_logging=enable_jsonl,
+            jsonl_log_path=jsonl_path,
         )
-        return {
-            "num_turns": rm.num_turns,
-            "cost_usd": rm.total_cost_usd,
-            "duration_ms": rm.duration_ms,
-        }
-    return None
+
+        mode = "raw-json" if raw_json else "pretty"
+        asyncio.run(agent.run(prompt, mode=mode))
+
+        # Print cost summary and return stats
+        if agent.result_message:
+            rm = agent.result_message
+            print(
+                f"\n--- RF Forge session complete ---\n"
+                f"Turns: {rm.num_turns}  "
+                f"Cost: ${rm.total_cost_usd:.4f}  "
+                f"Duration: {rm.duration_ms / 1000:.1f}s"
+            )
+            return {
+                "num_turns": rm.num_turns,
+                "cost_usd": rm.total_cost_usd,
+                "duration_ms": rm.duration_ms,
+            }
+        return None
+    finally:
+        # Always clean up the temp filtered plugins directory
+        shutil.rmtree(filtered_plugins_dir, ignore_errors=True)
