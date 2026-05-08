@@ -265,7 +265,118 @@ RAW SQL — direct SQL when keywords don't fit
     Log    Count: ${count} | Max salary: ${max_salary} | Managers: ${results}    console=yes
 
 # ═══════════════════════════════════════════════════════════════
-# 9. CLEANUP
+# 9. SCHEMA & VERIFY (keyword-based) — Oracle
+# ═══════════════════════════════════════════════════════════════
+# These four tests use the higher-level keywords from
+# sql_table_operations.resource directly — Add Column, Modify Column,
+# Check If Table Exists, Drop Table If Exists — all working on Oracle.
+# ═══════════════════════════════════════════════════════════════
+
+KEYWORD — Add Column To Table on Oracle
+    [Documentation]    Demonstrates `Add Column To Table` adding a new column on Oracle.
+    [Tags]    connect_to_oracle_database_sample
+
+    Add Column To Table    ${TUTORIAL_TABLE}    DEPARTMENT    VARCHAR2(50)
+
+    # Confirm the column actually landed in the schema
+    ${col_count}=    Execute SQL Query And Get Count
+    ...    SELECT COUNT(*) FROM USER_TAB_COLUMNS WHERE TABLE_NAME = '${TUTORIAL_TABLE}' AND COLUMN_NAME = 'DEPARTMENT'
+    Should Be Equal As Integers    ${col_count}    1
+    ...    msg=Add Column To Table did not add DEPARTMENT
+
+KEYWORD — Modify Column on Oracle
+    [Documentation]    Demonstrates `Modify Column` widening a column on Oracle.
+    [Tags]    connect_to_oracle_database_sample
+
+    # Widen the column we added in the previous test
+    Modify Column    ${TUTORIAL_TABLE}    DEPARTMENT    VARCHAR2(200)
+
+    # Confirm the new length actually applied
+    ${new_length}=    Execute SQL Query And Get Single Value
+    ...    SELECT DATA_LENGTH FROM USER_TAB_COLUMNS WHERE TABLE_NAME = '${TUTORIAL_TABLE}' AND COLUMN_NAME = 'DEPARTMENT'
+    Should Be Equal As Integers    ${new_length}    200
+    ...    msg=Modify Column did not widen DEPARTMENT to VARCHAR2(200)
+
+KEYWORD — Check If Table Exists on Oracle
+    [Documentation]    Demonstrates `Check If Table Exists` returning TRUE for an
+    ...    existing table and FALSE for a missing one — without raising an exception.
+    [Tags]    connect_to_oracle_database_sample
+
+    # Existing table → TRUE
+    ${exists}=    Check If Table Exists    ${TUTORIAL_TABLE}
+    Should Be True    ${exists}
+    ...    msg=Check If Table Exists returned FALSE for an existing table
+
+    # Missing table → FALSE (no exception)
+    ${missing}=    Check If Table Exists    NONEXISTENT_TABLE_XYZ_999
+    Should Not Be True    ${missing}
+    ...    msg=Check If Table Exists returned TRUE for a missing table
+
+KEYWORD — Drop Table If Exists is idempotent on Oracle
+    [Documentation]    Demonstrates `Drop Table If Exists` is safe to call twice —
+    ...    the second call on a missing table does not fail.
+    [Tags]    connect_to_oracle_database_sample
+
+    # Create a throwaway table so we can drop it
+    Execute Sql String    CREATE TABLE TUTORIAL_TEMP_DROP (ID NUMBER)
+
+    # First drop — table exists, should succeed
+    Drop Table If Exists    TUTORIAL_TEMP_DROP
+
+    # Second drop — table is already gone; should NOT fail
+    Drop Table If Exists    TUTORIAL_TEMP_DROP
+
+    # Confirm it really is gone
+    ${still_exists}=    Execute SQL Query And Get Count
+    ...    SELECT COUNT(*) FROM USER_TABLES WHERE TABLE_NAME = 'TUTORIAL_TEMP_DROP'
+    Should Be Equal As Integers    ${still_exists}    0
+    ...    msg=TUTORIAL_TEMP_DROP still exists after Drop Table If Exists
+
+# ═══════════════════════════════════════════════════════════════
+# 10. EXPORT — Dump table / query results to CSV
+# ═══════════════════════════════════════════════════════════════
+# Demonstrates the two CSV-export keywords from sql_table_operations.resource:
+#  • Export Table To CSV          — full table to a file
+#  • Export Query Results To CSV  — custom SELECT to a file
+#
+# Output lands under test_data/actual_expected_data/actual_output/oracle/
+# (bind-mounted from the host, so files appear on your Mac immediately).
+# ═══════════════════════════════════════════════════════════════
+
+EXPORT — Table To CSV (full table)
+    [Documentation]    Exports the entire EMPLOYEES_TUTORIAL table to a CSV file.
+    ...    Headers are included by default. ORDER BY ensures deterministic output.
+    [Tags]    connect_to_oracle_database_sample
+
+    ${csv_path}=    Set Variable    ${CURDIR}/../../../test_data/actual_expected_data/actual_output/oracle/employees_full.csv
+
+    ${result}=    Export Table To CSV
+    ...    ${TUTORIAL_TABLE}
+    ...    ${csv_path}
+    ...    order_by=ID
+
+    File Should Exist    ${csv_path}
+    ${size}=    Get File Size    ${csv_path}
+    Should Be True    ${size} > 0    msg=Exported CSV is empty
+    ${row_count}=    Evaluate    $result.get('row_count', 0)
+    Should Be True    ${row_count} > 0    msg=Export reported zero rows
+
+EXPORT — Query Results To CSV (filtered)
+    [Documentation]    Runs a custom SELECT and writes only the matching rows to CSV.
+    ...    Column headers are passed explicitly so they match the SELECT projection.
+    [Tags]    connect_to_oracle_database_sample
+
+    ${csv_path}=    Set Variable    ${CURDIR}/../../../test_data/actual_expected_data/actual_output/oracle/high_earners.csv
+    ${query}=    Set Variable    SELECT NAME, ROLE, SALARY FROM ${TUTORIAL_TABLE} WHERE SALARY > 80000 ORDER BY SALARY DESC
+
+    Export Query Results To CSV    ${query}    ${csv_path}    NAME    ROLE    SALARY
+
+    File Should Exist    ${csv_path}
+    ${size}=    Get File Size    ${csv_path}
+    Should Be True    ${size} > 0    msg=Exported high-earners CSV is empty
+
+# ═══════════════════════════════════════════════════════════════
+# 11. CLEANUP
 # ═══════════════════════════════════════════════════════════════
 
 CLEANUP — Drop the tutorial table

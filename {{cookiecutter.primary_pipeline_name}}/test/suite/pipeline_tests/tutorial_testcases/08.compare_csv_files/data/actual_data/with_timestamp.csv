@@ -1,0 +1,6 @@
+id,name,role,salary,load_timestamp
+1,Alice,Engineer,80000,2026-05-08T10:00:00
+2,Bob,Analyst,65000,2026-05-08T10:00:00
+3,Carol,Manager,95000,2026-05-08T10:00:00
+4,Dave,Lead,110000,2026-05-08T10:00:00
+5,Eve,Director,150000,2026-05-08T10:00:00

@@ -21,7 +21,7 @@ Get S3 Client
     ...
     ...    Reads connection details from environment variables:
     ...    - S3_ENDPOINT: Optional endpoint URL. If set → connects to MinIO/custom S3.
-    ...      If empty or not set → connects to real AWS S3.
+    ...    If empty or not set → connects to real AWS S3.
     ...    - S3_ACCESS_KEY: AWS access key ID (or MinIO access key)
     ...    - S3_SECRET_KEY: AWS secret access key (or MinIO secret key)
     ...    - S3_REGION: AWS region (default: us-east-1)
@@ -51,11 +51,11 @@ Get S3 Client
     ${region}=    Get Environment Variable    S3_REGION    us-east-1
 
     IF    '${endpoint}' != '${EMPTY}'
-        Log    Connecting to S3-compatible endpoint: ${endpoint}    console=yes
+        Log    Connecting to S3-compatible endpoint: ${endpoint}
         ${s3_client}=    Evaluate
         ...    __import__('boto3').client('s3', endpoint_url='${endpoint}', aws_access_key_id='${access_key}', aws_secret_access_key='${secret_key}', region_name='${region}')
     ELSE
-        Log    Connecting to AWS S3 (region: ${region})    console=yes
+        Log    Connecting to AWS S3 (region: ${region})
         ${s3_client}=    Evaluate
         ...    __import__('boto3').client('s3', aws_access_key_id='${access_key}', aws_secret_access_key='${secret_key}', region_name='${region}')
     END
@@ -109,7 +109,7 @@ Download Single File From MinIO
         # Safely read file content (handles both text and binary)
         ${file_content}=    Get File Content Safely    ${local_path}
 
-        Log    📥 Downloaded ${object_key} from ${bucket_name} to ${local_path}
+        Log    📥 Downloaded ${object_key} from ${bucket_name} to ${local_path}    console=yes
 
         # Optionally remove file if not preserving
         IF    not ${preserve_file}
@@ -227,13 +227,126 @@ Validate MinIO Connection
 
         # Try to list buckets as a connectivity test
         ${result}=    Evaluate    $s3_client.list_buckets()
-        Log    ✅ MinIO connection validated successfully
+        Log    ✅ MinIO connection validated successfully    console=yes
         Log    📊 Available buckets: ${result}
 
         RETURN    ${TRUE}
     EXCEPT    AS    ${error}
         Log    ❌ MinIO connection failed: ${error}
         RETURN    ${FALSE}
+    END
+
+Create Bucket
+    [Documentation]    Creates an S3 / MinIO bucket. Idempotent by default —
+    ...    if the bucket already exists (and you own it), the keyword logs
+    ...    and returns ``${TRUE}`` without raising.
+    ...
+    ...    *Arguments:*
+    ...    - ``bucket_name``: Name of the bucket to create. Must be S3-compliant
+    ...    (lowercase, 3–63 chars, no underscores, no consecutive dots, etc.).
+    ...    - ``region``: Optional AWS region. Required for real AWS S3 outside
+    ...    ``us-east-1``. Ignored by MinIO. Default: ``${EMPTY}`` (no
+    ...    ``CreateBucketConfiguration`` is sent — fine for MinIO and
+    ...    us-east-1 AWS).
+    ...    - ``fail_if_exists``: If ``${TRUE}``, fail the test when the bucket
+    ...    already exists. Default ``${FALSE}`` (idempotent).
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success (created or already existed)
+    ...
+    ...    *Examples:*
+    ...    | # Idempotent create (recommended for tests) |
+    ...    | Create Bucket | tutorial-bucket |
+    ...    |
+    ...    | # Strict create — fail if it already exists |
+    ...    | Create Bucket | exclusive-bucket | fail_if_exists=${TRUE} |
+    ...    |
+    ...    | # AWS S3 in eu-west-1 |
+    ...    | Create Bucket | my-eu-bucket | region=eu-west-1 |
+    [Arguments]    ${bucket_name}    ${region}=${EMPTY}    ${fail_if_exists}=${FALSE}
+
+    Log    Creating bucket '${bucket_name}'...    console=yes
+    ${s3_client}=    Get S3 Client
+
+    TRY
+        IF    '${region}' == '${EMPTY}'
+            Evaluate    $s3_client.create_bucket(Bucket='${bucket_name}')
+        ELSE
+            ${cfg}=    Evaluate    {'LocationConstraint': '${region}'}
+            Evaluate    $s3_client.create_bucket(Bucket='${bucket_name}', CreateBucketConfiguration=$cfg)
+        END
+        Log    ✅ Bucket '${bucket_name}' created    console=yes
+        RETURN    ${TRUE}
+    EXCEPT    AS    ${error}
+        # Both error codes mean "already exists" — BucketAlreadyOwnedByYou (we own it)
+        # vs BucketAlreadyExists (someone else owns the global name on AWS).
+        ${already_exists}=    Evaluate
+        ...    'BucketAlreadyOwnedByYou' in '''${error}''' or 'BucketAlreadyExists' in '''${error}'''
+        IF    ${already_exists}
+            IF    ${fail_if_exists}
+                Fail    Bucket '${bucket_name}' already exists (fail_if_exists=TRUE): ${error}
+            END
+            Log    ℹ️ Bucket '${bucket_name}' already exists — skipping (idempotent).    console=yes
+            RETURN    ${TRUE}
+        END
+        Fail    Failed to create bucket '${bucket_name}': ${error}
+    END
+
+Delete Bucket
+    [Documentation]    Deletes an S3 / MinIO bucket. Idempotent by default —
+    ...    if the bucket is missing, the keyword logs and returns ``${TRUE}``
+    ...    without raising.
+    ...
+    ...    *Arguments:*
+    ...    - ``bucket_name``: Name of the bucket to delete.
+    ...    - ``force``: If ``${TRUE}``, empty the bucket first (delete every
+    ...    object) and then delete the bucket. Default ``${FALSE}`` — the
+    ...    keyword fails if the bucket is non-empty (S3 default behavior).
+    ...    - ``fail_if_missing``: If ``${TRUE}``, fail the test when the
+    ...    bucket does not exist. Default ``${FALSE}`` (idempotent).
+    ...
+    ...    *Returns:*
+    ...    - ``${TRUE}`` on success (deleted or already missing)
+    ...
+    ...    *Examples:*
+    ...    | # Idempotent delete — fails if non-empty |
+    ...    | Delete Bucket | tutorial-bucket |
+    ...    |
+    ...    | # Force-delete — empties the bucket first |
+    ...    | Delete Bucket | tutorial-bucket | force=${TRUE} |
+    ...    |
+    ...    | # Strict delete — fail if missing |
+    ...    | Delete Bucket | must-exist-bucket | fail_if_missing=${TRUE} |
+    [Arguments]    ${bucket_name}    ${force}=${FALSE}    ${fail_if_missing}=${FALSE}
+
+    Log    Deleting bucket '${bucket_name}' (force=${force})...    console=yes
+    ${s3_client}=    Get S3 Client
+
+    # If forced, empty the bucket first — Clean Bucket already handles the iteration.
+    # We wrap in Run Keyword And Ignore Error so a missing bucket here doesn't
+    # mask the more specific NoSuchBucket handling below.
+    IF    ${force}
+        Run Keyword And Ignore Error    Clean Bucket    ${bucket_name}
+    END
+
+    TRY
+        Evaluate    $s3_client.delete_bucket(Bucket='${bucket_name}')
+        Log    ✅ Bucket '${bucket_name}' deleted    console=yes
+        RETURN    ${TRUE}
+    EXCEPT    AS    ${error}
+        ${missing}=    Evaluate    'NoSuchBucket' in '''${error}''' or 'NotFound' in '''${error}'''
+        IF    ${missing}
+            IF    ${fail_if_missing}
+                Fail    Bucket '${bucket_name}' does not exist (fail_if_missing=TRUE): ${error}
+            END
+            Log    ℹ️ Bucket '${bucket_name}' does not exist — skipping (idempotent).    console=yes
+            RETURN    ${TRUE}
+        END
+        ${not_empty}=    Evaluate    'BucketNotEmpty' in '''${error}'''
+        IF    ${not_empty}
+            Fail    Bucket '${bucket_name}' is not empty. Pass force=${TRUE} to delete its contents first.
+        END
+        Fail    Failed to delete bucket '${bucket_name}': ${error}
     END
 
 Check Bucket Exists
@@ -278,7 +391,11 @@ List Objects In Bucket
             Append To List    ${objects}    ${key}
         END
 
-        Log    📋 Objects in bucket '${bucket_name}': ${objects}
+        ${count}=    Get Length    ${objects}
+        Log    📋 Objects in bucket '${bucket_name}' (${count} total):    console=yes
+        FOR    ${key}    IN    @{objects}
+            Log    ${SPACE}${SPACE}- ${key}    console=yes
+        END
         RETURN    ${objects}
     EXCEPT    AS    ${error}
         Log    ❌ Failed to list objects in bucket '${bucket_name}': ${error}
@@ -298,10 +415,10 @@ Check Object Exists
 
     TRY
         ${result}=    Evaluate    $s3_client.head_object(Bucket='${bucket_name}', Key='${object_key}')
-        Log    ✅ Object '${object_key}' exists in bucket '${bucket_name}'
+        Log    ✅ Object '${object_key}' exists in bucket '${bucket_name}'    console=yes
         RETURN    ${TRUE}
     EXCEPT
-        Log    ❌ Object '${object_key}' does not exist in bucket '${bucket_name}'
+        Log    ❌ Object '${object_key}' does not exist in bucket '${bucket_name}'    console=yes
         RETURN    ${FALSE}
     END
 
@@ -315,7 +432,7 @@ Wait Until New S3 Files Appear
     ...    - ``bucket_name``: S3 bucket to poll
     ...    - ``extension``: File extension to look for (e.g., ``.txt``)
     ...    - ``previous_count``: Number of files that existed BEFORE pipeline execution.
-    ...      The keyword waits until the count exceeds this number.
+    ...    The keyword waits until the count exceeds this number.
     ...    - ``timeout``: Max seconds to wait (default: 60)
     ...    - ``interval``: Seconds between polls (default: 5)
     ...
@@ -331,20 +448,25 @@ Wait Until New S3 Files Appear
     [Arguments]    ${bucket_name}    ${extension}    ${previous_count}    ${timeout}=60    ${interval}=5
 
     ${deadline}=    Evaluate    __import__('time').time() + ${timeout}
-    Log    Waiting for new '${extension}' files in bucket '${bucket_name}' (had ${previous_count} before execution)...    console=yes
+    Log
+    ...    Waiting for new '${extension}' files in bucket '${bucket_name}' (had ${previous_count} before execution)...
+    ...    console=yes
 
     WHILE    ${TRUE}
         ${now}=    Evaluate    __import__('time').time()
         IF    ${now} >= ${deadline}
             ${files}    ${current}=    Find Files In Bucket By Extension    ${bucket_name}    ${extension}
-            Fail    Timed out after ${timeout}s waiting for new '${extension}' files. Count before=${previous_count}, now=${current}. Files: ${files}
+            Fail
+            ...    Timed out after ${timeout}s waiting for new '${extension}' files. Count before=${previous_count}, now=${current}. Files: ${files}
         END
         ${files}    ${current}=    Find Files In Bucket By Extension    ${bucket_name}    ${extension}
         IF    ${current} > ${previous_count}
             Log    New files detected: count went from ${previous_count} to ${current} — proceeding.    console=yes
             RETURN    ${current}
         ELSE
-            Log    Still ${current} '${extension}' file(s) (need > ${previous_count}) — retrying in ${interval}s...    console=yes
+            Log
+            ...    Still ${current} '${extension}' file(s) (need > ${previous_count}) — retrying in ${interval}s...
+            ...    console=yes
             Sleep    ${interval}s
         END
     END
@@ -365,6 +487,7 @@ Download And Get File Content
     ...    | ${content}= | Download And Get File Content | test-bucket | ${DOWNLOAD_DIR} | extract/EXTRACT_20260416_000079.txt |
     [Arguments]    ${bucket_name}    ${download_dir}    ${object_key}
 
+    Log    📥 Downloaded file: ${object_key} (from bucket '${bucket_name}')    console=yes
     ${content}=    Download Single File From MinIO
     ...    ${download_dir}    ${bucket_name}    ${object_key}
     RETURN    ${content}
@@ -398,8 +521,8 @@ Get Current And Previous File Content From Bucket
     ...    - ``download_dir``: Local directory to save downloaded files
     ...    - ``extension``: File extension to filter (e.g., ``.txt``, ``.csv``)
     ...    - ``line_prefix``: Optional — if set, only lines starting with this prefix
-    ...      are returned (e.g., ``CD`` to extract only detail records, skipping
-    ...      headers/trailers with dynamic values). If empty, full content is returned.
+    ...    are returned (e.g., ``CD`` to extract only detail records, skipping
+    ...    headers/trailers with dynamic values). If empty, full content is returned.
     ...
     ...    *Returns:*
     ...    - ``${current_content}``: Content (or filtered lines) from the latest file
@@ -427,7 +550,8 @@ Get Current And Previous File Content From Bucket
     END
 
     IF    ${file_count} < 2
-        Fail    Only ${file_count} '${extension}' file(s) found in bucket '${bucket_name}'. Comparison requires at least 2 (current + previous). Run the pipeline a second time to generate a previous-run file.
+        Fail
+        ...    Only ${file_count} '${extension}' file(s) found in bucket '${bucket_name}'. Comparison requires at least 2 (current + previous). Run the pipeline a second time to generate a previous-run file.
     END
 
     ${current_file}=    Get From List    ${files}    0
@@ -458,8 +582,8 @@ Find Files In Bucket By Extension
     ...    - ``bucket_name``: S3 bucket to search in
     ...    - ``extension``: File extension to filter by (e.g., ``.txt``, ``.csv``, ``.html``)
     ...    - ``path_filters``: Optional list of path substrings to include. Only objects whose key
-    ...      contains at least one of these substrings are returned. Default: ``['extract/', 'output/']``.
-    ...      Pass an empty list to match ALL paths (no filtering).
+    ...    contains at least one of these substrings are returned. Default: ``['extract/', 'output/']``.
+    ...    Pass an empty list to match ALL paths (no filtering).
     ...
     ...    *Returns:*
     ...    - ``${files}``: List of matching object keys, sorted descending
@@ -497,7 +621,7 @@ Find Files In Bucket By Extension
                     ${contains}=    Evaluate    $prefix in $key
                     IF    ${contains}
                         Append To List    ${matching}    ${key}
-                        EXIT FOR LOOP
+                        BREAK
                     END
                 END
             END
@@ -522,11 +646,24 @@ Find Specific File In Bucket
     ...    - ``bucket_name``: S3 bucket to search in
     ...    - ``expected_filename``: The exact object key to look for (e.g., ``output/baseline/EXTRACT_20260410_000001.txt``)
     ...    - ``extension``: File extension to filter by (e.g., ``.txt``, ``.csv``)
+    ...    - ``path_filters``: Optional list of path substrings to include. Only objects whose key
+    ...    contains at least one of these substrings are scanned. Default: ``['extract/', 'output/']``.
+    ...    Pass an empty list to match ALL paths (no filtering).
     ...
-    ...    *Example:*
+    ...    *Examples:*
     ...    | ${found}    ${files}=    Find Specific File In Bucket    test-bucket    output/EXTRACT_20260410_000001.txt    .txt |
     ...    | Should Be True    ${found}    msg=Expected file not found. Found: ${files} |
-    [Arguments]    ${bucket_name}    ${expected_filename}    ${extension}
+    ...    |
+    ...    | # Custom path filter |
+    ...    | ${found}    ${files}=    Find Specific File In Bucket    test-bucket    tutorial/sample.txt    .txt    path_filters=['tutorial/'] |
+    [Arguments]    ${bucket_name}    ${expected_filename}    ${extension}    @{path_filters}
+
+    # Default path filters if none provided — keeps backward compatibility with callers
+    # that didn't pass path_filters (extract/output were hardcoded historically).
+    ${filter_count}=    Get Length    ${path_filters}
+    IF    ${filter_count} == 0
+        @{path_filters}=    Create List    extract/    output/
+    END
 
     ${all_objects}=    List Objects In Bucket    ${bucket_name}
     @{matching}=    Create List
@@ -534,8 +671,13 @@ Find Specific File In Bucket
     FOR    ${key}    IN    @{all_objects}
         ${ends_match}=    Evaluate    $key.endswith($extension)
         IF    ${ends_match}
-            ${is_extract}=    Evaluate    'extract/' in $key or 'output/' in $key
-            IF    ${is_extract}    Append To List    ${matching}    ${key}
+            FOR    ${prefix}    IN    @{path_filters}
+                ${contains}=    Evaluate    $prefix in $key
+                IF    ${contains}
+                    Append To List    ${matching}    ${key}
+                    BREAK
+                END
+            END
         END
     END
 
@@ -599,7 +741,12 @@ Get Object Metadata
 
     TRY
         ${metadata}=    Evaluate    $s3_client.head_object(Bucket='${bucket_name}', Key='${object_key}')
-        Log    📊 Metadata for '${object_key}': ${metadata}
+        # Console gets a short, scan-friendly digest. The full dict still appears in the HTML log.
+        ${size}=    Evaluate    $metadata.get('ContentLength', 0)
+        ${etag}=    Evaluate    $metadata.get('ETag', '')
+        ${ctype}=    Evaluate    $metadata.get('ContentType', '')
+        Log    📊 ${object_key} — size=${size} bytes, type=${ctype}, etag=${etag}    console=yes
+        Log    Full metadata: ${metadata}
         RETURN    ${metadata}
     EXCEPT    AS    ${error}
         Fail    Failed to get metadata for '${object_key}' in bucket '${bucket_name}': ${error}
@@ -630,8 +777,8 @@ Download All Files From Bucket
         Append To List    ${downloaded_files}    ${object_key}
     END
 
-    Log    ✅ Downloaded ${downloaded_files.__len__()} files from bucket '${bucket_name}'
-    Log    📋 Downloaded files: ${downloaded_files}
+    Log    ✅ Downloaded ${downloaded_files.__len__()} files from bucket '${bucket_name}'    console=yes
+    Log    📋 Downloaded files: ${downloaded_files}    console=yes
 
     RETURN    ${downloaded_files}
 
@@ -667,8 +814,8 @@ Download Files By Pattern
         Append To List    ${downloaded_files}    ${object_key}
     END
 
-    Log    ✅ Downloaded ${downloaded_files.__len__()} files matching pattern '${pattern}'
-    Log    📋 Downloaded files: ${downloaded_files}
+    Log    ✅ Downloaded ${downloaded_files.__len__()} files matching pattern '${pattern}'    console=yes
+    Log    📋 Downloaded files: ${downloaded_files}    console=yes
 
     RETURN    ${downloaded_files}
 
@@ -703,12 +850,16 @@ Clean Bucket
     Log    Deleted ${count} objects from bucket '${bucket_name}'.    console=yes
 
 Clean Bucket By Prefix
-    [Documentation]    Deletes all objects in a bucket that match a path prefix.
-    ...    Use this to clean a specific folder without affecting other files.
+    [Documentation]    Deletes all objects in a bucket whose key starts with the given
+    ...    folder/prefix. Use this to clean a specific folder without affecting other files.
+    ...
+    ...    Note: S3 has no real folders — keys are flat strings. A "folder" here means any
+    ...    object key that starts with ``prefix`` (e.g., ``tutorial/`` matches ``tutorial/sample.txt``,
+    ...    ``tutorial/data/sample.csv``, etc.).
     ...
     ...    *Arguments:*
     ...    - ``bucket_name``: Name of the bucket
-    ...    - ``prefix``: Path prefix to match (e.g., 'extract/', 'output/baseline/')
+    ...    - ``prefix``: Folder/path prefix to match (e.g., 'extract/', 'output/baseline/')
     ...
     ...    *Example:*
     ...    | Clean Bucket By Prefix | test-bucket | extract/ |

@@ -189,6 +189,10 @@ Disconnect from Database
         Log    No active database connection to close    console=yes
     END
 
+    # Invalidate cached database type so the next connection re-probes its dialect.
+    # See Get Database Type in sql_table_operations.resource.
+    Set Suite Variable    ${DB_TYPE}    ${NONE}
+
 ################## CONNECTION TESTING AND VALIDATION ##################
 
 Test Database Connection

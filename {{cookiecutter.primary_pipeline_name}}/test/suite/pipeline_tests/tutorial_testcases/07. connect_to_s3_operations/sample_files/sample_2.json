@@ -1,0 +1,8 @@
+{
+  "report_id": "Q1-2026",
+  "totals": {
+    "orders": 4,
+    "revenue": 4493.55
+  },
+  "top_products": ["Laptop", "Monitor", "Keyboard"]
+}

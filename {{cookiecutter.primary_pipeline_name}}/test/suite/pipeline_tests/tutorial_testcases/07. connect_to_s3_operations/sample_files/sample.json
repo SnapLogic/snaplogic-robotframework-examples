@@ -1,0 +1,8 @@
+{
+  "kind": "tutorial",
+  "items": [
+    {"id": 1, "name": "Alice", "role": "Engineer"},
+    {"id": 2, "name": "Bob",   "role": "Analyst"},
+    {"id": 3, "name": "Carol", "role": "Manager"}
+  ]
+}

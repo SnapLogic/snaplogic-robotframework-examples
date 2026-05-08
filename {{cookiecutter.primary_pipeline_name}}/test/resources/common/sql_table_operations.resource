@@ -204,10 +204,21 @@ Drop Table If Exists
 
     Log    Dropping table if exists: ${table_name}    console=yes
 
-    ${cascade_clause}=    Set Variable If    ${cascade}    CASCADE    ${EMPTY}
-    ${sql}=    Set Variable    DROP TABLE IF EXISTS ${table_name} ${cascade_clause}
-
-    Execute SQL String Safe    ${sql}
+    # Oracle does not support DROP TABLE IF EXISTS — issue plain DROP and only
+    # suppress ORA-00942 (table not found). Other engines support IF EXISTS.
+    ${db_type}=    Get Database Type
+    IF    '${db_type}' == 'ORACLE'
+        ${cascade_clause}=    Set Variable If    ${cascade}    CASCADE CONSTRAINTS    ${EMPTY}
+        ${status}    ${err}=    Run Keyword And Ignore Error
+        ...    Execute Sql String    DROP TABLE ${table_name} ${cascade_clause}
+        IF    '${status}' == 'FAIL' and 'ORA-00942' not in '''${err}'''
+            Fail    ${err}
+        END
+    ELSE
+        ${cascade_clause}=    Set Variable If    ${cascade}    CASCADE    ${EMPTY}
+        ${sql}=    Set Variable    DROP TABLE IF EXISTS ${table_name} ${cascade_clause}
+        Execute SQL String Safe    ${sql}
+    END
     Log    Table '${table_name}' dropped successfully    console=yes
 
 Truncate Table
@@ -1018,7 +1029,15 @@ Add Column To Table
     ...    | Add Column To Table | employees | department | VARCHAR(50) DEFAULT 'General' |
     [Arguments]    ${table_name}    ${column_name}    ${column_definition}
 
-    ${alter_sql}=    Set Variable    ALTER TABLE ${table_name} ADD COLUMN ${column_name} ${column_definition}
+    # ALTER TABLE ADD syntax differs by engine:
+    #   Oracle / SQL Server : ALTER TABLE t ADD col TYPE        (no COLUMN keyword)
+    #   MySQL / PostgreSQL / Snowflake / Redshift : ALTER TABLE t ADD COLUMN col TYPE
+    ${db_type}=    Get Database Type
+    IF    '${db_type}' == 'ORACLE' or '${db_type}' == 'SQLSERVER'
+        ${alter_sql}=    Set Variable    ALTER TABLE ${table_name} ADD ${column_name} ${column_definition}
+    ELSE
+        ${alter_sql}=    Set Variable    ALTER TABLE ${table_name} ADD COLUMN ${column_name} ${column_definition}
+    END
     Execute Sql String    ${alter_sql}
     Log    Column ${column_name} added to ${table_name}    console=yes
     RETURN    ${TRUE}
@@ -1062,7 +1081,23 @@ Modify Column
     ...    | Modify Column | employees | salary | DECIMAL(12,2) |
     [Arguments]    ${table_name}    ${column_name}    ${new_definition}
 
-    ${alter_sql}=    Set Variable    ALTER TABLE ${table_name} ALTER COLUMN ${column_name} ${new_definition}
+    # MODIFY COLUMN syntax varies by engine:
+    #   Oracle      : ALTER TABLE t MODIFY (col TYPE)
+    #   MySQL       : ALTER TABLE t MODIFY COLUMN col TYPE
+    #   SQL Server  : ALTER TABLE t ALTER COLUMN col TYPE          (no TYPE keyword)
+    #   PostgreSQL  : ALTER TABLE t ALTER COLUMN col TYPE newtype  (literal TYPE keyword!)
+    # NOTE: PostgreSQL/SQL Server may reject inline NOT NULL/DEFAULT in ${new_definition} —
+    # use a separate ALTER for constraints if needed.
+    ${db_type}=    Get Database Type
+    IF    '${db_type}' == 'ORACLE'
+        ${alter_sql}=    Set Variable    ALTER TABLE ${table_name} MODIFY (${column_name} ${new_definition})
+    ELSE IF    '${db_type}' == 'MYSQL'
+        ${alter_sql}=    Set Variable    ALTER TABLE ${table_name} MODIFY COLUMN ${column_name} ${new_definition}
+    ELSE IF    '${db_type}' == 'POSTGRESQL'
+        ${alter_sql}=    Set Variable    ALTER TABLE ${table_name} ALTER COLUMN ${column_name} TYPE ${new_definition}
+    ELSE
+        ${alter_sql}=    Set Variable    ALTER TABLE ${table_name} ALTER COLUMN ${column_name} ${new_definition}
+    END
     Execute Sql String    ${alter_sql}
     Log    Column ${column_name} modified in ${table_name}    console=yes
     RETURN    ${TRUE}
@@ -1119,6 +1154,22 @@ Get Table Columns
     END
 
     Log    Looking for columns in table: ${table}, schema: ${schema}
+
+    # Oracle has no INFORMATION_SCHEMA — query USER_TAB_COLUMNS directly and return early.
+    # Identifiers are folded to UPPERCASE unless quoted at CREATE time.
+    ${db_type}=    Get Database Type
+    IF    '${db_type}' == 'ORACLE'
+        ${upper_table}=    Convert To Upper Case    ${table}
+        @{oracle_rows}=    Query
+        ...    SELECT COLUMN_NAME FROM USER_TAB_COLUMNS WHERE TABLE_NAME='${upper_table}' ORDER BY COLUMN_ID
+        @{oracle_columns}=    Create List
+        FOR    ${row}    IN    @{oracle_rows}
+            ${col}=    Get From List    ${row}    0
+            Append To List    ${oracle_columns}    ${col}
+        END
+        Log    Found Oracle columns: ${oracle_columns}
+        RETURN    ${oracle_columns}
+    END
 
     ${columns}=    Create List
 
@@ -1236,8 +1287,23 @@ Check If Table Exists
     ...    ``Table Should Exist``, ``Table Should Not Exist``
     [Arguments]    ${table_name}    ${schema}=public
 
-    ${query}=    Set Variable
-    ...    SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='${schema}' AND table_name='${table_name}'
+    # Oracle has no INFORMATION_SCHEMA — query USER_TABLES (current user) when schema is the
+    # default 'public', otherwise ALL_TABLES. Oracle stores unquoted identifiers UPPERCASE.
+    ${db_type}=    Get Database Type
+    IF    '${db_type}' == 'ORACLE'
+        ${tbl_upper}=    Convert To Upper Case    ${table_name}
+        IF    '${schema}' == 'public'
+            ${query}=    Set Variable
+            ...    SELECT COUNT(*) FROM USER_TABLES WHERE TABLE_NAME='${tbl_upper}'
+        ELSE
+            ${schema_upper}=    Convert To Upper Case    ${schema}
+            ${query}=    Set Variable
+            ...    SELECT COUNT(*) FROM ALL_TABLES WHERE OWNER='${schema_upper}' AND TABLE_NAME='${tbl_upper}'
+        END
+    ELSE
+        ${query}=    Set Variable
+        ...    SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='${schema}' AND table_name='${table_name}'
+    END
 
     ${count}=    Execute SQL Query And Get Count    ${query}
     ${exists}=    Evaluate    ${count} > 0
@@ -1426,8 +1492,15 @@ Create View
     ...    | Create View | active_employees | SELECT * FROM employees WHERE status = 'active' |
     [Arguments]    ${view_name}    ${select_query}    ${replace}=${TRUE}
 
+    # SQL Server does NOT support CREATE OR REPLACE VIEW — uses CREATE OR ALTER (2016+).
+    # Oracle / PostgreSQL / MySQL / Snowflake / Redshift all support CREATE OR REPLACE VIEW.
+    ${db_type}=    Get Database Type
     IF    ${replace}
-        ${create_sql}=    Set Variable    CREATE OR REPLACE VIEW ${view_name} AS ${select_query}
+        IF    '${db_type}' == 'SQLSERVER'
+            ${create_sql}=    Set Variable    CREATE OR ALTER VIEW ${view_name} AS ${select_query}
+        ELSE
+            ${create_sql}=    Set Variable    CREATE OR REPLACE VIEW ${view_name} AS ${select_query}
+        END
     ELSE
         ${create_sql}=    Set Variable    CREATE VIEW ${view_name} AS ${select_query}
     END

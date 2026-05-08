@@ -173,3 +173,11 @@ Delete Asset
     ELSE
         Fail    ❌ Unsupported asset type: ${asset_type}
     END
+
+Section
+    [Documentation]    Prints a labelled banner to the console — used in the
+    ...    end-to-end test to mark transitions between groups of operations.
+    [Arguments]    ${title}
+    Log    ${EMPTY}    console=yes
+    Log    \n========== ${title} ==========    console=yes
+    # Log    ════════ ▶ ${title} ════════\n    console=yes

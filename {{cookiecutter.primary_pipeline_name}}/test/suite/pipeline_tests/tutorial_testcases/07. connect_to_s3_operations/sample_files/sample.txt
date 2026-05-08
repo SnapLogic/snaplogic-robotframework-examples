@@ -1,0 +1,4 @@
+Hello from the s3 tutorial sample.
+This text file is uploaded to MinIO as tutorial/sample.txt.
+The marker phrase "s3 tutorial sample" is checked by the
+Download And Get File Content test.
