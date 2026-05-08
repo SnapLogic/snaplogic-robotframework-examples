@@ -27,8 +27,8 @@
 Documentation       Tutorial — common S3/MinIO operations using minio.resource
 
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource
-Resource            ../../../../resources/common/general.resource
-Resource            ../../../../resources/minio/minio.resource
+Resource            ../../../../../resources/common/general.resource
+Resource            ../../../../../resources/minio/minio.resource
 
 Suite Setup         Initialize Tutorial
 # Suite Teardown    Cleanup Tutorial
@@ -54,13 +54,13 @@ ${OBJECT_KEY_4}             ${PREFIX}data/sample_2.csv
 ${OBJECT_KEY_5}             ${PREFIX}data/sample_2.json
 
 # Local download directory — used by all download tests.
-# ${CURDIR} = the folder this .robot file lives in. From there, three "../" jumps
+# ${CURDIR} = the folder this .robot file lives in. From there, four "../" jumps
 # back to test/suite, then into test_data/actual_expected_data/actual_output:
 #    <repo>/test/suite/test_data/actual_expected_data/actual_output/
 # This folder is bind-mounted into the tools container, so downloaded files appear
 # on your Mac at the path above immediately.
 # An object with S3 key 'tutorial/sample.txt' lands at .../actual_output/tutorial/sample.txt.
-${DOWNLOAD_DIR}             ${CURDIR}/../../../test_data/actual_expected_data/actual_output
+${DOWNLOAD_DIR}             ${CURDIR}/../../../../test_data/actual_expected_data/actual_output
 
 
 *** Test Cases ***

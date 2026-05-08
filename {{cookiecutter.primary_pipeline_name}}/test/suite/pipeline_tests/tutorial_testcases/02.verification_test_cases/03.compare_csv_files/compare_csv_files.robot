@@ -18,8 +18,8 @@
 Documentation       Tutorial — common CSV-comparison operations using csv_validations.resource
 
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource
-Resource            ../../../../resources/common/general.resource
-Resource            ../../../../resources/common/csv_validations.resource
+Resource            ../../../../../resources/common/general.resource
+Resource            ../../../../../resources/common/csv_validations.resource
 
 
 *** Variables ***
@@ -50,6 +50,12 @@ ${EXPECTED_EXTRA_ROW}        ${EXPECTED_DIR}/extra_row.csv
 # Pair 6 — actual missing salary column, expected has it (column count test)
 ${ACTUAL_MISSING_COLUMN}     ${ACTUAL_DIR}/missing_column.csv
 ${EXPECTED_MISSING_COLUMN}   ${EXPECTED_DIR}/missing_column.csv
+
+# Pair 7 — Snowflake-style CSV with JSON records inside cells. Actual has
+# count=999 in first row; expected has count=100. Used to demo comparing
+# CSVs that hold embedded JSON (RECORD_METADATA / RECORD_CONTENT columns).
+${ACTUAL_JSON_RECORDS}       ${ACTUAL_DIR}/json_records.csv
+${EXPECTED_JSON_RECORDS}     ${EXPECTED_DIR}/json_records.csv
 
 
 *** Test Cases ***
@@ -199,6 +205,23 @@ COMPARE — Different column counts
     Compare CSV Files Template
     ...    ${ACTUAL_MISSING_COLUMN}
     ...    ${EXPECTED_MISSING_COLUMN}
+    ...    ${FALSE}
+    ...    ${TRUE}
+    ...    DIFFERENT
+
+# ═══════════════════════════════════════════════════════════════
+# 11. COMPARE — CSV with embedded JSON records (Snowflake-style)
+# ═══════════════════════════════════════════════════════════════
+
+COMPARE — CSV with embedded JSON records
+    [Documentation]    Snowflake-style export — RECORD_METADATA and RECORD_CONTENT
+    ...    columns hold JSON objects as quoted strings. The two files differ in
+    ...    the first row's "count" field (999 vs 100) → status=DIFFERENT.
+    [Tags]    compare_csv_sample
+
+    Compare CSV Files Template
+    ...    ${ACTUAL_JSON_RECORDS}
+    ...    ${EXPECTED_JSON_RECORDS}
     ...    ${FALSE}
     ...    ${TRUE}
     ...    DIFFERENT

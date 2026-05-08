@@ -15,8 +15,8 @@
 Documentation       Tutorial — common Postgres SQL operations using sql_table_operations.resource
 
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource
-Resource            ../../../../resources/common/general.resource
-Resource            ../../../../resources/common/sql_table_operations.resource
+Resource            ../../../../../resources/common/general.resource
+Resource            ../../../../../resources/common/sql_table_operations.resource
 
 Suite Setup         Initialize Variables
 

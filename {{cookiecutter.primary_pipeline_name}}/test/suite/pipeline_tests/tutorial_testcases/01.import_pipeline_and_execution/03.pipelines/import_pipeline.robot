@@ -4,7 +4,7 @@ Documentation       Baseline Test Suite — Baseline Data Extract Pipeline
 # Standard Libraries
 Library             OperatingSystem
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource
-Resource            ../../../../resources/common/general.resource
+Resource            ../../../../../resources/common/general.resource
 
 Suite Setup         Initialize Variables    # Generates ${unique_id} once for the whole suite
 

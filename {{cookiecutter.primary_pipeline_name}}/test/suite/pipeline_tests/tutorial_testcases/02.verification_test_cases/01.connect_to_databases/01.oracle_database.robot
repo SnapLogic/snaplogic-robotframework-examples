@@ -23,9 +23,9 @@
 Documentation       Tutorial — common Oracle SQL operations using sql_table_operations.resource
 
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource
-Resource            ../../../../resources/common/general.resource
-Resource            ../../../../resources/common/sql_table_operations.resource
-Resource            ../../../test_data/queries/oracle2_queries.resource
+Resource            ../../../../../resources/common/general.resource
+Resource            ../../../../../resources/common/sql_table_operations.resource
+Resource            ../../../../test_data/queries/oracle2_queries.resource
 
 Suite Setup         Initialize Variables
 
@@ -348,7 +348,7 @@ EXPORT — Table To CSV (full table)
     ...    Headers are included by default. ORDER BY ensures deterministic output.
     [Tags]    connect_to_oracle_database_sample
 
-    ${csv_path}=    Set Variable    ${CURDIR}/../../../test_data/actual_expected_data/actual_output/oracle/employees_full.csv
+    ${csv_path}=    Set Variable    ${CURDIR}/../../../../test_data/actual_expected_data/actual_output/oracle/employees_full.csv
 
     ${result}=    Export Table To CSV
     ...    ${TUTORIAL_TABLE}
@@ -366,7 +366,7 @@ EXPORT — Query Results To CSV (filtered)
     ...    Column headers are passed explicitly so they match the SELECT projection.
     [Tags]    connect_to_oracle_database_sample
 
-    ${csv_path}=    Set Variable    ${CURDIR}/../../../test_data/actual_expected_data/actual_output/oracle/high_earners.csv
+    ${csv_path}=    Set Variable    ${CURDIR}/../../../../test_data/actual_expected_data/actual_output/oracle/high_earners.csv
     ${query}=    Set Variable    SELECT NAME, ROLE, SALARY FROM ${TUTORIAL_TABLE} WHERE SALARY > 80000 ORDER BY SALARY DESC
 
     Export Query Results To CSV    ${query}    ${csv_path}    NAME    ROLE    SALARY

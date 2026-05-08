@@ -17,7 +17,7 @@ Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_key
 
 *** Variables ***
 # Project Configuration
-${upload_source_file_path}      ${CURDIR}/../../../test_data/actual_expected_data/expression_libraries
+${upload_source_file_path}      ${CURDIR}/../../../../test_data/actual_expected_data/expression_libraries
 
 
 *** Test Cases ***
@@ -47,7 +47,7 @@ Upload Files
     [Template]    Upload Files To SnapLogic From Template
 
     # ┌─ source_dir (local) ──────────────────────────────────┬─---------------─┬─-file_name ────┬─ destination_path ─────────┐
-    ${CURDIR}/../../../test_data/actual_expected_data/expression_libraries    test.expr    ${ACCOUNT_LOCATION_PATH}
+    ${CURDIR}/../../../../test_data/actual_expected_data/expression_libraries    test.expr    ${ACCOUNT_LOCATION_PATH}
 
     # Wildcard: upload every .expr file in the directory
     ${upload_source_file_path}    *.expr    ${ACCOUNT_LOCATION_PATH}

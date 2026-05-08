@@ -4,7 +4,7 @@ Documentation       Baseline Test Suite — Baseline Data Extract Pipeline
 # Standard Libraries
 Library             OperatingSystem
 Resource            snaplogic_common_robot/snaplogic_apis_keywords/snaplogic_keywords.resource
-Resource            ../../../../resources/common/general.resource
+Resource            ../../../../../resources/common/general.resource
 
 Suite Setup         Initialize Variables    # Generates ${unique_id} once for the whole suite
 
@@ -47,7 +47,7 @@ Create Triggered Task For Pipeline
     [Documentation]    Creates a triggered task for the    pipeline
     [Tags]    execute_triggered_task_sample
     [Template]    Create Triggered Task From Template
-    ${unique_id}_2    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task1}    Cloud    ${task_params_set}    ${task_notifications}    ${task_timeout}
+    ${unique_id}    ${PIPELINES_LOCATION_PATH}    ${pipeline_name}    ${task1}    Cloud    ${task_params_set}    ${task_notifications}    ${task_timeout}
 
 Execute Triggered Task With Parameters
     [Documentation]    Executes the triggered task for the    pipeline.
