@@ -38,6 +38,7 @@ include makefiles/common_services/Makefile.testing
 include makefiles/common_services/Makefile.groundplex
 include makefiles/common_services/Makefile.docker
 include makefiles/common_services/Makefile.quality
+include makefiles/common_services/Makefile.jupyter
 
 # -----------------------------------------------------------------------------
 # Include all database-specific Makefiles

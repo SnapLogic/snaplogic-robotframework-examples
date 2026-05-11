@@ -1,5 +1,13 @@
 # S3 / MinIO Operations Tutorial
 
+> 📓 **Want to run this interactively?**
+> 1. Start Jupyter: `make jupyter-start`
+> 2. Open the notebook in one click: [s3_connection_operations.ipynb](http://localhost:8888/lab/tree/test/suite/pipeline_tests/tutorial_testcases/02.verification_test_cases/02.%20connect_to_s3_operations/s3_connection_operations.ipynb)
+>
+> The link only works while Jupyter is running. If it doesn't open, try `http://localhost:8888/lab` and navigate to the file manually.
+
+> 🔍 **Notebook vs Robot tests** — what's the difference? See [robot_vs_notebook.md](./robot_vs_notebook.md).
+
 A walk-through of every commonly-used S3 keyword in `test/resources/minio/minio.resource`, demonstrated by the companion file [`s3_connection_operations.robot`](./s3_connection_operations.robot).
 
 ---

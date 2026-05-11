@@ -10,6 +10,7 @@ include:
   - docker/salesforce/docker-compose.salesforce-django.yml
   - docker/kafka/docker-compose.kafka.yml
   - docker/email/docker-compose.email-mock.yml
+  - docker/jupyter/docker-compose.jupyter.yml
 
 services:
   tools:

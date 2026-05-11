@@ -1,0 +1,50 @@
+# =============================================================================
+# JupyterLab Notebook Management
+# =============================================================================
+# Runs JupyterLab in its own sibling container (snaplogic-jupyter), built on
+# top of the tools image so Jupyter has access to boto3, oracledb,
+# DatabaseLibrary, and every other project Python dep.
+# =============================================================================
+
+.PHONY: jupyter-start jupyter-stop jupyter-logs jupyter-status jupyter-shell
+
+# Include common configuration
+include makefiles/common_services/Makefile.common
+
+# =============================================================================
+# 📓 Jupyter Configuration
+# =============================================================================
+JUPYTER_SERVICE_NAME   := jupyter
+JUPYTER_CONTAINER_NAME := snaplogic-jupyter
+JUPYTER_PROFILE        := jupyter-dev
+JUPYTER_PORT           := 8888
+
+# =============================================================================
+# 🚀 Jupyter Commands
+# =============================================================================
+
+# Start JupyterLab (builds the image on first run, fast on subsequent runs)
+jupyter-start:
+	@echo "📓 Starting JupyterLab..."
+	$(DOCKER_COMPOSE) --profile $(JUPYTER_PROFILE) up -d $(JUPYTER_SERVICE_NAME)
+	@echo "✅ JupyterLab started"
+	@echo "🌐 Open: http://localhost:$(JUPYTER_PORT)/lab"
+
+# Stop JupyterLab
+jupyter-stop:
+	@echo "🛑 Stopping JupyterLab..."
+	$(DOCKER_COMPOSE) stop $(JUPYTER_SERVICE_NAME)
+	@echo "✅ JupyterLab stopped"
+
+# Tail JupyterLab logs (Ctrl+C to exit)
+jupyter-logs:
+	docker logs -f $(JUPYTER_CONTAINER_NAME)
+
+# Status — show container state and ports
+jupyter-status:
+	@docker ps --filter name=$(JUPYTER_CONTAINER_NAME) \
+	    --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+# Drop into a shell inside the JupyterLab container
+jupyter-shell:
+	docker exec -it $(JUPYTER_CONTAINER_NAME) /bin/bash

@@ -19,3 +19,10 @@ cryptography>=3.0.0  # Required for Snowflake key pair authentication
 minio  # MinIO/S3 client
 kafka-python>=2.0.2  # Kafka client
 stomp-py>=8.0.0  # STOMP protocol client (ActiveMQ, Artemis, RabbitMQ)
+
+# Interactive notebook environment (started via `make jupyter-start`)
+# Adds ~150 MB to the tools image. Remove this line + run `make clean-start-tools`
+# to drop Jupyter from the image entirely.
+jupyterlab>=4.0.0
+ipykernel
+notebook
