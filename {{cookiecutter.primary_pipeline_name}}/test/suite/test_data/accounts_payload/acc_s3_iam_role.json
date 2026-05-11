@@ -1,0 +1,49 @@
+{
+    "path": "{{ACCOUNT_LOCATION_PATH}}",
+    "duplicate_check": true,
+    "account": {
+        "class_fqid": "com-snaplogic-snaps-binary-binarys3account_2-443patches34711",
+        "property_map": {
+            "view_serial": 100,
+            "settings": {
+                "encryptType": {
+                    "value": "None"
+                },
+                "kmsRegion": {
+                    "value": "{{S3_REGION}}"
+                },
+                "serverSideEncryption": {
+                    "value": false
+                },
+                "iamRole": {
+                    "value": true
+                },
+                "crossAccountIAM": {
+                    "value": {
+                        "arn": {
+                            "value": null,
+                            "expression": false
+                        },
+                        "externalID": {
+                            "expression": false
+                        },
+                        "iamMaxSessionDuration": {
+                            "value": false
+                        }
+                    }
+                }
+            },
+            "info": {
+                "label": {
+                    "value": "{{S3_ACCOUNT_NAME}}"
+                },
+                "notes": {
+                    "value": null
+                }
+            }
+        },
+        "test_settings": {
+            "runtime_path_id": "{{SNAPLOGIC_RUNTIME_PATH}}"
+        }
+    }
+}
