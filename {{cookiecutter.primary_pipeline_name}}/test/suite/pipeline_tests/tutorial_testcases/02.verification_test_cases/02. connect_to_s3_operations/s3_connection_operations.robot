@@ -73,6 +73,7 @@ Create Account
     [Tags]    connect_to_s3_sample
     [Template]    Create Account From Template
     ${ACCOUNT_LOCATION_PATH}    ${S3_ACCOUNT_PAYLOAD_FILE_NAME}    ${S3_ACCOUNT_NAME}
+    ${ACCOUNT_LOCATION_PATH}    ${S3_IAM_ACCOUNT_PAYLOAD_FILE_NAME}    ${S3_IAM_ACCOUNT_NAME}
 
 # ═══════════════════════════════════════════════════════════════
 # 2. CONNECTION

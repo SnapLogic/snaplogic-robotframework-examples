@@ -43,7 +43,7 @@
             }
         },
         "test_settings": {
-            "runtime_path_id": "{{SNAPLOGIC_RUNTIME_PATH}}"
+            "runtime_path_id": "{{ORG_NAME}}/rt/sidekick/{{GROUNDPLEX_ENV}}"
         }
     }
 }
