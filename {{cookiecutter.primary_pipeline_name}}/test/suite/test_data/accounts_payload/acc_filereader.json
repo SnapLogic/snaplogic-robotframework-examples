@@ -1,0 +1,31 @@
+{
+    "path": "{{ACCOUNT_LOCATION_PATH}}",
+    "duplicate_check": false,
+    "account": {
+        "class_fqid": "com-snaplogic-snaps-binary-binarybasicauthaccount_1-443patches34711",
+        "property_map": {
+            "view_serial": 100,
+            "info": {
+                "label": {
+                    "value": "{{FILEREADER_ACCOUNT_NAME}}"
+                },
+                "notes": {
+                    "value": null
+                }
+            },
+            "settings": {
+                "username": {
+                    "value": "{{FILEREADER_USERNAME}}",
+                    "expression": false
+                },
+                "password": {
+                    "expression": false,
+                    "value": "{{FILEREADER_PASSWORD}}"
+                }
+            }
+        },
+        "test_settings": {
+            "runtime_path_id": "ml-legacy-migration/rt/cloud/dev"
+        }
+    }
+}

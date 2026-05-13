@@ -1,0 +1,22 @@
+[
+  {
+    "bucket": "bucketsnowflake",
+    "objectKey": "files/loading.csv",
+    "path": "s3:///bucketsnowflake/files/loading.csv",
+    "size": 20,
+    "lastModified": "2016-07-19T12:56:26.000Z",
+    "x-amz-storage-class": "Standard",
+    "ownerDisplayName": null,
+    "ownerID": "f9e3de6b2cacbed7302905525582eda22a226ff6e37ddeba10064f264848ea20"
+  },
+  {
+    "bucket": "bucketsnowflake",
+    "objectKey": "files/test_1214_12_0_0_0.json.gz",
+    "path": "s3:///bucketsnowflake/files/test_1214_12_0_0_0.json.gz",
+    "size": 68,
+    "lastModified": "2016-10-07T22:56:49.000Z",
+    "x-amz-storage-class": "Standard",
+    "ownerDisplayName": null,
+    "ownerID": "f9e3de6b2cacbed7302905525582eda22a226ff6e37ddeba10064f264848ea20"
+  }
+]
