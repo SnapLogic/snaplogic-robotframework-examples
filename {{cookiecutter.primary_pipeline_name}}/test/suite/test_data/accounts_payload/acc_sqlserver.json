@@ -66,38 +66,7 @@
                             "expression": false
                         },
                         "urlProperties": {
-                            "value": [
-                                {
-                                    "urlPropertyName": {
-                                        "value": "selectMethod",
-                                        "expression": false
-                                    },
-                                    "urlPropertyValue": {
-                                        "value": "cursor",
-                                        "expression": false
-                                    }
-                                },
-                                {
-                                    "urlPropertyName": {
-                                        "value": "encrypt",
-                                        "expression": false
-                                    },
-                                    "urlPropertyValue": {
-                                        "value": "true",
-                                        "expression": false
-                                    }
-                                },
-                                {
-                                    "urlPropertyName": {
-                                        "value": "trustServerCertificate",
-                                        "expression": false
-                                    },
-                                    "urlPropertyValue": {
-                                        "value": "true",
-                                        "expression": false
-                                    }
-                                }
-                            ]
+                            "value": {{ SQLSERVER_URL_PROPERTIES | default('[]', true) }}
                         },
                         "idleConnectionTestPeriod": {
                             "value": 5,

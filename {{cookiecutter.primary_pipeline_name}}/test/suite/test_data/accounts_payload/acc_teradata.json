@@ -72,28 +72,7 @@
                             "expression": false
                         },
                         "urlProperties": {
-                            "value": [
-                                {
-                                    "urlPropertyName": {
-                                        "value": "CHARSET",
-                                        "expression": false
-                                    },
-                                    "urlPropertyValue": {
-                                        "value": "UTF8",
-                                        "expression": false
-                                    }
-                                },
-                                {
-                                    "urlPropertyName": {
-                                        "value": "TMODE",
-                                        "expression": false
-                                    },
-                                    "urlPropertyValue": {
-                                        "value": "ANSI",
-                                        "expression": false
-                                    }
-                                }
-                            ]
+                            "value": {{ TERADATA_URL_PROPERTIES | default('[]', true) }}
                         },
                         "idleConnectionTestPeriod": {
                             "value": 5,

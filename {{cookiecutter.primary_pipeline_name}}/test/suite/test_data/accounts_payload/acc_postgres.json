@@ -112,7 +112,7 @@
                             "expression": false
                         },
                         "urlProperties": {
-                            "value": []
+                            "value": {{ POSTGRES_URL_PROPERTIES | default('[]', true) }}
                         },
                         "idleConnectionTestPeriod": {
                             "value": 5,

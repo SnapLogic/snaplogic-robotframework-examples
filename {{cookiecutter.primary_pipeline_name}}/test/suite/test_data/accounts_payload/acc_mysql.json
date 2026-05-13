@@ -72,7 +72,7 @@
                             "expression": false
                         },
                         "urlProperties": {
-                            "value": []
+                            "value": {{ MYSQL_URL_PROPERTIES | default('[]', true) }}
                         },
                         "idleConnectionTestPeriod": {
                             "value": 5,
