@@ -17,47 +17,91 @@ Library             Collections
 ################## MINIO S3 CLIENT OPERATIONS ##################
 
 Get S3 Client
-    [Documentation]    Creates a boto3 S3 client that works with BOTH MinIO and AWS S3.
+    [Documentation]    Creates a boto3 S3 client supporting THREE auth modes:
     ...
-    ...    Reads connection details from environment variables:
-    ...    - S3_ENDPOINT: Optional endpoint URL. If set → connects to MinIO/custom S3.
-    ...    If empty or not set → connects to real AWS S3.
-    ...    - S3_ACCESS_KEY: AWS access key ID (or MinIO access key)
-    ...    - S3_SECRET_KEY: AWS secret access key (or MinIO secret key)
-    ...    - S3_REGION: AWS region (default: us-east-1)
+    ...    1. MinIO (Docker local testing)
+    ...       S3_ENDPOINT=http://minio:9000
+    ...       S3_ACCESS_KEY=minioadmin
+    ...       S3_SECRET_KEY=minioadmin
     ...
-    ...    *Examples:*
-    ...    | # MinIO (Docker testing) — S3_ENDPOINT=http://minio:9000 |
-    ...    | ${client}= | Get S3 Client |
-    ...    |
-    ...    | # AWS S3 (production) — S3_ENDPOINT is empty |
-    ...    | ${client}= | Get S3 Client |
+    ...    2. AWS S3 with explicit access keys
+    ...       S3_ENDPOINT= (empty)
+    ...       S3_ACCESS_KEY=AKIA...
+    ...       S3_SECRET_KEY=...
     ...
-    ...    *Environment file examples:*
-    ...    | # For MinIO (env_files/mock_service_accounts/.env.s3): |
-    ...    | S3_ENDPOINT=http://minio:9000 |
-    ...    | S3_ACCESS_KEY=minioadmin |
-    ...    | S3_SECRET_KEY=minioadmin |
-    ...    |
-    ...    | # For AWS S3 (env_files/mock_service_accounts/.env.s3): |
-    ...    | S3_ENDPOINT= |
-    ...    | S3_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE |
-    ...    | S3_SECRET_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY |
-    ...    | S3_REGION=us-east-1 |
+    ...    3. AWS S3 with SSO (for IAM role-based environments)
+    ...       S3_ENDPOINT= (empty)
+    ...       S3_ACCESS_KEY= (empty)
+    ...       S3_SECRET_KEY= (empty)
+    ...       AWS_PROFILE=<your-sso-profile-name>
+    ...       Pre-req: User must run `aws sso login --profile <profile>` first.
+    ...       boto3 then picks up the cached SSO credentials automatically.
+    ...
+    ...    Environment variables read:
+    ...    - S3_ENDPOINT: Optional. If set → MinIO/custom S3 endpoint.
+    ...      If empty → connects to real AWS S3.
+    ...    - S3_ACCESS_KEY: AWS/MinIO access key (omit for SSO mode).
+    ...    - S3_SECRET_KEY: AWS/MinIO secret key (omit for SSO mode).
+    ...    - S3_REGION: AWS region (default: us-east-1).
+    ...    - AWS_PROFILE: SSO profile name (used only in SSO mode).
+    ...
+    ...    PRIORITY when multiple are set:
+    ...    1. S3_ACCESS_KEY + S3_SECRET_KEY (explicit keys win)
+    ...    2. AWS_PROFILE (SSO via `aws sso login`)
+    ...    3. boto3 default chain (env vars, ~/.aws, EC2 metadata)
+    ...
+    ...    CRITICAL: When credentials are empty, they MUST NOT be passed
+    ...    to boto3 — passing empty strings blocks boto3's default
+    ...    credential chain (which is what enables SSO). This keyword
+    ...    only passes keys when both S3_ACCESS_KEY and S3_SECRET_KEY
+    ...    are non-empty.
 
     ${endpoint}=    Get Environment Variable    S3_ENDPOINT    ${EMPTY}
     ${access_key}=    Get Environment Variable    S3_ACCESS_KEY    ${EMPTY}
     ${secret_key}=    Get Environment Variable    S3_SECRET_KEY    ${EMPTY}
     ${region}=    Get Environment Variable    S3_REGION    us-east-1
+    ${profile}=    Get Environment Variable    AWS_PROFILE    ${EMPTY}
+
+    # Build boto3 client kwargs — only include endpoint/keys when non-empty
+    # so boto3's default credential chain works for SSO mode.
+    ${kwargs}=    Create Dictionary    region_name=${region}
 
     IF    '${endpoint}' != '${EMPTY}'
-        Log    Connecting to S3-compatible endpoint: ${endpoint}
-        ${s3_client}=    Evaluate
-        ...    __import__('boto3').client('s3', endpoint_url='${endpoint}', aws_access_key_id='${access_key}', aws_secret_access_key='${secret_key}', region_name='${region}')
+        Set To Dictionary    ${kwargs}    endpoint_url=${endpoint}
+        Log    Using S3 endpoint: ${endpoint}
+    END
+
+    # Determine auth mode (priority: explicit keys > AWS_PROFILE > default chain)
+    ${has_keys}=    Evaluate    bool($access_key) and bool($secret_key)
+    ${has_profile}=    Evaluate    bool($profile)
+
+    IF    ${has_keys}
+        IF    ${has_profile}
+            Log    WARNING: Both S3_ACCESS_KEY and AWS_PROFILE are set. Using explicit keys; AWS_PROFILE is ignored.    level=WARN
+        END
+        Set To Dictionary    ${kwargs}    aws_access_key_id=${access_key}
+        Set To Dictionary    ${kwargs}    aws_secret_access_key=${secret_key}
+        Log    Using explicit S3 access keys (MinIO or AWS access-key mode)
+    ELSE IF    ${has_profile}
+        Log    AWS SSO mode active (profile: ${profile})
     ELSE
-        Log    Connecting to AWS S3 (region: ${region})
-        ${s3_client}=    Evaluate
-        ...    __import__('boto3').client('s3', aws_access_key_id='${access_key}', aws_secret_access_key='${secret_key}', region_name='${region}')
+        Log    No explicit keys or profile — boto3 will use default credential chain (env vars / ~/.aws / EC2 metadata)
+    END
+
+    # Build client — use Session(profile_name=...) when AWS_PROFILE is set AND
+    # no explicit keys are provided. Use $variable (no braces) inside Evaluate
+    # so kwargs is passed as a real Python dict instead of being string-interpolated.
+    IF    ${has_profile} and not ${has_keys}
+        # Validate the profile resolves to credentials before returning the client.
+        # Fails fast with a helpful message if user forgot `aws sso login`.
+        ${session}=    Evaluate    __import__('boto3').Session(profile_name=$profile)
+        ${creds}=    Evaluate    $session.get_credentials()
+        IF    $creds is None
+            Fail    AWS_PROFILE '${profile}' resolved to no credentials. Run: aws sso login --profile ${profile}
+        END
+        ${s3_client}=    Evaluate    $session.client('s3', **$kwargs)
+    ELSE
+        ${s3_client}=    Evaluate    __import__('boto3').client('s3', **$kwargs)
     END
 
     RETURN    ${s3_client}

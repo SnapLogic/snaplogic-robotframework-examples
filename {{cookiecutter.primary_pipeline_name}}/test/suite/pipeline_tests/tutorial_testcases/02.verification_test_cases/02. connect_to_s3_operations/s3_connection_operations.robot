@@ -82,7 +82,7 @@ Create Account
 CONNECT — Validate MinIO Connection
     [Documentation]    Confirms boto3 can reach the configured S3 endpoint and authenticate.
     ...    Use this as a sanity check at the start of any S3-touching test.
-    [Tags]    connect_to_s3_sample
+    [Tags]    connect_to_s3_sample    connect_to_s3_sample_verification
 
     ${ok}=    Validate MinIO Connection
     Should Be True    ${ok}    msg=MinIO connection failed — check S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY in .env.s3
@@ -434,7 +434,7 @@ Initialize Tutorial
     # Make sure the bucket the tutorial uses actually exists. Idempotent —
     # safe to call whether or not minio-setup pre-created it.
     Section    CREATE BUCKET BEFORE SUITE
-    Create Bucket    ${BUCKET_NAME}
+    # Create Bucket    ${BUCKET_NAME}
 
     # Pre-clean any leftover tutorial files from a previous run so tests are deterministic.
     # Run Keyword And Ignore Error    Clean Bucket By Prefix    ${BUCKET_NAME}    ${PREFIX}

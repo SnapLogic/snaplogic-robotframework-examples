@@ -35,6 +35,10 @@ services:
       TRAVIS_COMMIT: ${TRAVIS_COMMIT:-}
       TRAVIS_DURATION: ${TRAVIS_DURATION:-0}
       TRAVIS_BRANCH: ${TRAVIS_BRANCH:-}
+      # AWS SSO support — pass AWS_PROFILE from host so boto3 inside the
+      # container uses the SSO profile configured by `aws sso login`.
+      # Leave empty if not using SSO (MinIO or access-key mode).
+      AWS_PROFILE: ${AWS_PROFILE:-}
     volumes:
       - ./src:/app/src
       - ./test:/app/test
@@ -43,6 +47,11 @@ services:
       - ./travis_scripts/setup_travis_env.sh:/app/travis_scripts/setup_travis_env.sh
       - ./.travis.yml:/app/.travis.yml
       - ./test/suite/test_data:/opt/snaplogic/test_data
+      # AWS credentials (read-only) — required for AWS SSO mode.
+      # Host's ~/.aws/ (containing SSO cache + profile config) is mounted
+      # into the container so boto3 can read SSO-cached credentials.
+      # Safe to keep mounted in all modes — ignored when SSO is not in use.
+      - ${HOME}/.aws:/root/.aws:ro
       # Optional: Add mounts for common local directories (uncomment as needed)
       # - ~/Documents:/opt/host-documents:ro
       # - ~/Downloads:/opt/host-downloads:ro
