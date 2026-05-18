@@ -50,6 +50,8 @@ sudo ./aws/install
 
 > 💡 **Why not `sudo apt install awscli`?** On most Ubuntu/Debian versions, `apt` installs AWS CLI v1, which doesn't support SSO. Always use the official AWS installer for v2.
 
+> ⚠️ **Corporate network users — heads-up:** If `curl` fails with `SSL certificate problem: self-signed certificate in certificate chain`, your corporate TLS-inspection proxy is blocking WSL's `curl`. **Quickest workaround:** download `https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip` from your Windows browser (which already trusts the corporate CA), then copy it into WSL via `cp /mnt/c/Users/<your-windows-username>/Downloads/awscli-exe-linux-x86_64.zip ~/awscliv2.zip`, run `sudo apt install unzip -y`, and continue with `unzip` and `sudo ./aws/install`. See the **Troubleshooting** section at the bottom of this doc for the full three-option fix, including importing the corporate CA into WSL as a permanent solution.
+
 ### 1d. Verify The Installation
 
 ```bash
@@ -898,6 +900,76 @@ No more configuration. No keys to rotate. No files to edit. The framework operat
 ---
 
 ## Troubleshooting
+
+### Error: `curl: (60) SSL certificate problem: self-signed certificate in certificate chain` During AWS CLI Install
+
+This appears when running the `curl` command in Step 1c to download the AWS CLI v2 installer.
+
+**Cause:** The corporate network is running a TLS-inspection proxy (Zscaler, Netskope, Blue Coat, etc.) that decrypts and re-signs all HTTPS traffic using a corporate CA certificate. The Windows browser already trusts that CA (because IT installed it), but **WSL's Ubuntu has its own separate CA trust store** that doesn't include the corporate CA — so `curl` rejects the connection.
+
+You'll also typically see two cascading errors after the curl failure:
+
+```
+Command 'unzip' not found, but can be installed with: sudo apt install unzip
+sudo: ./aws/install: command not found
+```
+
+These happen because `curl` never downloaded the zip, so there's nothing to unzip and no `aws/` directory exists.
+
+**Fix — Option 1: Download via Windows browser, then copy into WSL (easiest, no IT ticket needed).**
+
+The Windows browser already trusts the corporate CA, so the download works there. Then WSL just reads the file from the Windows filesystem via `/mnt/c/`.
+
+```bash
+# Step 1: In Windows browser, paste this URL and download:
+#   https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+# Saves to C:\Users\<your-username>\Downloads\
+
+# Step 2: In WSL, copy the file across the filesystem boundary
+cp /mnt/c/Users/<your-windows-username>/Downloads/awscli-exe-linux-x86_64.zip ~/awscliv2.zip
+
+# Step 3: Install unzip (also missing by default in WSL)
+sudo apt install unzip -y
+
+# Step 4: Continue with the standard install
+cd ~
+unzip awscliv2.zip
+sudo ./aws/install
+aws --version
+```
+
+**Fix — Option 2: Bypass SSL verification on curl (quick, less secure).**
+
+The `-k` flag tells curl to skip cert verification for this one call. Works fine for a public AWS installer, but some corporate policies forbid it.
+
+```bash
+sudo apt install unzip -y
+curl -k "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+aws --version
+```
+
+**Fix — Option 3: Import the corporate CA into WSL (proper long-term fix).**
+
+This is the durable solution. Without it, the same error will reappear when WSL tries `apt update`, `pip install`, `docker pull`, or any other HTTPS call.
+
+```bash
+# Step 1: Obtain the corporate root CA certificate (.crt or .cer)
+# Either ask IT for it, or export from Windows:
+#   Run > certmgr.msc > Trusted Root Certification Authorities > Certificates
+#   Find the corporate CA > right-click > All Tasks > Export
+#   Choose "Base-64 encoded X.509 (.CER)" > save somewhere accessible
+
+# Step 2: Copy the certificate into WSL's trust store
+sudo cp /mnt/c/Users/<your-windows-username>/Downloads/CorpRootCA.crt /usr/local/share/ca-certificates/
+sudo update-ca-certificates
+
+# Step 3: Verify by retrying the original download
+curl https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zip
+```
+
+> 💡 **Recommendation:** Use **Option 1** to get unblocked today, and follow up with **Option 3** soon after. The corporate CA issue will resurface in Docker, `pip`, and `apt`, so importing the CA properly saves repeated firefighting.
 
 ### Error: `No such profile: <name>`
 
