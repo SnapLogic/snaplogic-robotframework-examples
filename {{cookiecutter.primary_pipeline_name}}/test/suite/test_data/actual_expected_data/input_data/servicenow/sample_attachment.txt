@@ -1,0 +1,27 @@
+SAMPLE ATTACHMENT - AWS Q ServiceNow Connector Test Data
+=========================================================
+
+This is an auto-generated sample attachment file used by the Robot Framework
+test data generator to populate ServiceNow Knowledge Articles and Service Catalog
+items with attached files.
+
+Purpose
+-------
+Validate that the Amazon Q ServiceNow connector can:
+  1. Detect that a record has an attachment
+  2. Read the attachment metadata (filename, size, MIME type)
+  3. Read the attachment content (text extraction)
+  4. Index the content for end-user search
+
+Content
+-------
+This attachment intentionally contains plain text so the connector can extract
+and index the words inside. Sample searchable terms:
+
+  - virtual private network
+  - password reset procedure
+  - employee onboarding
+  - laptop request workflow
+  - service catalog usage
+
+End of attachment.
