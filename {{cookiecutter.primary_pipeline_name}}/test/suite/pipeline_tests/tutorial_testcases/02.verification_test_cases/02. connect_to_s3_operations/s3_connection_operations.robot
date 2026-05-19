@@ -18,8 +18,8 @@
 # Notes on environment:
 #    • Works with both MinIO (Docker) and real AWS S3 — the framework auto-
 #    detects via S3_ENDPOINT in env_files/mock_service_accounts/.env.s3.
-#    • All tutorial files live under the prefix `tutorial/` so cleanup is easy
-#    and we don't collide with config/, extract/, output/ used elsewhere.
+#    • All tutorial files live under ${PREFIX} so cleanup is easy and we
+#    don't collide with config/, extract/, output/ used elsewhere.
 # ──────────────────────────────────────────────────────────────────────────────
 
 
@@ -35,8 +35,13 @@ Suite Setup         Initialize Tutorial
 
 
 *** Variables ***
-${BUCKET_NAME}              test-bucket-swapna
-${PREFIX}                   tutorial/
+${BUCKET_NAME}              test-bucket-swapna2
+# Convention: PREFIX is the folder path with NO trailing slash.
+# OBJECT_KEY values and path concatenations add the slash explicitly.
+# This matches the natural "slashes-between-segments" mental model and
+# keeps prefix-as-filter usages safe (see usages below — they append a
+# trailing '/' to disambiguate from sibling folders like 'data10/').
+${PREFIX}                   tutorial2/data1
 
 # Local files used by upload tests — checked into the repo under sample_files/
 # next to this .robot file. Customers can edit them directly without running anything.
@@ -47,11 +52,11 @@ ${LOCAL_SAMPLE_FILE_4}      ${CURDIR}/sample_files/sample_2.csv
 ${LOCAL_SAMPLE_FILE_5}      ${CURDIR}/sample_files/sample_2.json
 
 # Object keys (path inside the bucket) used by all tests
-${OBJECT_KEY_1}             ${PREFIX}sample.txt
-${OBJECT_KEY_2}             ${PREFIX}data/sample.csv
-${OBJECT_KEY_3}             ${PREFIX}data/sample.json
-${OBJECT_KEY_4}             ${PREFIX}data/sample_2.csv
-${OBJECT_KEY_5}             ${PREFIX}data/sample_2.json
+${OBJECT_KEY_1}             ${PREFIX}/sample.txt
+${OBJECT_KEY_2}             ${PREFIX}/data/sample.csv
+${OBJECT_KEY_3}             ${PREFIX}/data/sample.json
+${OBJECT_KEY_4}             ${PREFIX}/data/sample_2.csv
+${OBJECT_KEY_5}             ${PREFIX}/data/sample_2.json
 
 # Local download directory — used by all download tests.
 # ${CURDIR} = the folder this .robot file lives in. From there, four "../" jumps
@@ -59,7 +64,7 @@ ${OBJECT_KEY_5}             ${PREFIX}data/sample_2.json
 #    <repo>/test/suite/test_data/actual_expected_data/actual_output/
 # This folder is bind-mounted into the tools container, so downloaded files appear
 # on your Mac at the path above immediately.
-# An object with S3 key 'tutorial/sample.txt' lands at .../actual_output/tutorial/sample.txt.
+# An object with S3 key '${PREFIX}/sample.txt' lands at .../actual_output/${PREFIX}/sample.txt.
 ${DOWNLOAD_DIR}             ${CURDIR}/../../../../test_data/actual_expected_data/actual_output
 
 
@@ -140,7 +145,7 @@ EXISTENCE — Check Object Exists
     ${exists}=    Check Object Exists    ${BUCKET_NAME}    ${OBJECT_KEY_1}
     Should Be True    ${exists}    msg=Expected uploaded object '${OBJECT_KEY_1}' to exist
 
-    ${missing}=    Check Object Exists    ${BUCKET_NAME}    ${PREFIX}does_not_exist.txt
+    ${missing}=    Check Object Exists    ${BUCKET_NAME}    ${PREFIX}/does_not_exist.txt
     Should Not Be True    ${missing}    msg=Expected missing object to return FALSE
 
 # ═══════════════════════════════════════════════════════════════
@@ -182,24 +187,24 @@ SEARCH — Find Files In Bucket By Extension
     [Tags]    connect_to_s3_sample
 
     ${files}    ${count}=    Find Files In Bucket By Extension
-    ...    ${BUCKET_NAME}    .txt    ${PREFIX}
+    ...    ${BUCKET_NAME}    .txt    ${PREFIX}/
 
     Should Be True    ${count} >= 1
-    ...    msg=Expected at least one .txt file under '${PREFIX}', got ${count}: ${files}
+    ...    msg=Expected at least one .txt file under '${PREFIX}/', got ${count}: ${files}
     Should Contain    ${files}    ${OBJECT_KEY_1}
 
 # ═══════════════════════════════════════════════════════════════
 # 9. SEARCH FOR A SPECIFIC FILE
 # ═══════════════════════════════════════════════════════════════
 
-SEARCH — Find Specific File In Bucket
+SEARCH — Find Specific Object In Bucket
     [Documentation]    Looks for a specific object key among files matching an extension.
     ...    Returns (found_bool, list_of_matching_files) — useful for assertion + debug context.
     ...    NOTE: default path_filters=[extract/, output/] — pass our prefix explicitly.
     [Tags]    connect_to_s3_sample
 
     ${found}    ${candidates}=    Find Specific File In Bucket
-    ...    ${BUCKET_NAME}    ${OBJECT_KEY_1}    .txt    ${PREFIX}
+    ...    ${BUCKET_NAME}    ${OBJECT_KEY_1}    .txt    ${PREFIX}/
 
     Should Be True    ${found}
     ...    msg=Expected to find '${OBJECT_KEY_1}'. Candidates were: ${candidates}
@@ -239,7 +244,7 @@ DOWNLOAD — Download And Get File Content
 # ═══════════════════════════════════════════════════════════════
 
 UPLOAD — Upload Four More Files (for batch tests)
-    [Documentation]    Uploads four additional files (2 CSVs + 2 JSONs under tutorial/data/)
+    [Documentation]    Uploads four additional files (2 CSVs + 2 JSONs under ${PREFIX}/data/)
     ...    so the next tests can demonstrate pattern-based and bulk download keywords.
     ...    Multiple Upload calls here are intentional setup — each test below still
     ...    demonstrates ONE keyword.
@@ -260,11 +265,11 @@ DOWNLOAD — Download Files By Pattern
     [Tags]    connect_to_s3_sample
 
     @{downloaded}=    Download Files By Pattern
-    ...    ${DOWNLOAD_DIR}    ${BUCKET_NAME}    ${PREFIX}data/
+    ...    ${DOWNLOAD_DIR}    ${BUCKET_NAME}    ${PREFIX}/data/
 
     ${count}=    Get Length    ${downloaded}
     Should Be Equal As Integers    ${count}    4
-    ...    msg=Expected 4 files under 'tutorial/data/', got ${count}: ${downloaded}
+    ...    msg=Expected 4 files under '${PREFIX}/data/', got ${count}: ${downloaded}
 
 # ═══════════════════════════════════════════════════════════════
 # 14. DOWNLOAD ALL FILES IN BUCKET
@@ -319,7 +324,7 @@ CLEAN — Clean Bucket By Prefix
     ...    Useful when many tests share a bucket but each owns a folder.
     [Tags]    connect_to_s3_sample2
 
-    Clean Bucket By Prefix    ${BUCKET_NAME}    ${PREFIX}
+    Clean Bucket By Prefix    ${BUCKET_NAME}    ${PREFIX}/
 
     # Confirm our 3 tutorial files are gone
     ${still_exists}=    Check Object Exists    ${BUCKET_NAME}    ${OBJECT_KEY_1}
@@ -383,10 +388,10 @@ END TO END — Full S3 Workflow
     List Objects In Bucket    ${BUCKET_NAME}
 
     Log    \n<===================▶FIND FILES BY EXTENSION ════════\n    console=yes
-    Find Files In Bucket By Extension    ${BUCKET_NAME}    .txt    ${PREFIX}
+    Find Files In Bucket By Extension    ${BUCKET_NAME}    .txt    ${PREFIX}/
 
     Log    \n<===================▶FIND SPECIFIC FILE ==================\n    console=yes
-    Find Specific File In Bucket    ${BUCKET_NAME}    ${OBJECT_KEY_1}    .txt    ${PREFIX}
+    Find Specific File In Bucket    ${BUCKET_NAME}    ${OBJECT_KEY_1}    .txt    ${PREFIX}/
 
     Log    \n<===================▶DOWNLOAD SINGLE FILE ==================\n    console=yes
     Download Single File From MinIO    ${DOWNLOAD_DIR}    ${BUCKET_NAME}    ${OBJECT_KEY_1}
@@ -395,7 +400,7 @@ END TO END — Full S3 Workflow
     Download And Get File Content    ${BUCKET_NAME}    ${DOWNLOAD_DIR}    ${OBJECT_KEY_1}
 
     Log    \n<===================▶DOWNLOAD BY PATTERN ==================\n    console=yes
-    Download Files By Pattern    ${DOWNLOAD_DIR}    ${BUCKET_NAME}    ${PREFIX}data/
+    Download Files By Pattern    ${DOWNLOAD_DIR}    ${BUCKET_NAME}    ${PREFIX}/data/
 
     Log    \n<===================▶DOWNLOAD ALL FILES IN BUCKET ==================\n    console=yes
     Download All Files From Bucket    ${DOWNLOAD_DIR}    ${BUCKET_NAME}
@@ -412,7 +417,7 @@ END TO END — Full S3 Workflow
     ...    expected_extension=.txt
 
     Log    \n<===================▶CLEANUP ==================    console=yes
-    Clean Bucket By Prefix    ${BUCKET_NAME}    ${PREFIX}
+    Clean Bucket By Prefix    ${BUCKET_NAME}    ${PREFIX}/
     Delete Bucket    ${BUCKET_NAME}    force=${TRUE}
 
 
@@ -437,7 +442,7 @@ Initialize Tutorial
     # Create Bucket    ${BUCKET_NAME}
 
     # Pre-clean any leftover tutorial files from a previous run so tests are deterministic.
-    # Run Keyword And Ignore Error    Clean Bucket By Prefix    ${BUCKET_NAME}    ${PREFIX}
+    # Run Keyword And Ignore Error    Clean Bucket By Prefix    ${BUCKET_NAME}    ${PREFIX}/
 
 Cleanup Tutorial
     [Documentation]    Removes downloaded files and tutorial-prefixed objects from the bucket.
@@ -445,7 +450,7 @@ Cleanup Tutorial
     ...    Note: sample_files/ is checked into the repo — we never delete those.
 
     Run Keyword And Ignore Error    Remove Directory If Exists    ${DOWNLOAD_DIR}
-    Run Keyword And Ignore Error    Clean Bucket By Prefix    ${BUCKET_NAME}    ${PREFIX}
+    Run Keyword And Ignore Error    Clean Bucket By Prefix    ${BUCKET_NAME}    ${PREFIX}/
     # Delete the bucket too — covers the case where a test failed before
     # test 19 (Delete Bucket) had a chance to run.
     Run Keyword And Ignore Error    Delete Bucket    ${BUCKET_NAME}    force=${TRUE}

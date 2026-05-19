@@ -47,11 +47,24 @@ services:
       - ./travis_scripts/setup_travis_env.sh:/app/travis_scripts/setup_travis_env.sh
       - ./.travis.yml:/app/.travis.yml
       - ./test/suite/test_data:/opt/snaplogic/test_data
-      # AWS credentials (read-only) — required for AWS SSO mode.
+      # AWS credentials (read-write) — required for AWS SSO mode.
       # Host's ~/.aws/ (containing SSO cache + profile config) is mounted
-      # into the container so boto3 can read SSO-cached credentials.
+      # into the container so boto3 can read SSO-cached credentials AND
+      # save refreshed tokens back to the host cache.
+      #
+      # Why read-write (not :ro): SSO tokens are short-lived (~8-12h) and
+      # boto3 proactively refreshes them when they enter the "refresh
+      # window" near expiry. The refresh writes a new token file to
+      # ~/.aws/sso/cache/ — with a read-only mount, that write fails with
+      # OSError EROFS and the test fails on a still-valid (just near-expiry)
+      # token. With read-write, refresh works transparently and the
+      # refreshed token persists on the host (no need to re-login as often).
+      #
+      # Trade-off: the container can modify your host's ~/.aws/ contents.
+      # Acceptable for a dev machine running your own test code; reconsider
+      # for CI environments running untrusted test code.
       # Safe to keep mounted in all modes — ignored when SSO is not in use.
-      - ${HOME}/.aws:/root/.aws:ro
+      - ${HOME}/.aws:/root/.aws
       # Optional: Add mounts for common local directories (uncomment as needed)
       # - ~/Documents:/opt/host-documents:ro
       # - ~/Downloads:/opt/host-downloads:ro

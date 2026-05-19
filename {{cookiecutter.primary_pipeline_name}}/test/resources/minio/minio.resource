@@ -12,6 +12,15 @@ Library             OperatingSystem    # File system operations
 Library             String
 Library             Collections
 
+# Project libraries — Python helpers that need type-based exception handling
+# (botocore raises distinct exception classes for each SSO failure mode,
+# which Robot's TRY/EXCEPT can't match by type — only by message substring).
+#
+# Relative path is resolved from the location of THIS resource file.
+# (Tried ${EXECDIR}-based path but it's brittle in this framework because
+# Robot is invoked from test/ in some make targets and from / in others.)
+Library             ../../libraries/s3/s3_auth_helper.py
+
 
 *** Keywords ***
 ################## MINIO S3 CLIENT OPERATIONS ##################
@@ -35,29 +44,16 @@ Get S3 Client
     ...       S3_SECRET_KEY= (empty)
     ...       AWS_PROFILE=<your-sso-profile-name>
     ...       Pre-req: User must run `aws sso login --profile <profile>` first.
-    ...       boto3 then picks up the cached SSO credentials automatically.
-    ...
-    ...    Environment variables read:
-    ...    - S3_ENDPOINT: Optional. If set → MinIO/custom S3 endpoint.
-    ...      If empty → connects to real AWS S3.
-    ...    - S3_ACCESS_KEY: AWS/MinIO access key (omit for SSO mode).
-    ...    - S3_SECRET_KEY: AWS/MinIO secret key (omit for SSO mode).
-    ...    - S3_REGION: AWS region (default: us-east-1).
-    ...    - AWS_PROFILE: SSO profile name (used only in SSO mode).
     ...
     ...    PRIORITY when multiple are set:
     ...    1. S3_ACCESS_KEY + S3_SECRET_KEY (explicit keys win)
     ...    2. AWS_PROFILE (SSO via `aws sso login`)
     ...    3. boto3 default chain (env vars, ~/.aws, EC2 metadata)
     ...
-    ...    Fails with actionable error messages for common misconfigurations:
-    ...    - AWS_PROFILE is set but empty
-    ...    - AWS_PROFILE points to a profile not in ~/.aws/config
-    ...    - SSO session has expired (no credentials available)
-    ...    - No auth method configured at all
-    ...
-    ...    On success, logs a configuration banner so the auth mode is
-    ...    visible in test output without digging through HTML logs.
+    ...    This is the top-level orchestrator. It reads env vars, validates
+    ...    configuration, then dispatches to one of three Build S3 Client With *
+    ...    keywords for the actual client construction. See those for branch-
+    ...    specific behavior and error handling.
 
     ${endpoint}=        Get Environment Variable    S3_ENDPOINT      ${EMPTY}
     ${access_key}=      Get Environment Variable    S3_ACCESS_KEY    ${EMPTY}
@@ -65,108 +61,213 @@ Get S3 Client
     ${region}=          Get Environment Variable    S3_REGION        us-east-1
     ${profile}=         Get Environment Variable    AWS_PROFILE      ${EMPTY}
 
-    # Trap #1: AWS_PROFILE set but EMPTY in os.environ
-    # boto3 silently picks up empty AWS_PROFILE from os.environ and fails
-    # with the cryptic "ProfileNotFound: The config profile () could not be
-    # found". Detect this up front and produce an actionable error.
+    ${has_keys}=        Evaluate    bool($access_key) and bool($secret_key)
+    ${has_profile}=     Evaluate    bool($profile)
+    ${has_endpoint}=    Evaluate    bool($endpoint)
+
+    # Pre-flight: clean up empty AWS_PROFILE and validate configuration
+    Resolve Empty AWS Profile      ${has_endpoint}    ${has_keys}    ${profile}
+    Validate S3 Configuration      ${has_endpoint}    ${has_keys}    ${has_profile}    ${profile}
+
+    # Build common kwargs shared by all three modes
+    ${kwargs}=    Create Dictionary    region_name=${region}
+    IF    ${has_endpoint}
+        Set To Dictionary    ${kwargs}    endpoint_url=${endpoint}
+    END
+
+    # Dispatch by mode (priority: explicit keys > AWS_PROFILE > default chain)
+    IF    ${has_keys}
+        ${s3_client}=    Build S3 Client With Access Keys
+        ...    ${access_key}    ${secret_key}    ${has_endpoint}    ${endpoint}    ${region}    ${profile}    ${kwargs}
+    ELSE IF    ${has_profile}
+        ${s3_client}=    Build S3 Client With SSO    ${profile}    ${region}    ${kwargs}
+    ELSE
+        ${s3_client}=    Build S3 Client With Default Chain    ${region}    ${kwargs}
+    END
+
+    RETURN    ${s3_client}
+
+Resolve Empty AWS Profile
+    [Documentation]    Handles the edge case where AWS_PROFILE is present in
+    ...    os.environ but set to an empty string.
+    ...
+    ...    Background: docker-compose.yml forwards AWS_PROFILE from the host
+    ...    shell with default empty ("AWS_PROFILE: ${AWS_PROFILE:-}"), so
+    ...    AWS_PROFILE almost always appears as set-but-empty in the container.
+    ...    boto3 reads AWS_PROFILE implicitly during client creation and fails
+    ...    with the cryptic "ProfileNotFound: The config profile () could not
+    ...    be found" if it's the empty string.
+    ...
+    ...    Two outcomes:
+    ...    - User intended SSO (no endpoint, no keys) → Fail with actionable msg
+    ...    - User intended MinIO/keys (endpoint OR keys present) → silently
+    ...      pop AWS_PROFILE from os.environ so boto3 won't see it
+    ...
+    ...    SIDE-EFFECT: when popping, mutates os.environ for the rest of the
+    ...    test process. Safe today because env files are loaded once at suite
+    ...    setup. A future test that switches mid-run from MinIO/keys to SSO
+    ...    would need to re-set AWS_PROFILE explicitly.
+    [Arguments]    ${has_endpoint}    ${has_keys}    ${profile}
+
     ${aws_profile_in_env}=    Evaluate    'AWS_PROFILE' in __import__('os').environ
-    IF    ${aws_profile_in_env} and '${profile}' == '${EMPTY}'
+    IF    not (${aws_profile_in_env} and '${profile}' == '${EMPTY}')
+        RETURN
+    END
+
+    IF    not ${has_endpoint} and not ${has_keys}
         ${available}=    Get Available AWS Profiles
         Fail
         ...    AWS_PROFILE is set in the test environment but is EMPTY.${\n}Fix: set it to a valid profile name (e.g., AWS_PROFILE=<your-profile> in your root .env), OR remove any empty 'AWS_PROFILE=' line if one exists in .env / env_files/.${\n}Possible sources: root .env, env_files/*.env, host shell export, or docker-compose.yml (which passes AWS_PROFILE from host).${\n}Available profiles in ~/.aws/config: ${available}
     END
 
-    ${has_keys}=        Evaluate    bool($access_key) and bool($secret_key)
-    ${has_profile}=     Evaluate    bool($profile)
-    ${has_endpoint}=    Evaluate    bool($endpoint)
+    Evaluate    __import__('os').environ.pop('AWS_PROFILE', None)
 
-    # Trap #2: nothing configured at all (no endpoint, no keys, no profile)
+Validate S3 Configuration
+    [Documentation]    Validates the user-provided env configuration.
+    ...    - Fails if nothing is configured (no endpoint, no keys, no profile)
+    ...    - Warns if endpoint and profile are both set (endpoint silently wins,
+    ...      AWS_PROFILE is ignored — usually a user mistake worth flagging)
+    [Arguments]    ${has_endpoint}    ${has_keys}    ${has_profile}    ${profile}
+
     IF    not ${has_keys} and not ${has_profile} and not ${has_endpoint}
         Fail
         ...    No S3 credentials configured. Choose one of:${\n}  (a) MinIO local testing  -> set S3_ENDPOINT=http://minio:9000 (and MinIO keys)${\n}  (b) AWS access keys      -> set S3_ACCESS_KEY + S3_SECRET_KEY${\n}  (c) AWS SSO              -> set AWS_PROFILE=<your-profile-name> and run 'aws sso login --profile <name>'${\n}See env_files/mock_service_accounts/.env.s3 for examples.
     END
 
-    # Trap #3: endpoint + profile conflict — MinIO mode silently shadows SSO
     IF    ${has_endpoint} and ${has_profile} and not ${has_keys}
         Log
         ...    WARNING: S3_ENDPOINT is set (MinIO/custom mode) — AWS_PROFILE='${profile}' will be IGNORED. Clear S3_ENDPOINT in .env to use SSO instead.
         ...    level=WARN
     END
 
-    # Build boto3 kwargs — only include endpoint/keys when non-empty so
-    # boto3's default credential chain still works for SSO mode.
-    ${kwargs}=    Create Dictionary    region_name=${region}
+Build S3 Client With Access Keys
+    [Documentation]    Builds a boto3 S3 client using explicit access keys.
+    ...    Used for MinIO (when endpoint is set) and AWS access-key mode (when
+    ...    endpoint is empty). Logs a WARN if AWS_PROFILE is also set (it gets
+    ...    silently overridden by the explicit keys — user should know).
+    [Arguments]    ${access_key}    ${secret_key}    ${has_endpoint}    ${endpoint}    ${region}    ${profile}    ${kwargs}
+
+    IF    '${profile}' != '${EMPTY}'
+        Log
+        ...    WARNING: Both S3_ACCESS_KEY and AWS_PROFILE='${profile}' are set. Using explicit keys; AWS_PROFILE is IGNORED. Remove S3_ACCESS_KEY and S3_SECRET_KEY from .env to use SSO.
+        ...    level=WARN
+    END
+
+    Set To Dictionary    ${kwargs}    aws_access_key_id=${access_key}
+    Set To Dictionary    ${kwargs}    aws_secret_access_key=${secret_key}
+
+    ${mode_label}=    Set Variable    AWS Access Keys
     IF    ${has_endpoint}
-        Set To Dictionary    ${kwargs}    endpoint_url=${endpoint}
+        ${mode_label}=    Set Variable    MinIO / custom endpoint
     END
 
-    # Auth mode selection (priority: explicit keys > AWS_PROFILE > default chain)
-    IF    ${has_keys}
-        IF    ${has_profile}
-            Log
-            ...    WARNING: Both S3_ACCESS_KEY and AWS_PROFILE='${profile}' are set. Using explicit keys; AWS_PROFILE is IGNORED. Remove S3_ACCESS_KEY and S3_SECRET_KEY from .env to use SSO.
-            ...    level=WARN
-        END
-        Set To Dictionary    ${kwargs}    aws_access_key_id=${access_key}
-        Set To Dictionary    ${kwargs}    aws_secret_access_key=${secret_key}
-        ${mode_label}=    Set Variable    AWS Access Keys
-        IF    ${has_endpoint}
-            ${mode_label}=    Set Variable    MinIO / custom endpoint
-        END
-        ${banner}=    Evaluate    "\\n========== S3 Client Configuration ==========\\n" + "Mode:".ljust(10) + $mode_label + "\\n" + "Endpoint:".ljust(10) + $endpoint + "\\n" + "Region:".ljust(10) + $region + "\\n============================================="
-        Log    ${banner}    console=yes
-        ${s3_client}=    Evaluate    __import__('boto3').client('s3', **$kwargs)
-        RETURN    ${s3_client}
-    END
+    ${banner}=    Evaluate    "\\n========== S3 Client Configuration ==========\\n" + "Mode:".ljust(10) + $mode_label + "\\n" + "Endpoint:".ljust(10) + $endpoint + "\\n" + "Region:".ljust(10) + $region + "\\n============================================="
+    Log S3 Configuration Banner Once    ${banner}
 
-    IF    ${has_profile}
-        # Validate the profile exists in ~/.aws/config and resolves to creds
-        TRY
-            ${session}=    Evaluate    __import__('boto3').Session(profile_name=$profile)
-            ${creds}=    Evaluate    $session.get_credentials()
-        EXCEPT    AS    ${error}
-            ${error_str}=    Convert To String    ${error}
-            ${is_profile_not_found}=    Evaluate    'ProfileNotFound' in '''${error_str}'''
-            IF    ${is_profile_not_found}
-                ${available}=    Get Available AWS Profiles
-                Fail
-                ...    Profile '${profile}' not found in ~/.aws/config. Check the AWS_PROFILE value in your .env for typos.${\n}Available profiles: ${available}${\n}If you haven't run AWS SSO setup yet, run on the host: aws configure sso
-            END
-            Fail    Failed to create boto3 session for profile '${profile}': ${error}
-        END
-
-        IF    $creds is None
-            Fail
-            ...    SSO session for profile '${profile}' has no credentials. The SSO token has likely expired (tokens last 8–12 hours).${\n}Fix: run on the host: aws sso login --profile ${profile}
-        END
-
-        # get_credentials() returns a lazy object even when the SSO token is
-        # expired. Force a refresh now so we detect expired tokens HERE rather
-        # than at the first actual S3 call (where the error is harder to read).
-        TRY
-            Evaluate    $creds.get_frozen_credentials()
-        EXCEPT    AS    ${refresh_error}
-            ${refresh_error_str}=    Convert To String    ${refresh_error}
-            ${is_token_expired}=    Evaluate    'TokenRetrievalError' in '''${refresh_error_str}''' or 'Token has expired' in '''${refresh_error_str}'''
-            IF    ${is_token_expired}
-                Fail
-                ...    SSO token for profile '${profile}' has EXPIRED (SSO sessions typically last 8–12 hours).${\n}Fix: run on the host: aws sso login --profile ${profile}${\n}After login, no container restart is needed — the bind mount picks up the refreshed tokens automatically.
-            END
-            Fail    Failed to refresh SSO credentials for profile '${profile}': ${refresh_error}
-        END
-
-        ${banner}=    Evaluate    "\\n========== S3 Client Configuration ==========\\n" + "Mode:".ljust(10) + "AWS SSO" + "\\n" + "Profile:".ljust(10) + $profile + "\\n" + "Region:".ljust(10) + $region + "\\n============================================="
-        Log    ${banner}    console=yes
-        ${s3_client}=    Evaluate    $session.client('s3', **$kwargs)
-        RETURN    ${s3_client}
-    END
-
-    # Default credential chain (no keys, no profile, but endpoint may be set)
-    Log    No explicit keys or profile — boto3 will use default credential chain (env vars / ~/.aws / EC2 metadata)
-    ${banner}=    Evaluate    "\\n========== S3 Client Configuration ==========\\n" + "Mode:".ljust(10) + "Default Credential Chain" + "\\n" + "Region:".ljust(10) + $region + "\\n============================================="
-    Log    ${banner}    console=yes
     ${s3_client}=    Evaluate    __import__('boto3').client('s3', **$kwargs)
     RETURN    ${s3_client}
+
+Build S3 Client With SSO
+    [Documentation]    Builds a boto3 S3 client using AWS SSO via the named
+    ...    profile. Delegates validation (profile exists + token not expired)
+    ...    to Validate SSO Session For Profile, which fails fast with
+    ...    actionable messages if anything is wrong.
+    [Arguments]    ${profile}    ${region}    ${kwargs}
+
+    ${session}=    Validate SSO Session For Profile    ${profile}
+
+    ${banner}=    Evaluate    "\\n========== S3 Client Configuration ==========\\n" + "Mode:".ljust(10) + "AWS SSO" + "\\n" + "Profile:".ljust(10) + $profile + "\\n" + "Region:".ljust(10) + $region + "\\n============================================="
+    Log S3 Configuration Banner Once    ${banner}
+
+    ${s3_client}=    Evaluate    $session.client('s3', **$kwargs)
+    RETURN    ${s3_client}
+
+Validate SSO Session For Profile
+    [Documentation]    Returns a validated boto3.Session for the named SSO
+    ...    profile, or fails with an actionable error message.
+    ...
+    ...    Delegates the actual validation (profile lookup, credential check,
+    ...    token refresh) to the Python helper ``create_validated_sso_session``
+    ...    in ``libraries/s3/s3_auth_helper.py``. That helper catches botocore
+    ...    exceptions by TYPE (more robust than substring matching on error
+    ...    messages, which would break if botocore renames exceptions or
+    ...    changes wording) and returns a clean status code.
+    ...
+    ...    This keyword maps each status to the user-facing failure message.
+    ...
+    ...    Status contract (must stay in sync with the Python helper):
+    ...    - ok                  → return the session
+    ...    - profile_not_found   → fail with available-profiles list
+    ...    - no_credentials      → fail suggesting aws sso login
+    ...    - token_expired       → fail with refresh instructions
+    ...    - cache_readonly      → fail explaining the read-only mount + how to refresh on host
+    ...    - other_error / *     → fail with the raw error text
+    [Arguments]    ${profile}
+
+    ${status}    ${session}    ${err}=    Create Validated SSO Session    ${profile}
+
+    IF    '${status}' == 'ok'
+        RETURN    ${session}
+    ELSE IF    '${status}' == 'profile_not_found'
+        ${available}=    Get Available AWS Profiles
+        Fail
+        ...    Profile '${profile}' not found in ~/.aws/config. Check the AWS_PROFILE value in your .env for typos.${\n}Available profiles: ${available}${\n}If you haven't run AWS SSO setup yet, run on the host: aws configure sso
+    ELSE IF    '${status}' == 'no_credentials'
+        Fail
+        ...    SSO session for profile '${profile}' has no credentials. The SSO token has likely expired (tokens last 8–12 hours).${\n}Fix: run on the host: aws sso login --profile ${profile}
+    ELSE IF    '${status}' == 'token_expired'
+        Fail
+        ...    SSO token for profile '${profile}' has EXPIRED (SSO sessions typically last 8–12 hours).${\n}Fix: run on the host: aws sso login --profile ${profile}${\n}After login, no container restart is needed — the bind mount picks up the refreshed tokens automatically.
+    ELSE IF    '${status}' == 'cache_readonly'
+        Fail
+        ...    SSO token for profile '${profile}' is in the refresh window, but the container's ~/.aws/sso/cache directory is mounted READ-ONLY — so boto3 can't save the refreshed token.${\n}Fix: run on your HOST (Mac/Linux, NOT inside the container): aws sso login --profile ${profile}${\n}This refreshes the token to your host's ~/.aws/sso/cache/, which the container reads via the bind mount. No container restart needed — re-run your test right after.
+    ELSE
+        # Catch-all for status='other_error' or any unexpected value
+        Fail    SSO validation failed for profile '${profile}': ${err}
+    END
+
+Build S3 Client With Default Chain
+    [Documentation]    Builds a boto3 S3 client relying on boto3's default
+    ...    credential chain (env vars / ~/.aws/credentials / EC2 metadata).
+    ...    Used when no explicit keys and no AWS_PROFILE were provided.
+    ...    The endpoint may still be set (for custom S3-compatible services).
+    [Arguments]    ${region}    ${kwargs}
+
+    Log    No explicit keys or profile — boto3 will use default credential chain (env vars / ~/.aws / EC2 metadata)
+
+    ${banner}=    Evaluate    "\\n========== S3 Client Configuration ==========\\n" + "Mode:".ljust(10) + "Default Credential Chain" + "\\n" + "Region:".ljust(10) + $region + "\\n============================================="
+    Log S3 Configuration Banner Once    ${banner}
+
+    ${s3_client}=    Evaluate    __import__('boto3').client('s3', **$kwargs)
+    RETURN    ${s3_client}
+
+Log S3 Configuration Banner Once
+    [Documentation]    Logs the S3 Client Configuration banner.
+    ...
+    ...    Behavior:
+    ...    - First call in a test session  -> banner printed to console AND HTML log
+    ...    - All subsequent calls          -> banner only in HTML log (silent console)
+    ...
+    ...    Why: Get S3 Client runs on every S3 keyword call (often dozens of
+    ...    times per suite). Without this gating the console fills up with
+    ...    duplicate banners. The first-time print keeps the auth mode visible
+    ...    at the top of the run; the HTML log still has the per-call record
+    ...    if you ever need to verify which mode was used for a specific step.
+    ...
+    ...    State: tracked via the env var _S3_BANNER_LOGGED='1' in os.environ.
+    ...    Lives for the lifetime of the test process. Re-running the suite
+    ...    shows the banner again (fresh process, fresh env).
+    [Arguments]    ${banner}
+
+    # Always record in the HTML log so per-call evidence is preserved
+    Log    ${banner}
+
+    # Only echo to console on first call this session
+    ${already_logged}=    Evaluate    __import__('os').environ.get('_S3_BANNER_LOGGED') == '1'
+    IF    not ${already_logged}
+        Log    ${banner}    console=yes
+        Evaluate    __import__('os').environ.update({'_S3_BANNER_LOGGED': '1'})
+    END
 
 Get Available AWS Profiles
     [Documentation]    Returns a comma-separated string of profile names defined
