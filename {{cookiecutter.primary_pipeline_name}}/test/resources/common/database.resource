@@ -61,26 +61,50 @@ Connect to Postgres Database
     Log    Successfully connected to PostgreSQL database    console=yes
 
 Connect to Oracle Database
-    [Documentation]    Sets up Oracle database connection using oracledb driver
+    [Documentation]    Sets up Oracle database connection using oracledb driver.
+    ...
+    ...    Supports two modes:
+    ...    - Plain TCP (default): for local Docker Oracle on port 1521.
+    ...    - TCPS (encrypted): for customer Oracle on port 2484 with a wallet.
+    ...      Set ORACLE_WALLET_LOCATION and ORACLE_CONFIG_DIR to enable TCPS.
+    ...
     ...    Arguments:
     ...    - ORACLE_DATABASE: Database/Service name
     ...    - ORACLE_USER: Username for authentication
     ...    - ORACLE_PASSWORD: Password for authentication
     ...    - ORACLE_HOST: Database server hostname
-    ...    - ORACLE_PORT: Database server port (default: 1521)
-    [Arguments]    ${ORACLE_DATABASE}    ${ORACLE_USER}    ${ORACLE_PASSWORD}    ${ORACLE_HOST}    ${ORACLE_PORT}=1521
+    ...    - ORACLE_PORT: Database server port (default: 1521 TCP, use 2484 for TCPS)
+    ...    - ORACLE_WALLET_LOCATION: (Optional) Container path to Oracle wallet directory.
+    ...      When set, switches to TCPS mode. Leave empty for plain TCP.
+    ...    - ORACLE_CONFIG_DIR: (Optional) Container path to sqlnet.ora directory.
+    ...      Usually the same as ORACLE_WALLET_LOCATION.
+    [Arguments]    ${ORACLE_DATABASE}    ${ORACLE_USER}    ${ORACLE_PASSWORD}    ${ORACLE_HOST}    ${ORACLE_PORT}=1521    ${ORACLE_WALLET_LOCATION}=${EMPTY}    ${ORACLE_CONFIG_DIR}=${EMPTY}
 
     Log    Connecting to Oracle database...    console=yes
     Log    Host: ${ORACLE_HOST}:${ORACLE_PORT}    console=yes
     Log    Database: ${ORACLE_DATABASE}    console=yes
 
-    Connect To Database
-    ...    oracledb
-    ...    ${ORACLE_DATABASE}
-    ...    ${ORACLE_USER}
-    ...    ${ORACLE_PASSWORD}
-    ...    ${ORACLE_HOST}
-    ...    ${ORACLE_PORT}
+    IF    '${ORACLE_WALLET_LOCATION}' != '${EMPTY}'
+        Log    Oracle TCPS mode — wallet: ${ORACLE_WALLET_LOCATION}    console=yes
+        Connect To Database
+        ...    oracledb
+        ...    ${ORACLE_DATABASE}
+        ...    ${ORACLE_USER}
+        ...    ${ORACLE_PASSWORD}
+        ...    ${ORACLE_HOST}
+        ...    ${ORACLE_PORT}
+        ...    config_dir=${ORACLE_CONFIG_DIR}
+        ...    wallet_location=${ORACLE_WALLET_LOCATION}
+    ELSE
+        Log    Oracle plain-TCP mode (no wallet configured)    console=yes
+        Connect To Database
+        ...    oracledb
+        ...    ${ORACLE_DATABASE}
+        ...    ${ORACLE_USER}
+        ...    ${ORACLE_PASSWORD}
+        ...    ${ORACLE_HOST}
+        ...    ${ORACLE_PORT}
+    END
 
     Log    Successfully connected to Oracle database    console=yes
 

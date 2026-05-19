@@ -395,9 +395,14 @@ Initialize Variables
     Set Suite Variable    ${unique_id}    ${unique_id}
     Log    Generated unique_id: ${unique_id}    console=yes
 
+    # ORACLE_WALLET_LOCATION / ORACLE_CONFIG_DIR are defined in .env.oracle with
+    # empty defaults. When empty → plain-TCP Docker Oracle. When set → TCPS mode
+    # for customer Oracle (the keyword's IF/ELSE handles both cases).
     Connect to Oracle Database
     ...    ${ORACLE_DATABASE}
     ...    ${ORACLE_USER}
     ...    ${ORACLE_PASSWORD}
     ...    ${ORACLE_HOST}
     ...    ${ORACLE_PORT}
+    ...    ${ORACLE_WALLET_LOCATION}
+    ...    ${ORACLE_CONFIG_DIR}

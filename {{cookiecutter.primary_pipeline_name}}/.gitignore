@@ -289,3 +289,13 @@ docs/libdocs/
 # ==========================================
 # End of .gitignore
 # ==========================================
+
+# ==========================================
+# Oracle Wallets (TLS credentials — never commit)
+# ==========================================
+test/suite/test_data/wallets/**/*.sso
+test/suite/test_data/wallets/**/*.p12
+test/suite/test_data/wallets/**/cwallet.*
+test/suite/test_data/wallets/**/ewallet.*
+test/suite/test_data/wallets/**/sqlnet.ora
+test/suite/test_data/wallets/**/tnsnames.ora
