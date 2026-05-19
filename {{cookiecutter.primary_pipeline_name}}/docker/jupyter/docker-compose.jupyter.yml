@@ -5,9 +5,13 @@ services:
     container_name: snaplogic-jupyter
     ports:
       - "${JUPYTER_PORT:-8888}:8888"
+    env_file:
+      - ../../.env
     volumes:
       - ../../src:/app/src
       - ../../test:/app/test
+      - ../../.env:/app/.env
+      - ../../env_files:/app/env_files:ro
       - ../../test/suite/test_data:/opt/snaplogic/test_data
     working_dir: /app
     command: >

@@ -58,13 +58,40 @@ aws --version
 
 **Expected output:** `aws-cli/2.x.x ...`
 
-If you still see v1, you may have a v1 binary shadowing v2 in your PATH (common if you have a Python virtual environment or other tools installed). Check with:
+If you still see v1, you may have a v1 binary shadowing v2 in your PATH (common if you have a Python virtual environment or other tools installed). Always check with the **`-a` flag** so you see *every* `aws` on your PATH, not just the first one:
 
 ```bash
-which aws
+which -a aws
 ```
 
-If the path points somewhere other than the v2 install location (typically `/usr/local/bin/aws`), you'll need to deactivate the conflicting environment before continuing.
+**Healthy output:** exactly one path, pointing to your v2 install (e.g., `/usr/local/bin/aws` on Linux/WSL, `/opt/homebrew/bin/aws` on macOS).
+
+**Unhealthy output:** two or more paths, e.g.
+
+```
+/Users/you/some-project/.venv/bin/aws         ← v1 (planted by pip)
+/opt/homebrew/bin/aws                          ← v2 (correct)
+/Library/Frameworks/Python.framework/Versions/3.13/bin/aws   ← v1 (planted by pip)
+```
+
+If you see this, the first path wins inside that shell — which is almost always the wrong one (a pip-installed v1).
+
+#### Why a Python venv often ships with a v1 `aws` binary
+
+The `awscli` package on PyPI is **only v1** — v2 is not pip-installable. Any Python project that transitively depends on `awscli` (for example, `snaplogic-common-robot` declares it as a dependency) will pull v1 into your venv and plant an `aws` script in `<venv>/bin/`. When you activate the venv, that script wins over Homebrew/system v2.
+
+**Fix (recommended):** uninstall the pip-installed v1. AWS CLI v2 (from the official installer) does everything v1 does:
+
+```bash
+# From inside the activated venv:
+pip uninstall awscli
+
+# Verify the shadow is gone:
+which -a aws
+# Should now show ONLY your v2 install path.
+```
+
+**Caveat:** if any other Python package in your venv `import`s `awscli` at runtime (rare), uninstalling will break it. Most packages just need the `aws` *binary* — which Homebrew/system v2 already provides — so this is usually safe.
 
 ---
 
@@ -596,9 +623,15 @@ AWS_PROFILE=my-dev-s3-reader
 | `S3_REGION`     | Set to the AWS region of the bucket you intend to read                                                       |
 | `AWS_PROFILE`   | Tells boto3 — both on the host and inside the Docker container — which profile in `~/.aws/config` to consult |
 
-> ⚠️ **A common oversight:** leftover values in `S3_ACCESS_KEY` and `S3_SECRET_KEY` from earlier static-credential testing will silently override the SSO profile. The framework will not warn you. Verify these fields are truly empty.
+> ⚠️ **A common oversight:** leftover values in `S3_ACCESS_KEY` and `S3_SECRET_KEY` from earlier static-credential testing will silently override the SSO profile. The framework warns you about this case in the test output (see *"WARNING: Both S3_ACCESS_KEY and AWS_PROFILE are set"*), but verify these fields are truly empty before the run.
 
 > 💡 **The `AWS_PROFILE` value must match exactly** what you chose in Step 2g. Case-sensitive. No leading or trailing whitespace.
+
+> ⚠️ **AWS_PROFILE must be either a valid profile name or completely removed — never set to an empty value.**
+>
+> The framework's `docker-compose.yml` forwards `AWS_PROFILE` from the host into the container with `AWS_PROFILE: ${AWS_PROFILE:-}`. If `AWS_PROFILE=` appears in your `.env` with no value, or your host shell exports it as empty, the container ends up with `AWS_PROFILE=""` — and `boto3` will silently pick that empty string up and fail with the cryptic `ProfileNotFound: The config profile () could not be found`.
+>
+> The `Get S3 Client` keyword detects this and fails fast with the actionable message *"AWS_PROFILE is set in the test environment but is EMPTY..."*. If you see that, either set `AWS_PROFILE=<valid-profile-name>` or remove the line entirely from `.env`.
 
 ### 5c. Confirm The Configuration
 
@@ -899,6 +932,56 @@ No more configuration. No keys to rotate. No files to edit. The framework operat
 
 ## Troubleshooting
 
+### Error: `aws sso login` fails with `Invalid choice` (lists only get-role-credentials, list-account-roles, etc.)
+
+**Cause:** Your shell is resolving `aws` to AWS CLI **v1** (pip-installed) instead of v2. The `aws sso` subcommand in v1 only has `get-role-credentials`, `list-account-roles`, `list-accounts`, `logout`, and `help` — `login` was added in v2.
+
+This commonly happens **inside a Python venv** where `awscli` was pulled in transitively (e.g., as a dependency of `snaplogic-common-robot`).
+
+**Fix:**
+
+```bash
+# Check which aws binaries are on your PATH
+which -a aws
+
+# If the first one is inside a .venv or Python.framework path, uninstall it
+pip uninstall awscli
+
+# Verify the v1 shadow is gone
+which -a aws
+
+# Should now resolve to your v2 install (Homebrew on macOS, /usr/local/bin on Linux)
+aws --version
+```
+
+See Step 1d for the full explanation and rationale.
+
+---
+
+### Error: `ProfileNotFound: The config profile () could not be found`
+
+**Cause:** `AWS_PROFILE` is set in the environment but its value is **empty**. boto3 reads `os.environ['AWS_PROFILE']`, finds `""`, and tries to look up a profile with no name.
+
+This is typically caused by either:
+
+- An empty `AWS_PROFILE=` line in your root `.env` (no value after `=`)
+- An empty `AWS_PROFILE=` line in one of the `env_files/*.env` files
+- `docker-compose.yml`'s pass-through (`AWS_PROFILE: ${AWS_PROFILE:-}`) inheriting an empty value from your host shell
+
+**Fix:** either set it to a real profile name, or remove the empty line entirely.
+
+```bash
+# Find every place AWS_PROFILE is declared
+grep -rn "AWS_PROFILE" .env env_files/ docker-compose.yml
+
+# Either set a value:
+echo "AWS_PROFILE=<your-profile-name>" >> .env
+
+# Or remove the empty line and let docker-compose default work
+```
+
+---
+
 ### Error: `No such profile: <name>`
 
 **Cause:** The profile name in `AWS_PROFILE` doesn't match what's in `~/.aws/config`.
@@ -911,6 +994,14 @@ aws configure list-profiles
 
 # Make sure AWS_PROFILE matches exactly
 echo $AWS_PROFILE
+```
+
+The framework's `Get S3 Client` keyword also surfaces this with a helpful message that includes the list of available profiles:
+
+```
+Profile 'your-typo-name' not found in ~/.aws/config. Check the AWS_PROFILE value
+in your .env for typos.
+Available profiles: bedrock, snaplogic-dev-readonly
 ```
 
 ### Error: `AWS_PROFILE '<name>' resolved to no credentials. Run: aws sso login --profile <name>`
