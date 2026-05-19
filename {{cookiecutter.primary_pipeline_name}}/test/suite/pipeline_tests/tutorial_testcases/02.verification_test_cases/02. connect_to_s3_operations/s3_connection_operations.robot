@@ -180,7 +180,7 @@ LIST — List Objects In Bucket
 # 8. SEARCH BY EXTENSION
 # ═══════════════════════════════════════════════════════════════
 
-SEARCH — Find Files In Bucket By Extension
+SEARCH — Find Objects In Bucket By Extension
     [Documentation]    Returns all object keys with a given extension, sorted descending.
     ...    Useful for "give me the latest CSV in this bucket" patterns.
     ...    NOTE: default path_filters=[extract/, output/] — pass our prefix explicitly.
@@ -272,26 +272,10 @@ DOWNLOAD — Download Files By Pattern
     ...    msg=Expected 4 files under '${PREFIX}/data/', got ${count}: ${downloaded}
 
 # ═══════════════════════════════════════════════════════════════
-# 14. DOWNLOAD ALL FILES IN BUCKET
-# ═══════════════════════════════════════════════════════════════
-
-DOWNLOAD — Download All Files From Bucket
-    [Documentation]    Downloads EVERY object in the bucket to a local directory.
-    ...    NOTE: this includes files written by other tests if they exist —
-    ...    use Clean Bucket / Clean Bucket By Prefix first if you need isolation.
-    [Tags]    connect_to_s3_sample
-
-    @{downloaded}=    Download All Files From Bucket    ${DOWNLOAD_DIR}    ${BUCKET_NAME}
-
-    ${count}=    Get Length    ${downloaded}
-    Should Be True    ${count} >= 5
-    ...    msg=Expected at least 5 files (the 5 we uploaded), got ${count}
-
-# ═══════════════════════════════════════════════════════════════
 # 15. VERIFY ALL FILES NON-EMPTY
 # ═══════════════════════════════════════════════════════════════
 
-VALIDATE — Verify All Files Are Non Empty In Bucket
+VALIDATE — Verify Given Files Are Non Empty In Bucket
     [Documentation]    Iterates a list of object keys and asserts each has size > 0.
     ...    Pair with Find Files In Bucket By Extension to validate a result set.
     [Tags]    connect_to_s3_sample

@@ -623,36 +623,102 @@ Check Bucket Exists
     END
 
 List Objects In Bucket
-    [Documentation]    Lists all objects in a MinIO bucket
+    [Documentation]    Lists every object key in an S3/MinIO bucket, with
+    ...    optional server-side prefix filtering and full pagination.
+    ...
     ...    📋 ASSERTIONS:
     ...    • S3 client connection is successful
     ...    • Bucket exists and is accessible
-    ...    • Object listing completes without errors
-    ...    • Returns list of object keys
-    [Arguments]    ${bucket_name}
+    ...    • ALL pages of results are fetched (no 1000-key truncation)
+    ...    • Returns full list of matching object keys
+    ...
+    ...    *Arguments:*
+    ...    - ``bucket_name``: S3/MinIO bucket to list
+    ...    - ``prefix``: Optional. If given, only keys starting with this string
+    ...      are returned (server-side filter via S3's Prefix= parameter —
+    ...      orders of magnitude faster than client-side filtering on large
+    ...      buckets). Default: ``${EMPTY}`` (returns everything in the bucket).
+    ...
+    ...    *Returns:*
+    ...    - List of object keys (strings). Empty list if the bucket has no
+    ...      objects matching the prefix, or if the call fails.
+    ...
+    ...    *Performance notes:*
+    ...    - Uses boto3's list_objects_v2 paginator internally — correct for
+    ...      buckets of ANY size. The underlying S3 API caps each response at
+    ...      1000 keys; without pagination, large buckets silently truncate.
+    ...    - For very large buckets WITHOUT a prefix, this fetches metadata
+    ...      for every key — pass a prefix to scope the query to the folder
+    ...      you care about (much faster, much less data transferred).
+    ...
+    ...    *Examples:*
+    ...    | # List everything in the bucket (paginates correctly for >1000 keys) |
+    ...    | ${all}= | List Objects In Bucket | my-bucket |
+    ...    |
+    ...    | # List only objects under a "folder" — fast even on huge buckets |
+    ...    | ${tutorials}= | List Objects In Bucket | my-bucket | tutorial/ |
+    [Arguments]    ${bucket_name}    ${prefix}=${EMPTY}
 
     ${s3_client}=    Get MinIO S3 Client
 
+    # Build the scope label up-front so the EXCEPT branch can reference it
+    # in error messages even if the TRY body fails early.
+    ${scope_label}=    Set Variable    bucket '${bucket_name}'
+    IF    '${prefix}' != '${EMPTY}'
+        ${scope_label}=    Set Variable    bucket '${bucket_name}' under prefix '${prefix}'
+    END
+
     TRY
-        ${response}=    Evaluate    $s3_client.list_objects_v2(Bucket='${bucket_name}')
+        # boto3's paginator transparently handles list_objects_v2's per-page
+        # 1000-key cap by following NextContinuationToken automatically.
+        # Without this, large buckets would silently truncate at page 1.
+        ${paginator}=    Evaluate    $s3_client.get_paginator('list_objects_v2')
 
-        # Extract object keys from response
-        ${objects}=    Create List
-        ${contents}=    Evaluate    $response.get('Contents', [])
-
-        FOR    ${obj}    IN    @{contents}
-            ${key}=    Evaluate    $obj['Key']
-            Append To List    ${objects}    ${key}
+        # Build paginate() kwargs — only include Prefix when non-empty so the
+        # S3 API call is clean (passing Prefix='' is technically valid but
+        # noisy in CloudTrail logs).
+        ${paginate_kwargs}=    Create Dictionary    Bucket=${bucket_name}
+        IF    '${prefix}' != '${EMPTY}'
+            Set To Dictionary    ${paginate_kwargs}    Prefix=${prefix}
         END
+
+        # Heads-up before the (potentially slow) listing starts. For a bucket
+        # with 1M objects this can take 60-100 seconds; without a log here
+        # the test looks frozen.
+        Log    📋 Listing objects in ${scope_label} (may take a while for large buckets)...    console=yes
+
+        # Stream pages lazily — this list comprehension iterates the
+        # PageIterator inside Python without materializing all pages at
+        # once. Only the final list of keys is retained in memory.
+        #
+        # Critical for million-object buckets: the previous "list(...)"
+        # approach held the metadata for every page in memory simultaneously
+        # (~500MB for a 1M-key bucket); this version holds at most one page
+        # of metadata at a time (~500KB).
+        ${objects}=    Evaluate    [obj['Key'] for page in $paginator.paginate(**$paginate_kwargs) for obj in page.get('Contents', [])]
 
         ${count}=    Get Length    ${objects}
-        Log    📋 Objects in bucket '${bucket_name}' (${count} total):    console=yes
-        FOR    ${key}    IN    @{objects}
-            Log    ${SPACE}${SPACE}- ${key}    console=yes
+        Log    📋 Found ${count} object(s) in ${scope_label}    console=yes
+
+        # Cap console output to avoid flooding when buckets have many objects.
+        # The full list is always written to the HTML log via the final
+        # un-console=yes Log call below.
+        ${display_limit}=    Set Variable    ${20}
+        ${shown}=    Evaluate    min($count, $display_limit)
+        FOR    ${i}    IN RANGE    ${shown}
+            Log    ${SPACE}${SPACE}- ${objects[${i}]}    console=yes
         END
+        IF    ${count} > ${display_limit}
+            ${remaining}=    Evaluate    $count - $display_limit
+            Log    ${SPACE}${SPACE}... and ${remaining} more (full list in HTML log)    console=yes
+        END
+        # Full key list to HTML log only — useful when debugging but not
+        # printed to console.
+        Log    Full key list: ${objects}
+
         RETURN    ${objects}
     EXCEPT    AS    ${error}
-        Log    ❌ Failed to list objects in bucket '${bucket_name}': ${error}
+        Log    ❌ Failed to list objects in ${scope_label}: ${error}
         RETURN    @{EMPTY}
     END
 
@@ -747,7 +813,19 @@ Download And Get File Content
     RETURN    ${content}
 
 Verify All Files Are Non Empty In Bucket
-    [Documentation]    Checks that all S3 objects in the list have size > 0 bytes.
+    [Documentation]    Checks that all S3 objects in the given list have size > 0 bytes.
+    ...
+    ...    Per-file detail goes to the HTML log; console output is capped at
+    ...    the first 20 files so the terminal doesn't flood when this is
+    ...    called with a large list (e.g., output of a Find Files... call on
+    ...    a big bucket).
+    ...
+    ...    Internally uses head_object directly rather than the
+    ...    ``Get Object Metadata`` keyword. The reasons:
+    ...    1. Avoid double-logging — ``Get Object Metadata`` emits a per-file
+    ...       digest to console, which would defeat the cap.
+    ...    2. Avoid re-creating the S3 client for every iteration; we cache
+    ...       it once outside the loop.
     ...
     ...    *Arguments:*
     ...    - ``bucket_name``: S3 bucket containing the files
@@ -758,13 +836,40 @@ Verify All Files Are Non Empty In Bucket
     ...    | Verify All Files Are Non Empty In Bucket    test-bucket    ${files} |
     [Arguments]    ${bucket_name}    ${file_list}
 
+    ${count}=    Get Length    ${file_list}
+    Log    🔍 Verifying ${count} object(s) are non-empty in bucket '${bucket_name}'...    console=yes
+
+    # Get the S3 client ONCE — reuse for every head_object call in the loop.
+    # (Calling Get Object Metadata per iteration would re-resolve the client
+    # AND emit a per-file metadata-digest console log that defeats the cap.)
+    ${s3_client}=    Get MinIO S3 Client
+
+    # Cap per-file console output. Full per-file detail still goes to HTML log.
+    ${display_limit}=    Set Variable    ${20}
+    ${index}=    Set Variable    ${0}
     FOR    ${file_key}    IN    @{file_list}
-        ${metadata}=    Get Object Metadata    ${bucket_name}    ${file_key}
+        TRY
+            ${metadata}=    Evaluate    $s3_client.head_object(Bucket='${bucket_name}', Key='${file_key}')
+        EXCEPT    AS    ${error}
+            Fail    Failed to check '${file_key}' in bucket '${bucket_name}': ${error}
+        END
         ${size}=    Evaluate    $metadata.get('ContentLength', 0)
-        Log    File: ${file_key} — Size: ${size} bytes    console=yes
+        # Always to HTML log — preserves the audit trail per file
+        Log    File: ${file_key} — Size: ${size} bytes
+        # To console only for the first ${display_limit} files
+        IF    ${index} < ${display_limit}
+            Log    ${SPACE}${SPACE}- ${file_key} (${size} bytes)    console=yes
+        END
         Should Be True    ${size} > 0
         ...    msg=File '${file_key}' is empty (0 bytes) in bucket '${bucket_name}'
+        ${index}=    Evaluate    $index + 1
     END
+
+    IF    ${count} > ${display_limit}
+        ${remaining}=    Evaluate    $count - $display_limit
+        Log    ${SPACE}${SPACE}... and ${remaining} more checked (full list in HTML log)    console=yes
+    END
+    Log    ✅ All ${count} object(s) verified non-empty in bucket '${bucket_name}'    console=yes
 
 Get Current And Previous File Content From Bucket
     [Documentation]    Downloads the two most recent files (by extension) from an S3 bucket
@@ -860,7 +965,22 @@ Find Files In Bucket By Extension
         @{path_filters}=    Create List    extract/    output/
     END
 
-    ${all_objects}=    List Objects In Bucket    ${bucket_name}
+    # PERFORMANCE: when EXACTLY ONE path_filter is given, push it down to S3
+    # as a server-side Prefix= argument so the API returns only matching
+    # keys. This is orders of magnitude faster on large buckets (e.g., a
+    # bucket with 10K+ keys where you want files under one folder).
+    #
+    # When MULTIPLE path_filters are given, S3 can't OR across prefixes in
+    # one call — we fall back to a bucket-wide list and the original
+    # client-side substring matching (correct, just slower). The default
+    # path_filters list (['extract/', 'output/']) hits this fallback path.
+    ${pf_count}=    Get Length    ${path_filters}
+    IF    ${pf_count} == 1
+        ${single_prefix}=    Get From List    ${path_filters}    0
+        ${all_objects}=    List Objects In Bucket    ${bucket_name}    ${single_prefix}
+    ELSE
+        ${all_objects}=    List Objects In Bucket    ${bucket_name}
+    END
     @{matching}=    Create List
 
     FOR    ${key}    IN    @{all_objects}
@@ -919,7 +1039,17 @@ Find Specific File In Bucket
         @{path_filters}=    Create List    extract/    output/
     END
 
-    ${all_objects}=    List Objects In Bucket    ${bucket_name}
+    # PERFORMANCE: when EXACTLY ONE path_filter is given, push it down to S3
+    # as a server-side Prefix= argument (see Find Files In Bucket By Extension
+    # for the same pattern + rationale). Multiple path_filters fall back to
+    # bucket-wide listing with client-side OR matching.
+    ${pf_count}=    Get Length    ${path_filters}
+    IF    ${pf_count} == 1
+        ${single_prefix}=    Get From List    ${path_filters}    0
+        ${all_objects}=    List Objects In Bucket    ${bucket_name}    ${single_prefix}
+    ELSE
+        ${all_objects}=    List Objects In Bucket    ${bucket_name}
+    END
     @{matching}=    Create List
 
     FOR    ${key}    IN    @{all_objects}
@@ -1037,21 +1167,57 @@ Download All Files From Bucket
     RETURN    ${downloaded_files}
 
 Download Files By Pattern
-    [Documentation]    Downloads files matching a pattern from MinIO bucket
+    [Documentation]    Downloads files matching a SUBSTRING pattern from an S3/MinIO bucket.
+    ...
+    ...    *Arguments:*
+    ...    - ``download_location``: Local directory to save downloaded files
+    ...    - ``bucket_name``: S3/MinIO bucket to scan
+    ...    - ``pattern``: Substring to match anywhere in the object key
+    ...      (uses ``Should Contain`` semantics — NOT a prefix or regex)
+    ...    - ``preserve_files``: If ${TRUE}, keep files after reading. Default ${TRUE}.
+    ...    - ``prefix``: Optional. If given, only objects under this prefix are
+    ...      considered (server-side filter via S3's Prefix= argument). Orders
+    ...      of magnitude faster on large buckets than scanning the whole bucket.
+    ...      Default: ${EMPTY} (scans the entire bucket).
+    ...
+    ...    *Returns:*
+    ...    - List of downloaded object keys
+    ...
+    ...    *Performance:*
+    ...    Without a ``prefix``, this fetches every key in the bucket (paginated)
+    ...    and filters in Python. For buckets with millions of objects, ALWAYS
+    ...    pass a ``prefix`` to scope the listing — otherwise the call will be
+    ...    slow AND will retrieve metadata for every object in the bucket.
+    ...
+    ...    *Examples:*
+    ...    | # Old usage — still works, slow on large buckets |
+    ...    | Download Files By Pattern | /downloads | my-bucket | tutorial/data/ |
+    ...    |
+    ...    | # Optimized — server narrows to tutorial/data/, client matches .csv |
+    ...    | Download Files By Pattern | /downloads | my-bucket | .csv | prefix=tutorial/data/ |
+    ...
     ...    📋 ASSERTIONS:
     ...    • S3 client connection is successful
     ...    • Bucket exists and is accessible
     ...    • Pattern matching works correctly
     ...    • Matching files are downloaded successfully
     ...    • Local directory structure is created properly
-    [Arguments]    ${download_location}    ${bucket_name}    ${pattern}    ${preserve_files}=${TRUE}
+    [Arguments]    ${download_location}    ${bucket_name}    ${pattern}    ${preserve_files}=${TRUE}    ${prefix}=${EMPTY}
 
     Log    📥 Downloading files matching pattern '${pattern}' from bucket: ${bucket_name}
 
-    # Get list of all objects in bucket
-    ${all_objects}=    List Objects In Bucket    ${bucket_name}
+    # PERFORMANCE: when prefix is given, push it down to S3 as server-side
+    # filter (Prefix=) so we don't pull the entire bucket. The client-side
+    # pattern match below still runs on the (much smaller) returned set,
+    # preserving the substring semantics callers expect from this keyword.
+    IF    '${prefix}' != '${EMPTY}'
+        ${all_objects}=    List Objects In Bucket    ${bucket_name}    ${prefix}
+    ELSE
+        ${all_objects}=    List Objects In Bucket    ${bucket_name}
+    END
 
-    # Filter objects by pattern
+    # Filter objects by substring pattern (Should Contain semantics — matches
+    # the pattern anywhere in the key, not just as a prefix).
     ${matching_objects}=    Create List
     FOR    ${object_key}    IN    @{all_objects}
         ${matches}=    Run Keyword And Return Status    Should Contain    ${object_key}    ${pattern}
@@ -1121,16 +1287,19 @@ Clean Bucket By Prefix
 
     Log    Cleaning objects with prefix '${prefix}' from bucket '${bucket_name}'...    console=yes
     ${s3_client}=    Get S3 Client
-    ${all_objects}=    List Objects In Bucket    ${bucket_name}
+
+    # Server-side prefix filter: ask S3 to return only matching keys instead
+    # of fetching the whole bucket and filtering client-side. This is
+    # critical for correctness on large buckets — without it, List Objects
+    # In Bucket previously truncated at 1000 keys and we could silently
+    # leave files behind whose keys sorted after page 1.
+    ${matching_objects}=    List Objects In Bucket    ${bucket_name}    ${prefix}
     ${deleted}=    Set Variable    ${0}
 
-    FOR    ${key}    IN    @{all_objects}
-        ${matches}=    Evaluate    $key.startswith($prefix)
-        IF    ${matches}
-            Evaluate    $s3_client.delete_object(Bucket='${bucket_name}', Key=$key)
-            Log    Deleted: ${key}    console=yes
-            ${deleted}=    Evaluate    ${deleted} + 1
-        END
+    FOR    ${key}    IN    @{matching_objects}
+        Evaluate    $s3_client.delete_object(Bucket='${bucket_name}', Key=$key)
+        Log    Deleted: ${key}    console=yes
+        ${deleted}=    Evaluate    ${deleted} + 1
     END
 
     Log    Deleted ${deleted} objects with prefix '${prefix}' from bucket '${bucket_name}'.    console=yes
