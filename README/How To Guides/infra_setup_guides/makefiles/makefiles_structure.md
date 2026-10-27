@@ -1,8 +1,8 @@
-# Makefile Organization for Snaplogic Robot Framework
+# Makefile Organization for SnapLogic Robot Framework
 
 ## Overview
 
-The Snaplogic Robot Framework Makefile has been reorganized into category-specific files for better maintainability, clarity, and scalability. This modular approach makes it easier to find, understand, and modify specific functionality.
+The SnapLogic Robot Framework Makefile has been reorganized into category-specific files for better maintainability, clarity, and scalability. This modular approach makes it easier to find, understand, and modify specific functionality.
 
 ## Directory Structure
 
